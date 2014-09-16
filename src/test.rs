@@ -1,0 +1,169 @@
+use std::io::MemWriter;
+use std::fmt::Show;
+use std::io::MemReader;
+use std::io::IoError;
+use std::collections::hashmap::HashMap;
+
+use serialize::{
+    Encoder,
+    Decoder,
+    Encodable,
+    Decodable
+};
+
+use super::EncoderWriter;
+use super::DecoderReader;
+
+fn the_same<
+            V: Encodable<EncoderWriter<MemWriter>, IoError>  +
+               Decodable<DecoderReader<MemReader>, IoError> +
+               PartialEq + Show>(element: V) {
+    let mem_w = MemWriter::new();
+    let mut writer = EncoderWriter::new(mem_w);
+    element.encode(&mut writer);
+
+    let bytes = writer.unwrap().unwrap();
+    let mem_r = MemReader::new(bytes);
+    let mut reader = DecoderReader::new(mem_r);
+
+    let decoded = Decodable::decode(&mut reader).unwrap();
+    println!("{}, -> {}", element, decoded);
+    assert!(element == decoded);
+}
+
+#[test]
+fn test_numbers() {
+    // unsigned positive
+    the_same(5u8);
+    the_same(5u16);
+    the_same(5u32);
+    the_same(5u64);
+    // signed positive
+    the_same(5i8);
+    the_same(5i16);
+    the_same(5i32);
+    the_same(5i64);
+    // signed negative
+    the_same(-5i8);
+    the_same(-5i16);
+    the_same(-5i32);
+    the_same(-5i64);
+    // floating
+    the_same(-100f32);
+    the_same(0f32);
+    the_same(5f32);
+    the_same(-100f64);
+    the_same(5f64);
+}
+
+#[test]
+fn test_string() {
+    the_same("".to_string());
+    the_same("a".to_string());
+}
+
+#[test]
+fn test_tuple() {
+    the_same((1i,));
+    the_same((1i,2i,3i));
+    the_same((1i,"foo".to_string(),()));
+}
+
+#[test]
+fn test_basic_struct() {
+    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    struct Easy {
+        x: int,
+        s: String,
+        y: uint
+    }
+    the_same(Easy{x: -4, s: "foo".to_string(), y: 10});
+}
+
+#[test]
+fn test_nested_struct() {
+    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    struct Easy {
+        x: int,
+        s: String,
+        y: uint
+    }
+    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    struct Nest {
+        f: Easy,
+        b: uint,
+        s: Easy
+    }
+
+    the_same(Nest {
+        f: Easy {x: -1, s: "foo".to_string(), y: 20},
+        b: 100,
+        s: Easy {x: -100, s: "bar".to_string(), y: 20}
+    });
+}
+
+#[test]
+fn test_struct_tuple() {
+    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    struct TubStr(uint, String, f32);
+
+    the_same(TubStr(5, "hello".to_string(), 3.2));
+}
+
+#[test]
+fn option() {
+    the_same(Some(5u));
+    the_same(Some("foo bar".to_string()));
+    the_same(None::<uint>);
+}
+
+#[test]
+fn enm() {
+    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    enum TestEnum {
+        NoArg,
+        OneArg(uint),
+        AnotherNoArg
+    }
+    the_same(NoArg);
+    the_same(OneArg(4));
+    the_same(AnotherNoArg);
+}
+
+
+#[test]
+fn struct_enum() {
+    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    enum TestEnum {
+        NoArg,
+        OneArg(uint),
+        AnotherNoArg,
+        StructLike{x: uint, y: f32}
+    }
+    the_same(NoArg);
+    the_same(OneArg(4));
+    the_same(AnotherNoArg);
+    the_same(StructLike{x: 4, y: 3.14159});
+}
+
+#[test]
+fn many() {
+    let v: Vec<u8> = vec![];
+    the_same(v);
+    the_same(vec![1u]);
+    the_same(vec![1u,2,3,4,5,6]);
+}
+
+#[test]
+fn map(){
+    let mut m = HashMap::new();
+    m.insert(4u, "foo".to_string());
+    m.insert(0u, "bar".to_string());
+    the_same(m);
+}
+
+#[test]
+fn boole(){
+    the_same(true);
+    the_same(false);
+}
