@@ -136,6 +136,7 @@ fn struct_enum() {
     the_same(OneArg(4));
     the_same(AnotherNoArg);
     the_same(StructLike{x: 4, y: 3.14159});
+    the_same(vec![NoArg, OneArg(5), AnotherNoArg, StructLike{x: 4, y:1.4}]);
 }
 
 #[test]
