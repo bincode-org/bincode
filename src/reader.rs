@@ -2,6 +2,7 @@ use std::io::Reader;
 use std::io::BufferedReader;
 use std::io::IoError;
 use std::io::OtherIoError;
+use std::io::RefReader;
 use serialize::Decoder;
 
 type EwResult = Result<(), IoError>;
@@ -12,9 +13,10 @@ pub struct DecoderReader<R> {
 
 impl <R: Reader> DecoderReader<R> {
     pub fn new(r: R) -> DecoderReader<R> {
-        DecoderReader{ reader: BufferedReader::new(r) }
+        DecoderReader {
+            reader: BufferedReader::new(r)
+        }
     }
-
     pub fn unwrap(self) -> R {
         self.reader.unwrap()
     }
