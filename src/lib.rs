@@ -40,6 +40,8 @@ pub fn encode_into<W: Writer, T: Encodable<EncoderWriter<W>, IoError>>
     }
 }
 
+// TODO: When higher order lifetimes land, make this so that the
+// reader is passed in by &mut instead of by ownership.
 pub fn decode_from<R: Reader, T: Decodable<DecoderReader<R>, IoError>>(r: R) ->
 Result<(T, R), (IoError, R)> {
     let mut reader = reader::DecoderReader::new(r);
