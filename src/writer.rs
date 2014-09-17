@@ -21,7 +21,7 @@ impl <W> EncoderWriter<W> {
 impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
     fn emit_nil(&mut self) -> EwResult { Ok(()) }
     fn emit_uint(&mut self, v: uint) -> EwResult {
-        self.writer.write_be_uint(v)
+        self.writer.write_be_u64(v as u64)
     }
     fn emit_u64(&mut self, v: u64) -> EwResult {
         self.writer.write_be_u64(v)
@@ -63,7 +63,7 @@ impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
         self.writer.write_char(v)
     }
     fn emit_str(&mut self, v: &str) -> EwResult {
-        try!(self.writer.write_be_uint(v.len()));
+        try!(self.emit_uint(v.len()));
         self.writer.write_str(v)
     }
     fn emit_enum(&mut self, _: &str,
@@ -73,7 +73,7 @@ impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
     fn emit_enum_variant(&mut self,
     _: &str, v_id: uint, _: uint,
     f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(v_id));
+        try!(self.emit_uint(v_id));
         f(self)
     }
     fn emit_enum_variant_arg(&mut self, _: uint,
@@ -98,7 +98,7 @@ impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
     }
     fn emit_tuple(&mut self, len: uint,
     f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(len));
+        try!(self.emit_uint(len));
         f(self)
     }
     fn emit_tuple_arg(&mut self, _: uint,
@@ -127,7 +127,7 @@ impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
     }
     fn emit_seq(&mut self, len: uint,
     f: |this: &mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(len));
+        try!(self.emit_uint(len));
         f(self)
     }
     fn emit_seq_elt(&mut self, _: uint,
@@ -136,7 +136,7 @@ impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
     }
     fn emit_map(&mut self, len: uint,
     f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(len));
+        try!(self.emit_uint(len));
         f(self)
     }
     fn emit_map_elt_key(&mut self, _: uint,

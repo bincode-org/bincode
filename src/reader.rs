@@ -26,7 +26,10 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
         Ok(())
     }
     fn read_uint(&mut self) -> Result<uint, IoError> {
-        self.reader.read_be_uint()
+        match self.reader.read_be_u64() {
+            Ok(x) => Ok(x as uint),
+            Err(e) => Err(e)
+        }
     }
     fn read_u64(&mut self) -> Result<u64, IoError> {
         self.reader.read_be_u64()
@@ -71,7 +74,7 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
         self.reader.read_char()
     }
     fn read_str(&mut self) -> Result<String, IoError> {
-        let len = try!(self.reader.read_be_uint());
+        let len = try!(self.read_uint());
         let mut string = String::new();
         for _ in range(0, len) {
             string.push_char(try!(self.reader.read_char()));
@@ -84,7 +87,7 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
     }
     fn read_enum_variant<T>(&mut self, _: &[&str],
     f: |&mut DecoderReader<R>, uint| -> Result<T, IoError>) -> Result<T, IoError> {
-        let id = try!(self.reader.read_be_uint());
+        let id = try!(self.read_uint());
         f(self, id)
     }
     fn read_enum_variant_arg<T>(&mut self, _: uint,
@@ -110,7 +113,7 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
     fn read_tuple<T>(&mut self,
     f: |&mut DecoderReader<R>, uint| -> Result<T, IoError>) ->
     Result<T, IoError> {
-        let len = try!(self.reader.read_be_uint());
+        let len = try!(self.read_uint());
         f(self, len)
     }
     fn read_tuple_arg<T>(&mut self, _: uint,
@@ -137,7 +140,7 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
     fn read_seq<T>(&mut self,
     f: |&mut DecoderReader<R>, uint| -> Result<T, IoError>) ->
     Result<T, IoError> {
-        let len = try!(self.reader.read_be_uint());
+        let len = try!(self.read_uint());
         f(self, len)
     }
     fn read_seq_elt<T>(&mut self, _: uint,
@@ -147,7 +150,7 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
     fn read_map<T>(&mut self,
     f: |&mut DecoderReader<R>, uint| -> Result<T, IoError>) ->
     Result<T, IoError> {
-        let len = try!(self.reader.read_be_uint());
+        let len = try!(self.read_uint());
         f(self, len)
     }
     fn read_map_elt_key<T>(&mut self, _: uint,
