@@ -66,91 +66,85 @@ impl <W: Writer> Encoder<IoError> for EncoderWriter<W> {
         try!(self.writer.write_be_uint(v.len()));
         self.writer.write_str(v)
     }
-    fn emit_enum(&mut self, name: &str,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_enum(&mut self, _: &str,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
     fn emit_enum_variant(&mut self,
-            v_name: &str, v_id: uint, len: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    _: &str, v_id: uint, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         try!(self.writer.write_be_uint(v_id));
-        //try!(self.writer.write_be_uint(len));
         f(self)
     }
-    fn emit_enum_variant_arg(&mut self, a_idx: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(a_idx));
+    fn emit_enum_variant_arg(&mut self, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_enum_struct_variant(&mut self, v_name: &str, v_id: uint,
-            len: uint, f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(v_id));
-        try!(self.writer.write_str(v_name));
+    fn emit_enum_struct_variant(&mut self, _: &str, _: uint,
+    _: uint, f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_enum_struct_variant_field(&mut self, f_name: &str,
-            f_idx: uint, f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
-        try!(self.writer.write_be_uint(f_idx));
-        try!(self.writer.write_str(f_name));
+    fn emit_enum_struct_variant_field(&mut self, _: &str,
+    _: uint, f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_struct(&mut self, name: &str, len: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_struct(&mut self, _: &str, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_struct_field(&mut self, f_name: &str, f_idx: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_struct_field(&mut self, _: &str, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
     fn emit_tuple(&mut self, len: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         try!(self.writer.write_be_uint(len));
         f(self)
     }
-    fn emit_tuple_arg(&mut self, idx: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_tuple_arg(&mut self, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_tuple_struct(&mut self, name: &str, len: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_tuple_struct(&mut self, _: &str, len: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         self.emit_tuple(len, f)
     }
     fn emit_tuple_struct_arg(&mut self, f_idx: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         self.emit_tuple_arg(f_idx, f)
     }
     fn emit_option(&mut self,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
     fn emit_option_none(&mut self) -> EwResult {
         self.writer.write_u8(0)
     }
     fn emit_option_some(&mut self,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         try!(self.writer.write_u8(1));
         f(self)
     }
     fn emit_seq(&mut self, len: uint,
-            f: |this: &mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    f: |this: &mut EncoderWriter<W>| -> EwResult) -> EwResult {
         try!(self.writer.write_be_uint(len));
         f(self)
     }
-    fn emit_seq_elt(&mut self, idx: uint,
-            f: |this: &mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_seq_elt(&mut self, _: uint,
+    f: |this: &mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
     fn emit_map(&mut self, len: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         try!(self.writer.write_be_uint(len));
         f(self)
     }
-    fn emit_map_elt_key(&mut self, idx: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_map_elt_key(&mut self, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_map_elt_val(&mut self, idx: uint,
-            f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
+    fn emit_map_elt_val(&mut self, _: uint,
+    f: |&mut EncoderWriter<W>| -> EwResult) -> EwResult {
         f(self)
     }
 }

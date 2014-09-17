@@ -13,22 +13,14 @@ use serialize::{
 
 use super::EncoderWriter;
 use super::DecoderReader;
+use super::encode;
+use super::decode;
 
 fn the_same<
             V: Encodable<EncoderWriter<MemWriter>, IoError>  +
                Decodable<DecoderReader<MemReader>, IoError> +
                PartialEq + Show>(element: V) {
-    let mem_w = MemWriter::new();
-    let mut writer = EncoderWriter::new(mem_w);
-    element.encode(&mut writer);
-
-    let bytes = writer.unwrap().unwrap();
-    let mem_r = MemReader::new(bytes);
-    let mut reader = DecoderReader::new(mem_r);
-
-    let decoded = Decodable::decode(&mut reader).unwrap();
-    println!("{}, -> {}", element, decoded);
-    assert!(element == decoded);
+    assert!(element == decode(encode(&element).unwrap()).unwrap());
 }
 
 #[test]
