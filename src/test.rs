@@ -160,3 +160,9 @@ fn boole(){
     the_same(true);
     the_same(false);
 }
+
+#[test]
+fn unicode() {
+    the_same("å".to_string());
+    the_same("aåååååååa".to_string());
+}

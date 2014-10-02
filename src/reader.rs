@@ -75,11 +75,11 @@ impl <R: Reader> Decoder<IoError> for DecoderReader<R> {
     }
     fn read_str(&mut self) -> Result<String, IoError> {
         let len = try!(self.read_uint());
-        let mut string = String::new();
+        let mut vector = Vec::with_capacity(len as uint);
         for _ in range(0, len) {
-            string.push_char(try!(self.reader.read_char()));
+            vector.push(try!(self.reader.read_u8()));
         }
-        Ok(string)
+        Ok(String::from_utf8(vector).unwrap())
     }
     fn read_enum<T>(&mut self, _: &str,
     f: |&mut DecoderReader<R>| -> Result<T, IoError>) -> Result<T, IoError> {
