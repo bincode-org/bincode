@@ -16,9 +16,9 @@ use super::DecoderReader;
 use super::encode;
 use super::decode;
 
-fn the_same<
-            V: Encodable<EncoderWriter<MemWriter>, IoError>  +
-               Decodable<DecoderReader<MemReader>, IoError> +
+fn the_same<'a,
+            V: Encodable<EncoderWriter<'a, MemWriter>, IoError>  +
+               Decodable<DecoderReader<'a, MemReader>, IoError> +
                PartialEq + Show>(element: V) {
     assert!(element == decode(encode(&element).unwrap()).unwrap());
 }

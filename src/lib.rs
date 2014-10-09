@@ -1,10 +1,16 @@
+#![crate_name = "binary_encode"]
+#![crate_type = "rlib"]
+#![crate_type = "dylib"]
+
 #![feature(struct_variant)]
 
 extern crate serialize;
 
+use std::io::Buffer;
 use std::io::MemWriter;
 use std::io::MemReader;
 use std::io::IoError;
+use std::io::IoResult;
 use serialize::Encodable;
 use serialize::Decodable;
 
@@ -14,43 +20,32 @@ pub use reader::DecoderReader;
 mod writer;
 mod reader;
 
-pub fn encode<T: Encodable<EncoderWriter<MemWriter>, IoError>>(t: &T) ->
-Result<Vec<u8>, IoError> {
-    match encode_into(t, MemWriter::new()) {
-        Ok(w) => Ok(w.unwrap()),
-        Err((_, e)) => Err(e)
+pub fn encode<'a, T: Encodable<EncoderWriter<'a, MemWriter>, IoError>>(t: &T) ->IoResult<Vec<u8>> {
+    let mut w = MemWriter::new();
+    match encode_into(t, &mut w) {
+        Ok(()) => Ok(w.unwrap()),
+        Err(e) => Err(e)
     }
 }
 
-pub fn decode<T: Decodable<DecoderReader<MemReader>, IoError>>(b: Vec<u8>) ->
-Result<T, (IoError, Vec<u8>)> {
-    match decode_from(MemReader::new(b)) {
-        Ok((t, _)) => Ok(t),
-        Err((e, r)) => Err((e, r.unwrap()))
+pub fn decode<'a, T: Decodable<DecoderReader<'a, MemReader>, IoError>>(b: Vec<u8>) -> IoResult<T> {
+    decode_from(&mut MemReader::new(b))
+}
+
+// In order to be able to pass MemReaders/MemWriters by reference, I borrowed the method used in
+// the current json encoder in the stdlib
+
+// TODO: Make code safe https://github.com/rust-lang/rust/issues/14302
+pub fn encode_into<'a, W: 'a+Writer, T: Encodable<EncoderWriter<'a, W>, IoError>>(t: &T, w: &mut W) -> IoResult<()> {
+    unsafe {
+        t.encode(std::mem::transmute(&mut writer::EncoderWriter::new(w)))
     }
 }
 
-pub fn encode_into<W: Writer, T: Encodable<EncoderWriter<W>, IoError>>
-(t: &T, w: W)
--> Result<W, (W, IoError)> {
-    let mut writer = writer::EncoderWriter::new(w);
-    match t.encode(&mut writer) {
-        Ok(()) => Ok(writer.unwrap()),
-        Err(e) => Err((writer.unwrap(), e))
-    }
-}
-
-// TODO: When higher order lifetimes land, make this so that the
-// reader is passed in by &mut instead of by ownership.
-pub fn decode_from<R: Reader, T: Decodable<DecoderReader<R>, IoError>>(r: R) ->
-Result<(T, R), (IoError, R)> {
-    let mut reader = reader::DecoderReader::new(r);
-    let x: Result<T, IoError> = Decodable::decode(&mut reader);
-    let mem = reader.unwrap();
-
-    match x {
-        Ok(t) => Ok((t, mem)),
-        Err(e) => Err((e, mem))
+// TODO: Make code safe https://github.com/rust-lang/rust/issues/14302
+pub fn decode_from<'a, R: 'a+Reader+Buffer, T: Decodable<DecoderReader<'a, R>, IoError>>(r: &mut R) -> IoResult<T> {
+    unsafe {
+        Decodable::decode(std::mem::transmute(&mut reader::DecoderReader::new(r)))
     }
 }
 
