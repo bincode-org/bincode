@@ -1,4 +1,4 @@
-extern crate binary_encode;
+extern crate bincode;
 extern crate serialize;
 
 #[deriving(Encodable, Decodable, PartialEq)]
@@ -17,8 +17,8 @@ fn main() {
         entities: vec![Entity {x: 0.0, y: 4.0}, Entity {x: 10.0, y: 20.5}]
     };
 
-    let encoded: Vec<u8> = binary_encode::encode(&world).unwrap();
-    let decoded: World = binary_encode::decode(encoded).unwrap();
+    let encoded: Vec<u8> = bincode::encode(&world).unwrap();
+    let decoded: World = bincode::decode(encoded).unwrap();
 
     assert!(world == decoded);
 }

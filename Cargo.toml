@@ -1,4 +1,4 @@
 [package]
-name = "binary_encode"
+name = "bincode"
 version = "0.0.1"
 authors = ["Ty Overby <ty@pre-alpha.com>"]

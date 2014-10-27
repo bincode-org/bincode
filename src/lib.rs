@@ -1,4 +1,4 @@
-#![crate_name = "binary_encode"]
+#![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
