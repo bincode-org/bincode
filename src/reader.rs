@@ -106,20 +106,19 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
     f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
         f(self)
     }
-    fn read_tuple<T>(&mut self,
-    f: |&mut DecoderReader<'a, R>, uint| -> IoResult<T>) ->
+    fn read_tuple<T>(&mut self, _: uint,
+    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) ->
     IoResult<T> {
-        let len = try!(self.read_uint());
-        f(self, len)
+        f(self)
     }
     fn read_tuple_arg<T>(&mut self, _: uint,
     f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
         f(self)
     }
-    fn read_tuple_struct<T>(&mut self, _: &str,
-    f: |&mut DecoderReader<'a, R>, uint| -> IoResult<T>) ->
+    fn read_tuple_struct<T>(&mut self, _: &str, len: uint,
+    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) ->
     IoResult<T> {
-        self.read_tuple(f)
+        self.read_tuple(len, f)
     }
     fn read_tuple_struct_arg<T>(&mut self, a_idx: uint,
     f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {

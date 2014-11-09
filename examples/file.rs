@@ -11,7 +11,7 @@ fn main() {
 
     let file = File::open_mode(&Path::new("store.bin"), Truncate, ReadWrite);
     let mut file = file.unwrap();
-    bincode::encode_into(&word_counts, &mut file);
+    bincode::encode_into(&word_counts, &mut file).unwrap();
     file.fsync().unwrap();
 
     let out: HashMap<String, uint> =
