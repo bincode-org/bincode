@@ -2,7 +2,7 @@ use std::io::MemWriter;
 use std::fmt::Show;
 use std::io::MemReader;
 use std::io::IoError;
-use std::collections::hashmap::HashMap;
+use std::collections::HashMap;
 
 use serialize::{
     Encoder,

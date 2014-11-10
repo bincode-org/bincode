@@ -93,9 +93,8 @@ impl<'a, W: Writer> Encoder<IoError> for EncoderWriter<'a, W> {
     f: |&mut EncoderWriter<'a, W>| -> EwResult) -> EwResult {
         f(self)
     }
-    fn emit_tuple(&mut self, len: uint,
+    fn emit_tuple(&mut self, _: uint,
     f: |&mut EncoderWriter<'a, W>| -> EwResult) -> EwResult {
-        try!(self.emit_uint(len));
         f(self)
     }
     fn emit_tuple_arg(&mut self, _: uint,
