@@ -1,7 +1,4 @@
-use std::io::Buffer;
-use std::io::Reader;
-use std::io::IoError;
-use std::io::IoResult;
+use std::io::Buffer; use std::io::Reader; use std::io::IoError; use std::io::IoResult;
 use std::io::OtherIoError;
 use serialize::Decoder;
 
@@ -22,10 +19,7 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         Ok(())
     }
     fn read_uint(&mut self) -> IoResult<uint> {
-        match self.reader.read_be_u64() {
-            Ok(x) => Ok(x as uint),
-            Err(e) => Err(e)
-        }
+        self.read_u64().map(|x| x as uint)
     }
     fn read_u64(&mut self) -> IoResult<u64> {
         self.reader.read_be_u64()
@@ -40,7 +34,7 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         self.reader.read_u8()
     }
     fn read_int(&mut self) -> IoResult<int> {
-        self.reader.read_be_int()
+        self.read_i64().map(|x| x as int)
     }
     fn read_i64(&mut self) -> IoResult<i64> {
         self.reader.read_be_i64()

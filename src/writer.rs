@@ -18,7 +18,7 @@ impl <'a, W: Writer> EncoderWriter<'a, W> {
 impl<'a, W: Writer> Encoder<IoError> for EncoderWriter<'a, W> {
     fn emit_nil(&mut self) -> EwResult { Ok(()) }
     fn emit_uint(&mut self, v: uint) -> EwResult {
-        self.writer.write_be_u64(v as u64)
+        self.emit_u64(v as u64)
     }
     fn emit_u64(&mut self, v: u64) -> EwResult {
         self.writer.write_be_u64(v)
@@ -33,7 +33,7 @@ impl<'a, W: Writer> Encoder<IoError> for EncoderWriter<'a, W> {
         self.writer.write_u8(v)
     }
     fn emit_int(&mut self, v: int) -> EwResult {
-        self.writer.write_be_int(v)
+        self.emit_i64(v as i64)
     }
     fn emit_i64(&mut self, v: i64) -> EwResult {
         self.writer.write_be_i64(v)
