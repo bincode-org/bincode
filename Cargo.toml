@@ -2,3 +2,7 @@
 name = "bincode"
 version = "0.0.1"
 authors = ["Ty Overby <ty@pre-alpha.com>"]
+
+repository = "https://github.com/TyOverby/bincode"
+documentation = "http://tyoverby.github.io/bincode/bincode/"
+keywords = ["binary", "encode", "decode", "encoder", "decoder"]
