@@ -1,5 +1,4 @@
-use std::io::Buffer; use std::io::Reader; use std::io::IoError; use std::io::IoResult;
-use std::io::OtherIoError;
+use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
 use serialize::Decoder;
 
 pub struct DecoderReader<'a, R: 'a> {

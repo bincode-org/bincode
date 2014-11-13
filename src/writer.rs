@@ -1,6 +1,4 @@
-use std::io::Writer;
-use std::io::IoError;
-use std::io::IoResult;
+use std::io::{Writer, IoError, IoResult};
 use serialize::Encoder;
 
 type EwResult = IoResult<()>;
