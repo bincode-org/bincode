@@ -5,4 +5,7 @@ authors = ["Ty Overby <ty@pre-alpha.com>"]
 
 repository = "https://github.com/TyOverby/bincode"
 documentation = "http://tyoverby.github.io/bincode/bincode/"
-keywords = ["binary", "encode", "decode", "encoder", "decoder"]
+keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
+
+license = "MIT"
+description = "A binary serialization / deserialization strategy and implementation."

@@ -117,9 +117,9 @@ fn enm() {
         OneArg(uint),
         AnotherNoArg
     }
-    the_same(NoArg);
-    the_same(OneArg(4));
-    the_same(AnotherNoArg);
+    the_same(TestEnum::NoArg);
+    the_same(TestEnum::OneArg(4));
+    the_same(TestEnum::AnotherNoArg);
 }
 
 
@@ -132,11 +132,12 @@ fn struct_enum() {
         AnotherNoArg,
         StructLike{x: uint, y: f32}
     }
-    the_same(NoArg);
-    the_same(OneArg(4));
-    the_same(AnotherNoArg);
-    the_same(StructLike{x: 4, y: 3.14159});
-    the_same(vec![NoArg, OneArg(5), AnotherNoArg, StructLike{x: 4, y:1.4}]);
+    the_same(TestEnum::NoArg);
+    the_same(TestEnum::OneArg(4));
+    the_same(TestEnum::AnotherNoArg);
+    the_same(TestEnum::StructLike{x: 4, y: 3.14159});
+    the_same(vec![TestEnum::NoArg, TestEnum::OneArg(5), TestEnum::AnotherNoArg,
+                  TestEnum::StructLike{x: 4, y:1.4}]);
 }
 
 #[test]

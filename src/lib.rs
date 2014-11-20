@@ -2,8 +2,6 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-#![feature(struct_variant)]
-
 extern crate serialize;
 
 use std::io::Buffer;
