@@ -21,7 +21,7 @@ mod reader;
 pub fn encode<'a, T: Encodable<EncoderWriter<'a, MemWriter>, IoError>>(t: &T) ->IoResult<Vec<u8>> {
     let mut w = MemWriter::new();
     match encode_into(t, &mut w) {
-        Ok(()) => Ok(w.unwrap()),
+        Ok(()) => Ok(w.into_inner()),
         Err(e) => Err(e)
     }
 }
