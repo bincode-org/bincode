@@ -2,15 +2,15 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-extern crate serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 use std::io::Buffer;
 use std::io::MemWriter;
 use std::io::MemReader;
 use std::io::IoError;
 use std::io::IoResult;
-use serialize::Encodable;
-use serialize::Decodable;
+use rustc_serialize::Encodable;
+use rustc_serialize::Decodable;
 
 pub use writer::EncoderWriter;
 pub use reader::DecoderReader;

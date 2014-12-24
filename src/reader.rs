@@ -1,5 +1,5 @@
 use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
-use serialize::Decoder;
+use rustc_serialize::Decoder;
 
 pub struct DecoderReader<'a, R: 'a> {
     reader: &'a mut R

@@ -1,5 +1,5 @@
 use std::io::{Writer, IoError, IoResult};
-use serialize::Encoder;
+use rustc_serialize::Encoder;
 
 type EwResult = IoResult<()>;
 

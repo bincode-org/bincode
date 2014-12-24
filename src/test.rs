@@ -1,10 +1,12 @@
+extern crate "rustc-serialize" as serialize;
+
 use std::io::MemWriter;
 use std::fmt::Show;
 use std::io::MemReader;
 use std::io::IoError;
 use std::collections::HashMap;
 
-use serialize::{
+use rustc_serialize::{
     Encoder,
     Decoder,
     Encodable,
@@ -63,7 +65,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Easy {
         x: int,
         s: String,
@@ -74,13 +76,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Easy {
         x: int,
         s: String,
         y: uint
     }
-    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Nest {
         f: Easy,
         b: uint,
@@ -96,7 +98,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_tuple() {
-    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct TubStr(uint, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
@@ -111,7 +113,7 @@ fn option() {
 
 #[test]
 fn enm() {
-    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
     enum TestEnum {
         NoArg,
         OneArg(uint),
@@ -125,7 +127,7 @@ fn enm() {
 
 #[test]
 fn struct_enum() {
-    #[deriving(Encodable, Decodable, PartialEq, Show)]
+    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
     enum TestEnum {
         NoArg,
         OneArg(uint),
