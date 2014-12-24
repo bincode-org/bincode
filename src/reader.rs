@@ -74,8 +74,8 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
             f(self)
         }
-    fn read_enum_variant<T, F>(&mut self, _: &[&str], f: F) -> IoResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
+    fn read_enum_variant<T, F>(&mut self, _: &[&str], mut f: F) -> IoResult<T> where
+        F: FnMut(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
             let id = try!(self.read_uint());
             f(self, id)
         }
@@ -84,7 +84,7 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
             f(self)
         }
     fn read_enum_struct_variant<T, F>(&mut self, names: &[&str], f: F) -> IoResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
+        F: FnMut(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
             self.read_enum_variant(names, f)
         }
     fn read_enum_struct_variant_field<T, F>(&mut self,
@@ -123,8 +123,8 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
             self.read_tuple_arg(a_idx, f)
         }
-    fn read_option<T, F>(&mut self, f: F) -> IoResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, bool) -> IoResult<T> {
+    fn read_option<T, F>(&mut self, mut f: F) -> IoResult<T> where
+        F: FnMut(&mut DecoderReader<'a, R>, bool) -> IoResult<T> {
             match try!(self.reader.read_u8()) {
                 1 => f(self, true),
                 _ => f(self, false)
