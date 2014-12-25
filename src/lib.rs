@@ -2,15 +2,15 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-extern crate serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 use std::io::Buffer;
 use std::io::MemWriter;
 use std::io::MemReader;
 use std::io::IoError;
 use std::io::IoResult;
-use serialize::Encodable;
-use serialize::Decodable;
+use rustc_serialize::Encodable;
+use rustc_serialize::Decodable;
 
 pub use writer::EncoderWriter;
 pub use reader::DecoderReader;
@@ -21,7 +21,7 @@ mod reader;
 pub fn encode<'a, T: Encodable<EncoderWriter<'a, MemWriter>, IoError>>(t: &T) ->IoResult<Vec<u8>> {
     let mut w = MemWriter::new();
     match encode_into(t, &mut w) {
-        Ok(()) => Ok(w.unwrap()),
+        Ok(()) => Ok(w.into_inner()),
         Err(e) => Err(e)
     }
 }

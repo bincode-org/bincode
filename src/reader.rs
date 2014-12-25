@@ -1,5 +1,5 @@
 use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
-use serialize::Decoder;
+use rustc_serialize::Decoder;
 
 pub struct DecoderReader<'a, R: 'a> {
     reader: &'a mut R
@@ -70,85 +70,88 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         }
         Ok(String::from_utf8(vector).unwrap())
     }
-    fn read_enum<T>(&mut self, _: &str,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_enum_variant<T>(&mut self, _: &[&str],
-    f: |&mut DecoderReader<'a, R>, uint| -> IoResult<T>) -> IoResult<T> {
-        let id = try!(self.read_uint());
-        f(self, id)
-    }
-    fn read_enum_variant_arg<T>(&mut self, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_enum_struct_variant<T>(&mut self, names: &[&str],
-    f: |&mut DecoderReader<'a, R>, uint| -> IoResult<T>) -> IoResult<T> {
-        self.read_enum_variant(names, f)
-    }
-    fn read_enum_struct_variant_field<T>(&mut self, _: &str, f_idx: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        self.read_enum_variant_arg(f_idx, f)
-    }
-    fn read_struct<T>(&mut self, _: &str, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_struct_field<T>(&mut self, _: &str, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_tuple<T>(&mut self, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) ->
-    IoResult<T> {
-        f(self)
-    }
-    fn read_tuple_arg<T>(&mut self, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_tuple_struct<T>(&mut self, _: &str, len: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) ->
-    IoResult<T> {
-        self.read_tuple(len, f)
-    }
-    fn read_tuple_struct_arg<T>(&mut self, a_idx: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        self.read_tuple_arg(a_idx, f)
-    }
-    fn read_option<T>(&mut self,
-    f: |&mut DecoderReader<'a, R>, bool| -> IoResult<T>) ->
-    IoResult<T> {
-        match try!(self.reader.read_u8()) {
-            1 => f(self, true),
-            _ => f(self, false)
+    fn read_enum<T, F>(&mut self, _: &str, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
         }
-    }
-    fn read_seq<T>(&mut self,
-    f: |&mut DecoderReader<'a, R>, uint| -> IoResult<T>) ->
-    IoResult<T> {
-        let len = try!(self.read_uint());
-        f(self, len)
-    }
-    fn read_seq_elt<T>(&mut self, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_map<T>(&mut self,
-    f: |&mut DecoderReader<'a, R>, uint| -> IoResult<T>) ->
-    IoResult<T> {
-        let len = try!(self.read_uint());
-        f(self, len)
-    }
-    fn read_map_elt_key<T>(&mut self, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
-    fn read_map_elt_val<T>(&mut self, _: uint,
-    f: |&mut DecoderReader<'a, R>| -> IoResult<T>) -> IoResult<T> {
-        f(self)
-    }
+    fn read_enum_variant<T, F>(&mut self, _: &[&str], mut f: F) -> IoResult<T> where
+        F: FnMut(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
+            let id = try!(self.read_uint());
+            f(self, id)
+        }
+    fn read_enum_variant_arg<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
+    fn read_enum_struct_variant<T, F>(&mut self, names: &[&str], f: F) -> IoResult<T> where
+        F: FnMut(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
+            self.read_enum_variant(names, f)
+        }
+    fn read_enum_struct_variant_field<T, F>(&mut self,
+                                            _: &str,
+                                            f_idx: uint,
+                                            f: F)
+        -> IoResult<T> where
+            F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+                self.read_enum_variant_arg(f_idx, f)
+            }
+    fn read_struct<T, F>(&mut self, _: &str, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
+    fn read_struct_field<T, F>(&mut self,
+                               _: &str,
+                               _: uint,
+                               f: F)
+        -> IoResult<T> where
+            F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+                f(self)
+            }
+    fn read_tuple<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
+    fn read_tuple_arg<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
+    fn read_tuple_struct<T, F>(&mut self, _: &str, len: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            self.read_tuple(len, f)
+        }
+    fn read_tuple_struct_arg<T, F>(&mut self, a_idx: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            self.read_tuple_arg(a_idx, f)
+        }
+    fn read_option<T, F>(&mut self, mut f: F) -> IoResult<T> where
+        F: FnMut(&mut DecoderReader<'a, R>, bool) -> IoResult<T> {
+            match try!(self.reader.read_u8()) {
+                1 => f(self, true),
+                _ => f(self, false)
+            }
+        }
+    fn read_seq<T, F>(&mut self, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
+            let len = try!(self.read_uint());
+            f(self, len)
+        }
+    fn read_seq_elt<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
+    fn read_map<T, F>(&mut self, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
+            let len = try!(self.read_uint());
+            f(self, len)
+        }
+    fn read_map_elt_key<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
+    fn read_map_elt_val<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
+        F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
+            f(self)
+        }
     fn error(&mut self, err: &str) -> IoError {
         IoError {
             kind: OtherIoError,
