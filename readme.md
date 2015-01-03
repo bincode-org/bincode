@@ -18,15 +18,15 @@ library.
 
 ```rust
 extern crate bincode;
-extern crate serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
-#[deriving(Encodable, Decodable, PartialEq)]
+#[deriving(RustcEncodable, RustcDecodable, PartialEq)]
 struct Entity {
     x: f32,
     y: f32,
 }
 
-#[deriving(Encodable, Decodable, PartialEq)]
+#[deriving(RustcEncodable, RustcDecodable, PartialEq)]
 struct World {
     entities: Vec<Entity>
 }
