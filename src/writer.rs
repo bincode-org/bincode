@@ -1,5 +1,6 @@
 use std::io::{Writer, IoError, IoResult};
 use rustc_serialize::Encoder;
+use std::num::Int;
 
 type EwResult = IoResult<()>;
 
@@ -70,7 +71,11 @@ impl<'a, W: Writer> Encoder<IoError> for EncoderWriter<'a, W> {
                             _: uint,
                             f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
-            try!(self.emit_uint(v_id));
+            let max_u32: u32 = Int::max_value();
+            if v_id > (max_u32 as uint) {
+                panic!("Variant tag doesn't fit in a u32")
+            }
+            try!(self.emit_u32(v_id as u32));
             f(self)
         }
     fn emit_enum_variant_arg<F>(&mut self, _: uint, f: F) -> EwResult where

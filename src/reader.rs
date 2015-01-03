@@ -76,7 +76,8 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         }
     fn read_enum_variant<T, F>(&mut self, names: &[&str], mut f: F) -> IoResult<T> where
         F: FnMut(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
-            let id = try!(self.read_uint());
+            let id = try!(self.read_u32());
+            let id = id as uint;
             if id >= names.len() {
                 Err(IoError {
                     kind: OtherIoError,
