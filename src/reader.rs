@@ -74,10 +74,18 @@ impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
         F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
             f(self)
         }
-    fn read_enum_variant<T, F>(&mut self, _: &[&str], mut f: F) -> IoResult<T> where
+    fn read_enum_variant<T, F>(&mut self, names: &[&str], mut f: F) -> IoResult<T> where
         F: FnMut(&mut DecoderReader<'a, R>, uint) -> IoResult<T> {
             let id = try!(self.read_uint());
-            f(self, id)
+            if id >= names.len() {
+                Err(IoError {
+                    kind: OtherIoError,
+                    desc: "out of bounds tag when reading enum variant",
+                    detail: Some(format!("Expected tag < {}, got {}", names.len(), id))
+                })
+            } else {
+                f(self, id)
+            }
         }
     fn read_enum_variant_arg<T, F>(&mut self, _: uint, f: F) -> IoResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
