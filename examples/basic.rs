@@ -1,13 +1,15 @@
+#![feature(old_orphan_check)]
+
 extern crate bincode;
 extern crate "rustc-serialize" as rustc_serialize;
 
-#[deriving(RustcEncodable, RustcDecodable, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct Entity {
     x: f32,
     y: f32,
 }
 
-#[deriving(RustcEncodable, RustcDecodable, PartialEq)]
+#[derive(RustcEncodable, RustcDecodable, PartialEq)]
 struct World {
     entities: Vec<Entity>
 }

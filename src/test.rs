@@ -65,7 +65,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Easy {
         x: int,
         s: String,
@@ -76,13 +76,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Easy {
         x: int,
         s: String,
         y: uint
     }
-    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Nest {
         f: Easy,
         b: uint,
@@ -98,7 +98,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_tuple() {
-    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct TubStr(uint, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
@@ -113,7 +113,7 @@ fn option() {
 
 #[test]
 fn enm() {
-    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     enum TestEnum {
         NoArg,
         OneArg(uint),
@@ -127,7 +127,7 @@ fn enm() {
 
 #[test]
 fn struct_enum() {
-    #[deriving(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     enum TestEnum {
         NoArg,
         OneArg(uint),
