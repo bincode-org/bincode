@@ -1,14 +1,19 @@
 use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
+
 use rustc_serialize::Decoder;
 
+use super::SizeLimit;
+
 pub struct DecoderReader<'a, R: 'a> {
-    reader: &'a mut R
+    reader: &'a mut R,
+    size_limit: SizeLimit
 }
 
 impl<'a, R: Reader+Buffer> DecoderReader<'a, R> {
-    pub fn new(r: &'a mut R) -> DecoderReader<'a, R> {
+    pub fn new(r: &'a mut R, size_limit: SizeLimit) -> DecoderReader<'a, R> {
         DecoderReader {
-            reader: r
+            reader: r,
+            size_limit: size_limit
         }
     }
 }

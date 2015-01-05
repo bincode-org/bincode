@@ -13,16 +13,20 @@ use rustc_serialize::{
     Decodable
 };
 
-use super::EncoderWriter;
-use super::DecoderReader;
-use super::encode;
-use super::decode;
+use super::{
+    EncoderWriter,
+    DecoderReader,
+    encode,
+    decode,
+    SizeLimit
+};
+use super::SizeLimit::Infinite;
 
 fn the_same<'a,
             V: Encodable<EncoderWriter<'a, MemWriter>, IoError>  +
                Decodable<DecoderReader<'a, MemReader>, IoError> +
                PartialEq + Show>(element: V) {
-    assert!(element == decode(encode(&element).unwrap()).unwrap());
+    assert!(element == decode(encode(&element, Infinite).unwrap(), Infinite).unwrap());
 }
 
 #[test]

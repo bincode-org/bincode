@@ -1,16 +1,23 @@
 use std::io::{Writer, IoError, IoResult};
-use rustc_serialize::Encoder;
 use std::num::Int;
+
+use rustc_serialize::Encoder;
+
+use super::SizeLimit;
 
 type EwResult = IoResult<()>;
 
 pub struct EncoderWriter<'a, W: 'a> {
-    writer: &'a mut W
+    writer: &'a mut W,
+    size_limit: SizeLimit
 }
 
 impl <'a, W: Writer> EncoderWriter<'a, W> {
-    pub fn new(w: &'a mut W) -> EncoderWriter<'a, W> {
-        EncoderWriter{ writer: w }
+    pub fn new(w: &'a mut W, size_limit: SizeLimit) -> EncoderWriter<'a, W> {
+        EncoderWriter {
+            writer: w,
+            size_limit: size_limit
+        }
     }
 }
 
