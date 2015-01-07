@@ -21,7 +21,9 @@ impl <'a, W: Writer> EncoderWriter<'a, W> {
     }
 }
 
-impl<'a, W: Writer> Encoder<IoError> for EncoderWriter<'a, W> {
+impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
+    type Error = IoError;
+
     fn emit_nil(&mut self) -> EwResult { Ok(()) }
     fn emit_uint(&mut self, v: uint) -> EwResult {
         self.emit_u64(v as u64)

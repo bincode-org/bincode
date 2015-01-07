@@ -3,7 +3,6 @@ extern crate "rustc-serialize" as serialize;
 use std::io::MemWriter;
 use std::fmt::Show;
 use std::io::MemReader;
-use std::io::IoError;
 use std::collections::HashMap;
 
 use rustc_serialize::{
@@ -14,18 +13,12 @@ use rustc_serialize::{
 };
 
 use super::{
-    EncoderWriter,
-    DecoderReader,
     encode,
     decode,
-    SizeLimit
 };
 use super::SizeLimit::Infinite;
 
-fn the_same<'a,
-            V: Encodable<EncoderWriter<'a, MemWriter>, IoError>  +
-               Decodable<DecoderReader<'a, MemReader>, IoError> +
-               PartialEq + Show>(element: V) {
+fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Show {
     assert!(element == decode(encode(&element, Infinite).unwrap(), Infinite).unwrap());
 }
 
