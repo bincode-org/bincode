@@ -37,15 +37,10 @@ pub fn decode<T: Decodable>(b: Vec<u8>, size_limit: SizeLimit) -> IoResult<T> {
     decode_from(&mut MemReader::new(b), size_limit)
 }
 
-// In order to be able to pass MemReaders/MemWriters by reference, I borrowed the method used in
-// the current json encoder in the stdlib
-
-// TODO: Make code safe https://github.com/rust-lang/rust/issues/14302
 pub fn encode_into<T: Encodable, W: Writer>(t: &T, w: &mut W, size_limit: SizeLimit) -> IoResult<()> {
     t.encode(&mut writer::EncoderWriter::new(w, size_limit))
 }
 
-// TODO: Make code safe https://github.com/rust-lang/rust/issues/14302
 pub fn decode_from<R: Reader+Buffer, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> IoResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
