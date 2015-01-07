@@ -165,3 +165,13 @@ fn unicode() {
     the_same("å".to_string());
     the_same("aåååååååa".to_string());
 }
+
+#[test]
+fn bad_unicode() {
+    // This is a malformed message that contains bad utf8.
+    // The decoding should return Err but not panic.
+    let encoded = vec![0,0,0,0, 0,0,0,2, 97, 195];
+    let decoded: Result<String, _> = decode(encoded, Infinite);
+
+    assert!(decoded.is_err());
+}

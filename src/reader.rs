@@ -1,4 +1,5 @@
 use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
+use std::error::Error;
 
 use rustc_serialize::Decoder;
 
@@ -72,7 +73,11 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
     fn read_str(&mut self) -> IoResult<String> {
         let len = try!(self.read_uint());
         let vector = try!(self.reader.read_exact(len));
-        Ok(String::from_utf8(vector).unwrap())
+        String::from_utf8(vector).map_err(|e| IoError {
+            kind: OtherIoError,
+            desc: "invalid utf-8",
+            detail: e.detail()
+        })
     }
     fn read_enum<T, F>(&mut self, _: &str, f: F) -> IoResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> IoResult<T> {
