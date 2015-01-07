@@ -13,7 +13,7 @@ use rustc_serialize::Encodable;
 use rustc_serialize::Decodable;
 
 pub use writer::EncoderWriter;
-pub use reader::DecoderReader;
+pub use reader::{DecoderReader, DecodingResult, DecodingError};
 
 mod writer;
 mod reader;
@@ -32,7 +32,7 @@ pub fn encode<T: Encodable>(t: &T, size_limit: SizeLimit) -> IoResult<Vec<u8>> {
     }
 }
 
-pub fn decode<T: Decodable>(b: Vec<u8>, size_limit: SizeLimit) -> IoResult<T> {
+pub fn decode<T: Decodable>(b: Vec<u8>, size_limit: SizeLimit) -> DecodingResult<T> {
     decode_from(&mut MemReader::new(b), size_limit)
 }
 
@@ -40,7 +40,7 @@ pub fn encode_into<T: Encodable, W: Writer>(t: &T, w: &mut W, size_limit: SizeLi
     t.encode(&mut writer::EncoderWriter::new(w, size_limit))
 }
 
-pub fn decode_from<R: Reader+Buffer, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> IoResult<T> {
+pub fn decode_from<R: Reader+Buffer, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> DecodingResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
 
