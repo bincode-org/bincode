@@ -1,8 +1,6 @@
 extern crate "rustc-serialize" as serialize;
 
-use std::io::MemWriter;
 use std::fmt::Show;
-use std::io::MemReader;
 use std::collections::HashMap;
 
 use rustc_serialize::{
