@@ -49,3 +49,20 @@ fn main() {
 }
 
 ```
+
+
+## Details
+
+The encoding (and thus decoding) proceeds unsurprisingly -- primitive
+types are encoded according to the underlying `Writer`, tuples and
+structs are encoded by encoding their fields one-by-one, and enums are
+encoded by first writing out the tag representing the variant and
+then the contents.
+
+However, there are some implementation details to be aware of:
+
+* `int`/`uint` are encoded as `i64`/`u64`, for portability.
+* enums variants are encoded as a `u32` instead that as a `uint`.
+  `u32` is enough for all practical uses.
+* `str` is encoded as `(u64, &[u8])`, where the `u64` is the number of
+  bytes contained in the encoded string.
