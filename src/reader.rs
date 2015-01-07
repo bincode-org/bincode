@@ -18,7 +18,9 @@ impl<'a, R: Reader+Buffer> DecoderReader<'a, R> {
     }
 }
 
-impl<'a, R: Reader+Buffer> Decoder<IoError> for DecoderReader<'a, R> {
+impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
+    type Error = IoError;
+
     fn read_nil(&mut self) -> IoResult<()> {
         Ok(())
     }
