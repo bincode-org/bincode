@@ -71,10 +71,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
     }
     fn read_str(&mut self) -> IoResult<String> {
         let len = try!(self.read_uint());
-        let mut vector = Vec::with_capacity(len as uint);
-        for _ in range(0, len) {
-            vector.push(try!(self.reader.read_u8()));
-        }
+        let vector = try!(self.reader.read_exact(len));
         Ok(String::from_utf8(vector).unwrap())
     }
     fn read_enum<T, F>(&mut self, _: &str, f: F) -> IoResult<T> where

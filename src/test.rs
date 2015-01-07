@@ -51,6 +51,7 @@ fn test_numbers() {
 fn test_string() {
     the_same("".to_string());
     the_same("a".to_string());
+    the_same("ƒoo".to_string());
 }
 
 #[test]
