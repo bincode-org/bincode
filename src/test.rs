@@ -14,7 +14,7 @@ use super::{
     encode,
     decode,
 };
-use super::SizeLimit::Infinite;
+use super::SizeLimit::{Infinite, UpperBound};
 
 fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Show {
     assert!(element == decode(encode(&element, Infinite).unwrap(), Infinite).unwrap());
@@ -174,4 +174,15 @@ fn bad_unicode() {
     let decoded: Result<String, _> = decode(encoded, Infinite);
 
     assert!(decoded.is_err());
+}
+
+#[test]
+fn too_big_decode() {
+    let encoded = vec![0,0,0,3];
+    let decoded: Result<u32, _> = decode(encoded, UpperBound(3));
+    assert!(decoded.is_err());
+
+    let encoded = vec![0,0,0,3];
+    let decoded: Result<u32, _> = decode(encoded, UpperBound(4));
+    assert!(decoded.is_ok());
 }
