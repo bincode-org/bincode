@@ -200,3 +200,10 @@ fn too_big_decode() {
     let decoded: Result<u32, _> = decode(encoded, UpperBound(4));
     assert!(decoded.is_ok());
 }
+
+#[test]
+fn too_big_char() {
+    let encoded = vec![0x41];
+    let decoded: Result<char, _> = decode(encoded, UpperBound(1));
+    assert_eq!(decoded, Ok('A'));
+}

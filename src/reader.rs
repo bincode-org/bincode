@@ -1,4 +1,4 @@
-use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
+use std::io::{Buffer, Reader, IoError};
 use std::num::{cast, NumCast};
 use std::error::{Error, FromError};
 
@@ -77,8 +77,8 @@ impl <'a, A> DecoderReader<'a, A> {
     }
 
     fn read_type<T>(&mut self) -> Result<(), DecodingError> {
-        use std::intrinsics::size_of;
-        unsafe{ self.read_bytes(size_of::<T>()) }
+        use std::mem::size_of;
+        self.read_bytes(size_of::<T>())
     }
 }
 
@@ -146,8 +146,10 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
         self.reader.read_be_f32().map_err(wrap_io)
     }
     fn read_char(&mut self) -> DecodingResult<char> {
-        try!(self.read_type::<char>());
-        self.reader.read_char().map_err(wrap_io)
+        let c = try!(self.reader.read_char().map_err(wrap_io));
+        try!(self.read_bytes(c.len_utf8()));
+        Ok(c)
+
     }
     fn read_str(&mut self) -> DecodingResult<String> {
         let len = try!(self.read_uint());
