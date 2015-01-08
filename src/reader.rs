@@ -1,10 +1,7 @@
-use std::io::{Buffer, Reader, IoError, IoResult, OtherIoError};
-use std::num::{cast, NumCast};
+use std::io::{Buffer, Reader, IoError};
 use std::error::{Error, FromError};
 
 use rustc_serialize::Decoder;
-
-use super::SizeLimit;
 
 #[derive(PartialEq, Clone, Show)]
 pub struct InvalidBytes {
@@ -16,7 +13,6 @@ pub struct InvalidBytes {
 pub enum DecodingError {
     IoError(IoError),
     InvalidBytes(InvalidBytes),
-    SizeLimit
 }
 
 pub type DecodingResult<T> = Result<T, DecodingError>;
@@ -30,7 +26,6 @@ impl Error for DecodingError {
         match *self {
             DecodingError::IoError(ref err)     => err.description(),
             DecodingError::InvalidBytes(ref ib) => ib.desc,
-            DecodingError::SizeLimit => "the size limit for decoding has been reached"
         }
     }
 
@@ -38,7 +33,6 @@ impl Error for DecodingError {
         match *self {
             DecodingError::IoError(ref err)     => err.detail(),
             DecodingError::InvalidBytes(ref ib) => ib.detail.clone(),
-            DecodingError::SizeLimit => None
         }
     }
 }
@@ -51,34 +45,13 @@ impl FromError<IoError> for DecodingError {
 
 pub struct DecoderReader<'a, R: 'a> {
     reader: &'a mut R,
-    size_limit: SizeLimit,
-    read: u64
 }
 
 impl<'a, R: Reader+Buffer> DecoderReader<'a, R> {
-    pub fn new(r: &'a mut R, size_limit: SizeLimit) -> DecoderReader<'a, R> {
+    pub fn new(r: &'a mut R) -> DecoderReader<'a, R> {
         DecoderReader {
             reader: r,
-            size_limit: size_limit,
-            read: 0
         }
-    }
-}
-
-impl <'a, A> DecoderReader<'a, A> {
-    fn read_bytes<I>(&mut self, count: I) -> Result<(), DecodingError>
-    where I: NumCast {
-        self.read += cast(count).unwrap();
-        match self.size_limit {
-            SizeLimit::Infinite => Ok(()),
-            SizeLimit::UpperBound(x) if self.read <= x => Ok(()),
-            SizeLimit::UpperBound(_) => Err(DecodingError::SizeLimit)
-        }
-    }
-
-    fn read_type<T>(&mut self) -> Result<(), DecodingError> {
-        use std::intrinsics::size_of;
-        unsafe{ self.read_bytes(size_of::<T>()) }
     }
 }
 
@@ -92,38 +65,30 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
         Ok(try!(self.read_u64().map(|x| x as uint)))
     }
     fn read_u64(&mut self) -> DecodingResult<u64> {
-        try!(self.read_type::<u64>());
         self.reader.read_be_u64().map_err(wrap_io)
     }
     fn read_u32(&mut self) -> DecodingResult<u32> {
-        try!(self.read_type::<u32>());
         self.reader.read_be_u32().map_err(wrap_io)
     }
     fn read_u16(&mut self) -> DecodingResult<u16> {
-        try!(self.read_type::<u16>());
         self.reader.read_be_u16().map_err(wrap_io)
     }
     fn read_u8(&mut self) -> DecodingResult<u8> {
-        try!(self.read_type::<u8>());
         self.reader.read_u8().map_err(wrap_io)
     }
     fn read_int(&mut self) -> DecodingResult<int> {
         self.read_i64().map(|x| x as int)
     }
     fn read_i64(&mut self) -> DecodingResult<i64> {
-        try!(self.read_type::<i64>());
         self.reader.read_be_i64().map_err(wrap_io)
     }
     fn read_i32(&mut self) -> DecodingResult<i32> {
-        try!(self.read_type::<i32>());
         self.reader.read_be_i32().map_err(wrap_io)
     }
     fn read_i16(&mut self) -> DecodingResult<i16> {
-        try!(self.read_type::<i16>());
         self.reader.read_be_i16().map_err(wrap_io)
     }
     fn read_i8(&mut self) -> DecodingResult<i8> {
-        try!(self.read_type::<i8>());
         self.reader.read_i8().map_err(wrap_io)
     }
     fn read_bool(&mut self) -> DecodingResult<bool> {
@@ -138,21 +103,17 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
         }
     }
     fn read_f64(&mut self) -> DecodingResult<f64> {
-        try!(self.read_type::<f64>());
         self.reader.read_be_f64().map_err(wrap_io)
     }
     fn read_f32(&mut self) -> DecodingResult<f32> {
-        try!(self.read_type::<f32>());
         self.reader.read_be_f32().map_err(wrap_io)
     }
     fn read_char(&mut self) -> DecodingResult<char> {
-        try!(self.read_type::<char>());
         self.reader.read_char().map_err(wrap_io)
     }
     fn read_str(&mut self) -> DecodingResult<String> {
         let len = try!(self.read_uint());
 
-        try!(self.read_bytes(len));
         let vector = try!(self.reader.read_exact(len));
         match String::from_utf8(vector) {
             Ok(s) => Ok(s),

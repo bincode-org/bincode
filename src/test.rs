@@ -16,10 +16,9 @@ use super::{
     DecodingError,
     DecodingResult
 };
-use super::SizeLimit::{Infinite, UpperBound};
 
 fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Show {
-    assert!(element == decode(encode(&element, Infinite).unwrap(), Infinite).unwrap());
+    assert!(element == decode(encode(&element).unwrap()).unwrap());
 }
 
 #[test]
@@ -171,32 +170,20 @@ fn is_invalid_bytes<T>(res: DecodingResult<T>) {
     match res {
         Ok(_) => panic!("Expecting error"),
         Err(DecodingError::IoError(_)) => panic!("Expecting InvalidBytes"),
-        Err(DecodingError::SizeLimit) => panic!("Expecting InvalidBytes"),
         Err(DecodingError::InvalidBytes(_)) => {},
     }
 }
 
 #[test]
 fn decoding_errors() {
-    is_invalid_bytes(decode::<bool>(vec![0xA], Infinite));
-    is_invalid_bytes(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF], Infinite));
+    is_invalid_bytes(decode::<bool>(vec![0xA]));
+    is_invalid_bytes(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF]));
     // Out-of-bounds variant
     #[derive(RustcEncodable, RustcDecodable)]
     enum Test {
         One,
         Two,
     };
-    is_invalid_bytes(decode::<Test>(vec![0, 0, 0, 5], Infinite));
-    is_invalid_bytes(decode::<Option<u8>>(vec![5, 0], Infinite));
-}
-
-#[test]
-fn too_big_decode() {
-    let encoded = vec![0,0,0,3];
-    let decoded: Result<u32, _> = decode(encoded, UpperBound(3));
-    assert!(decoded.is_err());
-
-    let encoded = vec![0,0,0,3];
-    let decoded: Result<u32, _> = decode(encoded, UpperBound(4));
-    assert!(decoded.is_ok());
+    is_invalid_bytes(decode::<Test>(vec![0, 0, 0, 5]));
+    is_invalid_bytes(decode::<Option<u8>>(vec![5, 0]));
 }
