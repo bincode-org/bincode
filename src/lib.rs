@@ -34,6 +34,9 @@ pub fn encode_into<T: Encodable, W: Writer>(t: &T, w: &mut W) -> IoResult<()> {
     t.encode(&mut writer::EncoderWriter::new(w))
 }
 
+/// Note that in real applications it is advisable to bound the number
+/// of bytes read from a streaming reader.  This can be achieved using a
+/// facility such as `LimitReader`.
 pub fn decode_from<R: Reader+Buffer, T: Decodable>(r: &mut R) -> DecodingResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r))
 }
