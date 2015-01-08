@@ -13,6 +13,8 @@ use rustc_serialize::{
 use super::{
     encode,
     decode,
+    DecodingError,
+    DecodingResult
 };
 use super::SizeLimit::{Infinite, UpperBound};
 
@@ -49,7 +51,6 @@ fn test_numbers() {
 fn test_string() {
     the_same("".to_string());
     the_same("a".to_string());
-    the_same("ƒoo".to_string());
 }
 
 #[test]
@@ -166,14 +167,27 @@ fn unicode() {
     the_same("aåååååååa".to_string());
 }
 
-#[test]
-fn bad_unicode() {
-    // This is a malformed message that contains bad utf8.
-    // The decoding should return Err but not panic.
-    let encoded = vec![0,0,0,0, 0,0,0,2, 97, 195];
-    let decoded: Result<String, _> = decode(encoded, Infinite);
+fn is_invalid_bytes<T>(res: DecodingResult<T>) {
+    match res {
+        Ok(_) => panic!("Expecting error"),
+        Err(DecodingError::IoError(_)) => panic!("Expecting InvalidBytes"),
+        Err(DecodingError::SizeLimit) => panic!("Expecting InvalidBytes"),
+        Err(DecodingError::InvalidBytes(_)) => {},
+    }
+}
 
-    assert!(decoded.is_err());
+#[test]
+fn decoding_errors() {
+    is_invalid_bytes(decode::<bool>(vec![0xA], Infinite));
+    is_invalid_bytes(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF], Infinite));
+    // Out-of-bounds variant
+    #[derive(RustcEncodable, RustcDecodable)]
+    enum Test {
+        One,
+        Two,
+    };
+    is_invalid_bytes(decode::<Test>(vec![0, 0, 0, 5], Infinite));
+    is_invalid_bytes(decode::<Option<u8>>(vec![5, 0], Infinite));
 }
 
 #[test]
