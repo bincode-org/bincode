@@ -2,6 +2,8 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
+#![allow(unstable)]
+
 extern crate "rustc-serialize" as rustc_serialize;
 
 use std::io::Buffer;

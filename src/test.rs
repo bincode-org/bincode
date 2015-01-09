@@ -55,18 +55,18 @@ fn test_string() {
 
 #[test]
 fn test_tuple() {
-    the_same((1i,));
-    the_same((1i,2i,3i));
-    the_same((1i,"foo".to_string(),()));
+    the_same((1is,));
+    the_same((1is,2is,3is));
+    the_same((1is,"foo".to_string(),()));
 }
 
 #[test]
 fn test_basic_struct() {
     #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Easy {
-        x: int,
+        x: isize,
         s: String,
-        y: uint
+        y: usize
     }
     the_same(Easy{x: -4, s: "foo".to_string(), y: 10});
 }
@@ -75,14 +75,14 @@ fn test_basic_struct() {
 fn test_nested_struct() {
     #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Easy {
-        x: int,
+        x: isize,
         s: String,
-        y: uint
+        y: usize
     }
     #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     struct Nest {
         f: Easy,
-        b: uint,
+        b: usize,
         s: Easy
     }
 
@@ -96,16 +96,16 @@ fn test_nested_struct() {
 #[test]
 fn test_struct_tuple() {
     #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
-    struct TubStr(uint, String, f32);
+    struct TubStr(usize, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
 }
 
 #[test]
 fn option() {
-    the_same(Some(5u));
+    the_same(Some(5us));
     the_same(Some("foo bar".to_string()));
-    the_same(None::<uint>);
+    the_same(None::<usize>);
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn enm() {
     #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     enum TestEnum {
         NoArg,
-        OneArg(uint),
+        OneArg(usize),
         AnotherNoArg
     }
     the_same(TestEnum::NoArg);
@@ -127,9 +127,9 @@ fn struct_enum() {
     #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
     enum TestEnum {
         NoArg,
-        OneArg(uint),
+        OneArg(usize),
         AnotherNoArg,
-        StructLike{x: uint, y: f32}
+        StructLike{x: usize, y: f32}
     }
     the_same(TestEnum::NoArg);
     the_same(TestEnum::OneArg(4));
@@ -143,15 +143,15 @@ fn struct_enum() {
 fn many() {
     let v: Vec<u8> = vec![];
     the_same(v);
-    the_same(vec![1u]);
-    the_same(vec![1u,2,3,4,5,6]);
+    the_same(vec![1u64]);
+    the_same(vec![1u64,2,3,4,5,6]);
 }
 
 #[test]
 fn map(){
     let mut m = HashMap::new();
-    m.insert(4u, "foo".to_string());
-    m.insert(0u, "bar".to_string());
+    m.insert(4u64, "foo".to_string());
+    m.insert(0u64, "bar".to_string());
     the_same(m);
 }
 

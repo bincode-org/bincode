@@ -25,7 +25,7 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
     type Error = IoError;
 
     fn emit_nil(&mut self) -> EwResult { Ok(()) }
-    fn emit_uint(&mut self, v: uint) -> EwResult {
+    fn emit_usize(&mut self, v: usize) -> EwResult {
         self.emit_u64(v as u64)
     }
     fn emit_u64(&mut self, v: u64) -> EwResult {
@@ -40,7 +40,7 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
     fn emit_u8(&mut self, v: u8) -> EwResult {
         self.writer.write_u8(v)
     }
-    fn emit_int(&mut self, v: int) -> EwResult {
+    fn emit_isize(&mut self, v: isize) -> EwResult {
         self.emit_i64(v as i64)
     }
     fn emit_i64(&mut self, v: i64) -> EwResult {
@@ -68,7 +68,7 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
         self.writer.write_char(v)
     }
     fn emit_str(&mut self, v: &str) -> EwResult {
-        try!(self.emit_uint(v.len()));
+        try!(self.emit_usize(v.len()));
         self.writer.write_str(v)
     }
     fn emit_enum<F>(&mut self, __: &str, f: F) -> EwResult where
@@ -76,56 +76,56 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
             f(self)
         }
     fn emit_enum_variant<F>(&mut self, _: &str,
-                            v_id: uint,
-                            _: uint,
+                            v_id: usize,
+                            _: usize,
                             f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             let max_u32: u32 = Int::max_value();
-            if v_id > (max_u32 as uint) {
+            if v_id > (max_u32 as usize) {
                 panic!("Variant tag doesn't fit in a u32")
             }
             try!(self.emit_u32(v_id as u32));
             f(self)
         }
-    fn emit_enum_variant_arg<F>(&mut self, _: uint, f: F) -> EwResult where
+    fn emit_enum_variant_arg<F>(&mut self, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
     fn emit_enum_struct_variant<F>(&mut self, _: &str,
-                                   _: uint,
-                                   _: uint,
+                                   _: usize,
+                                   _: usize,
                                    f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
     fn emit_enum_struct_variant_field<F>(&mut self,
                                          _: &str,
-                                         _: uint,
+                                         _: usize,
                                          f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_struct<F>(&mut self, _: &str, _: uint, f: F) -> EwResult where
+    fn emit_struct<F>(&mut self, _: &str, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_struct_field<F>(&mut self, _: &str, _: uint, f: F) -> EwResult where
+    fn emit_struct_field<F>(&mut self, _: &str, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_tuple<F>(&mut self, _: uint, f: F) -> EwResult where
+    fn emit_tuple<F>(&mut self, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_tuple_arg<F>(&mut self, _: uint, f: F) -> EwResult where
+    fn emit_tuple_arg<F>(&mut self, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_tuple_struct<F>(&mut self, _: &str, len: uint, f: F) -> EwResult where
+    fn emit_tuple_struct<F>(&mut self, _: &str, len: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             self.emit_tuple(len, f)
         }
-    fn emit_tuple_struct_arg<F>(&mut self, f_idx: uint, f: F) -> EwResult where
+    fn emit_tuple_struct_arg<F>(&mut self, f_idx: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             self.emit_tuple_arg(f_idx, f)
         }
@@ -141,25 +141,25 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
             try!(self.writer.write_u8(1));
             f(self)
         }
-    fn emit_seq<F>(&mut self, len: uint, f: F) -> EwResult where
+    fn emit_seq<F>(&mut self, len: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
-            try!(self.emit_uint(len));
+            try!(self.emit_usize(len));
             f(self)
         }
-    fn emit_seq_elt<F>(&mut self, _: uint, f: F) -> EwResult where
+    fn emit_seq_elt<F>(&mut self, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_map<F>(&mut self, len: uint, f: F) -> EwResult where
+    fn emit_map<F>(&mut self, len: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
-            try!(self.emit_uint(len));
+            try!(self.emit_usize(len));
             f(self)
         }
-    fn emit_map_elt_key<F>(&mut self, _: uint, mut f: F) -> EwResult where
+    fn emit_map_elt_key<F>(&mut self, _: usize, mut f: F) -> EwResult where
         F: FnMut(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }
-    fn emit_map_elt_val<F>(&mut self, _: uint, f: F) -> EwResult where
+    fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EwResult where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EwResult {
             f(self)
         }

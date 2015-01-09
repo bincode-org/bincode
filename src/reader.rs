@@ -88,8 +88,8 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
     fn read_nil(&mut self) -> DecodingResult<()> {
         Ok(())
     }
-    fn read_uint(&mut self) -> DecodingResult<uint> {
-        Ok(try!(self.read_u64().map(|x| x as uint)))
+    fn read_usize(&mut self) -> DecodingResult<usize> {
+        Ok(try!(self.read_u64().map(|x| x as usize)))
     }
     fn read_u64(&mut self) -> DecodingResult<u64> {
         try!(self.read_type::<u64>());
@@ -107,8 +107,8 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
         try!(self.read_type::<u8>());
         self.reader.read_u8().map_err(wrap_io)
     }
-    fn read_int(&mut self) -> DecodingResult<int> {
-        self.read_i64().map(|x| x as int)
+    fn read_isize(&mut self) -> DecodingResult<isize> {
+        self.read_i64().map(|x| x as isize)
     }
     fn read_i64(&mut self) -> DecodingResult<i64> {
         try!(self.read_type::<i64>());
@@ -152,7 +152,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
 
     }
     fn read_str(&mut self) -> DecodingResult<String> {
-        let len = try!(self.read_uint());
+        let len = try!(self.read_usize());
 
         try!(self.read_bytes(len));
         let vector = try!(self.reader.read_exact(len));
@@ -169,9 +169,9 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
             f(self)
         }
     fn read_enum_variant<T, F>(&mut self, names: &[&str], mut f: F) -> DecodingResult<T> where
-        F: FnMut(&mut DecoderReader<'a, R>, uint) -> DecodingResult<T> {
+        F: FnMut(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
             let id = try!(self.read_u32());
-            let id = id as uint;
+            let id = id as usize;
             if id >= names.len() {
                 Err(DecodingError::InvalidBytes(InvalidBytes {
                     desc: "out of bounds tag when reading enum variant",
@@ -181,47 +181,47 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
                 f(self, id)
             }
         }
-    fn read_enum_variant_arg<T, F>(&mut self, _: uint, f: F) -> DecodingResult<T> where
+    fn read_enum_variant_arg<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
     fn read_enum_struct_variant<T, F>(&mut self, names: &[&str], f: F) -> DecodingResult<T> where
-        F: FnMut(&mut DecoderReader<'a, R>, uint) -> DecodingResult<T> {
+        F: FnMut(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
             self.read_enum_variant(names, f)
         }
     fn read_enum_struct_variant_field<T, F>(&mut self,
                                             _: &str,
-                                            f_idx: uint,
+                                            f_idx: usize,
                                             f: F)
         -> DecodingResult<T> where
             F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
                 self.read_enum_variant_arg(f_idx, f)
             }
-    fn read_struct<T, F>(&mut self, _: &str, _: uint, f: F) -> DecodingResult<T> where
+    fn read_struct<T, F>(&mut self, _: &str, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
     fn read_struct_field<T, F>(&mut self,
                                _: &str,
-                               _: uint,
+                               _: usize,
                                f: F)
         -> DecodingResult<T> where
             F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
                 f(self)
             }
-    fn read_tuple<T, F>(&mut self, _: uint, f: F) -> DecodingResult<T> where
+    fn read_tuple<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
-    fn read_tuple_arg<T, F>(&mut self, _: uint, f: F) -> DecodingResult<T> where
+    fn read_tuple_arg<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
-    fn read_tuple_struct<T, F>(&mut self, _: &str, len: uint, f: F) -> DecodingResult<T> where
+    fn read_tuple_struct<T, F>(&mut self, _: &str, len: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             self.read_tuple(len, f)
         }
-    fn read_tuple_struct_arg<T, F>(&mut self, a_idx: uint, f: F) -> DecodingResult<T> where
+    fn read_tuple_struct_arg<T, F>(&mut self, a_idx: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             self.read_tuple_arg(a_idx, f)
         }
@@ -238,24 +238,24 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
             }
         }
     fn read_seq<T, F>(&mut self, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, uint) -> DecodingResult<T> {
-            let len = try!(self.read_uint());
+        F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
+            let len = try!(self.read_usize());
             f(self, len)
         }
-    fn read_seq_elt<T, F>(&mut self, _: uint, f: F) -> DecodingResult<T> where
+    fn read_seq_elt<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
     fn read_map<T, F>(&mut self, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, uint) -> DecodingResult<T> {
-            let len = try!(self.read_uint());
+        F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
+            let len = try!(self.read_usize());
             f(self, len)
         }
-    fn read_map_elt_key<T, F>(&mut self, _: uint, f: F) -> DecodingResult<T> where
+    fn read_map_elt_key<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
-    fn read_map_elt_val<T, F>(&mut self, _: uint, f: F) -> DecodingResult<T> where
+    fn read_map_elt_val<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
         F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
             f(self)
         }
