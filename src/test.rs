@@ -13,13 +13,14 @@ use rustc_serialize::{
 use super::{
     encode,
     decode,
+    decode_from,
     DecodingError,
     DecodingResult
 };
 use super::SizeLimit::{Infinite, UpperBound};
 
 fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Show {
-    assert!(element == decode(encode(&element, Infinite).unwrap(), Infinite).unwrap());
+    assert!(element == decode(encode(&element, Infinite).unwrap().as_slice()).unwrap());
 }
 
 #[test]
@@ -178,33 +179,36 @@ fn is_invalid_bytes<T>(res: DecodingResult<T>) {
 
 #[test]
 fn decoding_errors() {
-    is_invalid_bytes(decode::<bool>(vec![0xA], Infinite));
-    is_invalid_bytes(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF], Infinite));
+    is_invalid_bytes(decode::<bool>(vec![0xA].as_slice()));
+    is_invalid_bytes(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF].as_slice()));
     // Out-of-bounds variant
     #[derive(RustcEncodable, RustcDecodable)]
     enum Test {
         One,
         Two,
     };
-    is_invalid_bytes(decode::<Test>(vec![0, 0, 0, 5], Infinite));
-    is_invalid_bytes(decode::<Option<u8>>(vec![5, 0], Infinite));
+    is_invalid_bytes(decode::<Test>(vec![0, 0, 0, 5].as_slice()));
+    is_invalid_bytes(decode::<Option<u8>>(vec![5, 0].as_slice()));
 }
 
 #[test]
 fn too_big_decode() {
     let encoded = vec![0,0,0,3];
-    let decoded: Result<u32, _> = decode(encoded, UpperBound(3));
+    let mut encoded_ref = encoded.as_slice();
+    let decoded: Result<u32, _> = decode_from(&mut encoded_ref, UpperBound(3));
     assert!(decoded.is_err());
 
     let encoded = vec![0,0,0,3];
-    let decoded: Result<u32, _> = decode(encoded, UpperBound(4));
+    let mut encoded_ref = encoded.as_slice();
+    let decoded: Result<u32, _> = decode_from(&mut encoded_ref, UpperBound(4));
     assert!(decoded.is_ok());
 }
 
 #[test]
 fn too_big_char_decode() {
     let encoded = vec![0x41];
-    let decoded: Result<char, _> = decode(encoded, UpperBound(1));
+    let mut encoded_ref = encoded.as_slice();
+    let decoded: Result<char, _> = decode_from(&mut encoded_ref, UpperBound(1));
     assert_eq!(decoded, Ok('A'));
 }
 
