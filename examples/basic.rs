@@ -20,9 +20,11 @@ fn main() {
     };
 
     let encoded: Vec<u8> = bincode::encode(&world, SizeLimit::Infinite).unwrap();
+
     // 8 bytes for the length of the vector, 4 bytes per float.
     assert_eq!(encoded.len(), 8 + 4 * 4);
-    let decoded: World = bincode::decode(encoded, SizeLimit::Infinite).unwrap();
+
+    let decoded: World = bincode::decode(encoded.as_slice()).unwrap();
 
     assert!(world == decoded);
 }
