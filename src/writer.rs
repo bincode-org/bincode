@@ -8,12 +8,23 @@ use super::SizeLimit;
 
 pub type EncodingResult<T> = Result<T, EncodingError>;
 
+
+/// An error that can be produced during encoding.
 #[derive(Show)]
 pub enum EncodingError {
+    /// An error originating from the underlying `Writer`.
     IoError(IoError),
+    /// An object could not be encoded with the given size limit.
+    ///
+    /// This error is returned before any bytes are written to the
+    /// output `Writer`.
     SizeLimit
 }
 
+/// An Encoder that encodes values directly into a Writer.
+///
+/// This struct should not be used often.
+/// For most cases, prefer the `encode_into` function.
 pub struct EncoderWriter<'a, W: 'a> {
     writer: &'a mut W,
     _size_limit: SizeLimit

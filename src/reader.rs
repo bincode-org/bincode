@@ -6,16 +6,28 @@ use rustc_serialize::Decoder;
 
 use super::SizeLimit;
 
-#[derive(PartialEq, Clone, Show)]
-pub struct InvalidBytes {
+#[derive(Eq, PartialEq, Clone, Show)]
+pub struct InvalidEncoding {
     desc: &'static str,
     detail: Option<String>,
 }
 
-#[derive(PartialEq, Clone, Show)]
+/// An error that can be produced during decoding.
+///
+/// If decoding from a Buffer, assume that the buffer has been left
+/// in an invalid state.
+#[derive(Eq, PartialEq, Clone, Show)]
 pub enum DecodingError {
+    /// If the error stems from the reader that is being used
+    /// during decoding, that error will be stored and returned here.
     IoError(IoError),
-    InvalidBytes(InvalidBytes),
+    /// If the bytes in the reader are not decodable because of an invalid
+    /// encoding, this error will be returned.  This error is only possible
+    /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
+    /// should **never** produce an InvalidEncoding error.
+    InvalidEncoding(InvalidEncoding),
+    /// If decoding a message takes more than the provided size limit, this
+    /// error is returned.
     SizeLimit
 }
 
@@ -29,7 +41,7 @@ impl Error for DecodingError {
     fn description(&self) -> &str {
         match *self {
             DecodingError::IoError(ref err)     => err.description(),
-            DecodingError::InvalidBytes(ref ib) => ib.desc,
+            DecodingError::InvalidEncoding(ref ib) => ib.desc,
             DecodingError::SizeLimit => "the size limit for decoding has been reached"
         }
     }
@@ -37,7 +49,7 @@ impl Error for DecodingError {
     fn detail(&self) -> Option<String> {
         match *self {
             DecodingError::IoError(ref err)     => err.detail(),
-            DecodingError::InvalidBytes(ref ib) => ib.detail.clone(),
+            DecodingError::InvalidEncoding(ref ib) => ib.detail.clone(),
             DecodingError::SizeLimit => None
         }
     }
@@ -49,13 +61,17 @@ impl FromError<IoError> for DecodingError {
     }
 }
 
+/// A Decoder that reads bytes from a buffer.
+///
+/// This struct should rarely be used.
+/// In most cases, prefer the `decode_from` function.
 pub struct DecoderReader<'a, R: 'a> {
     reader: &'a mut R,
     size_limit: SizeLimit,
     read: u64
 }
 
-impl<'a, R: Reader+Buffer> DecoderReader<'a, R> {
+impl<'a, R: Buffer> DecoderReader<'a, R> {
     pub fn new(r: &'a mut R, size_limit: SizeLimit) -> DecoderReader<'a, R> {
         DecoderReader {
             reader: r,
@@ -71,8 +87,8 @@ impl <'a, A> DecoderReader<'a, A> {
         self.read += cast(count).unwrap();
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
-            SizeLimit::UpperBound(x) if self.read <= x => Ok(()),
-            SizeLimit::UpperBound(_) => Err(DecodingError::SizeLimit)
+            SizeLimit::Bounded(x) if self.read <= x => Ok(()),
+            SizeLimit::Bounded(_) => Err(DecodingError::SizeLimit)
         }
     }
 
@@ -82,7 +98,7 @@ impl <'a, A> DecoderReader<'a, A> {
     }
 }
 
-impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
+impl<'a, R: Buffer> Decoder for DecoderReader<'a, R> {
     type Error = DecodingError;
 
     fn read_nil(&mut self) -> DecodingResult<()> {
@@ -131,7 +147,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
         match x {
             1 => Ok(true),
             0 => Ok(false),
-            _ => Err(DecodingError::InvalidBytes(InvalidBytes{
+            _ => Err(DecodingError::InvalidEncoding(InvalidEncoding{
                 desc: "invalid u8 when decoding bool",
                 detail: Some(format!("Expected 0 or 1, got {}", x))
             })),
@@ -158,7 +174,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
         let vector = try!(self.reader.read_exact(len));
         match String::from_utf8(vector) {
             Ok(s) => Ok(s),
-            Err(err) => Err(DecodingError::InvalidBytes(InvalidBytes {
+            Err(err) => Err(DecodingError::InvalidEncoding(InvalidEncoding {
                 desc: "error while decoding utf8 string",
                 detail: Some(format!("Decoding error: {}", err))
             })),
@@ -173,7 +189,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
             let id = try!(self.read_u32());
             let id = id as usize;
             if id >= names.len() {
-                Err(DecodingError::InvalidBytes(InvalidBytes {
+                Err(DecodingError::InvalidEncoding(InvalidEncoding {
                     desc: "out of bounds tag when reading enum variant",
                     detail: Some(format!("Expected tag < {}, got {}", names.len(), id))
                 }))
@@ -231,7 +247,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
             match x {
                 1 => f(self, true),
                 0 => f(self, false),
-                _ => Err(DecodingError::InvalidBytes(InvalidBytes {
+                _ => Err(DecodingError::InvalidEncoding(InvalidEncoding {
                     desc: "invalid tag when decoding Option",
                     detail: Some(format!("Expected 0 or 1, got {}", x))
                 })),
@@ -260,7 +276,7 @@ impl<'a, R: Reader+Buffer> Decoder for DecoderReader<'a, R> {
             f(self)
         }
     fn error(&mut self, err: &str) -> DecodingError {
-        DecodingError::InvalidBytes(InvalidBytes {
+        DecodingError::InvalidEncoding(InvalidEncoding {
             desc: "user-induced error",
             detail: Some(err.to_string()),
         })
