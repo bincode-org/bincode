@@ -1,6 +1,7 @@
 use std::io::{Buffer, Reader, IoError};
 use std::num::{cast, NumCast};
 use std::error::{Error, FromError};
+use std::fmt;
 
 use rustc_serialize::Decoder;
 
@@ -10,6 +11,17 @@ use super::SizeLimit;
 pub struct InvalidEncoding {
     desc: &'static str,
     detail: Option<String>,
+}
+
+impl fmt::String for InvalidEncoding {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            InvalidEncoding { detail: None, desc } =>
+                write!(fmt, "{}", desc),
+            InvalidEncoding { detail: Some(ref detail), desc } =>
+                write!(fmt, "{} ({})", desc, detail)
+        }
+    }
 }
 
 /// An error that can be produced during decoding.
@@ -29,6 +41,19 @@ pub enum DecodingError {
     /// If decoding a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit
+}
+
+impl fmt::String for DecodingError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DecodingError::IoError(ref ioerr) =>
+                write!(fmt, "IoError: {}", ioerr),
+            DecodingError::InvalidEncoding(ref ib) =>
+                write!(fmt, "InvalidEncoding: {}", ib),
+            DecodingError::SizeLimit =>
+                write!(fmt, "SizeLimit")
+        }
+    }
 }
 
 pub type DecodingResult<T> = Result<T, DecodingError>;
