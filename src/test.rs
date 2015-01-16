@@ -14,6 +14,7 @@ use super::{
     encode,
     decode,
     decode_from,
+    encoded_size,
     DecodingError,
     DecodingResult
 };
@@ -219,4 +220,14 @@ fn too_big_encode() {
 
     assert!(encode(&"abcde", UpperBound(4)).is_err());
     assert!(encode(&"abcde", UpperBound(5)).is_ok());
+}
+
+#[test]
+fn test_encoded_size() {
+    assert!(encoded_size(&0u8) == 1);
+    assert!(encoded_size(&0u16) == 2);
+    assert!(encoded_size(&0u32) == 4);
+    assert!(encoded_size(&0u64) == 8);
+
+    assert!(encoded_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
 }

@@ -66,3 +66,15 @@ pub fn decode_from<R: Buffer, T: Decodable>(r: &mut R, size_limit: SizeLimit) ->
 DecodingResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
+
+
+/// Returns the size that an object would be if encoded using bincode.
+///
+/// This is used internally as part of the check for encode_into, but it can
+/// be useful for preallocating buffers if thats your style.
+pub fn encoded_size<T: Encodable>(t: &T) -> u64 {
+    use std::u64::MAX;
+    let mut size_checker = SizeChecker::new(MAX);
+    t.encode(&mut size_checker).ok();
+    size_checker.written
+}

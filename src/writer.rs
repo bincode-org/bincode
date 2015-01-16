@@ -20,8 +20,8 @@ pub struct EncoderWriter<'a, W: 'a> {
 }
 
 pub struct SizeChecker {
-    size_limit: u64,
-    written: u64
+    pub size_limit: u64,
+    pub written: u64
 }
 
 fn wrap_io(err: IoError) -> EncodingError {
