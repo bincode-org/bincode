@@ -1,6 +1,6 @@
 [package]
 name = "bincode"
-version = "0.0.5"
+version = "0.0.6"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>"]
 
 repository = "https://github.com/TyOverby/bincode"
