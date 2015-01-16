@@ -28,6 +28,7 @@ mod reader;
 ///! ### Using Basic Functions
 ///!
 ///! ```rust
+///! #![allow(unstable)]
 ///! extern crate bincode;
 ///! fn main() {
 ///!     // The object that we will serialize.
@@ -44,6 +45,7 @@ mod reader;
 ///! ### Using Into/From Functions
 ///!
 ///! ```rust
+///! #![allow(unstable)]
 ///! extern crate bincode;
 ///! use std::io::pipe::PipeStream;
 ///! use std::io::BufferedReader;
@@ -58,7 +60,7 @@ mod reader;
 ///!     let limit = bincode::SizeLimit::Bounded(10);
 ///!
 ///!     // Do the actual encoding and decoding.
-///!     bincode::encode_into(&target, &mut writer, limit);
+///!     bincode::encode_into(&target, &mut writer, limit).ok();
 ///!     let out: Option<u32> = bincode::decode_from(&mut reader, limit).unwrap();
 ///!     assert_eq!(target, out);
 ///! }
