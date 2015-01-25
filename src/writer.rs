@@ -1,6 +1,7 @@
 use std::io::{Writer, IoError};
 use std::error::Error;
 use std::num::Int;
+use std::fmt;
 
 use rustc_serialize::Encoder;
 
@@ -10,7 +11,7 @@ pub type EncodingResult<T> = Result<T, EncodingError>;
 
 
 /// An error that can be produced during encoding.
-#[derive(Show)]
+#[derive(Debug)]
 pub enum EncodingError {
     /// An error originating from the underlying `Writer`.
     IoError(IoError),
@@ -39,6 +40,15 @@ fn wrap_io(err: IoError) -> EncodingError {
     EncodingError::IoError(err)
 }
 
+impl fmt::Display for EncodingError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match *self {
+            EncodingError::IoError(ref err) => write!(f, "IoError: {}", err),
+            EncodingError::SizeLimit => write!(f, "SizeLimit")
+        }
+    }
+}
+
 impl Error for EncodingError {
     fn description(&self) -> &str {
         match *self {
@@ -47,9 +57,9 @@ impl Error for EncodingError {
         }
     }
 
-    fn detail(&self) -> Option<String> {
+    fn cause(&self) -> Option<&Error> {
         match *self {
-            EncodingError::IoError(ref err)     => err.detail(),
+            EncodingError::IoError(ref err)     => err.cause(),
             EncodingError::SizeLimit => None
         }
     }
@@ -221,8 +231,8 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
             try!(self.emit_usize(len));
             f(self)
         }
-    fn emit_map_elt_key<F>(&mut self, _: usize, mut f: F) -> EncodingResult<()> where
-        F: FnMut(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
+    fn emit_map_elt_key<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
+        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
             f(self)
         }
     fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
@@ -361,8 +371,8 @@ impl Encoder for SizeChecker {
             try!(self.emit_usize(len));
             f(self)
         }
-    fn emit_map_elt_key<F>(&mut self, _: usize, mut f: F) -> EncodingResult<()> where
-        F: FnMut(&mut SizeChecker) -> EncodingResult<()> {
+    fn emit_map_elt_key<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
+        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
             f(self)
         }
     fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where

@@ -1,6 +1,6 @@
 extern crate "rustc-serialize" as serialize;
 
-use std::fmt::Show;
+use std::fmt::Debug;
 use std::collections::HashMap;
 
 use rustc_serialize::{
@@ -20,7 +20,7 @@ use super::{
 };
 use super::SizeLimit::{Infinite, Bounded};
 
-fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Show {
+fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Debug {
     assert!(element == decode(encode(&element, Infinite).unwrap().as_slice()).unwrap());
 }
 
