@@ -13,7 +13,7 @@ pub struct InvalidEncoding {
     detail: Option<String>,
 }
 
-impl fmt::String for InvalidEncoding {
+impl fmt::Display for InvalidEncoding {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             InvalidEncoding { detail: None, desc } =>
@@ -43,7 +43,7 @@ pub enum DecodingError {
     SizeLimit
 }
 
-impl fmt::String for DecodingError {
+impl fmt::Display for DecodingError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             DecodingError::IoError(ref ioerr) =>
@@ -71,10 +71,10 @@ impl Error for DecodingError {
         }
     }
 
-    fn detail(&self) -> Option<String> {
+    fn cause(&self) -> Option<&Error> {
         match *self {
-            DecodingError::IoError(ref err)     => err.detail(),
-            DecodingError::InvalidEncoding(ref ib) => ib.detail.clone(),
+            DecodingError::IoError(ref err)     => err.cause(),
+            DecodingError::InvalidEncoding(_) => None,
             DecodingError::SizeLimit => None
         }
     }
