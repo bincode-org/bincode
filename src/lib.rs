@@ -6,7 +6,7 @@
 
 extern crate "rustc-serialize" as rustc_serialize;
 
-use std::io::{Buffer, MemWriter};
+use std::old_io::{Buffer, MemWriter};
 use rustc_serialize::{Encodable, Decodable};
 
 pub use writer::{EncoderWriter, EncodingResult, EncodingError};
@@ -47,8 +47,8 @@ mod reader;
 ///! ```rust
 ///! #![allow(unstable)]
 ///! extern crate bincode;
-///! use std::io::pipe::PipeStream;
-///! use std::io::BufferedReader;
+///! use std::old_io::pipe::PipeStream;
+///! use std::old_io::BufferedReader;
 ///! fn main() {
 ///!     // The pipes that we will be using to send values across.
 ///!     let streams = PipeStream::pair().unwrap();

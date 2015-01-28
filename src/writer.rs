@@ -1,4 +1,4 @@
-use std::io::{Writer, IoError};
+use std::old_io::{Writer, IoError};
 use std::error::Error;
 use std::num::Int;
 use std::fmt;

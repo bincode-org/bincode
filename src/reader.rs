@@ -1,4 +1,4 @@
-use std::io::{Buffer, Reader, IoError};
+use std::old_io::{Buffer, Reader, IoError};
 use std::num::{cast, NumCast};
 use std::error::{Error, FromError};
 use std::fmt;
