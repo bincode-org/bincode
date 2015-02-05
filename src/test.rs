@@ -64,7 +64,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
     struct Easy {
         x: isize,
         s: String,
@@ -75,13 +75,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
     struct Easy {
         x: isize,
         s: String,
         y: usize
     }
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
     struct Nest {
         f: Easy,
         b: usize,
@@ -97,7 +97,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_tuple() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
     struct TubStr(usize, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
@@ -112,7 +112,7 @@ fn option() {
 
 #[test]
 fn enm() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -126,7 +126,7 @@ fn enm() {
 
 #[test]
 fn struct_enum() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Show)]
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -231,4 +231,9 @@ fn test_encoded_size() {
     assert!(encoded_size(&0u64) == 8);
 
     assert!(encoded_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
+}
+
+#[test]
+fn encode_box() {
+    the_same(Box::new(5));
 }

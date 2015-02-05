@@ -7,7 +7,7 @@ use rustc_serialize::Decoder;
 
 use super::SizeLimit;
 
-#[derive(Eq, PartialEq, Clone, Show)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub struct InvalidEncoding {
     desc: &'static str,
     detail: Option<String>,
@@ -28,7 +28,7 @@ impl fmt::Display for InvalidEncoding {
 ///
 /// If decoding from a Buffer, assume that the buffer has been left
 /// in an invalid state.
-#[derive(Eq, PartialEq, Clone, Show)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub enum DecodingError {
     /// If the error stems from the reader that is being used
     /// during decoding, that error will be stored and returned here.

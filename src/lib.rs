@@ -85,7 +85,7 @@ mod reader;
 /// encoding function, the encoder will verify that the structure can be encoded
 /// within that limit.  This verification occurs before any bytes are written to
 /// the Writer, so recovering from an the error is possible.
-#[derive(Clone, Copy, Show, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum SizeLimit {
     Infinite,
     Bounded(u64)
