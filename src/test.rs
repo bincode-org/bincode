@@ -21,7 +21,11 @@ use super::{
 use super::SizeLimit::{Infinite, Bounded};
 
 fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Debug {
-    assert!(element == decode(encode(&element, Infinite).unwrap().as_slice()).unwrap());
+    let size = encoded_size(&element);
+    let encoded = encode(&element, Infinite).unwrap();
+    let decoded = decode(&encoded[]).unwrap();
+    assert!(element == decoded);
+    assert!(size == encoded.len() as u64);
 }
 
 #[test]
@@ -219,8 +223,8 @@ fn too_big_encode() {
     assert!(encode(&0u32, Bounded(3)).is_err());
     assert!(encode(&0u32, Bounded(4)).is_ok());
 
-    assert!(encode(&"abcde", Bounded(4)).is_err());
-    assert!(encode(&"abcde", Bounded(5)).is_ok());
+    assert!(encode(&"abcde", Bounded(8 + 4)).is_err());
+    assert!(encode(&"abcde", Bounded(8 + 5)).is_ok());
 }
 
 #[test]
@@ -229,6 +233,10 @@ fn test_encoded_size() {
     assert!(encoded_size(&0u16) == 2);
     assert!(encoded_size(&0u32) == 4);
     assert!(encoded_size(&0u64) == 8);
+
+    // length
+    assert!(encoded_size(&"") == 8);
+    assert!(encoded_size(&"a") == 8 + 1);
 
     assert!(encoded_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
 }

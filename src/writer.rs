@@ -289,6 +289,7 @@ impl Encoder for SizeChecker {
         self.add_raw(v.len_utf8())
     }
     fn emit_str(&mut self, v: &str) -> EncodingResult<()> {
+        try!(self.add_value(0 as u64));
         self.add_raw(v.len())
     }
     fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()> where
