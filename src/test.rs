@@ -20,7 +20,8 @@ use super::{
 };
 use super::SizeLimit::{Infinite, Bounded};
 
-fn the_same<'a, V>(element: V) where V: Encodable, V: Decodable, V: PartialEq, V: Debug {
+fn the_same<V>(element: V)
+where V: Encodable + Decodable + PartialEq + Debug {
     let size = encoded_size(&element);
     let encoded = encode(&element, Infinite).unwrap();
     let decoded = decode(&encoded[]).unwrap();
@@ -234,7 +235,7 @@ fn test_encoded_size() {
     assert!(encoded_size(&0u32) == 4);
     assert!(encoded_size(&0u64) == 8);
 
-    // length
+    // length is stored as u64
     assert!(encoded_size(&"") == 8);
     assert!(encoded_size(&"a") == 8 + 1);
 
