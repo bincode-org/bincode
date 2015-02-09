@@ -5,6 +5,8 @@ use std::fmt;
 
 use rustc_serialize::Decoder;
 
+use byteorder::{BigEndian, ReaderBytesExt};
+
 use super::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -134,15 +136,15 @@ impl<'a, R: Buffer> Decoder for DecoderReader<'a, R> {
     }
     fn read_u64(&mut self) -> DecodingResult<u64> {
         try!(self.read_type::<u64>());
-        self.reader.read_be_u64().map_err(wrap_io)
+        self.reader.read_u64::<BigEndian>().map_err(wrap_io)
     }
     fn read_u32(&mut self) -> DecodingResult<u32> {
         try!(self.read_type::<u32>());
-        self.reader.read_be_u32().map_err(wrap_io)
+        self.reader.read_u32::<BigEndian>().map_err(wrap_io)
     }
     fn read_u16(&mut self) -> DecodingResult<u16> {
         try!(self.read_type::<u16>());
-        self.reader.read_be_u16().map_err(wrap_io)
+        self.reader.read_u16::<BigEndian>().map_err(wrap_io)
     }
     fn read_u8(&mut self) -> DecodingResult<u8> {
         try!(self.read_type::<u8>());
@@ -153,15 +155,15 @@ impl<'a, R: Buffer> Decoder for DecoderReader<'a, R> {
     }
     fn read_i64(&mut self) -> DecodingResult<i64> {
         try!(self.read_type::<i64>());
-        self.reader.read_be_i64().map_err(wrap_io)
+        self.reader.read_i64::<BigEndian>().map_err(wrap_io)
     }
     fn read_i32(&mut self) -> DecodingResult<i32> {
         try!(self.read_type::<i32>());
-        self.reader.read_be_i32().map_err(wrap_io)
+        self.reader.read_i32::<BigEndian>().map_err(wrap_io)
     }
     fn read_i16(&mut self) -> DecodingResult<i16> {
         try!(self.read_type::<i16>());
-        self.reader.read_be_i16().map_err(wrap_io)
+        self.reader.read_i16::<BigEndian>().map_err(wrap_io)
     }
     fn read_i8(&mut self) -> DecodingResult<i8> {
         try!(self.read_type::<i8>());
@@ -180,11 +182,11 @@ impl<'a, R: Buffer> Decoder for DecoderReader<'a, R> {
     }
     fn read_f64(&mut self) -> DecodingResult<f64> {
         try!(self.read_type::<f64>());
-        self.reader.read_be_f64().map_err(wrap_io)
+        self.reader.read_f64::<BigEndian>().map_err(wrap_io)
     }
     fn read_f32(&mut self) -> DecodingResult<f32> {
         try!(self.read_type::<f32>());
-        self.reader.read_be_f32().map_err(wrap_io)
+        self.reader.read_f32::<BigEndian>().map_err(wrap_io)
     }
     fn read_char(&mut self) -> DecodingResult<char> {
         let c = try!(self.reader.read_char().map_err(wrap_io));

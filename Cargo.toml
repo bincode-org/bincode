@@ -12,3 +12,6 @@ description = "A binary serialization / deserialization strategy and implementat
 
 [dependencies]
 rustc-serialize = "0.2.10"
+
+[dependencies.byteorder]
+git = "https://github.com/BurntSushi/byteorder.git"

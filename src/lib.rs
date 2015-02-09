@@ -5,6 +5,7 @@
 #![allow(unstable)]
 
 extern crate "rustc-serialize" as rustc_serialize;
+extern crate byteorder;
 
 use std::old_io::{Buffer, MemWriter};
 use rustc_serialize::{Encodable, Decodable};

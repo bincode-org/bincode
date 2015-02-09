@@ -4,6 +4,7 @@ use std::num::Int;
 use std::fmt;
 
 use rustc_serialize::Encoder;
+use byteorder::{BigEndian, WriterBytesExt};
 
 use super::SizeLimit;
 
@@ -105,13 +106,13 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
         self.emit_u64(v as u64)
     }
     fn emit_u64(&mut self, v: u64) -> EncodingResult<()> {
-        self.writer.write_be_u64(v).map_err(wrap_io)
+        self.writer.write_u64::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_u32(&mut self, v: u32) -> EncodingResult<()> {
-        self.writer.write_be_u32(v).map_err(wrap_io)
+        self.writer.write_u32::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_u16(&mut self, v: u16) -> EncodingResult<()> {
-        self.writer.write_be_u16(v).map_err(wrap_io)
+        self.writer.write_u16::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_u8(&mut self, v: u8) -> EncodingResult<()> {
         self.writer.write_u8(v).map_err(wrap_io)
@@ -120,13 +121,13 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
         self.emit_i64(v as i64)
     }
     fn emit_i64(&mut self, v: i64) -> EncodingResult<()> {
-        self.writer.write_be_i64(v).map_err(wrap_io)
+        self.writer.write_i64::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_i32(&mut self, v: i32) -> EncodingResult<()> {
-        self.writer.write_be_i32(v).map_err(wrap_io)
+        self.writer.write_i32::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_i16(&mut self, v: i16) -> EncodingResult<()> {
-        self.writer.write_be_i16(v).map_err(wrap_io)
+        self.writer.write_i16::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_i8(&mut self, v: i8) -> EncodingResult<()> {
         self.writer.write_i8(v).map_err(wrap_io)
@@ -135,13 +136,16 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
         self.writer.write_u8(if v {1} else {0}).map_err(wrap_io)
     }
     fn emit_f64(&mut self, v: f64) -> EncodingResult<()> {
-        self.writer.write_be_f64(v).map_err(wrap_io)
+        self.writer.write_f64::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_f32(&mut self, v: f32) -> EncodingResult<()> {
-        self.writer.write_be_f32(v).map_err(wrap_io)
+        self.writer.write_f32::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_char(&mut self, v: char) -> EncodingResult<()> {
-        self.writer.write_char(v).map_err(wrap_io)
+        let mut cbuf = [0; 4];
+        let sz = v.encode_utf8(&mut cbuf[]).unwrap_or(0);
+        let ptr = &cbuf[..sz];
+        self.writer.write_all(ptr).map_err(wrap_io)
     }
     fn emit_str(&mut self, v: &str) -> EncodingResult<()> {
         try!(self.emit_usize(v.len()));
