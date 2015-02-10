@@ -149,7 +149,7 @@ impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
     }
     fn emit_str(&mut self, v: &str) -> EncodingResult<()> {
         try!(self.emit_usize(v.len()));
-        self.writer.write_str(v).map_err(wrap_io)
+        self.writer.write_all(v.as_bytes()).map_err(wrap_io)
     }
     fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()> where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
