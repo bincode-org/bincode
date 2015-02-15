@@ -1,4 +1,4 @@
-# Binary Encoder / Decoder
+# ![Bincode Logo](./logo.png) Bincode
 
 [![Build Status](https://travis-ci.org/TyOverby/bincode.svg)](https://travis-ci.org/TyOverby/bincode)
 
