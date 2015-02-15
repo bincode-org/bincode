@@ -1,4 +1,6 @@
-# ![Bincode Logo](./logo.png) Bincode
+# Bincode
+
+<img align="right" src="./logo.png">
 
 [![Build Status](https://travis-ci.org/TyOverby/bincode.svg)](https://travis-ci.org/TyOverby/bincode)
 
