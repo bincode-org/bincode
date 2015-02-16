@@ -1,12 +1,11 @@
-use std::old_io::{Writer, IoError};
+use std::io::Write;
+use std::io::Error as IoError;
 use std::error::Error;
 use std::num::Int;
 use std::fmt;
 
 use rustc_serialize::Encoder;
-use byteorder::{BigEndian, WriterBytesExt};
-
-use super::SizeLimit;
+use byteorder::{BigEndian, WriteBytesExt};
 
 pub type EncodingResult<T> = Result<T, EncodingError>;
 
@@ -29,7 +28,6 @@ pub enum EncodingError {
 /// For most cases, prefer the `encode_into` function.
 pub struct EncoderWriter<'a, W: 'a> {
     writer: &'a mut W,
-    _size_limit: SizeLimit
 }
 
 pub struct SizeChecker {
@@ -66,11 +64,10 @@ impl Error for EncodingError {
     }
 }
 
-impl <'a, W: Writer> EncoderWriter<'a, W> {
-    pub fn new(w: &'a mut W, size_limit: SizeLimit) -> EncoderWriter<'a, W> {
+impl <'a, W: Write> EncoderWriter<'a, W> {
+    pub fn new(w: &'a mut W) -> EncoderWriter<'a, W> {
         EncoderWriter {
             writer: w,
-            _size_limit: size_limit
         }
     }
 }
@@ -98,7 +95,7 @@ impl SizeChecker {
     }
 }
 
-impl<'a, W: Writer> Encoder for EncoderWriter<'a, W> {
+impl<'a, W: Write> Encoder for EncoderWriter<'a, W> {
     type Error = EncodingError;
 
     fn emit_nil(&mut self) -> EncodingResult<()> { Ok(()) }
