@@ -2,7 +2,7 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-#![allow(unstable)]
+#![feature(io, hash, core)]
 
 #![doc(html_logo_url = "./icon.png")]
 
@@ -11,12 +11,14 @@ extern crate "rustc-serialize" as rustc_serialize;
 use std::old_io::{Buffer, MemWriter};
 use rustc_serialize::{Encodable, Decodable};
 
+pub use refbox::RefBox;
 pub use writer::{EncoderWriter, EncodingResult, EncodingError};
 pub use reader::{DecoderReader, DecodingResult, DecodingError};
 use writer::SizeChecker;
 
 mod writer;
 mod reader;
+mod refbox;
 #[cfg(test)] mod test;
 
 ///! `bincode` is a crate for encoding and decoding using a tiny binary

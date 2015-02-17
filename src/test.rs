@@ -2,6 +2,7 @@ extern crate "rustc-serialize" as serialize;
 
 use std::fmt::Debug;
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use rustc_serialize::{
     Encoder,
@@ -16,17 +17,32 @@ use super::{
     decode_from,
     encoded_size,
     DecodingError,
-    DecodingResult
+    DecodingResult,
+    RefBox,
 };
+
 use super::SizeLimit::{Infinite, Bounded};
 
 fn the_same<V>(element: V)
-where V: Encodable + Decodable + PartialEq + Debug {
+where V: Encodable + Decodable + PartialEq + Debug + 'static {
+
+    // Make sure that the bahavior is correct when wrapping with a RefBox.
+    fn ref_box_correct<V>(v: &V) -> bool
+    where V: Encodable + Decodable + PartialEq + Debug + 'static {
+        let rf = RefBox::new(v);
+
+        let encoded = encode(&rf, Infinite).unwrap();
+        let decoded: RefBox<'static, V> = decode(&encoded[]).unwrap();
+
+        decoded.take().deref() == v
+    }
+
     let size = encoded_size(&element);
     let encoded = encode(&element, Infinite).unwrap();
     let decoded = decode(&encoded[]).unwrap();
     assert!(element == decoded);
     assert!(size == encoded.len() as u64);
+    assert!(ref_box_correct(&element))
 }
 
 #[test]
@@ -245,4 +261,40 @@ fn test_encoded_size() {
 #[test]
 fn encode_box() {
     the_same(Box::new(5));
+}
+
+#[test]
+fn test_refbox() {
+    let large_object = vec![1u32,2,3,4,5,6];
+    let mut large_map = HashMap::new();
+    large_map.insert(1, 2);
+
+
+    #[derive(RustcEncodable, RustcDecodable)]
+    enum Message<'a> {
+        M1(RefBox<'a, Vec<u32>>),
+        M2(RefBox<'a, HashMap<u32, u32>>)
+    }
+
+    // Test 1
+    {
+        let encoded = encode(&Message::M1(RefBox::new(&large_object)), Infinite).unwrap();
+        let decoded: Message<'static> = decode(&encoded[]).unwrap();
+
+        match decoded {
+            Message::M1(b) => assert!(b.take().deref() == &large_object),
+            _ => assert!(false)
+        }
+    }
+
+    // Test 2
+    {
+        let encoded = encode(&Message::M2(RefBox::new(&large_map)), Infinite).unwrap();
+        let decoded: Message<'static> = decode(&encoded[]).unwrap();
+
+        match decoded {
+            Message::M2(b) => assert!(b.take().deref() == &large_map),
+            _ => assert!(false)
+        }
+    }
 }
