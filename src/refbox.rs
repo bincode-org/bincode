@@ -4,6 +4,58 @@ use std::ops::Deref;
 use rustc_serialize::{Encodable, Encoder};
 use rustc_serialize::{Decodable, Decoder};
 
+/// A struct for encoding nested reference types.
+///
+/// Encoding large objects by reference is really handy.  For example,
+/// `encode(&large_hashmap, ...)` encodes the large structure without having to
+/// own the hashmap.  However, it is impossible to serialize a reference if that
+/// reference is inside of a struct.
+///
+/// ```rust
+/// // Not possible, rustc can not decode the reference.
+/// #[derive(RustcEncoding, RustcDecoding)]
+/// struct Message<'a>  {
+///   big_map: &'a HashMap<u32, u32>,
+///   message_type: String,
+/// }
+/// ```
+///
+/// This is because on the decoding side, you can't create the Message struct
+/// because it needs to have a reference to a HashMap, which is impossible because
+/// during deserialization, all members need to be owned by the deserialized
+/// object.
+///
+/// This is where RefBox comes in.  During serialization, it serializs a reference,
+/// but during deserialization, it puts that sub-object into a box!
+///
+/// ```rust
+/// // This works!
+/// #[derive(RustcEncoding, RustcDecoding)]
+/// struct Message<'a> {
+///     big_map: RefBox<'a, HashMap<u32, u32>>,
+///     message_type: String
+/// }
+/// ```
+///
+/// Now we can write
+///
+/// ```rust
+/// let my_map = HashMap::new();
+/// let my_msg = Message {
+///     big_map: RefBox::new(&my_map),
+///     message_type: "foo".to_string()
+/// };
+///
+/// let encoded = encode(&my_msg, ...).unwrap();
+/// let decoded: Message<'static> = decode(&encoded[]).unwrap();
+/// ```
+///
+/// Notice that we managed to encode and decode a struct with a nested reference
+/// and that the decoded message has the lifetime `'static` which shows us
+/// that the message owns everything inside it completely.
+///
+/// Please don't stick RefBox inside deep data structures.  It is much better
+/// suited in the outermost layer of whatever it is that you are encoding.
 pub struct RefBox<'a, T: 'a> {
     inner:  RefBoxInner<'a, T>
 }
@@ -15,6 +67,7 @@ enum RefBoxInner<'a, T: 'a> {
 }
 
 impl <'a, T> RefBox<'a, T> {
+    /// Creates a new RefBox that looks at a value.
     pub fn new(v: &'a T) -> RefBox<'a, T> {
         RefBox {
             inner: RefBoxInner::Ref(v)
@@ -23,12 +76,20 @@ impl <'a, T> RefBox<'a, T> {
 }
 
 impl <T> RefBox<'static, T>  {
+    /// Takes the value out of this refbox.
+    ///
+    /// Fails if this refbox was not created out of a deserialization.
+    ///
+    /// Unless you are doing some really weird things with static references,
+    /// this function will never fail.
     pub fn take(self) -> Box<T> {
         match self.inner {
             RefBoxInner::Box(b) => b,
             _ => unreachable!()
         }
     }
+
+    /// Tries to take the value out of this refbox.
     pub fn try_take(self) -> Result<Box<T>, RefBox<'static, T>> {
         match self.inner {
             RefBoxInner::Box(b) => Ok(b),
