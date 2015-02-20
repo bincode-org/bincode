@@ -2,7 +2,7 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-#![feature(io, hash, core)]
+#![feature(old_io, hash, core)]
 
 #![doc(html_logo_url = "./icon.png")]
 
