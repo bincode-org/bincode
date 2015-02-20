@@ -11,7 +11,7 @@ use rustc_serialize::{Decodable, Decoder};
 /// own the hashmap.  However, it is impossible to serialize a reference if that
 /// reference is inside of a struct.
 ///
-/// ```rust
+/// ```ignore rust
 /// // Not possible, rustc can not decode the reference.
 /// #[derive(RustcEncoding, RustcDecoding)]
 /// struct Message<'a>  {
@@ -28,7 +28,7 @@ use rustc_serialize::{Decodable, Decoder};
 /// This is where RefBox comes in.  During serialization, it serializs a reference,
 /// but during deserialization, it puts that sub-object into a box!
 ///
-/// ```rust
+/// ```ignore rust
 /// // This works!
 /// #[derive(RustcEncoding, RustcDecoding)]
 /// struct Message<'a> {
@@ -39,7 +39,7 @@ use rustc_serialize::{Decodable, Decoder};
 ///
 /// Now we can write
 ///
-/// ```rust
+/// ```ignore rust
 /// let my_map = HashMap::new();
 /// let my_msg = Message {
 ///     big_map: RefBox::new(&my_map),
