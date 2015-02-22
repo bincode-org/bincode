@@ -1,6 +1,6 @@
 [package]
 name = "bincode"
-version = "0.0.9"
+version = "0.0.10"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>"]
 
 repository = "https://github.com/TyOverby/bincode"
@@ -12,3 +12,7 @@ description = "A binary serialization / deserialization strategy and implementat
 
 [dependencies]
 rustc-serialize = "0.2.10"
+
+[dependencies.byteorder]
+git = "https://github.com/BurntSushi/byteorder.git"
+branch = "newio"

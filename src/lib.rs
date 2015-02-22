@@ -2,19 +2,22 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-#![feature(old_io, hash, core)]
-
 #![doc(html_logo_url = "./icon.png")]
+#![feature(hash, core, io, unicode, collections)]
 
 extern crate "rustc-serialize" as rustc_serialize;
+extern crate byteorder;
+extern crate unicode;
 
-use std::old_io::{Buffer, MemWriter};
+//use std::old_io::{Buffer, MemWriter};
 use rustc_serialize::{Encodable, Decodable};
 
 pub use refbox::RefBox;
 pub use writer::{EncoderWriter, EncodingResult, EncodingError};
 pub use reader::{DecoderReader, DecodingResult, DecodingError};
 use writer::SizeChecker;
+
+use std::io::{Write, BufRead};
 
 mod writer;
 mod reader;
@@ -43,30 +46,6 @@ mod refbox;
 ///!     let encoded: Vec<u8>        = bincode::encode(&target, limit).unwrap();
 ///!     let decoded: Option<String> = bincode::decode(&encoded[]).unwrap();
 ///!     assert_eq!(target, decoded);
-///! }
-///! ```
-///!
-///! ### Using Into/From Functions
-///!
-///! ```rust
-///! #![allow(unstable)]
-///! extern crate bincode;
-///! use std::old_io::pipe::PipeStream;
-///! use std::old_io::BufferedReader;
-///! fn main() {
-///!     // The pipes that we will be using to send values across.
-///!     let streams = PipeStream::pair().unwrap();
-///!     let (mut reader, mut writer) = (BufferedReader::new(streams.reader),
-///!                                     streams.writer);
-///!     // The object that we will send across.
-///!     let target = Some(5u32);
-///!     // The max-size of the encoded bytes.
-///!     let limit = bincode::SizeLimit::Bounded(10);
-///!
-///!     // Do the actual encoding and decoding.
-///!     bincode::encode_into(&target, &mut writer, limit).ok();
-///!     let out: Option<u32> = bincode::decode_from(&mut reader, limit).unwrap();
-///!     assert_eq!(target, out);
 ///! }
 ///! ```
 ///!
@@ -100,9 +79,19 @@ pub enum SizeLimit {
 /// If the encoding would take more bytes than allowed by `size_limit`,
 /// an error is returned.
 pub fn encode<T: Encodable>(t: &T, size_limit: SizeLimit) -> EncodingResult<Vec<u8>> {
-    let mut w = MemWriter::new();
-    match encode_into(t, &mut w, size_limit) {
-        Ok(()) => Ok(w.into_inner()),
+    // Since we are putting values directly into a vector, we can do size
+    // computation out here and pre-allocate a buffer of *exactly*
+    // the right size.
+    let mut w = if let SizeLimit::Bounded(l) = size_limit {
+        let actual_size = encoded_size_bounded(t, l);
+        let actual_size = try!(actual_size.ok_or(EncodingError::SizeLimit));
+        Vec::with_capacity(actual_size as usize)
+    } else {
+        vec![]
+    };
+
+    match encode_into(t, &mut w, SizeLimit::Infinite) {
+        Ok(()) => Ok(w),
         Err(e) => Err(e)
     }
 }
@@ -124,7 +113,7 @@ pub fn decode<T: Decodable>(b: &[u8]) -> DecodingResult<T> {
 /// If this returns an `EncodingError` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// encoding.
-pub fn encode_into<T: Encodable, W: Writer>(t: &T, w: &mut W, size_limit: SizeLimit) -> EncodingResult<()> {
+pub fn encode_into<T: Encodable, W: Write>(t: &T, w: &mut W, size_limit: SizeLimit) -> EncodingResult<()> {
     try!(match size_limit {
         SizeLimit::Infinite => Ok(()),
         SizeLimit::Bounded(x) => {
@@ -133,7 +122,7 @@ pub fn encode_into<T: Encodable, W: Writer>(t: &T, w: &mut W, size_limit: SizeLi
         }
     });
 
-    t.encode(&mut writer::EncoderWriter::new(w, size_limit))
+    t.encode(&mut writer::EncoderWriter::new(w))
 }
 
 /// Decoes an object directly from a `Buffer`ed Reader.
@@ -145,7 +134,7 @@ pub fn encode_into<T: Encodable, W: Writer>(t: &T, w: &mut W, size_limit: SizeLi
 /// If this returns an `DecodingError`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn decode_from<R: Buffer, T: Decodable>(r: &mut R, size_limit: SizeLimit) ->
+pub fn decode_from<R: BufRead, T: Decodable>(r: &mut R, size_limit: SizeLimit) ->
 DecodingResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
@@ -160,4 +149,14 @@ pub fn encoded_size<T: Encodable>(t: &T) -> u64 {
     let mut size_checker = SizeChecker::new(MAX);
     t.encode(&mut size_checker).ok();
     size_checker.written
+}
+
+/// Given a maximum size limit, check how large an object would be if it
+/// were to be encoded.
+///
+/// If it can be encoded in `max` or fewer bytes, that number will be returned
+/// inside `Some`.  If it goes over bounds, then None is returned.
+pub fn encoded_size_bounded<T: Encodable>(t: &T, max: u64) -> Option<u64> {
+    let mut size_checker = SizeChecker::new(max);
+    t.encode(&mut size_checker).ok().map(|_| size_checker.written)
 }
