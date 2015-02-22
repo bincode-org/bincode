@@ -3,7 +3,7 @@
 #![crate_type = "dylib"]
 
 #![doc(html_logo_url = "./icon.png")]
-#![feature(hash, core, io, unicode, collections)]
+#![feature(core, io, unicode, collections)]
 
 extern crate "rustc-serialize" as rustc_serialize;
 extern crate byteorder;

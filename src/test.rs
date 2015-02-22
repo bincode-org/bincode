@@ -1,5 +1,3 @@
-extern crate "rustc-serialize" as serialize;
-
 use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -26,20 +24,20 @@ use super::SizeLimit::{Infinite, Bounded};
 fn the_same<V>(element: V)
 where V: Encodable + Decodable + PartialEq + Debug + 'static {
 
-    // Make sure that the bahavior is correct when wrapping with a RefBox.
+    // Make sure that the bahavior isize correct when wrapping with a RefBox.
     fn ref_box_correct<V>(v: &V) -> bool
     where V: Encodable + Decodable + PartialEq + Debug + 'static {
         let rf = RefBox::new(v);
 
         let encoded = encode(&rf, Infinite).unwrap();
-        let decoded: RefBox<'static, V> = decode(&encoded[]).unwrap();
+        let decoded: RefBox<'static, V> = decode(&encoded[..]).unwrap();
 
         decoded.take().deref() == v
     }
 
     let size = encoded_size(&element);
     let encoded = encode(&element, Infinite).unwrap();
-    let decoded = decode(&encoded[]).unwrap();
+    let decoded = decode(&encoded[..]).unwrap();
     assert!(element == decoded);
     assert!(size == encoded.len() as u64);
     assert!(ref_box_correct(&element))
@@ -78,9 +76,9 @@ fn test_string() {
 
 #[test]
 fn test_tuple() {
-    the_same((1is,));
-    the_same((1is,2is,3is));
-    the_same((1is,"foo".to_string(),()));
+    the_same((1isize,));
+    the_same((1isize,2isize,3isize));
+    the_same((1isize,"foo".to_string(),()));
 }
 
 #[test]
@@ -126,7 +124,7 @@ fn test_struct_tuple() {
 
 #[test]
 fn option() {
-    the_same(Some(5us));
+    the_same(Some(5usize));
     the_same(Some("foo bar".to_string()));
     the_same(None::<usize>);
 }
@@ -193,7 +191,7 @@ fn unicode() {
 
 #[test]
 fn decoding_errors() {
-    fn is_invalid_encoding<T>(res: DecodingResult<T>) {
+    fn isize_invalid_encoding<T>(res: DecodingResult<T>) {
         match res {
             Ok(_) => panic!("Expecting error"),
             Err(DecodingError::IoError(_)) => panic!("Expecting InvalidEncoding"),
@@ -202,16 +200,16 @@ fn decoding_errors() {
         }
     }
 
-    is_invalid_encoding(decode::<bool>(vec![0xA].as_slice()));
-    is_invalid_encoding(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF].as_slice()));
+    isize_invalid_encoding(decode::<bool>(vec![0xA].as_slice()));
+    isize_invalid_encoding(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF].as_slice()));
     // Out-of-bounds variant
     #[derive(RustcEncodable, RustcDecodable)]
     enum Test {
         One,
         Two,
     };
-    is_invalid_encoding(decode::<Test>(vec![0, 0, 0, 5].as_slice()));
-    is_invalid_encoding(decode::<Option<u8>>(vec![5, 0].as_slice()));
+    isize_invalid_encoding(decode::<Test>(vec![0, 0, 0, 5].as_slice()));
+    isize_invalid_encoding(decode::<Option<u8>>(vec![5, 0].as_slice()));
 }
 
 #[test]
@@ -251,7 +249,7 @@ fn test_encoded_size() {
     assert!(encoded_size(&0u32) == 4);
     assert!(encoded_size(&0u64) == 8);
 
-    // length is stored as u64
+    // length isize stored as u64
     assert!(encoded_size(&"") == 8);
     assert!(encoded_size(&"a") == 8 + 1);
 
@@ -279,7 +277,7 @@ fn test_refbox() {
     // Test 1
     {
         let encoded = encode(&Message::M1(RefBox::new(&large_object)), Infinite).unwrap();
-        let decoded: Message<'static> = decode(&encoded[]).unwrap();
+        let decoded: Message<'static> = decode(&encoded[..]).unwrap();
 
         match decoded {
             Message::M1(b) => assert!(b.take().deref() == &large_object),
@@ -290,7 +288,7 @@ fn test_refbox() {
     // Test 2
     {
         let encoded = encode(&Message::M2(RefBox::new(&large_map)), Infinite).unwrap();
-        let decoded: Message<'static> = decode(&encoded[]).unwrap();
+        let decoded: Message<'static> = decode(&encoded[..]).unwrap();
 
         match decoded {
             Message::M2(b) => assert!(b.take().deref() == &large_map),

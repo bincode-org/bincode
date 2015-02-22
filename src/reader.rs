@@ -8,6 +8,8 @@ use std::fmt;
 use rustc_serialize::Decoder;
 
 use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::Error as ByteOrderError;
+
 use unicode;
 
 use super::SizeLimit;
@@ -63,8 +65,15 @@ impl fmt::Display for DecodingError {
 
 pub type DecodingResult<T> = Result<T, DecodingError>;
 
-fn wrap_io(err: IoError) -> DecodingError {
-    DecodingError::IoError(err)
+fn wrap_io(err: ByteOrderError) -> DecodingError {
+    match err {
+        ByteOrderError::Io(ioe) => DecodingError::IoError(ioe),
+        ByteOrderError::UnexpectedEOF =>
+            DecodingError::InvalidEncoding(InvalidEncoding {
+                desc: "Unexpected EOF while reading a multi-byte number",
+                detail: None
+            })
+    }
 }
 
 impl Error for DecodingError {
@@ -201,7 +210,7 @@ impl<'a, R: BufRead> Decoder for DecoderReader<'a, R> {
 
         let mut buf = [0];
 
-        let _ = try!(self.reader.read(&mut buf[]));
+        let _ = try!(self.reader.read(&mut buf[..]));
         let first_byte = buf[0];
         let width = unicode::str::utf8_char_width(first_byte);
         if width == 1 { return Ok(first_byte as char) }

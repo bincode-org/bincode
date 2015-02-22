@@ -1,11 +1,14 @@
 use std::io::Write;
 use std::io::Error as IoError;
+use std::io::ErrorKind as IoErrorKind;
 use std::error::Error;
 use std::num::Int;
 use std::fmt;
 
 use rustc_serialize::Encoder;
+
 use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::Error as ByteOrderError;
 
 pub type EncodingResult<T> = Result<T, EncodingError>;
 
@@ -35,8 +38,14 @@ pub struct SizeChecker {
     pub written: u64
 }
 
-fn wrap_io(err: IoError) -> EncodingError {
-    EncodingError::IoError(err)
+fn wrap_io(err: ByteOrderError) -> EncodingError {
+    match err {
+        ByteOrderError::Io(ioe) => EncodingError::IoError(ioe),
+        ByteOrderError::UnexpectedEOF => EncodingError::IoError(
+            IoError::new(IoErrorKind::Other,
+                         "ByteOrder could not write to the buffer",
+                         None))
+    }
 }
 
 impl fmt::Display for EncodingError {
@@ -140,13 +149,13 @@ impl<'a, W: Write> Encoder for EncoderWriter<'a, W> {
     }
     fn emit_char(&mut self, v: char) -> EncodingResult<()> {
         let mut cbuf = [0; 4];
-        let sz = v.encode_utf8(&mut cbuf[]).unwrap_or(0);
+        let sz = v.encode_utf8(&mut cbuf[..]).unwrap_or(0);
         let ptr = &cbuf[..sz];
-        self.writer.write_all(ptr).map_err(wrap_io)
+        self.writer.write_all(ptr).map_err(EncodingError::IoError)
     }
     fn emit_str(&mut self, v: &str) -> EncodingResult<()> {
         try!(self.emit_usize(v.len()));
-        self.writer.write_all(v.as_bytes()).map_err(wrap_io)
+        self.writer.write_all(v.as_bytes()).map_err(EncodingError::IoError)
     }
     fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()> where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
