@@ -1,4 +1,4 @@
-use std::io::{BufRead, Read};
+use std::io::Read;
 use std::io::Error as IoError;
 use std::io::Result as IoResult;
 use std::num::{cast, NumCast};
@@ -110,7 +110,7 @@ pub struct DecoderReader<'a, R: 'a> {
     read: u64
 }
 
-impl<'a, R: BufRead> DecoderReader<'a, R> {
+impl<'a, R: Read> DecoderReader<'a, R> {
     pub fn new(r: &'a mut R, size_limit: SizeLimit) -> DecoderReader<'a, R> {
         DecoderReader {
             reader: r,
@@ -137,7 +137,7 @@ impl <'a, A> DecoderReader<'a, A> {
     }
 }
 
-impl<'a, R: BufRead> Decoder for DecoderReader<'a, R> {
+impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
     type Error = DecodingError;
 
     fn read_nil(&mut self) -> DecodingResult<()> {

@@ -17,7 +17,7 @@ pub use writer::{EncoderWriter, EncodingResult, EncodingError};
 pub use reader::{DecoderReader, DecodingResult, DecodingError};
 use writer::SizeChecker;
 
-use std::io::{Write, BufRead};
+use std::io::{Write, Read};
 
 mod writer;
 mod reader;
@@ -134,7 +134,7 @@ pub fn encode_into<T: Encodable, W: Write>(t: &T, w: &mut W, size_limit: SizeLim
 /// If this returns an `DecodingError`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn decode_from<R: BufRead, T: Decodable>(r: &mut R, size_limit: SizeLimit) ->
+pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) ->
 DecodingResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
