@@ -67,7 +67,7 @@ enum RefBoxInner<'a, T: 'a> {
 }
 
 impl <'a, T> RefBox<'a, T> {
-    /// Creates a new RefBox that looks at a value.
+    /// Creates a new RefBox that looks at a borrowed value.
     pub fn new(v: &'a T) -> RefBox<'a, T> {
         RefBox {
             inner: RefBoxInner::Ref(v)
