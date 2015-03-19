@@ -60,7 +60,7 @@ impl fmt::Display for EncodingError {
 impl Error for EncodingError {
     fn description(&self) -> &str {
         match *self {
-            EncodingError::IoError(ref err)     => err.description(),
+            EncodingError::IoError(ref err) => Error::description(err),
             EncodingError::SizeLimit => "the size limit for decoding has been reached"
         }
     }

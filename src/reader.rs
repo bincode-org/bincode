@@ -79,7 +79,7 @@ fn wrap_io(err: ByteOrderError) -> DecodingError {
 impl Error for DecodingError {
     fn description(&self) -> &str {
         match *self {
-            DecodingError::IoError(ref err)     => err.description(),
+            DecodingError::IoError(ref err) => Error::description(err),
             DecodingError::InvalidEncoding(ref ib) => ib.desc,
             DecodingError::SizeLimit => "the size limit for decoding has been reached"
         }
@@ -385,7 +385,7 @@ fn read_at_least<R: Read>(reader: &mut R, min: usize, buf: &mut [u8]) -> IoResul
 
 unsafe fn slice_vec_capacity<'a, T>(v: &'a mut Vec<T>, start: usize, end: usize) -> &'a mut [T] {
     use std::raw::Slice;
-    use std::ptr::PtrExt;
+    //use std::ptr::PtrExt;
     use std::mem::transmute;
 
     assert!(start <= end);
