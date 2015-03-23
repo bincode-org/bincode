@@ -228,7 +228,7 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
         }
 
         let res = try!(match str::from_utf8(&buf[..width]).ok() {
-            Some(s) => Ok(s.char_at(0)),
+            Some(s) => Ok(s.chars().next().unwrap()),
             None => Err(error)
         });
 
