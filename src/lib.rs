@@ -5,7 +5,7 @@
 #![doc(html_logo_url = "./icon.png")]
 #![feature(core, io, unicode)]
 
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 extern crate byteorder;
 extern crate unicode;
 
