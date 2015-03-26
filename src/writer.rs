@@ -14,7 +14,7 @@ pub type EncodingResult<T> = Result<T, EncodingError>;
 
 
 /// An error that can be produced during encoding.
-#[derive(Debug)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum EncodingError {
     /// An error originating from the underlying `Writer`.
     IoError(IoError),
