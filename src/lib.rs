@@ -44,7 +44,7 @@ mod refbox;
 ///!     let limit = bincode::SizeLimit::Bounded(20);
 ///!
 ///!     let encoded: Vec<u8>        = bincode::encode(&target, limit).unwrap();
-///!     let decoded: Option<String> = bincode::decode(&encoded[]).unwrap();
+///!     let decoded: Option<String> = bincode::decode(&encoded[..]).unwrap();
 ///!     assert_eq!(target, decoded);
 ///! }
 ///! ```

@@ -45,7 +45,7 @@ fn main() {
     // 8 bytes for the length of the vector, 4 bytes per float.
     assert_eq!(encoded.len(), 8 + 4 * 4);
 
-    let decoded: World = bincode::decode(&encoded[]).unwrap();
+    let decoded: World = bincode::decode(&encoded[..]).unwrap();
 
     assert!(world == decoded);
 }
