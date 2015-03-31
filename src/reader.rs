@@ -123,7 +123,8 @@ impl<'a, R: Read> DecoderReader<'a, R> {
 impl <'a, A> DecoderReader<'a, A> {
     fn read_bytes<I>(&mut self, count: I) -> Result<(), DecodingError>
     where I: NumCast {
-        self.read += cast(count).unwrap();
+        let count: u64 = cast(count).unwrap();
+        self.read += count;
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
             SizeLimit::Bounded(x) if self.read <= x => Ok(()),
