@@ -1,5 +1,5 @@
 extern crate bincode;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 
 use bincode::SizeLimit;
 

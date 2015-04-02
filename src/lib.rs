@@ -3,9 +3,9 @@
 #![crate_type = "dylib"]
 
 #![doc(html_logo_url = "./icon.png")]
-#![feature(core, io, unicode, collections)]
+#![feature(core, io, unicode)]
 
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 extern crate byteorder;
 extern crate unicode;
 
@@ -44,7 +44,7 @@ mod refbox;
 ///!     let limit = bincode::SizeLimit::Bounded(20);
 ///!
 ///!     let encoded: Vec<u8>        = bincode::encode(&target, limit).unwrap();
-///!     let decoded: Option<String> = bincode::decode(&encoded[]).unwrap();
+///!     let decoded: Option<String> = bincode::decode(&encoded[..]).unwrap();
 ///!     assert_eq!(target, decoded);
 ///! }
 ///! ```

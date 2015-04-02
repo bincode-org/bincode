@@ -200,27 +200,27 @@ fn decoding_errors() {
         }
     }
 
-    isize_invalid_encoding(decode::<bool>(vec![0xA].as_slice()));
-    isize_invalid_encoding(decode::<String>(vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF].as_slice()));
+    isize_invalid_encoding(decode::<bool>(&vec![0xA][..]));
+    isize_invalid_encoding(decode::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
     // Out-of-bounds variant
     #[derive(RustcEncodable, RustcDecodable)]
     enum Test {
         One,
         Two,
     };
-    isize_invalid_encoding(decode::<Test>(vec![0, 0, 0, 5].as_slice()));
-    isize_invalid_encoding(decode::<Option<u8>>(vec![5, 0].as_slice()));
+    isize_invalid_encoding(decode::<Test>(&vec![0, 0, 0, 5][..]));
+    isize_invalid_encoding(decode::<Option<u8>>(&vec![5, 0][..]));
 }
 
 #[test]
 fn too_big_decode() {
     let encoded = vec![0,0,0,3];
-    let mut encoded_ref = encoded.as_slice();
+    let mut encoded_ref = &encoded[..];
     let decoded: Result<u32, _> = decode_from(&mut encoded_ref, Bounded(3));
     assert!(decoded.is_err());
 
     let encoded = vec![0,0,0,3];
-    let mut encoded_ref = encoded.as_slice();
+    let mut encoded_ref = &encoded[..];
     let decoded: Result<u32, _> = decode_from(&mut encoded_ref, Bounded(4));
     assert!(decoded.is_ok());
 }
@@ -228,7 +228,7 @@ fn too_big_decode() {
 #[test]
 fn too_big_char_decode() {
     let encoded = vec![0x41];
-    let mut encoded_ref = encoded.as_slice();
+    let mut encoded_ref = &encoded[..];
     let decoded: Result<char, _> = decode_from(&mut encoded_ref, Bounded(1));
     assert_eq!(decoded, Ok('A'));
 }
