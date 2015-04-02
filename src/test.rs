@@ -230,7 +230,8 @@ fn too_big_char_decode() {
     let encoded = vec![0x41];
     let mut encoded_ref = &encoded[..];
     let decoded: Result<char, _> = decode_from(&mut encoded_ref, Bounded(1));
-    assert_eq!(decoded, Ok('A'));
+    assert!(decoded.is_ok());
+    assert_eq!(decoded.unwrap(), 'A');
 }
 
 #[test]

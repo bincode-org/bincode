@@ -2,8 +2,9 @@ use std::io::Read;
 use std::io::Error as IoError;
 use std::io::Result as IoResult;
 use std::num::{cast, NumCast};
-use std::error::{Error, FromError};
+use std::error::Error;
 use std::fmt;
+use std::convert::From;
 
 use rustc_serialize::Decoder;
 
@@ -35,7 +36,7 @@ impl fmt::Display for InvalidEncoding {
 ///
 /// If decoding from a Buffer, assume that the buffer has been left
 /// in an invalid state.
-#[derive(Eq, PartialEq, Clone, Debug)]
+#[derive(Debug)]
 pub enum DecodingError {
     /// If the error stems from the reader that is being used
     /// during decoding, that error will be stored and returned here.
@@ -94,8 +95,8 @@ impl Error for DecodingError {
     }
 }
 
-impl FromError<IoError> for DecodingError {
-    fn from_error(err: IoError) -> DecodingError {
+impl From<IoError> for DecodingError {
+    fn from(err: IoError) -> DecodingError {
         DecodingError::IoError(err)
     }
 }
@@ -357,7 +358,7 @@ fn read_at_least<R: Read>(reader: &mut R, min: usize, buf: &mut [u8]) -> IoResul
     use std::io::ErrorKind;
     if min > buf.len() {
         return Err(IoError::new(
-            ErrorKind::InvalidInput, "the buffer is too short", None));
+            ErrorKind::InvalidInput, "the buffer is too short"));
     }
 
     let mut read = 0;
@@ -369,8 +370,7 @@ fn read_at_least<R: Read>(reader: &mut R, min: usize, buf: &mut [u8]) -> IoResul
                     zeroes += 1;
                     if zeroes >= 1000 {
                         return Err(IoError::new(ErrorKind::Other,
-                                                "no progress was made",
-                                                None ));
+                                                "no progress was made"));
                     }
                 }
                 Ok(n) => {
@@ -401,7 +401,7 @@ unsafe fn slice_vec_capacity<'a, T>(v: &'a mut Vec<T>, start: usize, end: usize)
 fn push_at_least<R: Read>(reader: &mut R, min: usize, len: usize, buf: &mut Vec<u8>) -> IoResult<usize> {
     use std::io::ErrorKind;
     if min > len {
-        return Err(IoError::new(ErrorKind::InvalidInput, "the buffer is too short", None));
+        return Err(IoError::new(ErrorKind::InvalidInput, "the buffer is too short"));
     }
 
     let start_len = buf.len();

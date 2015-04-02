@@ -2,7 +2,6 @@ use std::io::Write;
 use std::io::Error as IoError;
 use std::io::ErrorKind as IoErrorKind;
 use std::error::Error;
-use std::num::Int;
 use std::fmt;
 
 use rustc_serialize::Encoder;
@@ -14,7 +13,7 @@ pub type EncodingResult<T> = Result<T, EncodingError>;
 
 
 /// An error that can be produced during encoding.
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug)]
 pub enum EncodingError {
     /// An error originating from the underlying `Writer`.
     IoError(IoError),
@@ -43,8 +42,7 @@ fn wrap_io(err: ByteOrderError) -> EncodingError {
         ByteOrderError::Io(ioe) => EncodingError::IoError(ioe),
         ByteOrderError::UnexpectedEOF => EncodingError::IoError(
             IoError::new(IoErrorKind::Other,
-                         "ByteOrder could not write to the buffer",
-                         None))
+                         "ByteOrder could not write to the buffer"))
     }
 }
 
@@ -166,7 +164,7 @@ impl<'a, W: Write> Encoder for EncoderWriter<'a, W> {
                             _: usize,
                             f: F) -> EncodingResult<()> where
         F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            let max_u32: u32 = Int::max_value();
+            let max_u32: u32 = ::std::u32::MAX;
             if v_id > (max_u32 as usize) {
                 panic!("Variant tag doesn't fit in a u32")
             }
