@@ -45,7 +45,6 @@ use std::io::{Write, Read};
 mod writer;
 mod reader;
 mod refbox;
-#[cfg(test)] mod test;
 
 /// A limit on the amount of bytes that can be read or written.
 ///

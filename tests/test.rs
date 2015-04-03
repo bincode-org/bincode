@@ -1,10 +1,13 @@
+extern crate bincode;
+extern crate rustc_serialize;
+
 use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
 
 use rustc_serialize::{Encoder, Decoder, Encodable, Decodable};
 
-use super::{
+use bincode::{
     encode,
     decode,
     decode_from,
@@ -16,7 +19,7 @@ use super::{
     SliceBox,
 };
 
-use super::SizeLimit::{Infinite, Bounded};
+use bincode::SizeLimit::{Infinite, Bounded};
 
 fn the_same<V>(element: V)
     where V: Encodable+Decodable+PartialEq+Debug+'static
