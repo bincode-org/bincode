@@ -1,5 +1,6 @@
 use std::boxed::Box;
 use std::ops::Deref;
+use std::fmt;
 
 use rustc_serialize::{Encodable, Encoder};
 use rustc_serialize::{Decodable, Decoder};
@@ -149,3 +150,8 @@ impl <'a, T> Deref for RefBox<'a, T> {
     }
 }
 
+impl <'a, T: fmt::Debug> fmt::Debug for RefBox<'a, T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(fmt, "RefBox({:?})", *self)
+    }
+}

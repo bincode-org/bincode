@@ -269,7 +269,7 @@ fn test_refbox() {
     large_map.insert(1, 2);
 
 
-    #[derive(RustcEncodable, RustcDecodable)]
+    #[derive(RustcEncodable, RustcDecodable, Debug)]
     enum Message<'a> {
         M1(RefBox<'a, Vec<u32>>),
         M2(RefBox<'a, HashMap<u32, u32>>)
