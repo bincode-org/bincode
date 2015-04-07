@@ -9,7 +9,6 @@ extern crate rustc_serialize;
 extern crate byteorder;
 extern crate unicode;
 
-//use std::old_io::{Buffer, MemWriter};
 use rustc_serialize::{Encodable, Decodable};
 
 pub use refbox::RefBox;
@@ -48,9 +47,8 @@ mod refbox;
 ///!     assert_eq!(target, decoded);
 ///! }
 ///! ```
-///!
 
-/// A limit on the size of bytes to be read or written.
+/// A limit on the amount of bytes that can be read or written.
 ///
 /// Size limits are an incredibly important part of both encoding and decoding.
 ///
@@ -67,7 +65,7 @@ mod refbox;
 /// that is larger than your decoder expects.  By supplying a size limit to an
 /// encoding function, the encoder will verify that the structure can be encoded
 /// within that limit.  This verification occurs before any bytes are written to
-/// the Writer, so recovering from an the error is possible.
+/// the Writer, so recovering from an the error is easy.
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum SizeLimit {
     Infinite,
