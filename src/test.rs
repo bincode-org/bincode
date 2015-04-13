@@ -297,3 +297,8 @@ fn test_refbox() {
         }
     }
 }
+
+#[test]
+fn test_multi_strings() {
+    assert!(encode(&("foo", "bar", "baz"), Infinite).is_ok());
+}

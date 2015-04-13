@@ -1,7 +1,5 @@
 use std::io::Read;
 use std::io::Error as IoError;
-use std::io::Result as IoResult;
-use std::num::{cast, NumCast};
 use std::error::Error;
 use std::fmt;
 use std::convert::From;
@@ -122,9 +120,7 @@ impl<'a, R: Read> DecoderReader<'a, R> {
 }
 
 impl <'a, A> DecoderReader<'a, A> {
-    fn read_bytes<I>(&mut self, count: I) -> Result<(), DecodingError>
-    where I: NumCast {
-        let count: u64 = cast(count).unwrap();
+    fn read_bytes(&mut self, count: u64) -> Result<(), DecodingError> {
         self.read += count;
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
@@ -135,7 +131,7 @@ impl <'a, A> DecoderReader<'a, A> {
 
     fn read_type<T>(&mut self) -> Result<(), DecodingError> {
         use std::mem::size_of;
-        self.read_bytes(size_of::<T>())
+        self.read_bytes(size_of::<T>() as u64)
     }
 }
 
@@ -217,6 +213,7 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
         let width = unicode::str::utf8_char_width(first_byte);
         if width == 1 { return Ok(first_byte as char) }
         if width == 0 { return Err(error)}
+
         let mut buf = [first_byte, 0, 0, 0];
         {
             let mut start = 1;
@@ -234,16 +231,17 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
             None => Err(error)
         });
 
-        try!(self.read_bytes(res.len_utf8()));
+        try!(self.read_bytes(res.len_utf8() as u64));
         Ok(res)
     }
 
     fn read_str(&mut self) -> DecodingResult<String> {
         let len = try!(self.read_usize());
-        try!(self.read_bytes(len));
+        try!(self.read_bytes(len as u64));
 
-        let vector = try!(read_exact(&mut self.reader, len));
-        match String::from_utf8(vector) {
+        let mut buff = Vec::new();
+        try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buff));
+        match String::from_utf8(buff) {
             Ok(s) => Ok(s),
             Err(err) => Err(DecodingError::InvalidEncoding(InvalidEncoding {
                 desc: "error while decoding utf8 string",
@@ -351,78 +349,5 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
             desc: "user-induced error",
             detail: Some(err.to_string()),
         })
-    }
-}
-
-fn read_at_least<R: Read>(reader: &mut R, min: usize, buf: &mut [u8]) -> IoResult<usize> {
-    use std::io::ErrorKind;
-    if min > buf.len() {
-        return Err(IoError::new(
-            ErrorKind::InvalidInput, "the buffer is too short"));
-    }
-
-    let mut read = 0;
-    while read < min {
-        let mut zeroes = 0;
-        loop {
-            match reader.read(&mut buf[read..]) {
-                Ok(0) => {
-                    zeroes += 1;
-                    if zeroes >= 1000 {
-                        return Err(IoError::new(ErrorKind::Other,
-                                                "no progress was made"));
-                    }
-                }
-                Ok(n) => {
-                    read += n;
-                    break;
-                }
-                err@Err(_) => return err
-            }
-        }
-    }
-    Ok(read)
-}
-
-unsafe fn slice_vec_capacity<'a, T>(v: &'a mut Vec<T>, start: usize, end: usize) -> &'a mut [T] {
-    use std::raw::Slice;
-    //use std::ptr::PtrExt;
-    use std::mem::transmute;
-
-    assert!(start <= end);
-    assert!(end <= v.capacity());
-    transmute(Slice {
-        data: v.as_ptr().offset(start as isize),
-        len: end - start
-    })
-}
-
-
-fn push_at_least<R: Read>(reader: &mut R, min: usize, len: usize, buf: &mut Vec<u8>) -> IoResult<usize> {
-    use std::io::ErrorKind;
-    if min > len {
-        return Err(IoError::new(ErrorKind::InvalidInput, "the buffer is too short"));
-    }
-
-    let start_len = buf.len();
-    buf.reserve(len);
-
-
-    let mut read = 0;
-    while read < min {
-        read += {
-            let s = unsafe { slice_vec_capacity(buf, start_len + read, start_len + len) };
-            try!(read_at_least(reader, 1, s))
-        };
-        unsafe { buf.set_len(start_len + read) };
-    }
-    Ok(read)
-}
-
-fn read_exact<R: Read>(reader: &mut R, len: usize) -> IoResult<Vec<u8>> {
-    let mut buf = Vec::with_capacity(len);
-    match push_at_least(reader, len, len, &mut buf) {
-        Ok(_) => Ok(buf),
-        Err(e) => Err(e),
     }
 }
