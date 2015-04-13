@@ -7,7 +7,6 @@
 
 extern crate rustc_serialize;
 extern crate byteorder;
-extern crate unicode;
 
 use rustc_serialize::{Encodable, Decodable};
 

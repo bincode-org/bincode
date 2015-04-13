@@ -8,9 +8,6 @@ use rustc_serialize::Decoder;
 
 use byteorder::{BigEndian, ReadBytesExt};
 use byteorder::Error as ByteOrderError;
-
-use unicode;
-
 use super::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -210,7 +207,7 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
 
         let _ = try!(self.reader.read(&mut buf[..]));
         let first_byte = buf[0];
-        let width = unicode::str::utf8_char_width(first_byte);
+        let width = utf8_char_width(first_byte);
         if width == 1 { return Ok(first_byte as char) }
         if width == 0 { return Err(error)}
 
@@ -350,4 +347,27 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
             detail: Some(err.to_string()),
         })
     }
+}
+
+static UTF8_CHAR_WIDTH: [u8; 256] = [
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x1F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x3F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x5F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x7F
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0x9F
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0xBF
+0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // 0xDF
+3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, // 0xEF
+4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0, // 0xFF
+];
+
+fn utf8_char_width(b: u8) -> usize {
+    UTF8_CHAR_WIDTH[b as usize] as usize
 }
