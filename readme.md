@@ -3,6 +3,7 @@
 <img align="right" src="./logo.png" />
 
 [![Build Status](https://travis-ci.org/TyOverby/bincode.svg)](https://travis-ci.org/TyOverby/bincode)
+[![](http://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
 
 A compact encoder / decoder pair that uses an binary zero-fluff encoding scheme.
 The size of the encoded object will be the same or smaller than the size that
