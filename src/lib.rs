@@ -1,3 +1,28 @@
+//! `bincode` is a crate for encoding and decoding using a tiny binary
+//! serialization strategy.
+//!
+//! There are simple functions for encoding to `Vec<u8>` and decoding from
+//! `&[u8]`, but the meat of the library is the `encode_into` and `decode_from`
+//! functions which respectively allow encoding into a `std::io::Writer`
+//! and decoding from a `std::io::Buffer`.
+//!
+//! ### Using Basic Functions
+//!
+//! ```rust
+//! #![allow(unstable)]
+//! extern crate bincode;
+//! fn main() {
+//!     // The object that we will serialize.
+//!     let target = Some("hello world".to_string());
+//!     // The maximum size of the encoded message.
+//!     let limit = bincode::SizeLimit::Bounded(20);
+//!
+//!     let encoded: Vec<u8>        = bincode::encode(&target, limit).unwrap();
+//!     let decoded: Option<String> = bincode::decode(&encoded[..]).unwrap();
+//!     assert_eq!(target, decoded);
+//! }
+//! ```
+
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
@@ -21,31 +46,6 @@ mod writer;
 mod reader;
 mod refbox;
 #[cfg(test)] mod test;
-
-///! `bincode` is a crate for encoding and decoding using a tiny binary
-///! serialization strategy.
-///!
-///! There are simple functions for encoding to `Vec<u8>` and decoding from
-///! `&[u8]`, but the meat of the library is the `encode_into` and `decode_from`
-///! functions which respectively allow encoding into a `std::io::Writer`
-///! and decoding from a `std::io::Buffer`.
-///!
-///! ### Using Basic Functions
-///!
-///! ```rust
-///! #![allow(unstable)]
-///! extern crate bincode;
-///! fn main() {
-///!     // The object that we will serialize.
-///!     let target = Some("hello world".to_string());
-///!     // The maximum size of the encoded message.
-///!     let limit = bincode::SizeLimit::Bounded(20);
-///!
-///!     let encoded: Vec<u8>        = bincode::encode(&target, limit).unwrap();
-///!     let decoded: Option<String> = bincode::decode(&encoded[..]).unwrap();
-///!     assert_eq!(target, decoded);
-///! }
-///! ```
 
 /// A limit on the amount of bytes that can be read or written.
 ///
