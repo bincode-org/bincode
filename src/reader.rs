@@ -246,15 +246,17 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
             })),
         }
     }
-    fn read_enum<T, F>(&mut self, _: &str, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_enum_variant<T, F>(&mut self, names: &[&str], mut f: F) -> DecodingResult<T> where
-        F: FnMut(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
-            let id = try!(self.read_u32());
-            let id = id as usize;
-            if id >= names.len() {
+    fn read_enum<T, F>(&mut self, _: &str, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_enum_variant<T, F>(&mut self, names: &[&str], mut f: F) -> DecodingResult<T>
+        where F: FnMut(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
+    {
+        let id = try!(self.read_u32());
+        let id = id as usize;
+        if id >= names.len() {
                 Err(DecodingError::InvalidEncoding(InvalidEncoding {
                     desc: "out of bounds tag when reading enum variant",
                     detail: Some(format!("Expected tag < {}, got {}", names.len(), id))
@@ -262,55 +264,61 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
             } else {
                 f(self, id)
             }
-        }
-    fn read_enum_variant_arg<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_enum_struct_variant<T, F>(&mut self, names: &[&str], f: F) -> DecodingResult<T> where
-        F: FnMut(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
-            self.read_enum_variant(names, f)
-        }
+    }
+    fn read_enum_variant_arg<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_enum_struct_variant<T, F>(&mut self, names: &[&str], f: F) -> DecodingResult<T>
+        where F: FnMut(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
+    {
+        self.read_enum_variant(names, f)
+    }
     fn read_enum_struct_variant_field<T, F>(&mut self,
                                             _: &str,
                                             f_idx: usize,
                                             f: F)
-        -> DecodingResult<T> where
-            F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-                self.read_enum_variant_arg(f_idx, f)
-            }
-    fn read_struct<T, F>(&mut self, _: &str, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_struct_field<T, F>(&mut self,
-                               _: &str,
-                               _: usize,
-                               f: F)
-        -> DecodingResult<T> where
-            F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-                f(self)
-            }
-    fn read_tuple<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_tuple_arg<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_tuple_struct<T, F>(&mut self, _: &str, len: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            self.read_tuple(len, f)
-        }
-    fn read_tuple_struct_arg<T, F>(&mut self, a_idx: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            self.read_tuple_arg(a_idx, f)
-        }
-    fn read_option<T, F>(&mut self, mut f: F) -> DecodingResult<T> where
-        F: FnMut(&mut DecoderReader<'a, R>, bool) -> DecodingResult<T> {
-            let x = try!(self.read_u8());
-            match x {
+                                            -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        self.read_enum_variant_arg(f_idx, f)
+    }
+    fn read_struct<T, F>(&mut self, _: &str, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_struct_field<T, F>(&mut self, _: &str, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_tuple<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_tuple_arg<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_tuple_struct<T, F>(&mut self, _: &str, len: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        self.read_tuple(len, f)
+    }
+    fn read_tuple_struct_arg<T, F>(&mut self, a_idx: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        self.read_tuple_arg(a_idx, f)
+    }
+    fn read_option<T, F>(&mut self, mut f: F) -> DecodingResult<T>
+        where F: FnMut(&mut DecoderReader<'a, R>, bool) -> DecodingResult<T>
+    {
+        let x = try!(self.read_u8());
+        match x {
                 1 => f(self, true),
                 0 => f(self, false),
                 _ => Err(DecodingError::InvalidEncoding(InvalidEncoding {
@@ -318,29 +326,34 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
                     detail: Some(format!("Expected 0 or 1, got {}", x))
                 })),
             }
-        }
-    fn read_seq<T, F>(&mut self, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
-            let len = try!(self.read_usize());
-            f(self, len)
-        }
-    fn read_seq_elt<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_map<T, F>(&mut self, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T> {
-            let len = try!(self.read_usize());
-            f(self, len)
-        }
-    fn read_map_elt_key<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
-    fn read_map_elt_val<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T> where
-        F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T> {
-            f(self)
-        }
+    }
+    fn read_seq<T, F>(&mut self, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
+    {
+        let len = try!(self.read_usize());
+        f(self, len)
+    }
+    fn read_seq_elt<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_map<T, F>(&mut self, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
+    {
+        let len = try!(self.read_usize());
+        f(self, len)
+    }
+    fn read_map_elt_key<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
+    fn read_map_elt_val<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
+        where F: FnOnce(&mut DecoderReader<'a, R>) -> DecodingResult<T>
+    {
+        f(self)
+    }
     fn error(&mut self, err: &str) -> DecodingError {
         DecodingError::InvalidEncoding(InvalidEncoding {
             desc: "user-induced error",

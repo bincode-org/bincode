@@ -110,7 +110,10 @@ pub fn decode<T: Decodable>(b: &[u8]) -> DecodingResult<T> {
 /// If this returns an `EncodingError` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// encoding.
-pub fn encode_into<T: Encodable, W: Write>(t: &T, w: &mut W, size_limit: SizeLimit) -> EncodingResult<()> {
+pub fn encode_into<T: Encodable, W: Write>(t: &T,
+                                           w: &mut W,
+                                           size_limit: SizeLimit)
+                                           -> EncodingResult<()> {
     try!(match size_limit {
         SizeLimit::Infinite => Ok(()),
         SizeLimit::Bounded(x) => {
@@ -131,8 +134,7 @@ pub fn encode_into<T: Encodable, W: Write>(t: &T, w: &mut W, size_limit: SizeLim
 /// If this returns an `DecodingError`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) ->
-DecodingResult<T> {
+pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> DecodingResult<T> {
     Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
 

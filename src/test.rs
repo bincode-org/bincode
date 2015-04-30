@@ -2,31 +2,21 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use rustc_serialize::{
-    Encoder,
-    Decoder,
-    Encodable,
-    Decodable
-};
+use rustc_serialize::{Encoder, Decoder, Encodable, Decodable};
 
-use super::{
-    encode,
-    decode,
-    decode_from,
-    encoded_size,
-    DecodingError,
-    DecodingResult,
-    RefBox,
-};
+use super::{encode, decode, decode_from, encoded_size, DecodingError,
+            DecodingResult, RefBox};
 
 use super::SizeLimit::{Infinite, Bounded};
 
 fn the_same<V>(element: V)
-where V: Encodable + Decodable + PartialEq + Debug + 'static {
+    where V: Encodable+Decodable+PartialEq+Debug+'static
+{
 
     // Make sure that the bahavior isize correct when wrapping with a RefBox.
     fn ref_box_correct<V>(v: &V) -> bool
-    where V: Encodable + Decodable + PartialEq + Debug + 'static {
+        where V: Encodable+Decodable+PartialEq+Debug+'static
+    {
         let rf = RefBox::new(v);
 
         let encoded = encode(&rf, Infinite).unwrap();
@@ -169,7 +159,7 @@ fn many() {
 }
 
 #[test]
-fn map(){
+fn map() {
     let mut m = HashMap::new();
     m.insert(4u64, "foo".to_string());
     m.insert(0u64, "bar".to_string());
@@ -177,7 +167,7 @@ fn map(){
 }
 
 #[test]
-fn boole(){
+fn boole() {
     the_same(true);
     the_same(false);
 }

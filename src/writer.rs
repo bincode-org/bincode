@@ -105,7 +105,9 @@ impl SizeChecker {
 impl<'a, W: Write> Encoder for EncoderWriter<'a, W> {
     type Error = EncodingError;
 
-    fn emit_nil(&mut self) -> EncodingResult<()> { Ok(()) }
+    fn emit_nil(&mut self) -> EncodingResult<()> {
+        Ok(())
+    }
     fn emit_usize(&mut self, v: usize) -> EncodingResult<()> {
         self.emit_u64(v as u64)
     }
@@ -160,105 +162,121 @@ impl<'a, W: Write> Encoder for EncoderWriter<'a, W> {
         try!(self.emit_usize(v.len()));
         self.writer.write_all(v.as_bytes()).map_err(EncodingError::IoError)
     }
-    fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_enum_variant<F>(&mut self, _: &str,
-                            v_id: usize,
-                            _: usize,
-                            f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            let max_u32: u32 = ::std::u32::MAX;
-            if v_id > (max_u32 as usize) {
+    fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_enum_variant<F>(&mut self, _: &str, v_id: usize, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        let max_u32: u32 = ::std::u32::MAX;
+        if v_id > (max_u32 as usize) {
                 panic!("Variant tag doesn't fit in a u32")
             }
-            try!(self.emit_u32(v_id as u32));
-            f(self)
-        }
-    fn emit_enum_variant_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_enum_struct_variant<F>(&mut self, _: &str,
+        try!(self.emit_u32(v_id as u32));
+        f(self)
+    }
+    fn emit_enum_variant_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_enum_struct_variant<F>(&mut self,
+                                   _: &str,
                                    _: usize,
                                    _: usize,
-                                   f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_enum_struct_variant_field<F>(&mut self,
-                                         _: &str,
-                                         _: usize,
-                                         f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_struct<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_struct_field<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_tuple<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_tuple_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_tuple_struct<F>(&mut self, _: &str, len: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            self.emit_tuple(len, f)
-        }
-    fn emit_tuple_struct_arg<F>(&mut self, f_idx: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            self.emit_tuple_arg(f_idx, f)
-        }
-    fn emit_option<F>(&mut self, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
+                                   f: F)
+                                   -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_enum_struct_variant_field<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_struct<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_struct_field<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_tuple<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_tuple_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_tuple_struct<F>(&mut self, _: &str, len: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        self.emit_tuple(len, f)
+    }
+    fn emit_tuple_struct_arg<F>(&mut self, f_idx: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        self.emit_tuple_arg(f_idx, f)
+    }
+    fn emit_option<F>(&mut self, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
     fn emit_option_none(&mut self) -> EncodingResult<()> {
         self.writer.write_u8(0).map_err(wrap_io)
     }
-    fn emit_option_some<F>(&mut self, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            try!(self.writer.write_u8(1).map_err(wrap_io));
-            f(self)
-        }
-    fn emit_seq<F>(&mut self, len: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            try!(self.emit_usize(len));
-            f(self)
-        }
-    fn emit_seq_elt<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_map<F>(&mut self, len: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            try!(self.emit_usize(len));
-            f(self)
-        }
-    fn emit_map_elt_key<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()> {
-            f(self)
-        }
+    fn emit_option_some<F>(&mut self, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        try!(self.writer.write_u8(1).map_err(wrap_io));
+        f(self)
+    }
+    fn emit_seq<F>(&mut self, len: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        try!(self.emit_usize(len));
+        f(self)
+    }
+    fn emit_seq_elt<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_map<F>(&mut self, len: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        try!(self.emit_usize(len));
+        f(self)
+    }
+    fn emit_map_elt_key<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut EncoderWriter<'a, W>) -> EncodingResult<()>
+    {
+        f(self)
+    }
 
 }
 
 impl Encoder for SizeChecker {
     type Error = EncodingError;
 
-    fn emit_nil(&mut self) -> EncodingResult<()> { Ok(()) }
+    fn emit_nil(&mut self) -> EncodingResult<()> {
+        Ok(())
+    }
     fn emit_usize(&mut self, v: usize) -> EncodingResult<()> {
         self.add_value(v as u64)
     }
@@ -305,93 +323,107 @@ impl Encoder for SizeChecker {
         try!(self.add_value(0 as u64));
         self.add_raw(v.len())
     }
-    fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_enum_variant<F>(&mut self, _: &str,
-                            v_id: usize,
-                            _: usize,
-                            f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            try!(self.add_value(v_id as u32));
-            f(self)
-        }
-    fn emit_enum_variant_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_enum_struct_variant<F>(&mut self, _: &str,
+    fn emit_enum<F>(&mut self, __: &str, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_enum_variant<F>(&mut self, _: &str, v_id: usize, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        try!(self.add_value(v_id as u32));
+        f(self)
+    }
+    fn emit_enum_variant_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_enum_struct_variant<F>(&mut self,
+                                   _: &str,
                                    _: usize,
                                    _: usize,
-                                   f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_enum_struct_variant_field<F>(&mut self,
-                                         _: &str,
-                                         _: usize,
-                                         f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_struct<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_struct_field<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_tuple<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_tuple_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_tuple_struct<F>(&mut self, _: &str, len: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            self.emit_tuple(len, f)
-        }
-    fn emit_tuple_struct_arg<F>(&mut self, f_idx: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            self.emit_tuple_arg(f_idx, f)
-        }
-    fn emit_option<F>(&mut self, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
+                                   f: F)
+                                   -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_enum_struct_variant_field<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_struct<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_struct_field<F>(&mut self, _: &str, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_tuple<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_tuple_arg<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_tuple_struct<F>(&mut self, _: &str, len: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        self.emit_tuple(len, f)
+    }
+    fn emit_tuple_struct_arg<F>(&mut self, f_idx: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        self.emit_tuple_arg(f_idx, f)
+    }
+    fn emit_option<F>(&mut self, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
     fn emit_option_none(&mut self) -> EncodingResult<()> {
         self.add_value(0 as u8)
     }
-    fn emit_option_some<F>(&mut self, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            try!(self.add_value(1 as u8));
-            f(self)
-        }
-    fn emit_seq<F>(&mut self, len: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            try!(self.emit_usize(len));
-            f(self)
-        }
-    fn emit_seq_elt<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_map<F>(&mut self, len: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            try!(self.emit_usize(len));
-            f(self)
-        }
-    fn emit_map_elt_key<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
-    fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EncodingResult<()> where
-        F: FnOnce(&mut SizeChecker) -> EncodingResult<()> {
-            f(self)
-        }
+    fn emit_option_some<F>(&mut self, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        try!(self.add_value(1 as u8));
+        f(self)
+    }
+    fn emit_seq<F>(&mut self, len: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        try!(self.emit_usize(len));
+        f(self)
+    }
+    fn emit_seq_elt<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_map<F>(&mut self, len: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        try!(self.emit_usize(len));
+        f(self)
+    }
+    fn emit_map_elt_key<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
+    fn emit_map_elt_val<F>(&mut self, _: usize, f: F) -> EncodingResult<()>
+        where F: FnOnce(&mut SizeChecker) -> EncodingResult<()>
+    {
+        f(self)
+    }
 
 }
