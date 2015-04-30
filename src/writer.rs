@@ -146,10 +146,15 @@ impl<'a, W: Write> Encoder for EncoderWriter<'a, W> {
         self.writer.write_f32::<BigEndian>(v).map_err(wrap_io)
     }
     fn emit_char(&mut self, v: char) -> EncodingResult<()> {
-        let mut cbuf = [0; 4];
-        let sz = v.encode_utf8(&mut cbuf[..]).unwrap_or(0);
-        let ptr = &cbuf[..sz];
-        self.writer.write_all(ptr).map_err(EncodingError::IoError)
+        // TODO: change this back once unicode works
+        //let mut cbuf = [0; 4];
+        //let sz = v.encode_utf8(&mut cbuf[..]).unwrap_or(0);
+        //let ptr = &cbuf[..sz];
+        //self.writer.write_all(ptr).map_err(EncodingError::IoError)
+
+        let mut inter = String::with_capacity(1);
+        inter.push(v);
+        self.writer.write_all(inter.as_bytes()).map_err(EncodingError::IoError)
     }
     fn emit_str(&mut self, v: &str) -> EncodingResult<()> {
         try!(self.emit_usize(v.len()));
