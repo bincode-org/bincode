@@ -114,6 +114,10 @@ impl<'a, R: Read> DecoderReader<'a, R> {
             read: 0
         }
     }
+
+    pub fn bytes_read(&self) -> u64 {
+        self.read
+    }
 }
 
 impl <'a, A> DecoderReader<'a, A> {
