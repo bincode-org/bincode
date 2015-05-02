@@ -1,6 +1,5 @@
 use std::boxed::Box;
 use std::ops::Deref;
-use std::fmt;
 
 use rustc_serialize::{Encodable, Encoder};
 use rustc_serialize::{Decodable, Decoder};
@@ -57,16 +56,19 @@ use rustc_serialize::{Decodable, Decoder};
 ///
 /// Please don't stick RefBox inside deep data structures.  It is much better
 /// suited in the outermost layer of whatever it is that you are encoding.
+#[derive(Debug)]
 pub struct RefBox<'a, T: 'a> {
     inner:  RefBoxInner<'a, T, Box<T>>
 }
 
 /// Like a RefBox, but encoding from a `str` and decoedes to a `String`.
+#[derive(Debug)]
 pub struct StrBox<'a> {
     inner: RefBoxInner<'a, str, String>
 }
 
 /// Like a RefBox, but encodes from a `[T]` and encodes to a `Vec<T>`.
+#[derive(Debug)]
 pub struct SliceBox<'a, T: 'a> {
     inner: RefBoxInner<'a, [T], Vec<T>>
 }
@@ -240,11 +242,5 @@ impl <'a, T> Deref for RefBox<'a, T> {
             &RefBoxInner::Ref(ref t) => t,
             &RefBoxInner::Box(ref b) => b.deref()
         }
-    }
-}
-
-impl <'a, T: fmt::Debug> fmt::Debug for RefBox<'a, T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(fmt, "RefBox({:?})", *self)
     }
 }
