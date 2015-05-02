@@ -4,8 +4,17 @@ use std::ops::Deref;
 
 use rustc_serialize::{Encoder, Decoder, Encodable, Decodable};
 
-use super::{encode, decode, decode_from, encoded_size, DecodingError,
-            DecodingResult, RefBox};
+use super::{
+    encode,
+    decode,
+    decode_from,
+    encoded_size,
+    DecodingError,
+    DecodingResult,
+    RefBox,
+    StrBox,
+    SliceBox,
+};
 
 use super::SizeLimit::{Infinite, Bounded};
 
@@ -286,6 +295,24 @@ fn test_refbox() {
             _ => assert!(false)
         }
     }
+}
+
+#[test]
+fn test_strbox() {
+    let strx: &'static str = "hello world";
+    let encoded = encode(&StrBox::new(strx), Infinite).unwrap();
+    let decoded: (StrBox<'static>, _) = decode(&encoded[..]).unwrap();
+    let stringx: String = decoded.0.take();
+    assert!(strx == &stringx[..]);
+}
+
+#[test]
+fn test_slicebox() {
+    let slice = [1u32, 2, 3 ,4, 5];
+    let encoded = encode(&SliceBox::new(&slice), Infinite).unwrap();
+    let decoded: (SliceBox<'static, u32>, _) = decode(&encoded[..]).unwrap();
+    let vecx: Vec<u32> = decoded.0.take();
+    assert!(slice == &vecx[..]);
 }
 
 #[test]

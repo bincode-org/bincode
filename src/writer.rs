@@ -21,7 +21,7 @@ pub enum EncodingError {
     ///
     /// This error is returned before any bytes are written to the
     /// output `Writer`.
-    SizeLimit
+    SizeLimit,
 }
 
 /// An Encoder that encodes values directly into a Writer.

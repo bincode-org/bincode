@@ -218,30 +218,17 @@ impl <T: Decodable> Decodable for SliceBox<'static, T> {
 
 impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, B> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        s.emit_enum("RefBox", |s| {
-            s.emit_enum_variant("Box", 1, 1, |s| {
-                s.emit_enum_variant_arg(0, |s| {
-                    match self {
-                        &RefBoxInner::Ref(ref r) => r.encode(s),
-                        &RefBoxInner::Box(ref b) => b.encode(s)
-                    }
-                })
-            })
-        })
+        match self {
+            &RefBoxInner::Ref(ref r) => r.encode(s),
+            &RefBoxInner::Box(ref b) => b.encode(s)
+        }
     }
 }
 
 impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
     fn decode<D: Decoder>(d: &mut D) -> Result<RefBoxInner<'static, A, B>, D::Error> {
-        d.read_enum("RefBox", |d| {
-            d.read_enum_variant(&["Ref", "Box"], |d, i| {
-                assert!(i == 1);
-                d.read_enum_variant_arg(0, |d| {
-                    let decoded = try!(Decodable::decode(d));
-                    Ok(RefBoxInner::Box(decoded))
-                })
-            })
-        })
+        let decoded = try!(Decodable::decode(d));
+        Ok(RefBoxInner::Box(decoded))
     }
 }
 
