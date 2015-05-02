@@ -58,13 +58,23 @@ use rustc_serialize::{Decodable, Decoder};
 /// Please don't stick RefBox inside deep data structures.  It is much better
 /// suited in the outermost layer of whatever it is that you are encoding.
 pub struct RefBox<'a, T: 'a> {
-    inner:  RefBoxInner<'a, T>
+    inner:  RefBoxInner<'a, T, Box<T>>
+}
+
+/// Like a RefBox, but encoding from a `str` and decoedes to a `String`.
+pub struct StrBox<'a> {
+    inner: RefBoxInner<'a, str, String>
+}
+
+/// Like a RefBox, but encodes from a `[T]` and encodes to a `Vec<T>`.
+pub struct SliceBox<'a, T: 'a> {
+    inner: RefBoxInner<'a, [T], Vec<T>>
 }
 
 #[derive(Debug, Hash)]
-enum RefBoxInner<'a, T: 'a> {
-    Ref(&'a T),
-    Box(Box<T>)
+enum RefBoxInner<'a, A: 'a + ?Sized, B> {
+    Ref(&'a A),
+    Box(B)
 }
 
 impl <'a, T> RefBox<'a, T> {
@@ -98,11 +108,13 @@ impl <T> RefBox<'static, T>  {
         }
     }
 }
+
 impl <'a, T: Encodable> Encodable for RefBox<'a, T> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         self.inner.encode(s)
     }
 }
+
 impl <T: Decodable> Decodable for RefBox<'static, T> {
     fn decode<D: Decoder>(d: &mut D) -> Result<RefBox<'static, T>, D::Error> {
         let inner = try!(Decodable::decode(d));
@@ -110,32 +122,113 @@ impl <T: Decodable> Decodable for RefBox<'static, T> {
     }
 }
 
-impl <'a, T: Encodable> Encodable for RefBoxInner<'a, T> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        s.emit_enum("RefBox", |s| {
-            s.emit_enum_variant("Box", 1, 1, |s| {
-                s.emit_enum_variant_arg(0, |s| {
-                    match self {
-                        &RefBoxInner::Ref(ref r) => r.encode(s),
-                        &RefBoxInner::Box(ref b) => b.encode(s)
-                    }
-                })
-            })
-        })
+impl <'a> StrBox<'a> {
+    /// Creates a new RefBox that looks at a borrowed value.
+    pub fn new(s: &'a str) -> StrBox<'a> {
+        StrBox {
+            inner: RefBoxInner::Ref(s)
+        }
     }
 }
 
-impl <T: Decodable> Decodable for RefBoxInner<'static, T> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<RefBoxInner<'static, T>, D::Error> {
-        d.read_enum("RefBox", |d| {
-            d.read_enum_variant(&["Ref", "Box"], |d, i| {
-                assert!(i == 1);
-                d.read_enum_variant_arg(0, |d| {
-                    let decoded = try!(Decodable::decode(d));
-                    Ok(RefBoxInner::Box(Box::new(decoded)))
-                })
-            })
-        })
+impl StrBox<'static>  {
+    /// Takes the value out of this refbox.
+    ///
+    /// Fails if this refbox was not created out of a deserialization.
+    ///
+    /// Unless you are doing some really weird things with static references,
+    /// this function will never fail.
+    pub fn take(self) -> String {
+        match self.inner {
+            RefBoxInner::Box(b) => b,
+            _ => unreachable!()
+        }
+    }
+
+    /// Tries to take the value out of this refbox.
+    pub fn try_take(self) -> Result<String, StrBox<'static>> {
+        match self.inner {
+            RefBoxInner::Box(b) => Ok(b),
+            o => Err(StrBox{ inner: o})
+        }
+    }
+}
+
+impl <'a> Encodable for StrBox<'a> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        self.inner.encode(s)
+    }
+}
+
+impl Decodable for StrBox<'static> {
+    fn decode<D: Decoder>(d: &mut D) -> Result<StrBox<'static>, D::Error> {
+        let inner: RefBoxInner<'static, str, String> = try!(Decodable::decode(d));
+        Ok(StrBox{inner: inner})
+    }
+}
+
+//
+// SliceBox
+//
+
+impl <'a, T> SliceBox<'a, T> {
+    /// Creates a new RefBox that looks at a borrowed value.
+    pub fn new(v: &'a [T]) -> SliceBox<'a, T> {
+        SliceBox {
+            inner: RefBoxInner::Ref(v)
+        }
+    }
+}
+
+impl <T> SliceBox<'static, T>  {
+    /// Takes the value out of this refbox.
+    ///
+    /// Fails if this refbox was not created out of a deserialization.
+    ///
+    /// Unless you are doing some really weird things with static references,
+    /// this function will never fail.
+    pub fn take(self) -> Vec<T> {
+        match self.inner {
+            RefBoxInner::Box(b) => b,
+            _ => unreachable!()
+        }
+    }
+
+    /// Tries to take the value out of this refbox.
+    pub fn try_take(self) -> Result<Vec<T>, SliceBox<'static, T>> {
+        match self.inner {
+            RefBoxInner::Box(b) => Ok(b),
+            o => Err(SliceBox{ inner: o})
+        }
+    }
+}
+
+impl <'a, T: Encodable> Encodable for SliceBox<'a, T> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        self.inner.encode(s)
+    }
+}
+
+impl <T: Decodable> Decodable for SliceBox<'static, T> {
+    fn decode<D: Decoder>(d: &mut D) -> Result<SliceBox<'static, T>, D::Error> {
+        let inner: RefBoxInner<'static, [T], Vec<T>> = try!(Decodable::decode(d));
+        Ok(SliceBox{inner: inner})
+    }
+}
+
+impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, B> {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        match self {
+            &RefBoxInner::Ref(ref r) => r.encode(s),
+            &RefBoxInner::Box(ref b) => b.encode(s)
+        }
+    }
+}
+
+impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
+    fn decode<D: Decoder>(d: &mut D) -> Result<RefBoxInner<'static, A, B>, D::Error> {
+        let decoded = try!(Decodable::decode(d));
+        Ok(RefBoxInner::Box(decoded))
     }
 }
 

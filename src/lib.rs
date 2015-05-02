@@ -35,7 +35,7 @@ extern crate byteorder;
 
 use rustc_serialize::{Encodable, Decodable};
 
-pub use refbox::RefBox;
+pub use refbox::{RefBox, StrBox, SliceBox};
 pub use writer::{EncoderWriter, EncodingResult, EncodingError};
 pub use reader::{DecoderReader, DecodingResult, DecodingError};
 use writer::SizeChecker;
