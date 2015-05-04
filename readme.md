@@ -10,7 +10,7 @@ A compact encoder / decoder pair that uses an binary zero-fluff encoding scheme.
 The size of the encoded object will be the same or smaller than the size that
 the object takes up in memory in a running Rust program.
 
-In addition to exposing two simple funcitons that encode to Vec<u8> and decode
+In addition to exposing two simple functions that encode to Vec<u8> and decode
 from Vec<u8>, binary-encode exposes a Reader/Writer API that makes it work
 perfectly with other stream-based apis such as rust files, network streams,
 and the [flate2-rs](https://github.com/alexcrichton/flate2-rs) compression
@@ -66,7 +66,7 @@ then the contents.
 However, there are some implementation details to be aware of:
 
 * `isize`/`usize` are encoded as `i64`/`u64`, for portability.
-* enums variants are encoded as a `u32` instead that as a `uint`.
+* enums variants are encoded as a `u32` instead of a `uint`.
   `u32` is enough for all practical uses.
 * `str` is encoded as `(u64, &[u8])`, where the `u64` is the number of
   bytes contained in the encoded string.
