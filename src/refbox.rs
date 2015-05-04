@@ -56,27 +56,54 @@ use rustc_serialize::{Decodable, Decoder};
 ///
 /// Please don't stick RefBox inside deep data structures.  It is much better
 /// suited in the outermost layer of whatever it is that you are encoding.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash, Clone)]
 pub struct RefBox<'a, T: 'a> {
     inner:  RefBoxInner<'a, T, Box<T>>
 }
 
 /// Like a RefBox, but encoding from a `str` and decoedes to a `String`.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash, Clone)]
 pub struct StrBox<'a> {
     inner: RefBoxInner<'a, str, String>
 }
 
 /// Like a RefBox, but encodes from a `[T]` and encodes to a `Vec<T>`.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash, Clone)]
 pub struct SliceBox<'a, T: 'a> {
     inner: RefBoxInner<'a, [T], Vec<T>>
 }
 
-#[derive(Debug, Hash)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 enum RefBoxInner<'a, A: 'a + ?Sized, B> {
     Ref(&'a A),
     Box(B)
+}
+
+impl<'a, T> Clone for RefBoxInner<'a, T, Box<T>> where T: Clone {
+    fn clone(&self) -> RefBoxInner<'a, T, Box<T>> {
+        match *self {
+            RefBoxInner::Ref(reff) => RefBoxInner::Box(Box::new(reff.clone())),
+            RefBoxInner::Box(ref boxed) => RefBoxInner::Box(boxed.clone())
+        }
+    }
+}
+
+impl<'a> Clone for RefBoxInner<'a, str, String> {
+    fn clone(&self) -> RefBoxInner<'a, str, String> {
+        match *self {
+            RefBoxInner::Ref(reff) => RefBoxInner::Box(String::from(reff)),
+            RefBoxInner::Box(ref boxed) => RefBoxInner::Box(boxed.clone())
+        }
+    }
+}
+
+impl<'a, T> Clone for RefBoxInner<'a, [T], Vec<T>> where T: Clone {
+    fn clone(&self) -> RefBoxInner<'a, [T], Vec<T>> {
+        match *self {
+            RefBoxInner::Ref(reff) => RefBoxInner::Box(Vec::from(reff)),
+            RefBoxInner::Box(ref boxed) => RefBoxInner::Box(boxed.clone())
+        }
+    }
 }
 
 impl <'a, T> RefBox<'a, T> {
@@ -124,16 +151,46 @@ impl <T: Decodable> Decodable for RefBox<'static, T> {
     }
 }
 
-impl <'a> StrBox<'a> {
-    /// Creates a new RefBox that looks at a borrowed value.
+impl<'a> StrBox<'a> {
+    /// Creates a new StrBox that looks at a borrowed value.
     pub fn new(s: &'a str) -> StrBox<'a> {
         StrBox {
             inner: RefBoxInner::Ref(s)
         }
     }
+
+    /// Extract a String from a StrBox.
+    pub fn into_string(self) -> String {
+        match self.inner {
+            RefBoxInner::Ref(s) => String::from(s),
+            RefBoxInner::Box(s) => s
+        }
+    }
+
+    /// Convert to an Owned `SliceBox`.
+    pub fn to_owned(self) -> StrBox<'static> {
+        match self.inner {
+            RefBoxInner::Ref(s) => StrBox::boxed(String::from(s)),
+            RefBoxInner::Box(s) => StrBox::boxed(s)
+        }
+    }
+}
+
+impl<'a> AsRef<str> for StrBox<'a> {
+    fn as_ref(&self) -> &str {
+        match self.inner {
+            RefBoxInner::Ref(ref s) => s,
+            RefBoxInner::Box(ref s) => s
+        }
+    }
 }
 
 impl StrBox<'static>  {
+    /// Creates a new StrBox made from an allocated String.
+    pub fn boxed(s: String) -> StrBox<'static> {
+        StrBox { inner: RefBoxInner::Box(s) }
+    }
+
     /// Takes the value out of this refbox.
     ///
     /// Fails if this refbox was not created out of a deserialization.
@@ -143,7 +200,7 @@ impl StrBox<'static>  {
     pub fn take(self) -> String {
         match self.inner {
             RefBoxInner::Box(b) => b,
-            _ => unreachable!()
+            RefBoxInner::Ref(b) => String::from(b)
         }
     }
 
@@ -180,9 +237,30 @@ impl <'a, T> SliceBox<'a, T> {
             inner: RefBoxInner::Ref(v)
         }
     }
+
+    /// Extract a `Vec<T>` from a `SliceBox`.
+    pub fn into_vec(self) -> Vec<T> where T: Clone {
+        match self.inner {
+            RefBoxInner::Ref(s) => s.to_vec(),
+            RefBoxInner::Box(s) => s
+        }
+    }
+
+    /// Convert to an Owned `SliceBox`.
+    pub fn to_owned(self) -> SliceBox<'static, T> where T: Clone {
+        match self.inner {
+            RefBoxInner::Ref(s) => SliceBox::boxed(s.to_vec()),
+            RefBoxInner::Box(s) => SliceBox::boxed(s)
+        }
+    }
 }
 
 impl <T> SliceBox<'static, T>  {
+    /// Creates a new SliceBox made from an allocated `Vec<T>`.
+    pub fn boxed(s: Vec<T>) -> SliceBox<'static, T> {
+        SliceBox { inner: RefBoxInner::Box(s) }
+    }
+
     /// Takes the value out of this refbox.
     ///
     /// Fails if this refbox was not created out of a deserialization.
