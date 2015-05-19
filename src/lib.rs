@@ -17,8 +17,8 @@
 //!     // The maximum size of the encoded message.
 //!     let limit = bincode::SizeLimit::Bounded(20);
 //!
-//!     let encoded: Vec<u8> = bincode::encode(&target, limit).unwrap();
-//!     let (decoded, len): (Option<String>, u64) = bincode::decode(&encoded[..]).unwrap();
+//!     let encoded: Vec<u8>        = bincode::encode(&target, limit).unwrap();
+//!     let decoded: Option<String> = bincode::decode(&encoded[..]).unwrap();
 //!     assert_eq!(target, decoded);
 //! }
 //! ```
@@ -95,12 +95,9 @@ pub fn encode<T: Encodable>(t: &T, size_limit: SizeLimit) -> EncodingResult<Vec<
 
 /// Decodes a slice of bytes into an object.
 ///
-/// If successful, this function returns the decoded object along with the number
-/// of bytes that were read.
-///
-/// This method does not have a size-limit because with all the bytes contiguous
-/// in memory, then nothing is gained by having a limiter.
-pub fn decode<T: Decodable>(b: &[u8]) -> DecodingResult<(T, u64)> {
+/// This method does not have a size-limit because if you already have the bytes
+/// in memory, then you don't gain anything by having a limiter.
+pub fn decode<T: Decodable>(b: &[u8]) -> DecodingResult<T> {
     let mut b = b;
     decode_from(&mut b, SizeLimit::Infinite)
 }
@@ -128,8 +125,7 @@ pub fn encode_into<T: Encodable, W: Write>(t: &T,
     t.encode(&mut writer::EncoderWriter::new(w))
 }
 
-/// Decodes an object directly from a `Read`er.  If successful, returns the
-/// decoded object and the number of bytes read out of the `Read`er.
+/// Decoes an object directly from a `Buffer`ed Reader.
 ///
 /// If the provided `SizeLimit` is reached, the decode will bail immediately.
 /// A SizeLimit can help prevent an attacker from flooding your server with
@@ -138,11 +134,8 @@ pub fn encode_into<T: Encodable, W: Write>(t: &T,
 /// If this returns an `DecodingError`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> DecodingResult<(T, u64)> {
-    let mut decoder_reader = reader::DecoderReader::new(r, size_limit);
-    let value = try!(Decodable::decode(&mut decoder_reader));
-    let bytes_read = decoder_reader.bytes_read();
-    Ok((value, bytes_read))
+pub fn decode_from<R: Read, T: Decodable>(r: &mut R, size_limit: SizeLimit) -> DecodingResult<T> {
+    Decodable::decode(&mut reader::DecoderReader::new(r, size_limit))
 }
 
 

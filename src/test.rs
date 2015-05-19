@@ -29,14 +29,14 @@ fn the_same<V>(element: V)
         let rf = RefBox::new(v);
 
         let encoded = encode(&rf, Infinite).unwrap();
-        let (decoded, _): (RefBox<'static, V>, _) = decode(&encoded[..]).unwrap();
+        let decoded: RefBox<'static, V> = decode(&encoded[..]).unwrap();
 
         decoded.take().deref() == v
     }
 
     let size = encoded_size(&element);
     let encoded = encode(&element, Infinite).unwrap();
-    let (decoded, _) = decode(&encoded[..]).unwrap();
+    let decoded = decode(&encoded[..]).unwrap();
     assert!(element == decoded);
     assert!(size == encoded.len() as u64);
     assert!(ref_box_correct(&element))
@@ -215,12 +215,12 @@ fn decoding_errors() {
 fn too_big_decode() {
     let encoded = vec![0,0,0,3];
     let mut encoded_ref = &encoded[..];
-    let decoded: Result<(u32, _), _> = decode_from(&mut encoded_ref, Bounded(3));
+    let decoded: Result<u32, _> = decode_from(&mut encoded_ref, Bounded(3));
     assert!(decoded.is_err());
 
     let encoded = vec![0,0,0,3];
     let mut encoded_ref = &encoded[..];
-    let decoded: Result<(u32, _), _> = decode_from(&mut encoded_ref, Bounded(4));
+    let decoded: Result<u32, _> = decode_from(&mut encoded_ref, Bounded(4));
     assert!(decoded.is_ok());
 }
 
@@ -228,9 +228,9 @@ fn too_big_decode() {
 fn too_big_char_decode() {
     let encoded = vec![0x41];
     let mut encoded_ref = &encoded[..];
-    let decoded: Result<(char, _), _> = decode_from(&mut encoded_ref, Bounded(1));
+    let decoded: Result<char, _> = decode_from(&mut encoded_ref, Bounded(1));
     assert!(decoded.is_ok());
-    assert_eq!(decoded.unwrap().0, 'A');
+    assert_eq!(decoded.unwrap(), 'A');
 }
 
 #[test]
@@ -277,9 +277,9 @@ fn test_refbox() {
     // Test 1
     {
         let encoded = encode(&Message::M1(RefBox::new(&large_object)), Infinite).unwrap();
-        let decoded: (Message<'static>, _) = decode(&encoded[..]).unwrap();
+        let decoded: Message<'static> = decode(&encoded[..]).unwrap();
 
-        match decoded.0 {
+        match decoded {
             Message::M1(b) => assert!(b.take().deref() == &large_object),
             _ => assert!(false)
         }
@@ -288,9 +288,9 @@ fn test_refbox() {
     // Test 2
     {
         let encoded = encode(&Message::M2(RefBox::new(&large_map)), Infinite).unwrap();
-        let decoded: (Message<'static>, _) = decode(&encoded[..]).unwrap();
+        let decoded: Message<'static> = decode(&encoded[..]).unwrap();
 
-        match decoded.0 {
+        match decoded {
             Message::M2(b) => assert!(b.take().deref() == &large_map),
             _ => assert!(false)
         }
@@ -301,8 +301,8 @@ fn test_refbox() {
 fn test_strbox() {
     let strx: &'static str = "hello world";
     let encoded = encode(&StrBox::new(strx), Infinite).unwrap();
-    let decoded: (StrBox<'static>, _) = decode(&encoded[..]).unwrap();
-    let stringx: String = decoded.0.take();
+    let decoded: StrBox<'static> = decode(&encoded[..]).unwrap();
+    let stringx: String = decoded.take();
     assert!(strx == &stringx[..]);
 }
 
@@ -310,8 +310,8 @@ fn test_strbox() {
 fn test_slicebox() {
     let slice = [1u32, 2, 3 ,4, 5];
     let encoded = encode(&SliceBox::new(&slice), Infinite).unwrap();
-    let decoded: (SliceBox<'static, u32>, _) = decode(&encoded[..]).unwrap();
-    let vecx: Vec<u32> = decoded.0.take();
+    let decoded: SliceBox<'static, u32> = decode(&encoded[..]).unwrap();
+    let vecx: Vec<u32> = decoded.take();
     assert!(slice == &vecx[..]);
 }
 

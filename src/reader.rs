@@ -115,6 +115,7 @@ impl<'a, R: Read> DecoderReader<'a, R> {
         }
     }
 
+    /// Returns the number of bytes read from the contained Reader.
     pub fn bytes_read(&self) -> u64 {
         self.read
     }
