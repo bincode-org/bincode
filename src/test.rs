@@ -335,9 +335,20 @@ fn no_oom() {
     }
 
     let x = encode(&FakeVec { len: 0xffffffffffffffffu64, byte: 1 }, Bounded(10)).unwrap();
-    let y : Result<Vec<u8>, _> = decode_from(&mut Cursor::new(&x[..]), Bounded(10));
-    match y {
-        Err(DecodingError::SizeLimit) => assert!(true),
-        _ => assert!(false)
+
+    {
+        let y : Result<Vec<u8>, _> = decode_from(&mut Cursor::new(&x[..]), Bounded(10));
+        match y {
+            Err(DecodingError::SizeLimit) => assert!(true),
+            _ => assert!(false)
+        }
+    }
+
+    {
+        let y : Result<HashMap<u8, u8>, _> = decode_from(&mut Cursor::new(&x[..]), Bounded(10));
+        match y {
+            Err(DecodingError::SizeLimit) => assert!(true),
+            _ => assert!(false)
+        }
     }
 }
