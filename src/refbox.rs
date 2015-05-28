@@ -322,3 +322,14 @@ impl <'a, T> Deref for RefBox<'a, T> {
         }
     }
 }
+
+impl <'a, T> Deref for SliceBox<'a, T> {
+    type Target = [T];
+
+    fn deref(&self) -> &[T] {
+        match &self.inner {
+            &RefBoxInner::Ref(ref t) => t,
+            &RefBoxInner::Box(ref b) => b.deref()
+        }
+    }
+}

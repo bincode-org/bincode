@@ -311,6 +311,10 @@ fn test_slicebox() {
     let slice = [1u32, 2, 3 ,4, 5];
     let encoded = encode(&SliceBox::new(&slice), Infinite).unwrap();
     let decoded: SliceBox<'static, u32> = decode(&encoded[..]).unwrap();
+    {
+        let sb: &[u32] = &decoded;
+        assert!(slice == sb);
+    }
     let vecx: Vec<u32> = decoded.take();
     assert!(slice == &vecx[..]);
 }
