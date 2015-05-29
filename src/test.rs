@@ -323,21 +323,3 @@ fn test_slicebox() {
 fn test_multi_strings() {
     assert!(encode(&("foo", "bar", "baz"), Infinite).is_ok());
 }
-
-#[test]
-fn no_oom() {
-    use std::io::Cursor;
-
-    #[derive(RustcEncodable)]
-    struct FakeVec {
-        len: u64,
-        byte: u8
-    }
-
-    let x = encode(&FakeVec { len: 0xffffffffffffffffu64, byte: 1 }, Bounded(10)).unwrap();
-    let y : Result<Vec<u8>, _> = decode_from(&mut Cursor::new(&x[..]), Bounded(10));
-    match y {
-        Err(DecodingError::SizeLimit) => assert!(true),
-        _ => assert!(false)
-    }
-}
