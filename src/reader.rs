@@ -354,15 +354,7 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
     fn read_map<T, F>(&mut self, f: F) -> DecodingResult<T>
         where F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
     {
-        use std::mem::size_of;
-        use std::usize;
         let len = try!(self.read_usize());
-        if let SizeLimit::Bounded(x) = self.size_limit {
-            if (len > usize::MAX / size_of::<T>()) ||
-                    (len * size_of::<T>()) as u64 > (x - self.read) {
-                return Err(DecodingError::SizeLimit)
-            }
-        }
         f(self, len)
     }
     fn read_map_elt_key<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
