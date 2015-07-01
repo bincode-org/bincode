@@ -32,6 +32,7 @@
 
 extern crate rustc_serialize;
 extern crate byteorder;
+extern crate serde;
 
 use rustc_serialize::{Encodable, Decodable};
 
@@ -39,12 +40,22 @@ pub use refbox::{RefBox, StrBox, SliceBox};
 pub use writer::{EncoderWriter, EncodingResult, EncodingError};
 pub use reader::{DecoderReader, DecodingResult, DecodingError};
 use writer::SizeChecker;
+pub use writer_serde::{
+    Serializer,
+    SerializeResult,
+    SerializeError,
+    to_writer,
+    to_vec,
+    serialized_size,
+    serialized_size_bounded,
+};
 
 use std::io::{Write, Read};
 
 mod writer;
 mod reader;
 mod refbox;
+mod writer_serde;
 
 /// A limit on the amount of bytes that can be read or written.
 ///

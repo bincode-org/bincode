@@ -1,5 +1,9 @@
+#![feature(plugin, custom_derive)]
+#![plugin(serde_macros)]
+
 extern crate bincode;
 extern crate rustc_serialize;
+extern crate serde;
 
 use std::fmt::Debug;
 use std::collections::HashMap;
@@ -22,7 +26,7 @@ use bincode::{
 use bincode::SizeLimit::{Infinite, Bounded};
 
 fn the_same<V>(element: V)
-    where V: Encodable+Decodable+PartialEq+Debug+'static
+    where V: Encodable+Decodable+serde::Serialize+PartialEq+Debug+'static
 {
 
     // Make sure that the bahavior isize correct when wrapping with a RefBox.
@@ -42,7 +46,12 @@ fn the_same<V>(element: V)
     let decoded = decode(&encoded[..]).unwrap();
     assert_eq!(element, decoded);
     assert_eq!(size, encoded.len() as u64);
-    assert!(ref_box_correct(&element))
+    assert!(ref_box_correct(&element));
+
+    let size = bincode::serialized_size(&element);
+    let serialized = bincode::to_vec(&element, Infinite).unwrap();
+    assert_eq!(encoded, serialized);
+    assert_eq!(size, serialized.len() as u64);
 }
 
 #[test]
@@ -85,7 +94,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
     struct Easy {
         x: isize,
         s: String,
@@ -96,13 +105,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
     struct Easy {
         x: isize,
         s: String,
         y: usize
     }
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
     struct Nest {
         f: Easy,
         b: usize,
@@ -118,7 +127,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_tuple() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
     struct TubStr(usize, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
@@ -133,7 +142,7 @@ fn option() {
 
 #[test]
 fn enm() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -147,7 +156,7 @@ fn enm() {
 
 #[test]
 fn struct_enum() {
-    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -205,7 +214,7 @@ fn decoding_errors() {
     isize_invalid_encoding(decode::<bool>(&vec![0xA][..]));
     isize_invalid_encoding(decode::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
     // Out-of-bounds variant
-    #[derive(RustcEncodable, RustcDecodable)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize)]
     enum Test {
         One,
         Two,
