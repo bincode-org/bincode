@@ -18,6 +18,8 @@ use bincode::{
     encoded_size,
     DecodingError,
     DecodingResult,
+    DeserializeError,
+    DeserializeResult,
     RefBox,
     StrBox,
     SliceBox,
@@ -26,9 +28,8 @@ use bincode::{
 use bincode::SizeLimit::{Infinite, Bounded};
 
 fn the_same<V>(element: V)
-    where V: Encodable+Decodable+serde::Serialize+PartialEq+Debug+'static
+    where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
 {
-
     // Make sure that the bahavior isize correct when wrapping with a RefBox.
     fn ref_box_correct<V>(v: &V) -> bool
         where V: Encodable+Decodable+PartialEq+Debug+'static
@@ -48,9 +49,13 @@ fn the_same<V>(element: V)
     assert_eq!(size, encoded.len() as u64);
     assert!(ref_box_correct(&element));
 
-    let size = bincode::serialized_size(&element);
     let serialized = bincode::to_vec(&element, Infinite).unwrap();
     assert_eq!(encoded, serialized);
+
+    let deserialized = bincode::from_slice(&serialized[..], Infinite).unwrap();
+    assert_eq!(element, deserialized);
+
+    let size = bincode::serialized_size(&element);
     assert_eq!(size, serialized.len() as u64);
 }
 
@@ -61,16 +66,19 @@ fn test_numbers() {
     the_same(5u16);
     the_same(5u32);
     the_same(5u64);
+    the_same(5usize);
     // signed positive
     the_same(5i8);
     the_same(5i16);
     the_same(5i32);
     the_same(5i64);
+    the_same(5isize);
     // signed negative
     the_same(-5i8);
     the_same(-5i16);
     the_same(-5i32);
     the_same(-5i64);
+    the_same(-5isize);
     // floating
     the_same(-100f32);
     the_same(0f32);
@@ -94,7 +102,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     struct Easy {
         x: isize,
         s: String,
@@ -105,13 +113,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     struct Easy {
         x: isize,
         s: String,
         y: usize
     }
-    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     struct Nest {
         f: Easy,
         b: usize,
@@ -127,22 +135,22 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_tuple() {
-    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     struct TubStr(usize, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
 }
 
 #[test]
-fn option() {
+fn test_option() {
     the_same(Some(5usize));
     the_same(Some("foo bar".to_string()));
     the_same(None::<usize>);
 }
 
 #[test]
-fn enm() {
-    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
+fn test_enum() {
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -153,10 +161,9 @@ fn enm() {
     the_same(TestEnum::AnotherNoArg);
 }
 
-
 #[test]
-fn struct_enum() {
-    #[derive(RustcEncodable, RustcDecodable, Serialize, PartialEq, Debug)]
+fn test_struct_enum() {
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -172,7 +179,7 @@ fn struct_enum() {
 }
 
 #[test]
-fn many() {
+fn test_vec() {
     let v: Vec<u8> = vec![];
     the_same(v);
     the_same(vec![1u64]);
@@ -180,7 +187,7 @@ fn many() {
 }
 
 #[test]
-fn map() {
+fn test_map() {
     let mut m = HashMap::new();
     m.insert(4u64, "foo".to_string());
     m.insert(0u64, "bar".to_string());
@@ -188,17 +195,16 @@ fn map() {
 }
 
 #[test]
-fn boole() {
+fn test_bool() {
     the_same(true);
     the_same(false);
 }
 
 #[test]
-fn unicode() {
+fn test_unicode() {
     the_same("å".to_string());
     the_same("aåååååååa".to_string());
 }
-
 
 #[test]
 fn decoding_errors() {
@@ -224,6 +230,28 @@ fn decoding_errors() {
 }
 
 #[test]
+fn deserializing_errors() {
+    fn isize_invalid_deserialize<T: Debug>(res: DeserializeResult<T>) {
+        match res {
+            Err(DeserializeError::InvalidEncoding(_)) => {},
+            Err(DeserializeError::SyntaxError) => {},
+            _ => panic!("Expecting InvalidEncoding, got {:?}", res),
+        }
+    }
+
+    isize_invalid_deserialize(bincode::from_slice::<bool>(&vec![0xA][..], Infinite));
+    isize_invalid_deserialize(bincode::from_slice::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..], Infinite));
+    // Out-of-bounds variant
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, Debug)]
+    enum Test {
+        One,
+        Two,
+    };
+    isize_invalid_deserialize(bincode::from_slice::<Test>(&vec![0, 0, 0, 5][..], Infinite));
+    isize_invalid_deserialize(bincode::from_slice::<Option<u8>>(&vec![5, 0][..], Infinite));
+}
+
+#[test]
 fn too_big_decode() {
     let encoded = vec![0,0,0,3];
     let mut encoded_ref = &encoded[..];
@@ -237,6 +265,17 @@ fn too_big_decode() {
 }
 
 #[test]
+fn too_big_deserialize() {
+    let serialized = vec![0,0,0,3];
+    let deserialized: Result<u32, _> = bincode::from_slice(&serialized[..], Bounded(3));
+    assert!(deserialized.is_err());
+
+    let serialized = vec![0,0,0,3];
+    let deserialized: Result<u32, _> = bincode::from_slice(&serialized[..], Bounded(4));
+    assert!(deserialized.is_ok());
+}
+
+#[test]
 fn too_big_char_decode() {
     let encoded = vec![0x41];
     let mut encoded_ref = &encoded[..];
@@ -246,12 +285,29 @@ fn too_big_char_decode() {
 }
 
 #[test]
+fn too_big_char_deserialize() {
+    let serialized = vec![0x41];
+    let deserialized: Result<char, _> = bincode::from_slice(&serialized[..], Bounded(1));
+    assert!(deserialized.is_ok());
+    assert_eq!(deserialized.unwrap(), 'A');
+}
+
+#[test]
 fn too_big_encode() {
     assert!(encode(&0u32, Bounded(3)).is_err());
     assert!(encode(&0u32, Bounded(4)).is_ok());
 
     assert!(encode(&"abcde", Bounded(8 + 4)).is_err());
     assert!(encode(&"abcde", Bounded(8 + 5)).is_ok());
+}
+
+#[test]
+fn too_big_serialize() {
+    assert!(bincode::to_vec(&0u32, Bounded(3)).is_err());
+    assert!(bincode::to_vec(&0u32, Bounded(4)).is_ok());
+
+    assert!(bincode::to_vec(&"abcde", Bounded(8 + 4)).is_err());
+    assert!(bincode::to_vec(&"abcde", Bounded(8 + 5)).is_ok());
 }
 
 #[test]
@@ -266,6 +322,21 @@ fn test_encoded_size() {
     assert!(encoded_size(&"a") == 8 + 1);
 
     assert!(encoded_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
+
+}
+
+#[test]
+fn test_serialized_size() {
+    assert!(bincode::serialized_size(&0u8) == 1);
+    assert!(bincode::serialized_size(&0u16) == 2);
+    assert!(bincode::serialized_size(&0u32) == 4);
+    assert!(bincode::serialized_size(&0u64) == 8);
+
+    // length isize stored as u64
+    assert!(bincode::serialized_size(&"") == 8);
+    assert!(bincode::serialized_size(&"a") == 8 + 1);
+
+    assert!(bincode::serialized_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
 }
 
 #[test]
@@ -274,7 +345,7 @@ fn encode_box() {
 }
 
 #[test]
-fn test_refbox() {
+fn test_refbox_encode() {
     let large_object = vec![1u32,2,3,4,5,6];
     let mut large_map = HashMap::new();
     large_map.insert(1, 2);
@@ -310,7 +381,43 @@ fn test_refbox() {
 }
 
 #[test]
-fn test_strbox() {
+fn test_refbox_serialize() {
+    let large_object = vec![1u32,2,3,4,5,6];
+    let mut large_map = HashMap::new();
+    large_map.insert(1, 2);
+
+
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, Debug)]
+    enum Message<'a> {
+        M1(RefBox<'a, Vec<u32>>),
+        M2(RefBox<'a, HashMap<u32, u32>>)
+    }
+
+    // Test 1
+    {
+        let serialized = bincode::to_vec(&Message::M1(RefBox::new(&large_object)), Infinite).unwrap();
+        let deserialized: Message<'static> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+
+        match deserialized {
+            Message::M1(b) => assert!(b.take().deref() == &large_object),
+            _ => assert!(false)
+        }
+    }
+
+    // Test 2
+    {
+        let serialized = bincode::to_vec(&Message::M2(RefBox::new(&large_map)), Infinite).unwrap();
+        let deserialized: Message<'static> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+
+        match deserialized {
+            Message::M2(b) => assert!(b.take().deref() == &large_map),
+            _ => assert!(false)
+        }
+    }
+}
+
+#[test]
+fn test_strbox_encode() {
     let strx: &'static str = "hello world";
     let encoded = encode(&StrBox::new(strx), Infinite).unwrap();
     let decoded: StrBox<'static> = decode(&encoded[..]).unwrap();
@@ -319,7 +426,16 @@ fn test_strbox() {
 }
 
 #[test]
-fn test_slicebox() {
+fn test_strbox_serialize() {
+    let strx: &'static str = "hello world";
+    let serialized = bincode::to_vec(&StrBox::new(strx), Infinite).unwrap();
+    let deserialized: StrBox<'static> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+    let stringx: String = deserialized.take();
+    assert!(strx == &stringx[..]);
+}
+
+#[test]
+fn test_slicebox_encode() {
     let slice = [1u32, 2, 3 ,4, 5];
     let encoded = encode(&SliceBox::new(&slice), Infinite).unwrap();
     let decoded: SliceBox<'static, u32> = decode(&encoded[..]).unwrap();
@@ -332,6 +448,24 @@ fn test_slicebox() {
 }
 
 #[test]
-fn test_multi_strings() {
+fn test_slicebox_serialize() {
+    let slice = [1u32, 2, 3 ,4, 5];
+    let serialized = bincode::to_vec(&SliceBox::new(&slice), Infinite).unwrap();
+    let deserialized: SliceBox<'static, u32> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+    {
+        let sb: &[u32] = &deserialized;
+        assert!(slice == sb);
+    }
+    let vecx: Vec<u32> = deserialized.take();
+    assert!(slice == &vecx[..]);
+}
+
+#[test]
+fn test_multi_strings_encode() {
     assert!(encode(&("foo", "bar", "baz"), Infinite).is_ok());
+}
+
+#[test]
+fn test_multi_strings_serialize() {
+    assert!(bincode::to_vec(&("foo", "bar", "baz"), Infinite).is_ok());
 }

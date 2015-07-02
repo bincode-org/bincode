@@ -4,6 +4,8 @@ use std::ops::Deref;
 use rustc_serialize::{Encodable, Encoder};
 use rustc_serialize::{Decodable, Decoder};
 
+use serde;
+
 /// A struct for encoding nested reference types.
 ///
 /// Encoding large objects by reference is really handy.  For example,
@@ -151,6 +153,25 @@ impl <T: Decodable> Decodable for RefBox<'static, T> {
     }
 }
 
+impl<'a, T> serde::Serialize for RefBox<'a, T>
+    where T: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: serde::Serializer
+    {
+        serde::Serialize::serialize(&self.inner, serializer)
+    }
+}
+
+impl<T: serde::Deserialize> serde::Deserialize for RefBox<'static, T> {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: serde::Deserializer
+    {
+        let inner = try!(serde::Deserialize::deserialize(deserializer));
+        Ok(RefBox{ inner: inner })
+    }
+}
+
 impl<'a> StrBox<'a> {
     /// Creates a new StrBox that looks at a borrowed value.
     pub fn new(s: &'a str) -> StrBox<'a> {
@@ -226,6 +247,23 @@ impl Decodable for StrBox<'static> {
     }
 }
 
+impl<'a> serde::Serialize for StrBox<'a> {
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: serde::Serializer
+    {
+        serde::Serialize::serialize(&self.inner, serializer)
+    }
+}
+
+impl serde::Deserialize for StrBox<'static> {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: serde::Deserializer
+    {
+        let inner = try!(serde::Deserialize::deserialize(deserializer));
+        Ok(StrBox{ inner: inner })
+    }
+}
+
 //
 // SliceBox
 //
@@ -296,6 +334,25 @@ impl <T: Decodable> Decodable for SliceBox<'static, T> {
     }
 }
 
+impl<'a, T> serde::Serialize for SliceBox<'a, T>
+    where T: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: serde::Serializer
+    {
+        serde::Serialize::serialize(&self.inner, serializer)
+    }
+}
+
+impl<T: serde::Deserialize> serde::Deserialize for SliceBox<'static, T> {
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: serde::Deserializer
+    {
+        let inner = try!(serde::Deserialize::deserialize(deserializer));
+        Ok(SliceBox{ inner: inner })
+    }
+}
+
 impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, B> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         match self {
@@ -305,10 +362,36 @@ impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, 
     }
 }
 
+impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B> 
+    where A: serde::Serialize,
+          B: serde::Serialize,
+{
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: serde::Serializer
+    {
+        match self {
+            &RefBoxInner::Ref(ref r) => serde::Serialize::serialize(r, serializer),
+            &RefBoxInner::Box(ref b) => serde::Serialize::serialize(b, serializer),
+        }
+    }
+}
+
+
 impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
     fn decode<D: Decoder>(d: &mut D) -> Result<RefBoxInner<'static, A, B>, D::Error> {
         let decoded = try!(Decodable::decode(d));
         Ok(RefBoxInner::Box(decoded))
+    }
+}
+
+impl<A: ?Sized, B> serde::Deserialize for RefBoxInner<'static, A, B>
+    where B: serde::Deserialize,
+{
+    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        where D: serde::Deserializer
+    {
+        let deserialized = try!(serde::Deserialize::deserialize(deserializer));
+        Ok(RefBoxInner::Box(deserialized))
     }
 }
 
