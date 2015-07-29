@@ -346,13 +346,18 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         }
     }
 
-    fn visit_enum<V>(&mut self, _enum: &str, mut visitor: V) -> Result<V::Value, Self::Error>
+    fn visit_enum<V>(&mut self,
+                     _enum: &'static str,
+                     _variants: &'static [&'static str],
+                     mut visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::EnumVisitor,
     {
         visitor.visit(self)
     }
 
-    fn visit_tuple<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn visit_tuple<V>(&mut self,
+                      _len: usize,
+                      mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         struct TupleVisitor<'a, 'b: 'a, R: Read + 'b>(&'a mut Deserializer<'b, R>);
@@ -373,12 +378,6 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         }
 
         visitor.visit_seq(TupleVisitor(self))
-    }
-
-    fn visit_named_seq<V>(&mut self, _name: &str, visitor: V) -> DeserializeResult<V::Value>
-        where V: serde::de::Visitor,
-    {
-        self.visit_tuple(visitor)
     }
 
     fn visit_option<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
@@ -476,56 +475,13 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_map(MapVisitor { deserializer: self, len: len })
     }
 
-    fn visit_named_map<V>(&mut self,
-                          _name: &str,
-                          fields: &'static [&'static str],
-                          mut visitor: V) -> DeserializeResult<V::Value>
+    fn visit_struct<V>(&mut self,
+                       _name: &str,
+                       fields: &'static [&'static str],
+                       visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
-        struct StructVisitor<'a, 'b: 'a, R: Read + 'b> {
-            deserializer: &'a mut Deserializer<'b, R>,
-            index: usize,
-            fields: &'static [&'static str],
-        }
- 
-        impl<'a, 'b: 'a, R: Read + 'b> serde::de::MapVisitor for StructVisitor<'a, 'b, R> {
-            type Error = DeserializeError;
-
-            fn visit_key<K>(&mut self) -> Result<Option<K>, Self::Error>
-                where K: serde::de::Deserialize,
-            {
-                if self.index < self.fields.len() {
-                    let mut deserializer = self.index.into_deserializer();
-                    self.index += 1;
-
-                    let key = try!(serde::Deserialize::deserialize(&mut deserializer));
-                    Ok(Some(key))
-                } else {
-                    Ok(None)
-                }
-            }
-
-            fn visit_value<V>(&mut self) -> Result<V, Self::Error>
-                where V: serde::de::Deserialize,
-            {
-                let value = try!(serde::Deserialize::deserialize(self.deserializer));
-                Ok(value)
-            }
-
-            fn end(&mut self) -> Result<(), Self::Error> {
-                if self.index < self.fields.len() {
-                    Err(serde::de::Error::missing_field_error(self.fields[self.index]))
-                } else {
-                    Ok(())
-                }
-            }
-        }
-
-        visitor.visit_map(StructVisitor {
-            deserializer: self,
-            index: 0,
-            fields: fields,
-        })
+        self.visit_tuple(fields.len(), visitor)
     }
 }
 
@@ -544,20 +500,21 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
         Ok(())
     }
 
-    fn visit_seq<V>(&mut self, visitor: V) -> Result<V::Value, Self::Error>
+    fn visit_tuple<V>(&mut self,
+                      len: usize,
+                      visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::Visitor,
     {
-        serde::de::Deserializer::visit_named_seq(self, "", visitor)
+        serde::de::Deserializer::visit_tuple(self, len, visitor)
     }
 
-    fn visit_map<V>(&mut self,
-                    fields: &'static [&'static str],
-                    visitor: V) -> Result<V::Value, Self::Error>
+    fn visit_struct<V>(&mut self,
+                       fields: &'static [&'static str],
+                       visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::Visitor,
     {
-        serde::de::Deserializer::visit_named_map(self, "", fields, visitor)
+        serde::de::Deserializer::visit_tuple(self, fields.len(), visitor)
     }
-    
 }
 
 pub fn from_reader<R, T>(reader: &mut R, size_limit: SizeLimit) -> DeserializeResult<T>

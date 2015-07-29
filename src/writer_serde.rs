@@ -174,14 +174,6 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         Ok(())
     }
 
-    fn visit_named_seq<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
-    }
-
     fn visit_seq_elt<V>(&mut self, value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
@@ -211,7 +203,7 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         value.serialize(self)
     }
 
-    fn visit_named_map<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
+    fn visit_struct<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
         where V: serde::ser::MapVisitor,
     {
         while let Some(()) = try!(visitor.visit(self)) { }
@@ -219,25 +211,25 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         Ok(())
     }
 
-    fn visit_named_map_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
+    fn visit_struct_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
         where K: serde::Serialize,
               V: serde::Serialize,
     {
         value.serialize(self)
     }
 
-    fn visit_enum_unit(&mut self,
-                       _name: &str,
-                       variant_index: usize,
-                       _variant: &str) -> SerializeResult<()> {
+    fn visit_unit_variant(&mut self,
+                          _name: &str,
+                          variant_index: usize,
+                          _variant: &str) -> SerializeResult<()> {
         self.add_enum_tag(variant_index)
     }
 
-    fn visit_enum_seq<V>(&mut self,
-                         _name: &str,
-                         variant_index: usize,
-                         _variant: &str,
-                         mut visitor: V) -> SerializeResult<()>
+    fn visit_tuple_variant<V>(&mut self,
+                              _name: &str,
+                              variant_index: usize,
+                              _variant: &str,
+                              mut visitor: V) -> SerializeResult<()>
         where V: serde::ser::SeqVisitor,
     {
         try!(self.add_enum_tag(variant_index));
@@ -247,11 +239,11 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         Ok(())
     }
 
-    fn visit_enum_map<V>(&mut self,
-                         _name: &str,
-                         variant_index: usize,
-                         _variant: &str,
-                         mut visitor: V) -> SerializeResult<()>
+    fn visit_struct_variant<V>(&mut self,
+                               _name: &str,
+                               variant_index: usize,
+                               _variant: &str,
+                               mut visitor: V) -> SerializeResult<()>
         where V: serde::ser::MapVisitor,
     {
         try!(self.add_enum_tag(variant_index));
@@ -386,12 +378,6 @@ impl serde::Serializer for SizeChecker {
         Ok(())
     }
 
-    fn visit_named_seq<V>(&mut self, _name: &str, visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        self.visit_tuple(visitor)
-    }
-
     fn visit_seq_elt<V>(&mut self, value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
@@ -421,7 +407,7 @@ impl serde::Serializer for SizeChecker {
         value.serialize(self)
     }
 
-    fn visit_named_map<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
+    fn visit_struct<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
         where V: serde::ser::MapVisitor,
     {
         while let Some(()) = try!(visitor.visit(self)) { }
@@ -429,21 +415,21 @@ impl serde::Serializer for SizeChecker {
         Ok(())
     }
 
-    fn visit_named_map_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
+    fn visit_struct_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
         where K: serde::Serialize,
               V: serde::Serialize,
     {
         value.serialize(self)
     }
 
-    fn visit_enum_unit(&mut self,
-                       _name: &str,
-                       variant_index: usize,
-                       _variant: &str) -> SerializeResult<()> {
+    fn visit_unit_variant(&mut self,
+                          _name: &str,
+                          variant_index: usize,
+                          _variant: &str) -> SerializeResult<()> {
         self.add_enum_tag(variant_index)
     }
 
-    fn visit_enum_seq<V>(&mut self,
+    fn visit_tuple_variant<V>(&mut self,
                          _name: &str,
                          variant_index: usize,
                          _variant: &str,
@@ -457,11 +443,11 @@ impl serde::Serializer for SizeChecker {
         Ok(())
     }
 
-    fn visit_enum_map<V>(&mut self,
-                         _name: &str,
-                         variant_index: usize,
-                         _variant: &str,
-                         mut visitor: V) -> SerializeResult<()>
+    fn visit_struct_variant<V>(&mut self,
+                               _name: &str,
+                               variant_index: usize,
+                               _variant: &str,
+                               mut visitor: V) -> SerializeResult<()>
         where V: serde::ser::MapVisitor,
     {
         try!(self.add_enum_tag(variant_index));
