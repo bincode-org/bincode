@@ -218,6 +218,14 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         value.serialize(self)
     }
 
+    fn visit_newtype_struct<T>(&mut self,
+                               _name: &str,
+                               value: T) -> SerializeResult<()>
+        where T: serde::ser::Serialize,
+    {
+        value.serialize(self)
+    }
+
     fn visit_unit_variant(&mut self,
                           _name: &str,
                           variant_index: usize,

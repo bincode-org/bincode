@@ -483,6 +483,14 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     {
         self.visit_tuple(fields.len(), visitor)
     }
+
+    fn visit_newtype_struct<V>(&mut self,
+                               _name: &str,
+                               mut visitor: V) -> Result<V::Value, Self::Error>
+        where V: serde::de::Visitor,
+    {
+        visitor.visit_newtype_struct(self)
+    }
 }
 
 impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
@@ -498,6 +506,12 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
 
     fn visit_unit(&mut self) -> Result<(), Self::Error> {
         Ok(())
+    }
+
+    fn visit_newtype<T>(&mut self) -> Result<T, Self::Error>
+        where T: serde::de::Deserialize,
+    {
+        serde::de::Deserialize::deserialize(self)
     }
 
     fn visit_tuple<V>(&mut self,
