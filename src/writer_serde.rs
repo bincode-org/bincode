@@ -211,9 +211,16 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         Ok(())
     }
 
-    fn visit_struct_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
-        where K: serde::Serialize,
-              V: serde::Serialize,
+    fn visit_struct_elt<V>(&mut self, _key: &str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn visit_newtype_struct<T>(&mut self,
+                               _name: &str,
+                               value: T) -> SerializeResult<()>
+        where T: serde::ser::Serialize,
     {
         value.serialize(self)
     }
@@ -415,9 +422,8 @@ impl serde::Serializer for SizeChecker {
         Ok(())
     }
 
-    fn visit_struct_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
-        where K: serde::Serialize,
-              V: serde::Serialize,
+    fn visit_struct_elt<V>(&mut self, _key: &str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
     {
         value.serialize(self)
     }

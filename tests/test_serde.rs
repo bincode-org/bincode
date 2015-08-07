@@ -157,6 +157,14 @@ fn test_nested_struct() {
 }
 
 #[test]
+fn test_struct_newtype() {
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
+    struct NewtypeStr(usize);
+
+    the_same(NewtypeStr(5));
+}
+
+#[test]
 fn test_struct_tuple() {
     #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
     struct TubStr(usize, String, f32);
@@ -177,24 +185,13 @@ fn test_enum() {
     enum TestEnum {
         NoArg,
         OneArg(usize),
-        AnotherNoArg
-    }
-    the_same(TestEnum::NoArg);
-    the_same(TestEnum::OneArg(4));
-    the_same(TestEnum::AnotherNoArg);
-}
-
-#[test]
-fn test_struct_enum() {
-    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, PartialEq, Debug)]
-    enum TestEnum {
-        NoArg,
-        OneArg(usize),
+        Args(usize, usize),
         AnotherNoArg,
         StructLike{x: usize, y: f32}
     }
     the_same(TestEnum::NoArg);
     the_same(TestEnum::OneArg(4));
+    the_same(TestEnum::Args(4, 5));
     the_same(TestEnum::AnotherNoArg);
     the_same(TestEnum::StructLike{x: 4, y: 3.14159});
     the_same(vec![TestEnum::NoArg, TestEnum::OneArg(5), TestEnum::AnotherNoArg,

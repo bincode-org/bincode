@@ -131,19 +131,19 @@ impl fmt::Display for DeserializeError {
 }
 
 impl serde::de::Error for DeserializeError {
-    fn syntax_error() -> DeserializeError {
+    fn syntax(_: &str) -> DeserializeError {
         DeserializeError::SyntaxError
     }
 
-    fn end_of_stream_error() -> DeserializeError {
+    fn end_of_stream() -> DeserializeError {
         DeserializeError::EndOfStreamError
     }
 
-    fn unknown_field_error(_field: &str) -> DeserializeError {
+    fn unknown_field(_field: &str) -> DeserializeError {
         DeserializeError::UnknownFieldError
     }
 
-    fn missing_field_error(_field: &'static str) -> DeserializeError {
+    fn missing_field(_field: &'static str) -> DeserializeError {
         DeserializeError::MissingFieldError
     }
 }
@@ -213,7 +213,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     fn visit<V>(&mut self, _visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
-        Err(serde::de::Error::syntax_error())
+        Err(serde::de::Error::syntax("bincode does not support Deserializer::visit"))
     }
 
     fn visit_bool<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
@@ -252,7 +252,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         let value = try!(self.reader.read_u64::<BigEndian>());
         match num::cast(value) {
             Some(value) => visitor.visit_usize(value),
-            None => Err(serde::de::Error::syntax_error()),
+            None => Err(serde::de::Error::syntax("expected usize")),
         }
     }
 
@@ -276,7 +276,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         let value = try!(self.reader.read_i64::<BigEndian>());
         match num::cast(value) {
             Some(value) => visitor.visit_isize(value),
-            None => Err(serde::de::Error::syntax_error()),
+            None => Err(serde::de::Error::syntax("expected isize")),
         }
     }
 
@@ -421,7 +421,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
                 if self.len == 0 {
                     Ok(())
                 } else {
-                    Err(serde::de::Error::syntax_error())
+                    Err(serde::de::Error::syntax("expected end"))
                 }
             }
         }
@@ -465,7 +465,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
                 if self.len == 0 {
                     Ok(())
                 } else {
-                    Err(serde::de::Error::syntax_error())
+                    Err(serde::de::Error::syntax("expected end"))
                 }
             }
         }
@@ -483,6 +483,14 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     {
         self.visit_tuple(fields.len(), visitor)
     }
+
+    fn visit_newtype_struct<V>(&mut self,
+                               _name: &str,
+                               mut visitor: V) -> Result<V::Value, Self::Error>
+        where V: serde::de::Visitor,
+    {
+        visitor.visit_newtype_struct(self)
+    }
 }
 
 impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
@@ -498,6 +506,12 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
 
     fn visit_unit(&mut self) -> Result<(), Self::Error> {
         Ok(())
+    }
+
+    fn visit_newtype<T>(&mut self) -> Result<T, Self::Error>
+        where T: serde::de::Deserialize,
+    {
+        serde::de::Deserialize::deserialize(self)
     }
 
     fn visit_tuple<V>(&mut self,
