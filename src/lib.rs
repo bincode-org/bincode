@@ -28,7 +28,6 @@
 #![crate_type = "dylib"]
 
 #![doc(html_logo_url = "./icon.png")]
-//`#![feature(unicode)]
 
 extern crate rustc_serialize;
 extern crate byteorder;
