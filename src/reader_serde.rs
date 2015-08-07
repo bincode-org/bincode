@@ -361,7 +361,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         where V: serde::de::Visitor,
     {
         struct TupleVisitor<'a, 'b: 'a, R: Read + 'b>(&'a mut Deserializer<'b, R>);
- 
+
         impl<'a, 'b: 'a, R: Read + 'b> serde::de::SeqVisitor for TupleVisitor<'a, 'b, R> {
             type Error = DeserializeError;
 
@@ -401,7 +401,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
             deserializer: &'a mut Deserializer<'b, R>,
             len: usize,
         }
- 
+
         impl<'a, 'b: 'a, R: Read + 'b> serde::de::SeqVisitor for SeqVisitor<'a, 'b, R> {
             type Error = DeserializeError;
 
@@ -438,7 +438,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
             deserializer: &'a mut Deserializer<'b, R>,
             len: usize,
         }
- 
+
         impl<'a, 'b: 'a, R: Read + 'b> serde::de::MapVisitor for MapVisitor<'a, 'b, R> {
             type Error = DeserializeError;
 
@@ -539,11 +539,11 @@ pub fn from_reader<R, T>(reader: &mut R, size_limit: SizeLimit) -> DeserializeRe
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
-pub fn from_slice<T>(bytes: &[u8], size_limit: SizeLimit) -> DeserializeResult<T>
+pub fn from_slice<T>(bytes: &[u8]) -> DeserializeResult<T>
     where T: serde::Deserialize,
 {
     let mut reader = bytes;
-    from_reader(&mut reader, size_limit)
+    from_reader(&mut reader, SizeLimit::Infinite)
 }
 
 static UTF8_CHAR_WIDTH: [u8; 256] = [

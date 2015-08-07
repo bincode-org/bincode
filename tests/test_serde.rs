@@ -27,34 +27,34 @@ use bincode::{
 
 use bincode::SizeLimit::{self, Infinite, Bounded};
 
-fn proxy_encode<V>(element: V, size_limit: SizeLimit) -> Vec<u8>
-    where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
+fn proxy_encode<V>(element: &V, size_limit: SizeLimit) -> Vec<u8>
+    where V: Encodable + Decodable + serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
 {
-    let v1 = bincode::encode(&element, size_limit);
-    let v2 = bincode::to_vec(&element, size_limit);
+    let v1 = bincode::encode(element, size_limit).unwrap();
+    let v2 = bincode::to_vec(element, size_limit).unwrap();
     assert_eq!(v1, v2);
 
     v1
 }
 
 fn proxy_decode<V>(slice: &[u8]) -> V
-    where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
+    where V: Encodable + Decodable + serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
 {
-    let e1 = bincode::decode(slice);
-    let e2 = bincode::from_slice(slice);
+    let e1 = bincode::decode(slice).unwrap();
+    let e2 = bincode::from_slice(slice).unwrap();
 
     assert_eq!(e1, e2);
 
     e1
 }
 
-fn proxy_encoded_size<V>(element: V, size_limit: SizeLimit) -> usize
+fn proxy_encoded_size<V>(element: &V) -> u64
     where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
 {
-    let ser_size = bincode::encoded_size(obj);
-    let serde_size = bincode::serialized_size(obj);
+    let ser_size = bincode::encoded_size(element);
+    let serde_size = bincode::serialized_size(element);
     assert_eq!(ser_size, serde_size);
-    ser_size;
+    ser_size
 }
 
 fn the_same<V>(element: V)
@@ -62,20 +62,19 @@ fn the_same<V>(element: V)
 {
     // Make sure that the bahavior isize correct when wrapping with a RefBox.
     fn ref_box_correct<V>(v: &V) -> bool
-        where V: Encodable+Decodable+PartialEq+Debug+'static
+        where V: Encodable + Decodable + PartialEq + Debug + 'static
     {
         let rf = RefBox::new(v);
-
-        let encoded = proxy_encode(&rf, Infinite).unwrap();
-        let decoded: RefBox<'static, V> = proxy_decode(&encoded[..]).unwrap();
+        let encoded = encode(&rf, Infinite).unwrap();
+        let decoded: RefBox<'static, V> = decode(&encoded[..]).unwrap();
 
         decoded.take().deref() == v
     }
 
     let size = proxy_encoded_size(&element);
 
-    let encoded = proxy_encode(&element, Infinite).unwrap();
-    let decoded = proxy_decode(&encoded[..]).unwrap();
+    let encoded = proxy_encode(&element, Infinite);
+    let decoded = proxy_decode(&encoded[..]);
 
     assert_eq!(element, decoded);
     assert_eq!(size, encoded.len() as u64);
@@ -259,47 +258,44 @@ fn deserializing_errors() {
         }
     }
 
-    isize_invalid_deserialize(bincode::from_slice::<bool>(&vec![0xA][..], Infinite));
-    isize_invalid_deserialize(bincode::from_slice::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..], Infinite));
+    isize_invalid_deserialize(bincode::from_slice::<bool>(&vec![0xA][..]));
+    isize_invalid_deserialize(bincode::from_slice::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
     // Out-of-bounds variant
     #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, Debug)]
     enum Test {
         One,
         Two,
     };
-    isize_invalid_deserialize(bincode::from_slice::<Test>(&vec![0, 0, 0, 5][..], Infinite));
-    isize_invalid_deserialize(bincode::from_slice::<Option<u8>>(&vec![5, 0][..], Infinite));
+    isize_invalid_deserialize(bincode::from_slice::<Test>(&vec![0, 0, 0, 5][..]));
+    isize_invalid_deserialize(bincode::from_slice::<Option<u8>>(&vec![5, 0][..]));
 }
 
 #[test]
 fn too_big_decode() {
     let encoded = vec![0,0,0,3];
-    let mut encoded_ref = &encoded[..];
-    let decoded: Result<u32, _> = decode_from(&mut encoded_ref, Bounded(3));
+    let decoded: Result<u32, _> = decode_from(&mut &encoded[..], Bounded(3));
     assert!(decoded.is_err());
 
     let encoded = vec![0,0,0,3];
-    let mut encoded_ref = &encoded[..];
-    let decoded: Result<u32, _> = decode_from(&mut encoded_ref, Bounded(4));
+    let decoded: Result<u32, _> = decode_from(&mut &encoded[..], Bounded(4));
     assert!(decoded.is_ok());
 }
 
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32, _> = bincode::from_slice(&serialized[..], Bounded(3));
+    let deserialized: Result<u32, _> = bincode::from_reader(&mut &serialized[..], Bounded(3));
     assert!(deserialized.is_err());
 
     let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32, _> = bincode::from_slice(&serialized[..], Bounded(4));
+    let deserialized: Result<u32, _> = bincode::from_reader(&mut &serialized[..], Bounded(4));
     assert!(deserialized.is_ok());
 }
 
 #[test]
 fn too_big_char_decode() {
     let encoded = vec![0x41];
-    let mut encoded_ref = &encoded[..];
-    let decoded: Result<char, _> = decode_from(&mut encoded_ref, Bounded(1));
+    let decoded: Result<char, _> = decode_from(&mut &encoded[..], Bounded(1));
     assert!(decoded.is_ok());
     assert_eq!(decoded.unwrap(), 'A');
 }
@@ -307,7 +303,7 @@ fn too_big_char_decode() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char, _> = bincode::from_slice(&serialized[..], Bounded(1));
+    let deserialized: Result<char, _> = bincode::from_reader(&mut &serialized[..], Bounded(1));
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
@@ -416,7 +412,7 @@ fn test_refbox_serialize() {
     // Test 1
     {
         let serialized = bincode::to_vec(&Message::M1(RefBox::new(&large_object)), Infinite).unwrap();
-        let deserialized: Message<'static> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+        let deserialized: Message<'static> = bincode::from_reader(&mut &serialized[..], Infinite).unwrap();
 
         match deserialized {
             Message::M1(b) => assert!(b.take().deref() == &large_object),
@@ -427,7 +423,7 @@ fn test_refbox_serialize() {
     // Test 2
     {
         let serialized = bincode::to_vec(&Message::M2(RefBox::new(&large_map)), Infinite).unwrap();
-        let deserialized: Message<'static> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+        let deserialized: Message<'static> = bincode::from_reader(&mut &serialized[..], Infinite).unwrap();
 
         match deserialized {
             Message::M2(b) => assert!(b.take().deref() == &large_map),
@@ -449,7 +445,7 @@ fn test_strbox_encode() {
 fn test_strbox_serialize() {
     let strx: &'static str = "hello world";
     let serialized = bincode::to_vec(&StrBox::new(strx), Infinite).unwrap();
-    let deserialized: StrBox<'static> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+    let deserialized: StrBox<'static> = bincode::from_reader(&mut &serialized[..], Infinite).unwrap();
     let stringx: String = deserialized.take();
     assert!(strx == &stringx[..]);
 }
@@ -471,7 +467,7 @@ fn test_slicebox_encode() {
 fn test_slicebox_serialize() {
     let slice = [1u32, 2, 3 ,4, 5];
     let serialized = bincode::to_vec(&SliceBox::new(&slice), Infinite).unwrap();
-    let deserialized: SliceBox<'static, u32> = bincode::from_slice(&serialized[..], Infinite).unwrap();
+    let deserialized: SliceBox<'static, u32> = bincode::from_reader(&mut &serialized[..], Infinite).unwrap();
     {
         let sb: &[u32] = &deserialized;
         assert!(slice == sb);

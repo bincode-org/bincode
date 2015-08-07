@@ -15,4 +15,6 @@ rustc-serialize = "0.3.*"
 byteorder = "0.3.*"
 num = "*"
 serde = "*"
+
+[dev-dependencies]
 serde_macros = "*"

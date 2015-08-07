@@ -140,6 +140,7 @@ impl <T> RefBox<'static, T>  {
     }
 }
 
+
 impl <'a, T: Encodable> Encodable for RefBox<'a, T> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         self.inner.encode(s)
@@ -362,7 +363,7 @@ impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, 
     }
 }
 
-impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B> 
+impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B>
     where A: serde::Serialize,
           B: serde::Serialize,
 {
