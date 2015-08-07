@@ -25,7 +25,37 @@ use bincode::{
     SliceBox,
 };
 
-use bincode::SizeLimit::{Infinite, Bounded};
+use bincode::SizeLimit::{self, Infinite, Bounded};
+
+fn proxy_encode<V>(element: V, size_limit: SizeLimit) -> Vec<u8>
+    where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
+{
+    let v1 = bincode::encode(&element, size_limit);
+    let v2 = bincode::to_vec(&element, size_limit);
+    assert_eq!(v1, v2);
+
+    v1
+}
+
+fn proxy_decode<V>(slice: &[u8]) -> V
+    where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
+{
+    let e1 = bincode::decode(slice);
+    let e2 = bincode::from_slice(slice);
+
+    assert_eq!(e1, e2);
+
+    e1
+}
+
+fn proxy_encoded_size<V>(element: V, size_limit: SizeLimit) -> usize
+    where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
+{
+    let ser_size = bincode::encoded_size(obj);
+    let serde_size = bincode::serialized_size(obj);
+    assert_eq!(ser_size, serde_size);
+    ser_size;
+}
 
 fn the_same<V>(element: V)
     where V: Encodable+Decodable+serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
@@ -36,27 +66,20 @@ fn the_same<V>(element: V)
     {
         let rf = RefBox::new(v);
 
-        let encoded = encode(&rf, Infinite).unwrap();
-        let decoded: RefBox<'static, V> = decode(&encoded[..]).unwrap();
+        let encoded = proxy_encode(&rf, Infinite).unwrap();
+        let decoded: RefBox<'static, V> = proxy_decode(&encoded[..]).unwrap();
 
         decoded.take().deref() == v
     }
 
-    let size = encoded_size(&element);
-    let encoded = encode(&element, Infinite).unwrap();
-    let decoded = decode(&encoded[..]).unwrap();
+    let size = proxy_encoded_size(&element);
+
+    let encoded = proxy_encode(&element, Infinite).unwrap();
+    let decoded = proxy_decode(&encoded[..]).unwrap();
+
     assert_eq!(element, decoded);
     assert_eq!(size, encoded.len() as u64);
     assert!(ref_box_correct(&element));
-
-    let serialized = bincode::to_vec(&element, Infinite).unwrap();
-    assert_eq!(encoded, serialized);
-
-    let deserialized = bincode::from_slice(&serialized[..], Infinite).unwrap();
-    assert_eq!(element, deserialized);
-
-    let size = bincode::serialized_size(&element);
-    assert_eq!(size, serialized.len() as u64);
 }
 
 #[test]
