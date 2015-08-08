@@ -1,3 +1,7 @@
+//! A collection of serialization and deserialization functions
+//! that use the `rustc_serialize` crate for the encodable and decodable
+//! implementation.
+
 use rustc_serialize_crate::{Encodable, Decodable};
 use std::io::{Write, Read};
 use ::SizeLimit;

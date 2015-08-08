@@ -6,6 +6,13 @@
 //! functions which respectively allow encoding into a `std::io::Writer`
 //! and decoding from a `std::io::Buffer`.
 //!
+//! ## Modules
+//! There are two ways to encode and decode structs using `bincode`, either using `rustc_serialize`
+//! or the `serde` crate.  `rustc_serialize` and `serde` are crates and and also the names of their
+//! corresponding modules inside of `bincode`.  Both modules have exactly equivalant functions, and
+//! and the only difference is whether or not the library user wants to use `rustc_serialize` or
+//! `serde`.
+//!
 //! ### Using Basic Functions
 //!
 //! ```rust
