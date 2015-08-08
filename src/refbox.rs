@@ -1,10 +1,9 @@
 use std::boxed::Box;
 use std::ops::Deref;
 
-use rustc_serialize::{Encodable, Encoder};
-use rustc_serialize::{Decodable, Decoder};
+use rustc_serialize_crate::{Encodable, Encoder, Decodable, Decoder};
 
-use serde;
+use serde_crate as serde;
 
 /// A struct for encoding nested reference types.
 ///

@@ -4,11 +4,11 @@ use std::error::Error;
 use std::fmt;
 use std::convert::From;
 
-use rustc_serialize::Decoder;
+use rustc_serialize_crate::Decoder;
 
 use byteorder::{BigEndian, ReadBytesExt};
 use byteorder::Error as ByteOrderError;
-use super::SizeLimit;
+use ::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct InvalidEncoding {

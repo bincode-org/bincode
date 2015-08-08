@@ -1,4 +1,3 @@
-use std::io;
 use std::io::Read;
 use std::io::Error as IoError;
 use std::error::Error;
@@ -8,10 +7,10 @@ use std::convert::From;
 use byteorder::Error as ByteOrderError;
 use byteorder::{BigEndian, ReadBytesExt};
 use num;
-use serde;
-use serde::de::value::ValueDeserializer;
+use serde_crate as serde;
+use serde_crate::de::value::ValueDeserializer;
 
-use super::SizeLimit;
+use ::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct InvalidEncoding {
@@ -96,7 +95,7 @@ impl From<ByteOrderError> for DeserializeError {
 
 impl From<serde::de::value::Error> for DeserializeError {
     fn from(err: serde::de::value::Error) -> DeserializeError {
-        use serde::de::value::Error;
+        use serde_crate::de::value::Error;
 
         match err {
             Error::SyntaxError => DeserializeError::SyntaxError,
@@ -530,22 +529,6 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
         serde::de::Deserializer::visit_tuple(self, fields.len(), visitor)
     }
 }
-
-pub fn from_reader<R, T>(reader: &mut R, size_limit: SizeLimit) -> DeserializeResult<T>
-    where R: io::Read,
-          T: serde::Deserialize,
-{
-    let mut deserializer = Deserializer::new(reader, size_limit);
-    serde::Deserialize::deserialize(&mut deserializer)
-}
-
-pub fn from_slice<T>(bytes: &[u8]) -> DeserializeResult<T>
-    where T: serde::Deserialize,
-{
-    let mut reader = bytes;
-    from_reader(&mut reader, SizeLimit::Infinite)
-}
-
 static UTF8_CHAR_WIDTH: [u8; 256] = [
 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x1F

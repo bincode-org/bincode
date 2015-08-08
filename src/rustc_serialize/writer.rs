@@ -4,7 +4,7 @@ use std::io::ErrorKind as IoErrorKind;
 use std::error::Error;
 use std::fmt;
 
-use rustc_serialize::Encoder;
+use rustc_serialize_crate::Encoder;
 
 use byteorder::{BigEndian, WriteBytesExt};
 use byteorder::Error as ByteOrderError;
