@@ -101,7 +101,7 @@ impl From<IoError> for DecodingError {
 /// This struct should rarely be used.
 /// In most cases, prefer the `decode_from` function.
 ///
-/// ```no_run
+/// ```rust,no_run
 /// let file = ...
 /// let dr = bincode::rustc_serialize::DecoderReader::new(&mut file, SizeLimit::Infinite);
 /// let result: T = Decodable::decode(&mut dr);
