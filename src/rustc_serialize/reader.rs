@@ -102,8 +102,7 @@ impl From<IoError> for DecodingError {
 /// In most cases, prefer the `decode_from` function.
 ///
 /// ```rust,no_run
-/// let file = ...
-/// let dr = bincode::rustc_serialize::DecoderReader::new(&mut file, SizeLimit::Infinite);
+/// let dr = bincode::rustc_serialize::DecoderReader::new(&mut some_reader, SizeLimit::Infinite);
 /// let result: T = Decodable::decode(&mut dr);
 /// let bytes_red = dr.bytes_read();
 /// ```

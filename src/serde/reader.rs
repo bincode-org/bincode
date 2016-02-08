@@ -156,8 +156,7 @@ pub type DeserializeResult<T> = Result<T, DeserializeError>;
 /// In most cases, prefer the `decode_from` function.
 ///
 /// ```rust,no_run
-/// let file = ...
-/// let d = Deserializer::new(&mut file, SizeLimit::new());
+/// let d = Deserializer::new(&mut some_reader, SizeLimit::new());
 /// serde::Deserialize::deserialize(&mut deserializer);
 /// let bytes_read = d.bytes_read();
 /// ```
