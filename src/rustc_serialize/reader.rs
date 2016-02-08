@@ -104,7 +104,7 @@ impl From<IoError> for DecodingError {
 /// ```rust,ignore
 /// let dr = bincode::rustc_serialize::DecoderReader::new(&mut some_reader, SizeLimit::Infinite);
 /// let result: T = Decodable::decode(&mut dr);
-/// let bytes_red = dr.bytes_read();
+/// let bytes_read = dr.bytes_read();
 /// ```
 pub struct DecoderReader<'a, R: 'a> {
     reader: &'a mut R,
