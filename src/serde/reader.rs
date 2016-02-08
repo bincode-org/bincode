@@ -154,6 +154,13 @@ pub type DeserializeResult<T> = Result<T, DeserializeError>;
 ///
 /// This struct should rarely be used.
 /// In most cases, prefer the `decode_from` function.
+///
+/// ```no_run
+/// let file = ...
+/// let d = Deserializer::new(&mut file, SizeLimit::new());
+/// serde::Deserialize::deserialize(&mut deserializer);
+/// let bytes_read = d.bytes_read();
+/// ```
 pub struct Deserializer<'a, R: 'a> {
     reader: &'a mut R,
     size_limit: SizeLimit,
