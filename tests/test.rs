@@ -1,4 +1,4 @@
-#![feature(plugin, custom_derive)]
+#![feature(plugin, custom_derive, custom_attribute)]
 #![plugin(serde_macros)]
 
 extern crate bincode;
@@ -243,7 +243,7 @@ fn deserializing_errors() {
     fn isize_invalid_deserialize<T: Debug>(res: DeserializeResult<T>) {
         match res {
             Err(DeserializeError::InvalidEncoding(_)) => {},
-            Err(DeserializeError::SyntaxError) => {},
+            Err(DeserializeError::SyntaxError(_)) => {},
             _ => panic!("Expecting InvalidEncoding, got {:?}", res),
         }
     }
@@ -475,3 +475,14 @@ fn test_multi_strings_encode() {
 fn test_multi_strings_serialize() {
     assert!(serialize(&("foo", "bar", "baz"), Infinite).is_ok());
 }
+
+/*
+#[test]
+fn path_buf() {
+    use std::path::{Path, PathBuf};
+    let path = Path::new("foo").to_path_buf();
+    let serde_encoded = bincode::serde::serialize(&path, Infinite).unwrap();
+    let decoded: PathBuf = bincode::serde::deserialize(&serde_encoded).unwrap();
+    assert!(path.to_str() == decoded.to_str());
+}
+*/

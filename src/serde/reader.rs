@@ -46,7 +46,7 @@ pub enum DeserializeError {
     /// If decoding a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
-    SyntaxError,
+    SyntaxError(String),
     EndOfStreamError,
     UnknownFieldError,
     MissingFieldError,
@@ -58,7 +58,7 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => Error::description(err),
             DeserializeError::InvalidEncoding(ref ib) => ib.desc,
             DeserializeError::SizeLimit => "the size limit for decoding has been reached",
-            DeserializeError::SyntaxError => "syntax error",
+            DeserializeError::SyntaxError(ref s) => &*s,
             DeserializeError::EndOfStreamError => "Unexpected EOF while reading a multi-byte number",
             DeserializeError::UnknownFieldError => "unknown field error",
             DeserializeError::MissingFieldError => "missing field error",
@@ -70,7 +70,7 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => err.cause(),
             DeserializeError::InvalidEncoding(_) => None,
             DeserializeError::SizeLimit => None,
-            DeserializeError::SyntaxError => None,
+            DeserializeError::SyntaxError(_) => None,
             DeserializeError::EndOfStreamError => None,
             DeserializeError::UnknownFieldError => None,
             DeserializeError::MissingFieldError => None,
@@ -98,7 +98,7 @@ impl From<serde::de::value::Error> for DeserializeError {
         use serde_crate::de::value::Error;
 
         match err {
-            Error::SyntaxError => DeserializeError::SyntaxError,
+            Error::SyntaxError => DeserializeError::SyntaxError("syntax error".to_string()),
             Error::EndOfStreamError => {
                 DeserializeError::EndOfStreamError
             }
@@ -117,8 +117,8 @@ impl fmt::Display for DeserializeError {
                 write!(fmt, "InvalidEncoding: {}", ib),
             DeserializeError::SizeLimit =>
                 write!(fmt, "SizeLimit"),
-            DeserializeError::SyntaxError =>
-                write!(fmt, "SyntaxError"),
+            DeserializeError::SyntaxError(ref d) =>
+                write!(fmt, "SyntaxError: {}", d),
             DeserializeError::EndOfStreamError =>
                 write!(fmt, "EndOfStreamError"),
             DeserializeError::UnknownFieldError =>
@@ -130,8 +130,8 @@ impl fmt::Display for DeserializeError {
 }
 
 impl serde::de::Error for DeserializeError {
-    fn syntax(_: &str) -> DeserializeError {
-        DeserializeError::SyntaxError
+    fn syntax(desc: &str) -> DeserializeError {
+        DeserializeError::SyntaxError(desc.into())
     }
 
     fn end_of_stream() -> DeserializeError {
