@@ -14,7 +14,7 @@ description = "A binary serialization / deserialization strategy and implementat
 rustc-serialize = "0.3.*"
 byteorder = "0.4.*"
 num = "^0.1"
-serde = "^0.6"
+serde = "0.6"
 
 [dev-dependencies]
 serde_macros = "*"
