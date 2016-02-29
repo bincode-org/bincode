@@ -243,7 +243,8 @@ fn deserializing_errors() {
     fn isize_invalid_deserialize<T: Debug>(res: DeserializeResult<T>) {
         match res {
             Err(DeserializeError::InvalidEncoding(_)) => {},
-            Err(DeserializeError::SyntaxError(_)) => {},
+            Err(DeserializeError::Serde(serde::de::value::Error::UnknownVariant(_))) => {},
+            Err(DeserializeError::Serde(serde::de::value::Error::InvalidValue(_))) => {},
             _ => panic!("Expecting InvalidEncoding, got {:?}", res),
         }
     }
