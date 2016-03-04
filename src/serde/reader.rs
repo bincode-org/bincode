@@ -9,6 +9,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use num;
 use serde_crate as serde;
 use serde_crate::de::value::ValueDeserializer;
+use serde_crate::de::Deserializer as SerdeDeserializer;
 
 use ::SizeLimit;
 
@@ -46,10 +47,7 @@ pub enum DeserializeError {
     /// If decoding a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
-    SyntaxError(String),
-    EndOfStreamError,
-    UnknownFieldError,
-    MissingFieldError,
+    Serde(serde::de::value::Error)
 }
 
 impl Error for DeserializeError {
@@ -58,10 +56,8 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => Error::description(err),
             DeserializeError::InvalidEncoding(ref ib) => ib.desc,
             DeserializeError::SizeLimit => "the size limit for decoding has been reached",
-            DeserializeError::SyntaxError(ref s) => &*s,
-            DeserializeError::EndOfStreamError => "Unexpected EOF while reading a multi-byte number",
-            DeserializeError::UnknownFieldError => "unknown field error",
-            DeserializeError::MissingFieldError => "missing field error",
+            DeserializeError::Serde(ref s) => s.description(),
+
         }
     }
 
@@ -70,10 +66,7 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => err.cause(),
             DeserializeError::InvalidEncoding(_) => None,
             DeserializeError::SizeLimit => None,
-            DeserializeError::SyntaxError(_) => None,
-            DeserializeError::EndOfStreamError => None,
-            DeserializeError::UnknownFieldError => None,
-            DeserializeError::MissingFieldError => None,
+            DeserializeError::Serde(ref s) => s.cause(),
         }
     }
 }
@@ -88,23 +81,15 @@ impl From<ByteOrderError> for DeserializeError {
     fn from(err: ByteOrderError) -> DeserializeError {
         match err {
             ByteOrderError::Io(ioe) => DeserializeError::IoError(ioe),
-            ByteOrderError::UnexpectedEOF => DeserializeError::EndOfStreamError,
+            ByteOrderError::UnexpectedEOF => DeserializeError::Serde(
+                serde::de::value::Error::EndOfStream),
         }
     }
 }
 
 impl From<serde::de::value::Error> for DeserializeError {
     fn from(err: serde::de::value::Error) -> DeserializeError {
-        use serde_crate::de::value::Error;
-
-        match err {
-            Error::SyntaxError => DeserializeError::SyntaxError("syntax error".to_string()),
-            Error::EndOfStreamError => {
-                DeserializeError::EndOfStreamError
-            }
-            Error::UnknownFieldError(_) => DeserializeError::UnknownFieldError,
-            Error::MissingFieldError(_) => DeserializeError::MissingFieldError,
-        }
+        DeserializeError::Serde(err)
     }
 }
 
@@ -117,33 +102,19 @@ impl fmt::Display for DeserializeError {
                 write!(fmt, "InvalidEncoding: {}", ib),
             DeserializeError::SizeLimit =>
                 write!(fmt, "SizeLimit"),
-            DeserializeError::SyntaxError(ref d) =>
-                write!(fmt, "SyntaxError: {}", d),
-            DeserializeError::EndOfStreamError =>
-                write!(fmt, "EndOfStreamError"),
-            DeserializeError::UnknownFieldError =>
-                write!(fmt, "UnknownFieldError"),
-            DeserializeError::MissingFieldError =>
-                write!(fmt, "MissingFieldError"),
+            DeserializeError::Serde(ref s) =>
+                s.fmt(fmt),
         }
     }
 }
 
 impl serde::de::Error for DeserializeError {
-    fn syntax(desc: &str) -> DeserializeError {
-        DeserializeError::SyntaxError(desc.into())
+    fn custom<T: Into<String>>(desc: T) -> DeserializeError {
+        DeserializeError::Serde(serde::de::value::Error::Custom(desc.into()))
     }
 
     fn end_of_stream() -> DeserializeError {
-        DeserializeError::EndOfStreamError
-    }
-
-    fn unknown_field(_field: &str) -> DeserializeError {
-        DeserializeError::UnknownFieldError
-    }
-
-    fn missing_field(_field: &'static str) -> DeserializeError {
-        DeserializeError::MissingFieldError
+        DeserializeError::Serde(serde::de::value::Error::EndOfStream)
     }
 }
 
@@ -198,9 +169,9 @@ impl <'a, A> Deserializer<'a, A> {
 }
 
 macro_rules! impl_nums {
-    ($ty:ty, $visitor_method:ident, $reader_method:ident) => {
+    ($ty:ty, $dser_method:ident, $visitor_method:ident, $reader_method:ident) => {
         #[inline]
-        fn $visitor_method<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+        fn $dser_method<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
             where V: serde::de::Visitor,
         {
             try!(self.read_type::<$ty>());
@@ -215,13 +186,14 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     type Error = DeserializeError;
 
     #[inline]
-    fn visit<V>(&mut self, _visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize<V>(&mut self, _visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
-        Err(serde::de::Error::syntax("bincode does not support Deserializer::visit"))
+        let message = "bincode does not support Deserializer::deserialize";
+        Err(DeserializeError::Serde(serde::de::value::Error::Custom(message.into())))
     }
 
-    fn visit_bool<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_bool<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         let value: u8 = try!(serde::Deserialize::deserialize(self));
@@ -237,64 +209,63 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         }
     }
 
+    impl_nums!(u16, deserialize_u16, visit_u16, read_u16);
+    impl_nums!(u32, deserialize_u32, visit_u32, read_u32);
+    impl_nums!(u64, deserialize_u64, visit_u64, read_u64);
+    impl_nums!(i16, deserialize_i16, visit_i16, read_i16);
+    impl_nums!(i32, deserialize_i32, visit_i32, read_i32);
+    impl_nums!(i64, deserialize_i64, visit_i64, read_i64);
+    impl_nums!(f32, deserialize_f32, visit_f32, read_f32);
+    impl_nums!(f64, deserialize_f64, visit_f64, read_f64);
+
+
     #[inline]
-    fn visit_u8<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_u8<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         try!(self.read_type::<u8>());
         visitor.visit_u8(try!(self.reader.read_u8()))
     }
 
-    impl_nums!(u16, visit_u16, read_u16);
-    impl_nums!(u32, visit_u32, read_u32);
-    impl_nums!(u64, visit_u64, read_u64);
-
     #[inline]
-    fn visit_usize<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_usize<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         try!(self.read_type::<u64>());
         let value = try!(self.reader.read_u64::<BigEndian>());
         match num::cast(value) {
             Some(value) => visitor.visit_usize(value),
-            None => Err(serde::de::Error::syntax("expected usize")),
+            None => Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected usize".into())))
         }
     }
 
     #[inline]
-    fn visit_i8<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_i8<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         try!(self.read_type::<i8>());
         visitor.visit_i8(try!(self.reader.read_i8()))
     }
 
-    impl_nums!(i16, visit_i16, read_i16);
-    impl_nums!(i32, visit_i32, read_i32);
-    impl_nums!(i64, visit_i64, read_i64);
-
     #[inline]
-    fn visit_isize<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_isize<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         try!(self.read_type::<i64>());
         let value = try!(self.reader.read_i64::<BigEndian>());
         match num::cast(value) {
             Some(value) => visitor.visit_isize(value),
-            None => Err(serde::de::Error::syntax("expected isize")),
+            None => Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected isize".into()))),
         }
     }
 
-    impl_nums!(f32, visit_f32, read_f32);
-    impl_nums!(f64, visit_f64, read_f64);
-
-    fn visit_unit<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_unit<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         visitor.visit_unit()
     }
 
-    fn visit_char<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_char<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         use std::str;
@@ -333,7 +304,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_char(res)
     }
 
-    fn visit_string<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_string<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         let len = try!(serde::Deserialize::deserialize(self));
@@ -351,7 +322,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         }
     }
 
-    fn visit_enum<V>(&mut self,
+    fn deserialize_enum<V>(&mut self,
                      _enum: &'static str,
                      _variants: &'static [&'static str],
                      mut visitor: V) -> Result<V::Value, Self::Error>
@@ -360,7 +331,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit(self)
     }
 
-    fn visit_tuple<V>(&mut self,
+    fn deserialize_tuple<V>(&mut self,
                       _len: usize,
                       mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
@@ -385,7 +356,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_seq(TupleVisitor(self))
     }
 
-    fn visit_option<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_option<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         let value: u8 = try!(serde::de::Deserialize::deserialize(self));
@@ -399,7 +370,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         }
     }
 
-    fn visit_seq<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_seq<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         struct SeqVisitor<'a, 'b: 'a, R: Read + 'b> {
@@ -426,7 +397,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
                 if self.len == 0 {
                     Ok(())
                 } else {
-                    Err(serde::de::Error::syntax("expected end"))
+                    Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected end".into())))
                 }
             }
         }
@@ -436,7 +407,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_seq(SeqVisitor { deserializer: self, len: len })
     }
 
-    fn visit_map<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+    fn deserialize_map<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         struct MapVisitor<'a, 'b: 'a, R: Read + 'b> {
@@ -470,7 +441,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
                 if self.len == 0 {
                     Ok(())
                 } else {
-                    Err(serde::de::Error::syntax("expected end"))
+                    Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected end".into())))
                 }
             }
         }
@@ -480,16 +451,16 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_map(MapVisitor { deserializer: self, len: len })
     }
 
-    fn visit_struct<V>(&mut self,
+    fn deserialize_struct<V>(&mut self,
                        _name: &str,
                        fields: &'static [&'static str],
                        visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
-        self.visit_tuple(fields.len(), visitor)
+        self.deserialize_tuple(fields.len(), visitor)
     }
 
-    fn visit_newtype_struct<V>(&mut self,
+    fn deserialize_newtype_struct<V>(&mut self,
                                _name: &str,
                                mut visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::Visitor,
@@ -506,7 +477,8 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
     {
         let index: u32 = try!(serde::Deserialize::deserialize(self));
         let mut deserializer = (index as usize).into_deserializer();
-        Ok(try!(serde::Deserialize::deserialize(&mut deserializer)))
+        let attempt: Result<V, serde::de::value::Error> = serde::Deserialize::deserialize(&mut deserializer);
+        Ok(try!(attempt))
     }
 
     fn visit_unit(&mut self) -> Result<(), Self::Error> {
@@ -524,7 +496,7 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
                       visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::Visitor,
     {
-        serde::de::Deserializer::visit_tuple(self, len, visitor)
+        serde::de::Deserializer::deserialize_tuple(self, len, visitor)
     }
 
     fn visit_struct<V>(&mut self,
@@ -532,7 +504,7 @@ impl<'a, R: Read> serde::de::VariantVisitor for Deserializer<'a, R> {
                        visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::Visitor,
     {
-        serde::de::Deserializer::visit_tuple(self, fields.len(), visitor)
+        serde::de::Deserializer::deserialize_tuple(self, fields.len(), visitor)
     }
 }
 static UTF8_CHAR_WIDTH: [u8; 256] = [
