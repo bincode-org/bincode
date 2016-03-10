@@ -347,8 +347,15 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
         let len = try!(self.read_usize());
         match self.size_limit {
             SizeLimit::Infinite => (),
-            SizeLimit::Bounded(x) if self.read.saturating_add(len as u64) <= x => (),
-            SizeLimit::Bounded(_) => return Err(DecodingError::SizeLimit),
+            SizeLimit::Bounded(x) => {
+                let overflow = match self.read.checked_add(len as u64) {
+                    Some(y) => y > x,
+                    None => true,
+                };
+                if overflow {
+                    return Err(DecodingError::SizeLimit);
+                }
+            },
         };
         f(self, len)
     }
@@ -363,8 +370,15 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
         let len = try!(self.read_usize());
         match self.size_limit {
             SizeLimit::Infinite => (),
-            SizeLimit::Bounded(x) if self.read.saturating_add(len as u64) <= x => (),
-            SizeLimit::Bounded(_) => return Err(DecodingError::SizeLimit),
+            SizeLimit::Bounded(x) => {
+                let overflow = match self.read.checked_add(len as u64) {
+                    Some(y) => y > x,
+                    None => true,
+                };
+                if overflow {
+                    return Err(DecodingError::SizeLimit);
+                }
+            },
         };
         f(self, len)
     }
