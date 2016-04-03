@@ -129,10 +129,7 @@ impl<'a, R: Read> DecoderReader<'a, R> {
 
 impl <'a, A> DecoderReader<'a, A> {
     fn read_bytes(&mut self, count: u64) -> Result<(), DecodingError> {
-        self.read = match self.read.checked_add(count) {
-            Some(read) => read,
-            None => return Err(DecodingError::SizeLimit),
-        };
+        self.read += count;
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
             SizeLimit::Bounded(x) if self.read <= x => Ok(()),
@@ -345,18 +342,6 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
         where F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
     {
         let len = try!(self.read_usize());
-        match self.size_limit {
-            SizeLimit::Infinite => (),
-            SizeLimit::Bounded(x) => {
-                let overflow = match self.read.checked_add(len as u64) {
-                    Some(y) => y > x,
-                    None => true,
-                };
-                if overflow {
-                    return Err(DecodingError::SizeLimit);
-                }
-            },
-        };
         f(self, len)
     }
     fn read_seq_elt<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
@@ -368,18 +353,6 @@ impl<'a, R: Read> Decoder for DecoderReader<'a, R> {
         where F: FnOnce(&mut DecoderReader<'a, R>, usize) -> DecodingResult<T>
     {
         let len = try!(self.read_usize());
-        match self.size_limit {
-            SizeLimit::Infinite => (),
-            SizeLimit::Bounded(x) => {
-                let overflow = match self.read.checked_add(len as u64) {
-                    Some(y) => y > x,
-                    None => true,
-                };
-                if overflow {
-                    return Err(DecodingError::SizeLimit);
-                }
-            },
-        };
         f(self, len)
     }
     fn read_map_elt_key<T, F>(&mut self, _: usize, f: F) -> DecodingResult<T>
