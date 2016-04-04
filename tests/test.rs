@@ -477,7 +477,19 @@ fn test_multi_strings_serialize() {
     assert!(serialize(&("foo", "bar", "baz"), Infinite).is_ok());
 }
 
-/*
+#[test]
+fn test_oom_protection() {
+    use std::io::Cursor;
+    #[derive(RustcEncodable, RustcDecodable)]
+    struct FakeVec {
+        len: u64,
+        byte: u8
+    }
+    let x = bincode::rustc_serialize::encode(&FakeVec { len: 0xffffffffffffffffu64, byte: 1 }, bincode::SizeLimit::Bounded(10)).unwrap();
+    let y : Result<Vec<u8>, _> = bincode::rustc_serialize::decode_from(&mut Cursor::new(&x[..]), bincode::SizeLimit::Bounded(10));
+    assert!(y.is_err());
+}
+
 #[test]
 fn path_buf() {
     use std::path::{Path, PathBuf};
@@ -486,4 +498,3 @@ fn path_buf() {
     let decoded: PathBuf = bincode::serde::deserialize(&serde_encoded).unwrap();
     assert!(path.to_str() == decoded.to_str());
 }
-*/
