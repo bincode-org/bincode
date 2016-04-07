@@ -66,7 +66,7 @@ pub mod serde;
 /// that is larger than your decoder expects.  By supplying a size limit to an
 /// encoding function, the encoder will verify that the structure can be encoded
 /// within that limit.  This verification occurs before any bytes are written to
-/// the Writer, so recovering from an the error is easy.
+/// the Writer, so recovering from an error is easy.
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum SizeLimit {
     Infinite,
