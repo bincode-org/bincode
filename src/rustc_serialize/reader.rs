@@ -7,7 +7,6 @@ use std::convert::From;
 use rustc_serialize_crate::Decoder;
 
 use byteorder::{BigEndian, ReadBytesExt};
-use byteorder::Error as ByteOrderError;
 use ::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
@@ -61,15 +60,8 @@ impl fmt::Display for DecodingError {
 
 pub type DecodingResult<T> = Result<T, DecodingError>;
 
-fn wrap_io(err: ByteOrderError) -> DecodingError {
-    match err {
-        ByteOrderError::Io(ioe) => DecodingError::IoError(ioe),
-        ByteOrderError::UnexpectedEOF =>
-            DecodingError::InvalidEncoding(InvalidEncoding {
-                desc: "Unexpected EOF while reading a multi-byte number",
-                detail: None
-            })
-    }
+fn wrap_io(err: IoError) -> DecodingError {
+    DecodingError::IoError(err)
 }
 
 impl Error for DecodingError {
