@@ -1,9 +1,4 @@
-language: rust
-rust:
-    - stable
-    - beta
-    - nightly
-    
+lang: c
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
@@ -12,10 +7,21 @@ after_success: |
   sudo pip install ghp-import &&
   ghp-import -n target/doc &&
   git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+
 env:
+  matrix:
+    - CHANNEL='stable'
+    - CHANNEL='beta'
+    - CHANNEL='nightly'
   global:
   - secure: SZSxNqg9wiGx8EnJhifJ2kb/aCRcLim9TzTQyfurPqd8qVGkDOeVjTtbs+VTxLVXYtMJAz+YYnrQDwsu8kc/uYpQajU+gRMqNGEP5gNj3Ha5iNGDasAS6piIHQSMROayZ+D9g22nlGnjk8t9eZtLHC/Z8IWMCnjcIHvqMFY6cgI=
-matrix: 
-    allow_failures:
-        - rust: stable
-        - rust: beta
+
+install:
+    - curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh > ./rustup.sh
+    - chmod +x ./rustup.sh
+    - ./rustup.sh --yes
+
+script:
+    - multirust default $CHANNEL
+    - cargo build
+    - if [ $CHANNEL = 'nightly' ] ; then cargo test ; fi
