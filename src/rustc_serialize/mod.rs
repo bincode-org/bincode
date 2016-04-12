@@ -100,4 +100,3 @@ pub fn encoded_size_bounded<T: Encodable>(t: &T, max: u64) -> Option<u64> {
     let mut size_checker = SizeChecker::new(max);
     t.encode(&mut size_checker).ok().map(|_| size_checker.written)
 }
-
