@@ -1,4 +1,5 @@
 lang: c
+sudo: false
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
@@ -17,7 +18,7 @@ env:
   - secure: SZSxNqg9wiGx8EnJhifJ2kb/aCRcLim9TzTQyfurPqd8qVGkDOeVjTtbs+VTxLVXYtMJAz+YYnrQDwsu8kc/uYpQajU+gRMqNGEP5gNj3Ha5iNGDasAS6piIHQSMROayZ+D9g22nlGnjk8t9eZtLHC/Z8IWMCnjcIHvqMFY6cgI=
 
 install:
-    - curl https://sh.rustup.rs -sSf | sh
+    - curl https://sh.rustup.rs -sSf | sh -s -- --yes
     - export PATH=$PATH:$HOME/.cargo/bin
 
 script:
