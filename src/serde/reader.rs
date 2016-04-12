@@ -4,7 +4,6 @@ use std::error::Error;
 use std::fmt;
 use std::convert::From;
 
-use byteorder::Error as ByteOrderError;
 use byteorder::{BigEndian, ReadBytesExt};
 use num;
 use serde_crate as serde;
@@ -74,16 +73,6 @@ impl Error for DeserializeError {
 impl From<IoError> for DeserializeError {
     fn from(err: IoError) -> DeserializeError {
         DeserializeError::IoError(err)
-    }
-}
-
-impl From<ByteOrderError> for DeserializeError {
-    fn from(err: ByteOrderError) -> DeserializeError {
-        match err {
-            ByteOrderError::Io(ioe) => DeserializeError::IoError(ioe),
-            ByteOrderError::UnexpectedEOF => DeserializeError::Serde(
-                serde::de::value::Error::EndOfStream),
-        }
     }
 }
 

@@ -1,14 +1,12 @@
 use std::error::Error;
 use std::fmt;
 use std::io::Error as IoError;
-use std::io::ErrorKind as IoErrorKind;
 use std::io::Write;
 use std::u32;
 
 use serde_crate as serde;
 
 use byteorder::{BigEndian, WriteBytesExt};
-use byteorder::Error as ByteOrderError;
 
 pub type SerializeResult<T> = Result<T, SerializeError>;
 
@@ -35,13 +33,8 @@ pub struct Serializer<'a, W: 'a> {
     writer: &'a mut W,
 }
 
-fn wrap_io(err: ByteOrderError) -> SerializeError {
-    match err {
-        ByteOrderError::Io(ioe) => SerializeError::IoError(ioe),
-        ByteOrderError::UnexpectedEOF => SerializeError::IoError(
-            IoError::new(IoErrorKind::Other,
-                         "ByteOrder could not write to the buffer"))
-    }
+fn wrap_io(err: IoError) -> SerializeError {
+    SerializeError::IoError(err)
 }
 
 impl serde::ser::Error for SerializeError {

@@ -1,13 +1,11 @@
 use std::io::Write;
 use std::io::Error as IoError;
-use std::io::ErrorKind as IoErrorKind;
 use std::error::Error;
 use std::fmt;
 
 use rustc_serialize_crate::Encoder;
 
 use byteorder::{BigEndian, WriteBytesExt};
-use byteorder::Error as ByteOrderError;
 
 pub type EncodingResult<T> = Result<T, EncodingError>;
 
@@ -37,13 +35,8 @@ pub struct SizeChecker {
     pub written: u64
 }
 
-fn wrap_io(err: ByteOrderError) -> EncodingError {
-    match err {
-        ByteOrderError::Io(ioe) => EncodingError::IoError(ioe),
-        ByteOrderError::UnexpectedEOF => EncodingError::IoError(
-            IoError::new(IoErrorKind::Other,
-                         "ByteOrder could not write to the buffer"))
-    }
+fn wrap_io(err: IoError) -> EncodingError {
+    EncodingError::IoError(err)
 }
 
 impl fmt::Display for EncodingError {
