@@ -1,3 +1,4 @@
+lang: c
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
@@ -9,16 +10,17 @@ after_success: |
 
 env:
   matrix:
-    CHANNEL='stable'
-    CHANNEL='beta'
-    CHANNEL='nightly'
+    - CHANNEL='stable'
+    - CHANNEL='beta'
+    - CHANNEL='nightly'
   global:
   - secure: SZSxNqg9wiGx8EnJhifJ2kb/aCRcLim9TzTQyfurPqd8qVGkDOeVjTtbs+VTxLVXYtMJAz+YYnrQDwsu8kc/uYpQajU+gRMqNGEP5gNj3Ha5iNGDasAS6piIHQSMROayZ+D9g22nlGnjk8t9eZtLHC/Z8IWMCnjcIHvqMFY6cgI=
 
 install:
-    - curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh | sh -s -- --yes
+    - curl https://sh.rustup.rs -sSf | sh
+    - export PATH=$PATH:$HOME/.cargo/bin
 
 script:
-    - multirust default $CHANNEL
+    - rustup default $CHANNEL
     - cargo build
     - if [ $CHANNEL = 'nightly' ] ; then cargo test ; fi
