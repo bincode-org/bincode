@@ -16,7 +16,7 @@ env:
   - secure: SZSxNqg9wiGx8EnJhifJ2kb/aCRcLim9TzTQyfurPqd8qVGkDOeVjTtbs+VTxLVXYtMJAz+YYnrQDwsu8kc/uYpQajU+gRMqNGEP5gNj3Ha5iNGDasAS6piIHQSMROayZ+D9g22nlGnjk8t9eZtLHC/Z8IWMCnjcIHvqMFY6cgI=
 
 install:
-    - yes | curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh | sh
+    - curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh | sh -s -- --yes
 
 script:
     - multirust default $CHANNEL
