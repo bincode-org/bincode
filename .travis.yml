@@ -25,3 +25,5 @@ script:
     - multirust default $CHANNEL
     - cargo build
     - if [ $CHANNEL = 'nightly' ] ; then cargo test ; fi
+    - cargo build --no-default-features --features "rustc-serialize"
+    - cargo build --no-default-features --features "serde"
