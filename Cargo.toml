@@ -11,10 +11,13 @@ license = "MIT"
 description = "A binary serialization / deserialization strategy and implementation."
 
 [dependencies]
-rustc-serialize = "0.3.*"
+rustc-serialize = { version = "0.3.*", optional = true }
 byteorder = "0.5.*"
 num = "0.1.*"
-serde = "0.7.*"
+serde = { version = "0.7.*", optional = true }
 
 [dev-dependencies]
 serde_macros = "0.7.*"
+
+[features]
+default = ["rustc-serialize", "serde"]

@@ -24,4 +24,6 @@ install:
 script:
     - multirust default $CHANNEL
     - cargo build
+    - cargo build --no-default-features --features "rustc-serialize"
+    - cargo build --no-default-features --features "serde"
     - if [ $CHANNEL = 'nightly' ] ; then cargo test ; fi
