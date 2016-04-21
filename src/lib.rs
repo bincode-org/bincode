@@ -40,7 +40,7 @@
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize as rustc_serialize_crate;
 extern crate byteorder;
-extern crate num;
+extern crate num_traits;
 #[cfg(feature = "serde")]
 extern crate serde as serde_crate;
 
