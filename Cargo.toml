@@ -13,7 +13,7 @@ description = "A binary serialization / deserialization strategy and implementat
 [dependencies]
 rustc-serialize = { version = "0.3.*", optional = true }
 byteorder = "0.5.*"
-num = { version = "0.1.*", default-features = false }
+num-traits = "0.1.32"
 serde = { version = "0.7.*", optional = true }
 
 [dev-dependencies]

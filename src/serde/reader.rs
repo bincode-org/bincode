@@ -5,7 +5,7 @@ use std::fmt;
 use std::convert::From;
 
 use byteorder::{BigEndian, ReadBytesExt};
-use num;
+use num_traits;
 use serde_crate as serde;
 use serde_crate::de::value::ValueDeserializer;
 use serde_crate::de::Deserializer as SerdeDeserializer;
@@ -222,7 +222,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     {
         try!(self.read_type::<u64>());
         let value = try!(self.reader.read_u64::<BigEndian>());
-        match num::cast(value) {
+        match num_traits::cast(value) {
             Some(value) => visitor.visit_usize(value),
             None => Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected usize".into())))
         }
@@ -242,7 +242,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     {
         try!(self.read_type::<i64>());
         let value = try!(self.reader.read_i64::<BigEndian>());
-        match num::cast(value) {
+        match num_traits::cast(value) {
             Some(value) => visitor.visit_isize(value),
             None => Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected isize".into()))),
         }
