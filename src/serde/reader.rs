@@ -346,41 +346,11 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
     }
 
     fn deserialize_fixed_size_array<V>(&mut self, 
-                            len: usize,
+                            _: usize,
                             visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
-
-        struct ArrayVisitor<'a, 'b: 'a, R: Read + 'b> {
-            deserializer: &'a mut Deserializer<'b, R>,
-            len: usize
-        }
-
-        impl<'a, 'b: 'a, R: Read + 'b> serde::de::SeqVisitor for ArrayVisitor<'a, 'b, R> {
-            type Error = DeserializeError;
-
-            fn visit<T>(&mut self) -> Result<Option<T>, Self::Error>
-                where T: serde::de::Deserialize,
-            {
-                if self.len > 0 {
-                    self.len -= 1;
-                    let value = try!(serde::Deserialize::deserialize(self.deserializer));
-                    Ok(Some(value))
-                } else {
-                    Ok(None)
-                }
-            }
-
-            fn end(&mut self) -> Result<(), Self::Error> {
-                if self.len == 0 {
-                    Ok(())
-                } else {
-                    Err(DeserializeError::Serde(serde::de::value::Error::Custom("expected end".into())))
-                }
-            }
-        }
-
-        visitor.visit_seq(ArrayVisitor { deserializer: self, len: len })
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_option<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
