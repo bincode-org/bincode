@@ -222,7 +222,6 @@ fn test_fixed_size_array() {
     the_same([0u8; 19]);
 }
 
-
 #[test]
 fn decoding_errors() {
     fn isize_invalid_encoding<T>(res: bincode::rustc_serialize::DecodingResult<T>) {
