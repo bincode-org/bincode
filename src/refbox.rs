@@ -168,7 +168,7 @@ impl<'a, T> serde::Serialize for RefBox<'a, T>
 }
 
 #[cfg(feature = "serde")]
-impl<T: serde::Deserialize> serde::Deserialize for RefBox<'static, T> {
+impl<'a, T: serde::Deserialize> serde::Deserialize for RefBox<'a, T> {
     fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
@@ -357,7 +357,7 @@ impl<'a, T> serde::Serialize for SliceBox<'a, T>
 }
 
 #[cfg(feature = "serde")]
-impl<T: serde::Deserialize> serde::Deserialize for SliceBox<'static, T> {
+impl<'a, T: serde::Deserialize> serde::Deserialize for SliceBox<'a, T> {
     fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
@@ -400,7 +400,7 @@ impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
 }
 
 #[cfg(feature = "serde")]
-impl<A: ?Sized, B> serde::Deserialize for RefBoxInner<'static, A, B>
+impl<'a, A: ?Sized, B> serde::Deserialize for RefBoxInner<'a, A, B>
     where B: serde::Deserialize,
 {
     fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
