@@ -345,6 +345,14 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_seq(TupleVisitor(self))
     }
 
+    fn deserialize_fixed_size_array<V>(&mut self, 
+                            _: usize,
+                            visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        self.deserialize_seq(visitor)
+    }
+
     fn deserialize_option<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
