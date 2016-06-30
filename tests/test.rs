@@ -291,6 +291,16 @@ fn too_big_deserialize() {
 }
 
 #[test]
+fn char_serialization() {
+    let chars = "Aa\0☺♪";
+    for c in chars.chars() {
+        let encoded = serialize(&c, Bounded(4)).expect("serializing char failed");
+        let decoded: char = deserialize(&encoded).expect("deserializing failed");
+        assert_eq!(decoded, c);
+    }
+}
+
+#[test]
 fn too_big_char_decode() {
     let encoded = vec![0x41];
     let decoded: Result<char, _> = decode_from(&mut &encoded[..], Bounded(1));
