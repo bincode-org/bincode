@@ -141,6 +141,10 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         self.writer.write_all(v.as_bytes()).map_err(SerializeError::IoError)
     }
 
+    fn serialize_char(&mut self, c: char) -> SerializeResult<()> {
+        self.writer.write_all(encode_utf8(c).as_slice()).map_err(SerializeError::IoError)
+    }
+
     fn serialize_none(&mut self) -> SerializeResult<()> {
         self.writer.write_u8(0).map_err(wrap_io)
     }
@@ -352,6 +356,10 @@ impl serde::Serializer for SizeChecker {
         self.add_raw(v.len())
     }
 
+    fn serialize_char(&mut self, c: char) -> SerializeResult<()> {
+        self.add_raw(encode_utf8(c).as_slice().len())
+    }
+
     fn serialize_none(&mut self) -> SerializeResult<()> {
         self.add_value(0 as u8)
     }
@@ -462,5 +470,49 @@ impl serde::Serializer for SizeChecker {
         while let Some(()) = try!(visitor.visit(self)) { }
 
         Ok(())
+    }
+}
+
+const TAG_CONT: u8    = 0b1000_0000;
+const TAG_TWO_B: u8   = 0b1100_0000;
+const TAG_THREE_B: u8 = 0b1110_0000;
+const TAG_FOUR_B: u8  = 0b1111_0000;
+const MAX_ONE_B: u32   =     0x80;
+const MAX_TWO_B: u32   =    0x800;
+const MAX_THREE_B: u32 =  0x10000;
+
+fn encode_utf8(c: char) -> EncodeUtf8 {
+    let code = c as u32;
+    let mut buf = [0; 4];
+    let pos = if code < MAX_ONE_B {
+        buf[3] = code as u8;
+        3
+    } else if code < MAX_TWO_B {
+        buf[2] = (code >> 6 & 0x1F) as u8 | TAG_TWO_B;
+        buf[3] = (code & 0x3F) as u8 | TAG_CONT;
+        2
+    } else if code < MAX_THREE_B {
+        buf[1] = (code >> 12 & 0x0F) as u8 | TAG_THREE_B;
+        buf[2] = (code >>  6 & 0x3F) as u8 | TAG_CONT;
+        buf[3] = (code & 0x3F) as u8 | TAG_CONT;
+        1
+    } else {
+        buf[0] = (code >> 18 & 0x07) as u8 | TAG_FOUR_B;
+        buf[1] = (code >> 12 & 0x3F) as u8 | TAG_CONT;
+        buf[2] = (code >>  6 & 0x3F) as u8 | TAG_CONT;
+        buf[3] = (code & 0x3F) as u8 | TAG_CONT;
+        0
+    };
+    EncodeUtf8 { buf: buf, pos: pos }
+}
+
+struct EncodeUtf8 {
+    buf: [u8; 4],
+    pos: usize,
+}
+
+impl EncodeUtf8 {
+    fn as_slice(&self) -> &[u8] {
+        &self.buf[self.pos..]
     }
 }
