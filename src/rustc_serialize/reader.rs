@@ -11,8 +11,8 @@ use ::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct InvalidEncoding {
-    desc: &'static str,
-    detail: Option<String>,
+    pub desc: &'static str,
+    pub detail: Option<String>,
 }
 
 impl fmt::Display for InvalidEncoding {
