@@ -7,7 +7,7 @@ use std::io::{Write, Read};
 use ::SizeLimit;
 
 pub use self::writer::{SizeChecker, EncoderWriter, EncodingResult, EncodingError};
-pub use self::reader::{DecoderReader, DecodingResult, DecodingError};
+pub use self::reader::{DecoderReader, DecodingResult, DecodingError, InvalidEncoding};
 
 mod reader;
 mod writer;

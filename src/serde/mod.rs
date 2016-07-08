@@ -9,6 +9,7 @@ pub use self::reader::{
     Deserializer,
     DeserializeResult,
     DeserializeError,
+    InvalidEncoding
 };
 
 pub use self::writer::{
@@ -120,4 +121,3 @@ pub fn deserialize<T>(bytes: &[u8]) -> DeserializeResult<T>
     let mut reader = bytes;
     deserialize_from(&mut reader, SizeLimit::Infinite)
 }
-

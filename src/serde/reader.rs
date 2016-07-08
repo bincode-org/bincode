@@ -8,14 +8,13 @@ use byteorder::{BigEndian, ReadBytesExt};
 use num_traits;
 use serde_crate as serde;
 use serde_crate::de::value::ValueDeserializer;
-use serde_crate::de::Deserializer as SerdeDeserializer;
 
 use ::SizeLimit;
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct InvalidEncoding {
-    desc: &'static str,
-    detail: Option<String>,
+    pub desc: &'static str,
+    pub detail: Option<String>,
 }
 
 impl fmt::Display for InvalidEncoding {

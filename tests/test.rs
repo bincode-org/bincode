@@ -9,7 +9,7 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use rustc_serialize::{Encoder, Decoder, Encodable, Decodable};
+use rustc_serialize::{Encodable, Decodable};
 
 use bincode::{RefBox, StrBox, SliceBox};
 
