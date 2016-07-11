@@ -412,6 +412,7 @@ fn test_refbox_serialize() {
 
 
     #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, Debug)]
+    #[serde(bound(deserialize="'a: 'static"))]
     enum Message<'a> {
         M1(RefBox<'a, Vec<u32>>),
         M2(RefBox<'a, HashMap<u32, u32>>)
