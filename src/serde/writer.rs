@@ -89,8 +89,17 @@ impl<'a, W: Write> Serializer<'a, W> {
 
 impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
     type Error = SerializeError;
+    type SeqState = ();
+    type TupleState = ();
+    type TupleStructState = ();
+    type TupleVariantState = ();
+    type MapState = ();
+    type StructState = ();
+    type StructVariantState = ();
 
     fn serialize_unit(&mut self) -> SerializeResult<()> { Ok(()) }
+
+    fn serialize_unit_struct(&mut self, _: &'static str) -> SerializeResult<()> { Ok(()) }
 
     fn serialize_bool(&mut self, v: bool) -> SerializeResult<()> {
         self.writer.write_u8(if v {1} else {0}).map_err(wrap_io)
@@ -112,6 +121,10 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         self.writer.write_u64::<BigEndian>(v).map_err(wrap_io)
     }
 
+    fn serialize_usize(&mut self, v: usize) -> SerializeResult<()> {
+        self.serialize_u64(v as u64)
+    }
+
     fn serialize_i8(&mut self, v: i8) -> SerializeResult<()> {
         self.writer.write_i8(v).map_err(wrap_io)
     }
@@ -126,6 +139,10 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
 
     fn serialize_i64(&mut self, v: i64) -> SerializeResult<()> {
         self.writer.write_i64::<BigEndian>(v).map_err(wrap_io)
+    }
+
+    fn serialize_isize(&mut self, v: isize) -> SerializeResult<()> {
+        self.serialize_i64(v as i64)
     }
 
     fn serialize_f32(&mut self, v: f32) -> SerializeResult<()> {
@@ -162,7 +179,11 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         self.serialize_usize(len)
     }
 
-    fn serialize_seq_end(&mut self, _len: Option<usize>) -> SerializeResult<()> {
+    fn serialize_seq_fixed_size(&mut self, len: usize) -> SerializeResult<()> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_seq_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
@@ -170,7 +191,49 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         Ok(())
     }
 
-    fn serialize_seq_elt<V>(&mut self, value: V) -> SerializeResult<()>
+    fn serialize_tuple_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct(&mut self, _name: &'static str, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_bytes(&mut self, v: &[u8]) -> SerializeResult<()> {
+        let mut state = try!(self.serialize_seq(Some(v.len())));
+        for c in v {
+            try!(self.serialize_seq_elt(&mut state, c));
+        }
+        self.serialize_seq_end(state)
+    }
+
+    fn serialize_seq_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_variant_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_struct_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
         value.serialize(self)
@@ -182,11 +245,11 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         self.serialize_usize(len)
     }
 
-    fn serialize_map_end(&mut self, _len: Option<usize>) -> SerializeResult<()> {
+    fn serialize_map_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
-    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> SerializeResult<()>
+    fn serialize_map_elt<K, V>(&mut self, _: &mut (), key: K, value: V) -> SerializeResult<()>
         where K: serde::Serialize,
               V: serde::Serialize,
     {
@@ -198,11 +261,24 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         Ok(())
     }
 
-    fn serialize_struct_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
+    fn serialize_struct_elt<V>(&mut self, _: &mut (), _key: &'static str, value: V) -> SerializeResult<()>
         where V: serde::Serialize,
-              K: serde::Serialize,
     {
         value.serialize(self)
+    }
+
+    fn serialize_struct_variant_elt<V>(&mut self, _: &mut (), _key: &'static str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
     }
 
     fn serialize_newtype_struct<T>(&mut self,
@@ -210,6 +286,17 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
                                value: T) -> SerializeResult<()>
         where T: serde::ser::Serialize,
     {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T>(&mut self,
+                               _name: &str,
+                               variant_index: usize,
+                               _variant: &str,
+                               value: T) -> SerializeResult<()>
+        where T: serde::ser::Serialize,
+    {
+        try!(self.add_enum_tag(variant_index));
         value.serialize(self)
     }
 
@@ -277,8 +364,16 @@ impl SizeChecker {
 
 impl serde::Serializer for SizeChecker {
     type Error = SerializeError;
+    type SeqState = ();
+    type TupleState = ();
+    type TupleStructState = ();
+    type TupleVariantState = ();
+    type MapState = ();
+    type StructState = ();
+    type StructVariantState = ();
 
     fn serialize_unit(&mut self) -> SerializeResult<()> { Ok(()) }
+    fn serialize_unit_struct(&mut self, _: &'static str) -> SerializeResult<()> { Ok(()) }
 
     fn serialize_bool(&mut self, _: bool) -> SerializeResult<()> {
         self.add_value(0 as u8)
@@ -300,6 +395,10 @@ impl serde::Serializer for SizeChecker {
         self.add_value(v)
     }
 
+    fn serialize_usize(&mut self, v: usize) -> SerializeResult<()> {
+        self.serialize_u64(v as u64)
+    }
+
     fn serialize_i8(&mut self, v: i8) -> SerializeResult<()> {
         self.add_value(v)
     }
@@ -314,6 +413,10 @@ impl serde::Serializer for SizeChecker {
 
     fn serialize_i64(&mut self, v: i64) -> SerializeResult<()> {
         self.add_value(v)
+    }
+
+    fn serialize_isize(&mut self, v: isize) -> SerializeResult<()> {
+        self.serialize_i64(v as i64)
     }
 
     fn serialize_f32(&mut self, v: f32) -> SerializeResult<()> {
@@ -350,7 +453,11 @@ impl serde::Serializer for SizeChecker {
         self.serialize_usize(len)
     }
 
-    fn serialize_seq_end(&mut self, _len: Option<usize>) -> SerializeResult<()> {
+    fn serialize_seq_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
@@ -358,7 +465,35 @@ impl serde::Serializer for SizeChecker {
         Ok(())
     }
 
-    fn serialize_seq_elt<V>(&mut self, value: V) -> SerializeResult<()>
+    fn serialize_tuple_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct(&mut self, _name: &'static str, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_seq_fixed_size(&mut self, len: usize) -> SerializeResult<()> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_tuple_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_struct_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_seq_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
         value.serialize(self)
@@ -371,11 +506,11 @@ impl serde::Serializer for SizeChecker {
         self.serialize_usize(len)
     }
 
-    fn serialize_map_end(&mut self, _len: Option<usize>) -> SerializeResult<()> {
+    fn serialize_map_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
-    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> SerializeResult<()>
+    fn serialize_map_elt<K, V>(&mut self, _: &mut (), key: K, value: V) -> SerializeResult<()>
         where K: serde::Serialize,
               V: serde::Serialize,
     {
@@ -387,9 +522,32 @@ impl serde::Serializer for SizeChecker {
         Ok(())
     }
 
-    fn serialize_struct_elt<K, V>(&mut self, _key: K, value: V) -> SerializeResult<()>
+    fn serialize_tuple_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_newtype_struct<V: serde::Serialize>(&mut self, _name: &str, v: V) -> SerializeResult<()> {
+        v.serialize(self)
+    }
+
+    fn serialize_struct_elt<V>(&mut self, _: &mut (), _key: &'static str, value: V) -> SerializeResult<()>
         where V: serde::Serialize,
-              K: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_variant_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_struct_variant_elt<V>(&mut self, _: &mut (), _field: &'static str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
     {
         value.serialize(self)
     }
@@ -417,6 +575,24 @@ impl serde::Serializer for SizeChecker {
                                _len: usize) -> SerializeResult<()>
     {
         self.add_enum_tag(variant_index)
+    }
+
+    fn serialize_newtype_variant<V: serde::Serialize>(&mut self,
+                               _name: &str,
+                               variant_index: usize,
+                               _variant: &str,
+                               value: V) -> SerializeResult<()>
+    {
+        try!(self.add_enum_tag(variant_index));
+        value.serialize(self)
+    }
+
+    fn serialize_bytes(&mut self, v: &[u8]) -> SerializeResult<()> {
+        let mut state = try!(self.serialize_seq(Some(v.len())));
+        for c in v {
+            try!(self.serialize_seq_elt(&mut state, c));
+        }
+        self.serialize_seq_end(state)
     }
 }
 
