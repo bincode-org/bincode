@@ -138,9 +138,7 @@ impl<'a, R: Read> Deserializer<'a, R> {
     pub fn bytes_read(&self) -> u64 {
         self.read
     }
-}
 
-impl <'a, A> Deserializer<'a, A> {
     fn read_bytes(&mut self, count: u64) -> Result<(), DeserializeError> {
         self.read += count;
         match self.size_limit {
@@ -153,6 +151,20 @@ impl <'a, A> Deserializer<'a, A> {
     fn read_type<T>(&mut self) -> Result<(), DeserializeError> {
         use std::mem::size_of;
         self.read_bytes(size_of::<T>() as u64)
+    }
+
+    fn read_string(&mut self) -> DeserializeResult<String> {
+        let len = try!(serde::Deserialize::deserialize(self));
+        try!(self.read_bytes(len));
+
+        let mut buffer = Vec::new();
+        try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buffer));
+
+        String::from_utf8(buffer).map_err(|err|
+            DeserializeError::InvalidEncoding(InvalidEncoding {
+                desc: "error while decoding utf8 string",
+                detail: Some(format!("Deserialize error: {}", err))
+            }))
     }
 }
 
@@ -291,22 +303,22 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_char(res)
     }
 
+    fn deserialize_str<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        visitor.visit_str(&try!(self.read_string()))
+    }
+
     fn deserialize_string<V>(&mut self, mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
-        let len = try!(serde::Deserialize::deserialize(self));
-        try!(self.read_bytes(len));
+        visitor.visit_string(try!(self.read_string()))
+    }
 
-        let mut buffer = Vec::new();
-        try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buffer));
-
-        match String::from_utf8(buffer) {
-            Ok(s) => visitor.visit_string(s),
-            Err(err) => Err(DeserializeError::InvalidEncoding(InvalidEncoding {
-                desc: "error while decoding utf8 string",
-                detail: Some(format!("Deserialize error: {}", err))
-            })),
-        }
+    fn deserialize_bytes<V>(&mut self, visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_enum<V>(&mut self,
@@ -343,7 +355,7 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         visitor.visit_seq(TupleVisitor(self))
     }
 
-    fn deserialize_fixed_size_array<V>(&mut self,
+    fn deserialize_seq_fixed_size<V>(&mut self,
                             _: usize,
                             visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
@@ -455,12 +467,45 @@ impl<'a, R: Read> serde::Deserializer for Deserializer<'a, R> {
         self.deserialize_tuple(fields.len(), visitor)
     }
 
+    fn deserialize_struct_field<V>(&mut self,
+                                   _visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        let message = "bincode does not support Deserializer::deserialize_struct_field";
+        Err(DeserializeError::Serde(serde::de::value::Error::Custom(message.into())))
+    }
+
     fn deserialize_newtype_struct<V>(&mut self,
                                _name: &str,
-                               mut visitor: V) -> Result<V::Value, Self::Error>
+                               mut visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         visitor.visit_newtype_struct(self)
+    }
+
+    fn deserialize_unit_struct<V>(&mut self,
+                                  _name: &'static str,
+                                  mut visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        visitor.visit_unit()
+    }
+
+    fn deserialize_tuple_struct<V>(&mut self,
+                                   _name: &'static str,
+                                   len: usize,
+                                   visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        self.deserialize_tuple(len, visitor)
+    }
+
+    fn deserialize_ignored_any<V>(&mut self,
+                                  _visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        let message = "bincode does not support Deserializer::deserialize_ignored_any";
+        Err(DeserializeError::Serde(serde::de::value::Error::Custom(message.into())))
     }
 }
 

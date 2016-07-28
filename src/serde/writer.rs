@@ -89,8 +89,17 @@ impl<'a, W: Write> Serializer<'a, W> {
 
 impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
     type Error = SerializeError;
+    type SeqState = ();
+    type TupleState = ();
+    type TupleStructState = ();
+    type TupleVariantState = ();
+    type MapState = ();
+    type StructState = ();
+    type StructVariantState = ();
 
     fn serialize_unit(&mut self) -> SerializeResult<()> { Ok(()) }
+
+    fn serialize_unit_struct(&mut self, _: &'static str) -> SerializeResult<()> { Ok(()) }
 
     fn serialize_bool(&mut self, v: bool) -> SerializeResult<()> {
         self.writer.write_u8(if v {1} else {0}).map_err(wrap_io)
@@ -112,6 +121,10 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         self.writer.write_u64::<BigEndian>(v).map_err(wrap_io)
     }
 
+    fn serialize_usize(&mut self, v: usize) -> SerializeResult<()> {
+        self.serialize_u64(v as u64)
+    }
+
     fn serialize_i8(&mut self, v: i8) -> SerializeResult<()> {
         self.writer.write_i8(v).map_err(wrap_io)
     }
@@ -126,6 +139,10 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
 
     fn serialize_i64(&mut self, v: i64) -> SerializeResult<()> {
         self.writer.write_i64::<BigEndian>(v).map_err(wrap_io)
+    }
+
+    fn serialize_isize(&mut self, v: isize) -> SerializeResult<()> {
+        self.serialize_i64(v as i64)
     }
 
     fn serialize_f32(&mut self, v: f32) -> SerializeResult<()> {
@@ -145,6 +162,14 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         self.writer.write_all(encode_utf8(c).as_slice()).map_err(SerializeError::IoError)
     }
 
+    fn serialize_bytes(&mut self, v: &[u8]) -> SerializeResult<()> {
+        let mut state = try!(self.serialize_seq(Some(v.len())));
+        for c in v {
+            try!(self.serialize_seq_elt(&mut state, c));
+        }
+        self.serialize_seq_end(state)
+    }
+
     fn serialize_none(&mut self) -> SerializeResult<()> {
         self.writer.write_u8(0).map_err(wrap_io)
     }
@@ -156,113 +181,150 @@ impl<'a, W: Write> serde::Serializer for Serializer<'a, W> {
         v.serialize(self)
     }
 
-    fn serialize_seq<V>(&mut self, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        let len = match visitor.len() {
-            Some(len) => len,
-            None => panic!("do not know how to serialize a sequence with no length"),
-        };
-
-        try!(self.serialize_usize(len));
-
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
+    fn serialize_seq(&mut self, len: Option<usize>) -> SerializeResult<()> {
+        let len = len.expect("do not know how to serialize a sequence with no length");
+        self.serialize_usize(len)
     }
 
-    fn serialize_tuple<V>(&mut self, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
-    }
-
-    fn serialize_seq_elt<V>(&mut self, value: V) -> SerializeResult<()>
+    fn serialize_seq_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_map<V>(&mut self, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::MapVisitor,
-    {
-        let len = match visitor.len() {
-            Some(len) => len,
-            None => panic!("do not know how to serialize a map with no length"),
-        };
-
-        try!(self.serialize_usize(len));
-
-        while let Some(()) = try!(visitor.visit(self)) { }
-
+    fn serialize_seq_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
-    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> SerializeResult<()>
+    fn serialize_seq_fixed_size(&mut self, len: usize) -> SerializeResult<()> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_tuple(&mut self, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct(&mut self, _name: &'static str, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_variant(&mut self,
+                              _name: &'static str,
+                              variant_index: usize,
+                              _variant: &'static str,
+                              _len: usize) -> SerializeResult<()>
+    {
+        self.add_enum_tag(variant_index)
+    }
+
+    fn serialize_tuple_variant_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_map(&mut self, len: Option<usize>) -> SerializeResult<()> {
+        let len = len.expect("do not know how to serialize a map with no length");
+        self.serialize_usize(len)
+    }
+
+    fn serialize_map_key<K>(&mut self, _: &mut (), key: K) -> SerializeResult<()>
         where K: serde::Serialize,
-              V: serde::Serialize,
     {
-        try!(key.serialize(self));
-        value.serialize(self)
+        key.serialize(self)
     }
 
-    fn serialize_struct<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::MapVisitor,
-    {
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
-    }
-
-    fn serialize_struct_elt<V>(&mut self, _key: &str, value: V) -> SerializeResult<()>
+    fn serialize_map_value<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
         value.serialize(self)
+    }
+
+    fn serialize_map_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct(&mut self, _name: &'static str, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_elt<V>(&mut self, _: &mut (), _key: &'static str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_variant(&mut self,
+                               _name: &'static str,
+                               variant_index: usize,
+                               _variant: &'static str,
+                               _len: usize) -> SerializeResult<()>
+    {
+        self.add_enum_tag(variant_index)
+    }
+
+    fn serialize_struct_variant_elt<V>(&mut self, _: &mut (), _key: &'static str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_struct_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
     }
 
     fn serialize_newtype_struct<T>(&mut self,
-                               _name: &str,
+                               _name: &'static str,
                                value: T) -> SerializeResult<()>
         where T: serde::ser::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_unit_variant(&mut self,
-                          _name: &str,
-                          variant_index: usize,
-                          _variant: &str) -> SerializeResult<()> {
-        self.add_enum_tag(variant_index)
-    }
-
-    fn serialize_tuple_variant<V>(&mut self,
-                              _name: &str,
-                              variant_index: usize,
-                              _variant: &str,
-                              mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        try!(self.add_enum_tag(variant_index));
-
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
-    }
-
-    fn serialize_struct_variant<V>(&mut self,
-                               _name: &str,
+    fn serialize_newtype_variant<T>(&mut self,
+                               _name: &'static str,
                                variant_index: usize,
-                               _variant: &str,
-                               mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::MapVisitor,
+                               _variant: &'static str,
+                               value: T) -> SerializeResult<()>
+        where T: serde::ser::Serialize,
     {
         try!(self.add_enum_tag(variant_index));
+        value.serialize(self)
+    }
 
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
+    fn serialize_unit_variant(&mut self,
+                          _name: &'static str,
+                          variant_index: usize,
+                          _variant: &'static str) -> SerializeResult<()> {
+        self.add_enum_tag(variant_index)
     }
 }
 
@@ -304,8 +366,17 @@ impl SizeChecker {
 
 impl serde::Serializer for SizeChecker {
     type Error = SerializeError;
+    type SeqState = ();
+    type TupleState = ();
+    type TupleStructState = ();
+    type TupleVariantState = ();
+    type MapState = ();
+    type StructState = ();
+    type StructVariantState = ();
 
     fn serialize_unit(&mut self) -> SerializeResult<()> { Ok(()) }
+
+    fn serialize_unit_struct(&mut self, _: &'static str) -> SerializeResult<()> { Ok(()) }
 
     fn serialize_bool(&mut self, _: bool) -> SerializeResult<()> {
         self.add_value(0 as u8)
@@ -327,6 +398,10 @@ impl serde::Serializer for SizeChecker {
         self.add_value(v)
     }
 
+    fn serialize_usize(&mut self, v: usize) -> SerializeResult<()> {
+        self.serialize_u64(v as u64)
+    }
+
     fn serialize_i8(&mut self, v: i8) -> SerializeResult<()> {
         self.add_value(v)
     }
@@ -341,6 +416,10 @@ impl serde::Serializer for SizeChecker {
 
     fn serialize_i64(&mut self, v: i64) -> SerializeResult<()> {
         self.add_value(v)
+    }
+
+    fn serialize_isize(&mut self, v: isize) -> SerializeResult<()> {
+        self.serialize_i64(v as i64)
     }
 
     fn serialize_f32(&mut self, v: f32) -> SerializeResult<()> {
@@ -360,6 +439,14 @@ impl serde::Serializer for SizeChecker {
         self.add_raw(encode_utf8(c).as_slice().len())
     }
 
+    fn serialize_bytes(&mut self, v: &[u8]) -> SerializeResult<()> {
+        let mut state = try!(self.serialize_seq(Some(v.len())));
+        for c in v {
+            try!(self.serialize_seq_elt(&mut state, c));
+        }
+        self.serialize_seq_end(state)
+    }
+
     fn serialize_none(&mut self) -> SerializeResult<()> {
         self.add_value(0 as u8)
     }
@@ -371,105 +458,148 @@ impl serde::Serializer for SizeChecker {
         v.serialize(self)
     }
 
-    fn serialize_seq<V>(&mut self, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        let len = match visitor.len() {
-            Some(len) => len,
-            None => panic!("do not know how to serialize a sequence with no length"),
-        };
+    fn serialize_seq(&mut self, len: Option<usize>) -> SerializeResult<()> {
+        let len = len.expect("do not know how to serialize a sequence with no length");
 
-        try!(self.serialize_usize(len));
-
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
+        self.serialize_usize(len)
     }
 
-    fn serialize_tuple<V>(&mut self, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
-    {
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
-    }
-
-    fn serialize_seq_elt<V>(&mut self, value: V) -> SerializeResult<()>
+    fn serialize_seq_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_map<V>(&mut self, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::MapVisitor,
-    {
-        let len = match visitor.len() {
-            Some(len) => len,
-            None => panic!("do not know how to serialize a map with no length"),
-        };
-
-        try!(self.serialize_usize(len));
-
-        while let Some(()) = try!(visitor.visit(self)) { }
-
+    fn serialize_seq_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
-    fn serialize_map_elt<K, V>(&mut self, key: K, value: V) -> SerializeResult<()>
-        where K: serde::Serialize,
-              V: serde::Serialize,
-    {
-        try!(key.serialize(self));
-        value.serialize(self)
+    fn serialize_seq_fixed_size(&mut self, len: usize) -> SerializeResult<()> {
+        self.serialize_seq(Some(len))
     }
 
-    fn serialize_struct<V>(&mut self, _name: &str, mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::MapVisitor,
-    {
-        while let Some(()) = try!(visitor.visit(self)) { }
-
+    fn serialize_tuple(&mut self, _len: usize) -> SerializeResult<()> {
         Ok(())
     }
 
-    fn serialize_struct_elt<V>(&mut self, _key: &str, value: V) -> SerializeResult<()>
+    fn serialize_tuple_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
         where V: serde::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_unit_variant(&mut self,
-                          _name: &str,
-                          variant_index: usize,
-                          _variant: &str) -> SerializeResult<()> {
+    fn serialize_tuple_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct(&mut self, _name: &'static str, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_struct_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_tuple_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_tuple_variant(&mut self,
+                         _name: &'static str,
+                         variant_index: usize,
+                         _variant: &'static str,
+                         _len: usize) -> SerializeResult<()>
+    {
         self.add_enum_tag(variant_index)
     }
 
-    fn serialize_tuple_variant<V>(&mut self,
-                         _name: &str,
-                         variant_index: usize,
-                         _variant: &str,
-                         mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::SeqVisitor,
+    fn serialize_tuple_variant_elt<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
     {
-        try!(self.add_enum_tag(variant_index));
+        value.serialize(self)
+    }
 
-        while let Some(()) = try!(visitor.visit(self)) { }
-
+    fn serialize_tuple_variant_end(&mut self, _: ()) -> SerializeResult<()> {
         Ok(())
     }
 
-    fn serialize_struct_variant<V>(&mut self,
-                               _name: &str,
+    fn serialize_map(&mut self, len: Option<usize>) -> SerializeResult<()>
+    {
+        let len = len.expect("do not know how to serialize a map with no length");
+
+        self.serialize_usize(len)
+    }
+
+    fn serialize_map_key<K>(&mut self, _: &mut (), key: K) -> SerializeResult<()>
+        where K: serde::Serialize,
+    {
+        key.serialize(self)
+    }
+
+    fn serialize_map_value<V>(&mut self, _: &mut (), value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_map_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct(&mut self, _name: &'static str, _len: usize) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_elt<V>(&mut self, _: &mut (), _key: &'static str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_struct_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_struct_variant(&mut self,
+                               _name: &'static str,
                                variant_index: usize,
-                               _variant: &str,
-                               mut visitor: V) -> SerializeResult<()>
-        where V: serde::ser::MapVisitor,
+                               _variant: &'static str,
+                               _len: usize) -> SerializeResult<()>
+    {
+        self.add_enum_tag(variant_index)
+    }
+
+    fn serialize_struct_variant_elt<V>(&mut self, _: &mut (), _field: &'static str, value: V) -> SerializeResult<()>
+        where V: serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_struct_variant_end(&mut self, _: ()) -> SerializeResult<()> {
+        Ok(())
+    }
+
+    fn serialize_newtype_struct<V: serde::Serialize>(&mut self, _name: &'static str, v: V) -> SerializeResult<()> {
+        v.serialize(self)
+    }
+
+    fn serialize_unit_variant(&mut self,
+                          _name: &'static str,
+                          variant_index: usize,
+                          _variant: &'static str) -> SerializeResult<()> {
+        self.add_enum_tag(variant_index)
+    }
+
+    fn serialize_newtype_variant<V: serde::Serialize>(&mut self,
+                               _name: &'static str,
+                               variant_index: usize,
+                               _variant: &'static str,
+                               value: V) -> SerializeResult<()>
     {
         try!(self.add_enum_tag(variant_index));
-
-        while let Some(()) = try!(visitor.visit(self)) { }
-
-        Ok(())
+        value.serialize(self)
     }
 }
 
