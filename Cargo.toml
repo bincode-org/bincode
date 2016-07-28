@@ -14,10 +14,10 @@ description = "A binary serialization / deserialization strategy and implementat
 rustc-serialize = { version = "0.3.*", optional = true }
 byteorder = "0.5.*"
 num-traits = "0.1.32"
-serde = { version = "0.7.*", optional = true }
+serde = { version = "0.8.*", optional = true }
 
 [dev-dependencies]
-serde_macros = "0.7.*"
+serde_macros = "0.8.*"
 
 [features]
 default = ["rustc-serialize", "serde"]
