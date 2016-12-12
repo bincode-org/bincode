@@ -1,5 +1,7 @@
-#![feature(plugin, custom_derive, custom_attribute)]
-#![plugin(serde_macros)]
+#![feature(proc_macro)]
+
+#[macro_use]
+extern crate serde_derive;
 
 extern crate bincode;
 extern crate rustc_serialize;
