@@ -1,5 +1,7 @@
-#![feature(plugin, custom_derive, custom_attribute)]
-#![plugin(serde_macros)]
+#![feature(proc_macro)]
+
+#[macro_use]
+extern crate serde_derive;
 
 extern crate bincode;
 extern crate rustc_serialize;
@@ -9,7 +11,7 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use rustc_serialize::{Encodable, Decodable};
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
 use bincode::{RefBox, StrBox, SliceBox};
 
@@ -514,6 +516,18 @@ fn path_buf() {
     let serde_encoded = bincode::serde::serialize(&path, Infinite).unwrap();
     let decoded: PathBuf = bincode::serde::deserialize(&serde_encoded).unwrap();
     assert!(path.to_str() == decoded.to_str());
+}
+
+#[test]
+fn bytes() {
+    let data = b"abc\0123";
+    let b = bincode::rustc_serialize::encode(&data, Infinite).unwrap();
+    let s = bincode::serde::serialize(&data, Infinite).unwrap();
+    assert_eq!(b, s);
+
+    use serde::bytes::Bytes;
+    let s2 = bincode::serde::serialize(&Bytes::new(data), Infinite).unwrap();
+    assert_eq!(s, s2);
 }
 
 #[test]

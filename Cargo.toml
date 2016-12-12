@@ -23,7 +23,7 @@ version = "0.8.*"
 optional = true
 
 [dev-dependencies]
-serde_macros = "0.8.*"
+serde_derive = "0.8.*"
 
 [features]
 default = ["rustc-serialize", "serde"]
