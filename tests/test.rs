@@ -11,7 +11,7 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use rustc_serialize::{Encodable, Decodable};
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
 use bincode::{RefBox, StrBox, SliceBox};
 
