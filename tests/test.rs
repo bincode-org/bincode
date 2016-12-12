@@ -519,6 +519,18 @@ fn path_buf() {
 }
 
 #[test]
+fn bytes() {
+    let data = b"abc\0123";
+    let b = bincode::rustc_serialize::encode(&data, Infinite).unwrap();
+    let s = bincode::serde::serialize(&data, Infinite).unwrap();
+    assert_eq!(b, s);
+
+    use serde::bytes::Bytes;
+    let s2 = bincode::serde::serialize(&Bytes::new(data), Infinite).unwrap();
+    assert_eq!(s, s2);
+}
+
+#[test]
 fn test_manual_enum_encoding() {
     #[derive(PartialEq)]
     enum Enumeration {
