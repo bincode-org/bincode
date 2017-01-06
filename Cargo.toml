@@ -11,7 +11,7 @@ license = "MIT"
 description = "A binary serialization / deserialization strategy and implementation with serde and rustc-serialize backends."
 
 [dependencies]
-byteorder = "0.5.*"
+byteorder = "1.0.0"
 num-traits = "0.1.32"
 
 [dependencies.rustc-serialize]
