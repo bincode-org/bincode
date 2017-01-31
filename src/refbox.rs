@@ -160,7 +160,7 @@ impl <T: Decodable> Decodable for RefBox<'static, T> {
 impl<'a, T> serde::Serialize for RefBox<'a, T>
     where T: serde::Serialize,
 {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         serde::Serialize::serialize(&self.inner, serializer)
@@ -169,7 +169,7 @@ impl<'a, T> serde::Serialize for RefBox<'a, T>
 
 #[cfg(feature = "serde")]
 impl<'a, T: serde::Deserialize> serde::Deserialize for RefBox<'a, T> {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let inner = try!(serde::Deserialize::deserialize(deserializer));
@@ -256,7 +256,7 @@ impl Decodable for StrBox<'static> {
 
 #[cfg(feature = "serde")]
 impl<'a> serde::Serialize for StrBox<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         serde::Serialize::serialize(&self.inner, serializer)
@@ -265,7 +265,7 @@ impl<'a> serde::Serialize for StrBox<'a> {
 
 #[cfg(feature = "serde")]
 impl serde::Deserialize for StrBox<'static> {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let inner = try!(serde::Deserialize::deserialize(deserializer));
@@ -349,7 +349,7 @@ impl <T: Decodable> Decodable for SliceBox<'static, T> {
 impl<'a, T> serde::Serialize for SliceBox<'a, T>
     where T: serde::Serialize,
 {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         serde::Serialize::serialize(&self.inner, serializer)
@@ -358,7 +358,7 @@ impl<'a, T> serde::Serialize for SliceBox<'a, T>
 
 #[cfg(feature = "serde")]
 impl<'a, T: serde::Deserialize> serde::Deserialize for SliceBox<'a, T> {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let inner = try!(serde::Deserialize::deserialize(deserializer));
@@ -381,7 +381,7 @@ impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B>
     where A: serde::Serialize,
           B: serde::Serialize,
 {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         match self {
@@ -403,7 +403,7 @@ impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
 impl<'a, A: ?Sized, B> serde::Deserialize for RefBoxInner<'a, A, B>
     where B: serde::Deserialize,
 {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let deserialized = try!(serde::Deserialize::deserialize(deserializer));
