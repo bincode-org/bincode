@@ -40,9 +40,7 @@ extern crate byteorder;
 extern crate num_traits;
 extern crate serde as serde_crate;
 
-pub use refbox::{RefBox, StrBox, SliceBox};
-
-mod refbox;
+pub mod refbox;
 pub mod serde;
 
 /// A limit on the amount of bytes that can be read or written.

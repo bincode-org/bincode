@@ -10,7 +10,7 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use bincode::{RefBox, StrBox, SliceBox};
+use bincode::refbox::{RefBox, StrBox, SliceBox};
 
 use bincode::SizeLimit::{self, Infinite, Bounded};
 use bincode::serde::{serialize, deserialize, deserialize_from, DeserializeError, DeserializeResult};
