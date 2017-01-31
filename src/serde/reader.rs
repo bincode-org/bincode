@@ -45,7 +45,7 @@ pub enum DeserializeError {
     /// If decoding a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
-    Serde(serde::de::value::Error)
+    Custom(String)
 }
 
 impl Error for DeserializeError {
@@ -54,7 +54,7 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => Error::description(err),
             DeserializeError::InvalidEncoding(ref ib) => ib.desc,
             DeserializeError::SizeLimit => "the size limit for decoding has been reached",
-            DeserializeError::Serde(ref s) => s.description(),
+            DeserializeError::Custom(_) => "a custom serialization error was reported",
 
         }
     }
@@ -64,7 +64,7 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => err.cause(),
             DeserializeError::InvalidEncoding(_) => None,
             DeserializeError::SizeLimit => None,
-            DeserializeError::Serde(ref s) => s.cause(),
+            DeserializeError::Custom(_) => None,
         }
     }
 }
@@ -77,7 +77,7 @@ impl From<IoError> for DeserializeError {
 
 impl From<serde::de::value::Error> for DeserializeError {
     fn from(err: serde::de::value::Error) -> DeserializeError {
-        DeserializeError::Serde(err)
+        DeserializeError::Custom(err.description().to_string())
     }
 }
 
@@ -90,15 +90,15 @@ impl fmt::Display for DeserializeError {
                 write!(fmt, "InvalidEncoding: {}", ib),
             DeserializeError::SizeLimit =>
                 write!(fmt, "SizeLimit"),
-            DeserializeError::Serde(ref s) =>
-                s.fmt(fmt),
+            DeserializeError::Custom(ref s) =>
+                write!(fmt, "Custom Error {}", s),
         }
     }
 }
 
 impl serde::de::Error for DeserializeError {
     fn custom<T: fmt::Display>(desc: T) -> DeserializeError {
-        DeserializeError::Serde(serde::de::value::Error::custom(desc))
+        DeserializeError::Custom(desc.to_string())
     }
 }
 
@@ -186,7 +186,7 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
         where V: serde::de::Visitor,
     {
         let message = "bincode does not support Deserializer::deserialize";
-        Err(DeserializeError::Serde(serde::de::value::Error::custom(message)))
+        Err(DeserializeError::custom(message))
     }
 
     fn deserialize_bool<V>(self, mut visitor: V) -> DeserializeResult<V::Value>
@@ -443,7 +443,7 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
         where V: serde::de::Visitor,
     {
         let message = "bincode does not support Deserializer::deserialize_struct_field";
-        Err(DeserializeError::Serde(serde::de::value::Error::custom(message)))
+        Err(DeserializeError::custom(message))
     }
 
     fn deserialize_newtype_struct<V>(self,
@@ -476,7 +476,7 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
         where V: serde::de::Visitor,
     {
         let message = "bincode does not support Deserializer::deserialize_ignored_any";
-        Err(DeserializeError::Serde(serde::de::value::Error::custom(message)))
+        Err(DeserializeError::custom(message))
     }
 }
 

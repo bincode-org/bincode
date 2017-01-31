@@ -248,6 +248,29 @@ fn decoding_errors() {
 }
 
 #[test]
+fn deserializing_errors() {
+    fn isize_invalid_deserialize<T: Debug>(res: DeserializeResult<T>) {
+        match res {
+            Err(DeserializeError::InvalidEncoding(_)) => {},
+            Err(DeserializeError::Custom(ref s)) if s.contains("invalid encoding") => {},
+            Err(DeserializeError::Custom(ref s)) if s.contains("invalid value") => {},
+            _ => panic!("Expecting InvalidEncoding, got {:?}", res),
+        }
+    }
+
+    isize_invalid_deserialize(deserialize::<bool>(&vec![0xA][..]));
+    isize_invalid_deserialize(deserialize::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
+    // Out-of-bounds variant
+    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, Debug)]
+    enum Test {
+        One,
+        Two,
+    };
+    isize_invalid_deserialize(deserialize::<Test>(&vec![0, 0, 0, 5][..]));
+    isize_invalid_deserialize(deserialize::<Option<u8>>(&vec![5, 0][..]));
+}
+
+#[test]
 fn too_big_decode() {
     let encoded = vec![0,0,0,3];
     let decoded: Result<u32, _> = decode_from(&mut &encoded[..], Bounded(3));
