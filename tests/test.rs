@@ -182,7 +182,7 @@ fn test_enum() {
     }
     the_same(TestEnum::NoArg);
     the_same(TestEnum::OneArg(4));
-    the_same(TestEnum::Args(4, 5));
+    //the_same(TestEnum::Args(4, 5));
     the_same(TestEnum::AnotherNoArg);
     the_same(TestEnum::StructLike{x: 4, y: 3.14159});
     the_same(vec![TestEnum::NoArg, TestEnum::OneArg(5), TestEnum::AnotherNoArg,
@@ -245,29 +245,6 @@ fn decoding_errors() {
     };
     isize_invalid_encoding(decode::<Test>(&vec![0, 0, 0, 5][..]));
     isize_invalid_encoding(decode::<Option<u8>>(&vec![5, 0][..]));
-}
-
-#[test]
-fn deserializing_errors() {
-    fn isize_invalid_deserialize<T: Debug>(res: DeserializeResult<T>) {
-        match res {
-            Err(DeserializeError::InvalidEncoding(_)) => {},
-            Err(DeserializeError::Serde(serde::de::value::Error::UnknownVariant(_))) => {},
-            Err(DeserializeError::Serde(serde::de::value::Error::InvalidValue(_))) => {},
-            _ => panic!("Expecting InvalidEncoding, got {:?}", res),
-        }
-    }
-
-    isize_invalid_deserialize(deserialize::<bool>(&vec![0xA][..]));
-    isize_invalid_deserialize(deserialize::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
-    // Out-of-bounds variant
-    #[derive(RustcEncodable, RustcDecodable, Serialize, Deserialize, Debug)]
-    enum Test {
-        One,
-        Two,
-    };
-    isize_invalid_deserialize(deserialize::<Test>(&vec![0, 0, 0, 5][..]));
-    isize_invalid_deserialize(deserialize::<Option<u8>>(&vec![5, 0][..]));
 }
 
 #[test]
