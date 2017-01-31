@@ -34,7 +34,8 @@ mod writer;
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
 pub fn serialize_into<W, T>(writer: &mut W, value: &T, size_limit: SizeLimit) -> SerializeResult<()>
-    where W: Write, T: serde::Serialize,
+    where W: Write + ?Sized, 
+          T: serde::Serialize + ?Sized,
 {
     match size_limit {
         SizeLimit::Infinite => { }
@@ -53,7 +54,7 @@ pub fn serialize_into<W, T>(writer: &mut W, value: &T, size_limit: SizeLimit) ->
 /// If the serialization would take more bytes than allowed by `size_limit`,
 /// an error is returned.
 pub fn serialize<T>(value: &T, size_limit: SizeLimit) -> SerializeResult<Vec<u8>>
-    where T: serde::Serialize,
+    where T: serde::Serialize + ?Sized,
 {
     // Since we are putting values directly into a vector, we can do size
     // computation out here and pre-allocate a buffer of *exactly*
@@ -77,7 +78,9 @@ pub fn serialize<T>(value: &T, size_limit: SizeLimit) -> SerializeResult<Vec<u8>
 ///
 /// This is used internally as part of the check for encode_into, but it can
 /// be useful for preallocating buffers if thats your style.
-pub fn serialized_size<T: serde::Serialize>(value: &T) -> u64 {
+pub fn serialized_size<T>(value: &T) -> u64 
+    where T: serde::Serialize + ?Sized
+{
     use std::u64::MAX;
     let mut size_checker = SizeChecker::new(MAX);
     value.serialize(&mut size_checker).ok();
@@ -89,7 +92,9 @@ pub fn serialized_size<T: serde::Serialize>(value: &T) -> u64 {
 ///
 /// If it can be serialized in `max` or fewer bytes, that number will be returned
 /// inside `Some`.  If it goes over bounds, then None is returned.
-pub fn serialized_size_bounded<T: serde::Serialize>(value: &T, max: u64) -> Option<u64> {
+pub fn serialized_size_bounded<T>(value: &T, max: u64) -> Option<u64> 
+    where T: serde::Serialize + ?Sized
+{
     let mut size_checker = SizeChecker::new(max);
     value.serialize(&mut size_checker).ok().map(|_| size_checker.written)
 }
@@ -104,7 +109,7 @@ pub fn serialized_size_bounded<T: serde::Serialize>(value: &T, max: u64) -> Opti
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
 pub fn deserialize_from<R, T>(reader: &mut R, size_limit: SizeLimit) -> DeserializeResult<T>
-    where R: Read,
+    where R: Read + ?Sized,
           T: serde::Deserialize,
 {
     let mut deserializer = Deserializer::new(reader, size_limit);
