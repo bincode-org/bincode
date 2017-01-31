@@ -54,7 +54,7 @@ impl Error for DeserializeError {
             DeserializeError::IoError(ref err) => Error::description(err),
             DeserializeError::InvalidEncoding(ref ib) => ib.desc,
             DeserializeError::SizeLimit => "the size limit for decoding has been reached",
-            DeserializeError::Custom(_) => "a custom serialization error was reported",
+            DeserializeError::Custom(ref msg) => msg,
 
         }
     }
@@ -75,12 +75,6 @@ impl From<IoError> for DeserializeError {
     }
 }
 
-impl From<serde::de::value::Error> for DeserializeError {
-    fn from(err: serde::de::value::Error) -> DeserializeError {
-        DeserializeError::Custom(err.description().to_string())
-    }
-}
-
 impl fmt::Display for DeserializeError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -91,7 +85,7 @@ impl fmt::Display for DeserializeError {
             DeserializeError::SizeLimit =>
                 write!(fmt, "SizeLimit"),
             DeserializeError::Custom(ref s) =>
-                write!(fmt, "Custom Error {}", s),
+                s.fmt(fmt),
         }
     }
 }
