@@ -1,0 +1,6 @@
+* 1.0.0
+** Removed depricated rustc-serialize support.
+
+Rustc-serialize was a stopgap until projects like Serde were able to catch up.
+With macros stabilization on its way, we are able to switch to serde without any
+big user-friendliness issues.  Major congratulations to Serde for coming this far!
