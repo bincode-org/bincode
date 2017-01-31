@@ -12,3 +12,7 @@
 ** Upgraded to Serde 0.9.*
  Serde 0.9.* gives us a better API surface area and allows use of procedural macros for
  deriving serialize and deserialize implemenetations.
+
+** Moved serde functions into global module
+ Since serde is the only supported serialization mechanism, it makes sense to have these
+ functions available at the top level.

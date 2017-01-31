@@ -17,7 +17,7 @@
 //!
 //! ```rust
 //! extern crate bincode;
-//! use bincode::serde::{serialize, deserialize};
+//! use bincode::{serialize, deserialize};
 //! fn main() {
 //!     // The object that we will serialize.
 //!     let target = Some("hello world".to_string());
@@ -41,7 +41,9 @@ extern crate num_traits;
 extern crate serde as serde_crate;
 
 pub mod refbox;
-pub mod serde;
+mod serde;
+
+pub use serde::*;
 
 /// A limit on the amount of bytes that can be read or written.
 ///
@@ -66,4 +68,3 @@ pub enum SizeLimit {
     Infinite,
     Bounded(u64)
 }
-

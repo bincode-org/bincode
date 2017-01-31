@@ -13,26 +13,26 @@ use std::ops::Deref;
 use bincode::refbox::{RefBox, StrBox, SliceBox};
 
 use bincode::SizeLimit::{self, Infinite, Bounded};
-use bincode::serde::{serialize, deserialize, deserialize_from, DeserializeError, DeserializeResult};
+use bincode::{serialize, serialized_size, deserialize, deserialize_from, DeserializeError, DeserializeResult};
 
 fn proxy_encode<V>(element: &V, size_limit: SizeLimit) -> Vec<u8>
     where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
 {
-    let v2 = bincode::serde::serialize(element, size_limit).unwrap();
+    let v2 = serialize(element, size_limit).unwrap();
     v2
 }
 
 fn proxy_decode<V>(slice: &[u8]) -> V
     where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
 {
-    let e2 = bincode::serde::deserialize(slice).unwrap();
+    let e2 = deserialize(slice).unwrap();
     e2
 }
 
 fn proxy_encoded_size<V>(element: &V) -> u64
     where V: serde::Serialize + PartialEq + Debug + 'static
 {
-    let serde_size = bincode::serde::serialized_size(element);
+    let serde_size = serialized_size(element);
     serde_size
 }
 
@@ -44,8 +44,8 @@ fn the_same<V>(element: V)
         where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
     {
         let rf = RefBox::new(v);
-        let encoded = bincode::serde::serialize(&rf, Infinite).unwrap();
-        let decoded: RefBox<'static, V> = bincode::serde::deserialize(&encoded[..]).unwrap();
+        let encoded = serialize(&rf, Infinite).unwrap();
+        let decoded: RefBox<'static, V> = deserialize(&encoded[..]).unwrap();
 
         decoded.take().deref() == v
     }
@@ -386,8 +386,8 @@ fn test_oom_protection() {
 fn path_buf() {
     use std::path::{Path, PathBuf};
     let path = Path::new("foo").to_path_buf();
-    let serde_encoded = bincode::serde::serialize(&path, Infinite).unwrap();
-    let decoded: PathBuf = bincode::serde::deserialize(&serde_encoded).unwrap();
+    let serde_encoded = serialize(&path, Infinite).unwrap();
+    let decoded: PathBuf = deserialize(&serde_encoded).unwrap();
     assert!(path.to_str() == decoded.to_str());
 }
 
@@ -396,8 +396,8 @@ fn bytes() {
     use serde::bytes::Bytes;
 
     let data = b"abc\0123";
-    let s = bincode::serde::serialize(&data, Infinite).unwrap();
-    let s2 = bincode::serde::serialize(&Bytes::new(data), Infinite).unwrap();
+    let s = serialize(&data, Infinite).unwrap();
+    let s2 = serialize(&Bytes::new(data), Infinite).unwrap();
     assert_eq!(s, s2);
 }
 
