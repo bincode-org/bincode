@@ -1,10 +1,10 @@
 [package]
 name = "bincode"
 version = "0.6.1"
-authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>"]
+authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
 
 repository = "https://github.com/TyOverby/bincode"
-documentation = "http://tyoverby.github.io/bincode/bincode/"
+documentation = "https://docs.rs/bincode"
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 
 license = "MIT"
