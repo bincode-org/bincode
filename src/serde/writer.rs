@@ -5,6 +5,7 @@ use std::io::Write;
 use std::u32;
 
 use serde_crate as serde;
+use serde_crate::ser::Error as SeError;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -172,7 +173,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> SerializeResult<Self::SerializeSeq> {
-        let len = len.expect("do not know how to serialize a sequence with no length");
+        let len = try!(len.ok_or(SerializeError::custom("do not know how to serialize a sequence with no length")));
         try!(self.serialize_u64(len as u64));
         Ok(Compound {ser: self})
     }
@@ -200,7 +201,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_map(self, len: Option<usize>) -> SerializeResult<Self::SerializeMap> {
-        let len = len.expect("do not know how to serialize a map with no length");
+        let len = try!(len.ok_or(SerializeError::custom("do not know how to serialize a map with no length")));
         try!(self.serialize_u64(len as u64));
         Ok(Compound {ser: self})
     }
@@ -367,7 +368,7 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> SerializeResult<Self::SerializeSeq> {
-        let len = len.expect("do not know how to serialize a sequence with no length");
+        let len = try!(len.ok_or(SerializeError::custom("do not know how to serialize a sequence with no length")));
 
         try!(self.serialize_u64(len as u64));
         Ok(SizeCompound {ser: self})
@@ -397,7 +398,7 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
 
     fn serialize_map(self, len: Option<usize>) -> SerializeResult<Self::SerializeMap>
     {
-        let len = len.expect("do not know how to serialize a map with no length");
+        let len = try!(len.ok_or(SerializeError::custom("do not know how to serialize a map with no length")));
 
         try!(self.serialize_u64(len as u64));
         Ok(SizeCompound {ser: self})
