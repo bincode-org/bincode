@@ -38,8 +38,8 @@ fn wrap_io(err: IoError) -> SerializeError {
 }
 
 impl serde::ser::Error for SerializeError {
-    fn custom<T: ::std::fmt::Display>(msg: T) -> Self {
-        SerializeError::Custom(format!("{}", msg))
+    fn custom<T: fmt::Display>(msg: T) -> Self {
+        SerializeError::Custom(msg.to_string())
     }
 }
 

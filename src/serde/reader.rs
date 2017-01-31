@@ -97,7 +97,7 @@ impl fmt::Display for DeserializeError {
 }
 
 impl serde::de::Error for DeserializeError {
-    fn custom<T: ::std::fmt::Display>(desc: T) -> DeserializeError {
+    fn custom<T: fmt::Display>(desc: T) -> DeserializeError {
         DeserializeError::Serde(serde::de::value::Error::custom(desc))
     }
 }
@@ -305,52 +305,20 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
                      mut visitor: V) -> Result<V::Value, Self::Error>
         where V: serde::de::Visitor,
     {
-        struct VariantVisitor<'a, R: Read + 'a>(&'a mut Deserializer<R>);
-
-        impl<'a, R: Read + 'a> serde::de::EnumVisitor for VariantVisitor<'a, R> {
+        impl<'a, R: Read + 'a> serde::de::EnumVisitor for &'a mut Deserializer<R> {
             type Error = DeserializeError;
             type Variant = Self;
 
             fn visit_variant_seed<V>(self, seed: V) -> DeserializeResult<(V::Value, Self::Variant)>
                 where V: serde::de::DeserializeSeed,
             {
-                let idx: u32 = try!(serde::de::Deserialize::deserialize(&mut *self.0));
+                let idx: u32 = try!(serde::de::Deserialize::deserialize(&mut *self));
                 let val: Result<_, DeserializeError> = seed.deserialize(idx.into_deserializer());
                 Ok((try!(val), self))
             }
         }
 
-        impl<'a, R: Read + 'a> serde::de::VariantVisitor for VariantVisitor<'a, R> {
-            type Error = DeserializeError;
-        
-            fn visit_unit(self) -> DeserializeResult<()> {
-                serde::de::Deserialize::deserialize(self.0)
-            }
-        
-            fn visit_newtype_seed<T>(self, seed: T) -> DeserializeResult<T::Value>
-                where T: serde::de::DeserializeSeed,
-            {
-                seed.deserialize(self.0)
-            }
-        
-            fn visit_tuple<V>(self, len: usize, visitor: V) -> DeserializeResult<V::Value>
-                where V: serde::de::Visitor,
-            {
-                serde::de::Deserializer::deserialize_tuple(self.0, len, visitor)
-            }
-        
-            fn visit_struct<V>(
-                self,
-                fields: &'static [&'static str],
-                visitor: V
-            ) -> DeserializeResult<V::Value>
-                where V: serde::de::Visitor,
-            {
-                serde::de::Deserializer::deserialize_tuple(self.0, fields.len(), visitor)
-            }
-        }
-
-        visitor.visit_enum(VariantVisitor(self))
+        visitor.visit_enum(self)
     }
     
     fn deserialize_tuple<V>(self,
