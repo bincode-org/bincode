@@ -5,7 +5,6 @@ use std::io::Write;
 use std::u32;
 
 use serde_crate as serde;
-use serde_crate::ser::Error as SeError;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -22,6 +21,7 @@ pub enum SerializeError {
     /// This error is returned before any bytes are written to the
     /// output `Writer`.
     SizeLimit,
+    InfiniteSequence,
     /// A custom error message
     Custom(String)
 }
@@ -49,6 +49,7 @@ impl fmt::Display for SerializeError {
         match *self {
             SerializeError::IoError(ref err) => write!(f, "IoError: {}", err),
             SerializeError::Custom(ref s) => write!(f, "Custom Error {}", s),
+            SerializeError::InfiniteSequence => write!(f, "InfiniteSequence"),
             SerializeError::SizeLimit => write!(f, "SizeLimit"),
         }
     }
@@ -58,16 +59,18 @@ impl Error for SerializeError {
     fn description(&self) -> &str {
         match *self {
             SerializeError::IoError(ref err) => Error::description(err),
-            SerializeError::SizeLimit => "the size limit for decoding has been reached",
             SerializeError::Custom(_) => "a custom serialization error was reported",
+            SerializeError::InfiniteSequence => "bincode can't encode infinite sequences",
+            SerializeError::SizeLimit => "the size limit for decoding has been reached",
         }
     }
 
     fn cause(&self) -> Option<&Error> {
         match *self {
             SerializeError::IoError(ref err) => err.cause(),
-            SerializeError::SizeLimit => None,
             SerializeError::Custom(_) => None,
+            SerializeError::SizeLimit => None,
+            SerializeError::InfiniteSequence => None,
         }
     }
 }
@@ -173,7 +176,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> SerializeResult<Self::SerializeSeq> {
-        let len = try!(len.ok_or(SerializeError::custom("bincode can't serialize a sequence with no length")));
+        let len = try!(len.ok_or(SerializeError::InfiniteSequence));
         try!(self.serialize_u64(len as u64));
         Ok(Compound {ser: self})
     }
@@ -201,7 +204,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_map(self, len: Option<usize>) -> SerializeResult<Self::SerializeMap> {
-        let len = try!(len.ok_or(SerializeError::custom("bincode can't serialize a map with no length")));
+        let len = try!(len.ok_or(SerializeError::InfiniteSequence));
         try!(self.serialize_u64(len as u64));
         Ok(Compound {ser: self})
     }
@@ -368,7 +371,7 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> SerializeResult<Self::SerializeSeq> {
-        let len = try!(len.ok_or(SerializeError::custom("bincode can't serialize a sequence with no length")));
+        let len = try!(len.ok_or(SerializeError::InfiniteSequence));
 
         try!(self.serialize_u64(len as u64));
         Ok(SizeCompound {ser: self})
@@ -398,7 +401,7 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
 
     fn serialize_map(self, len: Option<usize>) -> SerializeResult<Self::SerializeMap>
     {
-        let len = try!(len.ok_or(SerializeError::custom("bincode can't serialize a map with no length")));
+        let len = try!(len.ok_or(SerializeError::InfiniteSequence));
 
         try!(self.serialize_u64(len as u64));
         Ok(SizeCompound {ser: self})
