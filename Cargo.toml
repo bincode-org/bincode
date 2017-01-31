@@ -1,6 +1,6 @@
 [package]
 name = "bincode"
-version = "0.6.1"
+version = "1.0.0-alpha1"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
 
 repository = "https://github.com/TyOverby/bincode"
@@ -14,16 +14,8 @@ description = "A binary serialization / deserialization strategy and implementat
 byteorder = "1.0.0"
 num-traits = "0.1.32"
 
-[dependencies.rustc-serialize]
-version = "0.3.*"
-optional = true
-
 [dependencies.serde]
 version = "0.9.*"
-optional = true
 
 [dev-dependencies]
 serde_derive = "0.9.*"
-
-[features]
-default = ["rustc-serialize", "serde"]

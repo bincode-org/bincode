@@ -1,10 +1,6 @@
 use std::boxed::Box;
 use std::ops::Deref;
 
-#[cfg(feature = "rustc-serialize")]
-use rustc_serialize_crate::{Encodable, Encoder, Decodable, Decoder};
-
-#[cfg(feature = "serde")]
 use serde_crate as serde;
 
 /// A struct for encoding nested reference types.
@@ -141,22 +137,6 @@ impl <T> RefBox<'static, T>  {
     }
 }
 
-#[cfg(feature = "rustc-serialize")]
-impl <'a, T: Encodable> Encodable for RefBox<'a, T> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        self.inner.encode(s)
-    }
-}
-
-#[cfg(feature = "rustc-serialize")]
-impl <T: Decodable> Decodable for RefBox<'static, T> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<RefBox<'static, T>, D::Error> {
-        let inner = try!(Decodable::decode(d));
-        Ok(RefBox{inner: inner})
-    }
-}
-
-#[cfg(feature = "serde")]
 impl<'a, T> serde::Serialize for RefBox<'a, T>
     where T: serde::Serialize,
 {
@@ -167,7 +147,6 @@ impl<'a, T> serde::Serialize for RefBox<'a, T>
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'a, T: serde::Deserialize> serde::Deserialize for RefBox<'a, T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
@@ -239,22 +218,7 @@ impl StrBox<'static>  {
     }
 }
 
-#[cfg(feature = "rustc-serialize")]
-impl <'a> Encodable for StrBox<'a> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        self.inner.encode(s)
-    }
-}
 
-#[cfg(feature = "rustc-serialize")]
-impl Decodable for StrBox<'static> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<StrBox<'static>, D::Error> {
-        let inner: RefBoxInner<'static, str, String> = try!(Decodable::decode(d));
-        Ok(StrBox{inner: inner})
-    }
-}
-
-#[cfg(feature = "serde")]
 impl<'a> serde::Serialize for StrBox<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
@@ -263,7 +227,6 @@ impl<'a> serde::Serialize for StrBox<'a> {
     }
 }
 
-#[cfg(feature = "serde")]
 impl serde::Deserialize for StrBox<'static> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
@@ -330,22 +293,7 @@ impl <T> SliceBox<'static, T>  {
     }
 }
 
-#[cfg(feature = "rustc-serialize")]
-impl <'a, T: Encodable> Encodable for SliceBox<'a, T> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        self.inner.encode(s)
-    }
-}
 
-#[cfg(feature = "rustc-serialize")]
-impl <T: Decodable> Decodable for SliceBox<'static, T> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<SliceBox<'static, T>, D::Error> {
-        let inner: RefBoxInner<'static, [T], Vec<T>> = try!(Decodable::decode(d));
-        Ok(SliceBox{inner: inner})
-    }
-}
-
-#[cfg(feature = "serde")]
 impl<'a, T> serde::Serialize for SliceBox<'a, T>
     where T: serde::Serialize,
 {
@@ -356,7 +304,6 @@ impl<'a, T> serde::Serialize for SliceBox<'a, T>
     }
 }
 
-#[cfg(feature = "serde")]
 impl<'a, T: serde::Deserialize> serde::Deserialize for SliceBox<'a, T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
@@ -366,17 +313,7 @@ impl<'a, T: serde::Deserialize> serde::Deserialize for SliceBox<'a, T> {
     }
 }
 
-#[cfg(feature = "rustc-serialize")]
-impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, B> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        match self {
-            &RefBoxInner::Ref(ref r) => r.encode(s),
-            &RefBoxInner::Box(ref b) => b.encode(s)
-        }
-    }
-}
 
-#[cfg(feature = "serde")]
 impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B>
     where A: serde::Serialize,
           B: serde::Serialize,
@@ -391,15 +328,7 @@ impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B>
     }
 }
 
-#[cfg(feature = "rustc-serialize")]
-impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<RefBoxInner<'static, A, B>, D::Error> {
-        let decoded = try!(Decodable::decode(d));
-        Ok(RefBoxInner::Box(decoded))
-    }
-}
 
-#[cfg(feature = "serde")]
 impl<'a, A: ?Sized, B> serde::Deserialize for RefBoxInner<'a, A, B>
     where B: serde::Deserialize,
 {
