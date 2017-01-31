@@ -19,11 +19,11 @@ version = "0.3.*"
 optional = true
 
 [dependencies.serde]
-version = "0.8.*"
+version = "0.9.*"
 optional = true
 
 [dev-dependencies]
-serde_derive = "0.8.*"
+serde_derive = "0.9.*"
 
 [features]
 default = ["rustc-serialize", "serde"]
