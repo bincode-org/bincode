@@ -406,6 +406,7 @@ fn test_refbox_encode() {
     }
 }
 
+/*
 #[test]
 fn test_refbox_serialize() {
     let large_object = vec![1u32,2,3,4,5,6];
@@ -441,6 +442,7 @@ fn test_refbox_serialize() {
         }
     }
 }
+*/
 
 #[test]
 fn test_strbox_encode() {
