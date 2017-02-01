@@ -13,7 +13,7 @@ use std::ops::Deref;
 use bincode::refbox::{RefBox, StrBox, SliceBox};
 
 use bincode::SizeLimit::{self, Infinite, Bounded};
-use bincode::{serialize, serialized_size, deserialize, deserialize_from, DeserializeError, DeserializeResult};
+use bincode::{serialize, serialized_size, deserialize, deserialize_from, Error, Result};
 
 fn proxy_encode<V>(element: &V, size_limit: SizeLimit) -> Vec<u8>
     where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
@@ -213,11 +213,11 @@ fn test_fixed_size_array() {
 
 #[test]
 fn deserializing_errors() {
-    fn isize_invalid_deserialize<T: Debug>(res: DeserializeResult<T>) {
+    fn isize_invalid_deserialize<T: Debug>(res: Result<T>) {
         match res {
-            Err(DeserializeError::InvalidEncoding(_)) => {},
-            Err(DeserializeError::Custom(ref s)) if s.contains("invalid encoding") => {},
-            Err(DeserializeError::Custom(ref s)) if s.contains("invalid value") => {},
+            Err(Error::InvalidEncoding(_)) => {},
+            Err(Error::Custom(ref s)) if s.contains("invalid encoding") => {},
+            Err(Error::Custom(ref s)) if s.contains("invalid value") => {},
             _ => panic!("Expecting InvalidEncoding, got {:?}", res),
         }
     }
@@ -237,11 +237,11 @@ fn deserializing_errors() {
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32, _> = deserialize_from(&mut &serialized[..], Bounded(3));
+    let deserialized: Result<u32> = deserialize_from(&mut &serialized[..], Bounded(3));
     assert!(deserialized.is_err());
 
     let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32, _> = deserialize_from(&mut &serialized[..], Bounded(4));
+    let deserialized: Result<u32> = deserialize_from(&mut &serialized[..], Bounded(4));
     assert!(deserialized.is_ok());
 }
 
@@ -258,7 +258,7 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char, _> = deserialize_from(&mut &serialized[..], Bounded(1));
+    let deserialized: Result<char> = deserialize_from(&mut &serialized[..], Bounded(1));
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
