@@ -6,6 +6,7 @@ use std::io::{Write, Read};
 use std::io::Error as IoError;
 use std::{error, fmt, result};
 use ::SizeLimit;
+use byteorder::{ByteOrder, BigEndian};
 
 pub use self::reader::{
     Deserializer,
@@ -118,9 +119,8 @@ impl serde::ser::Error for Error {
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T, size_limit: SizeLimit) -> Result<()>
-    where W: Write, 
-          T: serde::Serialize,
+pub fn serialize_into<W: ?Sized, T: ?Sized, E>(writer: &mut W, value: &T, size_limit: SizeLimit) -> Result<()>
+    where W: Write, T: serde::Serialize, E: ByteOrder
 {
     match size_limit {
         SizeLimit::Infinite => { }
@@ -130,7 +130,7 @@ pub fn serialize_into<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T, size_limi
         }
     }
 
-    let mut serializer = Serializer::new(writer);
+    let mut serializer = Serializer::<_, E>::new(writer);
     serde::Serialize::serialize(value, &mut serializer)
 }
 
@@ -152,7 +152,7 @@ pub fn serialize<T: ?Sized>(value: &T, size_limit: SizeLimit) -> Result<Vec<u8>>
         SizeLimit::Infinite => Vec::new()
     };
 
-    try!(serialize_into(&mut writer, value, SizeLimit::Infinite));
+    try!(serialize_into::<_, _, ::byteorder::BigEndian>(&mut writer, value, SizeLimit::Infinite));
     Ok(writer)
 }
 
@@ -194,7 +194,7 @@ pub fn deserialize_from<R: ?Sized, T>(reader: &mut R, size_limit: SizeLimit) -> 
     where R: Read,
           T: serde::Deserialize,
 {
-    let mut deserializer = Deserializer::new(reader, size_limit);
+    let mut deserializer = Deserializer::<_, BigEndian>::new(reader, size_limit);
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
