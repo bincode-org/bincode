@@ -127,7 +127,7 @@ impl fmt::Display for InvalidEncoding {
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T, size_limit: SizeLimit) -> SerializeResult<()>
+pub fn serialize_into<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T, size_limit: SizeLimit) -> Result<()>
     where W: Write, 
           T: serde::Serialize,
 {
@@ -147,7 +147,7 @@ pub fn serialize_into<W: ?Sized, T: ?Sized>(writer: &mut W, value: &T, size_limi
 ///
 /// If the serialization would take more bytes than allowed by `size_limit`,
 /// an error is returned.
-pub fn serialize<T: ?Sized>(value: &T, size_limit: SizeLimit) -> SerializeResult<Vec<u8>>
+pub fn serialize<T: ?Sized>(value: &T, size_limit: SizeLimit) -> Result<Vec<u8>>
     where T: serde::Serialize
 {
     // Since we are putting values directly into a vector, we can do size
@@ -202,7 +202,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 /// If this returns an `Error`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn deserialize_from<R: ?Sized, T>(reader: &mut R, size_limit: SizeLimit) -> DeserializeResult<T>
+pub fn deserialize_from<R: ?Sized, T>(reader: &mut R, size_limit: SizeLimit) -> Result<T>
     where R: Read,
           T: serde::Deserialize,
 {
