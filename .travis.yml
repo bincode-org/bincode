@@ -1,17 +1,5 @@
-lang: c
-
-env:
-  matrix:
-    - CHANNEL='stable'
-    - CHANNEL='beta'
-    - CHANNEL='nightly'
-
-install:
-    - curl -sf https://raw.githubusercontent.com/brson/multirust/master/blastoff.sh > ./rustup.sh
-    - chmod +x ./rustup.sh
-    - ./rustup.sh --yes
-
-script:
-    - multirust default $CHANNEL
-    - cargo build
-    - cargo test
+language: rust
+rust:
+    - stable
+    - beta
+    - nightly
