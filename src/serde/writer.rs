@@ -182,8 +182,8 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         Ok(Compound {ser: self})
     }
 
-    fn serialize_seq_fixed_size(self, len: usize) -> SerializeResult<Self::SerializeSeq> {
-        self.serialize_seq(Some(len))
+    fn serialize_seq_fixed_size(self, _len: usize) -> SerializeResult<Self::SerializeSeq> {
+        Ok(Compound {ser: self})
     }
 
     fn serialize_tuple(self, _len: usize) -> SerializeResult<Self::SerializeTuple> {
@@ -378,8 +378,8 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
         Ok(SizeCompound {ser: self})
     }
 
-    fn serialize_seq_fixed_size(self, len: usize) -> SerializeResult<Self::SerializeSeq> {
-        self.serialize_seq(Some(len))
+    fn serialize_seq_fixed_size(self, _len: usize) -> SerializeResult<Self::SerializeSeq> {
+        Ok(SizeCompound {ser: self})
     }
 
     fn serialize_tuple(self, _len: usize) -> SerializeResult<Self::SerializeTuple> {

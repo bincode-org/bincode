@@ -398,6 +398,6 @@ fn bytes() {
     let data = b"abc\0123";
     let s = serialize(&data, Infinite).unwrap();
     let s2 = serialize(&Bytes::new(data), Infinite).unwrap();
-    assert_eq!(s, s2);
+    assert_eq!(s[..], s2[8..]);
 }
 
