@@ -23,12 +23,15 @@ mod reader;
 mod writer;
 
 pub type Result<T> = result::Result<T, Error>;
+
 /// An error that can be produced during (de)serializing.
 ///
 /// If decoding from a Buffer, assume that the buffer has been left
 /// in an invalid state.
+pub type Error = Box<ErrorKind>;
+
 #[derive(Debug)]
-pub enum Error {
+pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
     /// during (de)serialization, that error will be stored and returned here.
     IoError(IoError),
@@ -44,47 +47,47 @@ pub enum Error {
     Custom(String)
 }
 
-impl error::Error for Error {
+impl error::Error for ErrorKind {
     fn description(&self) -> &str {
         match *self {
-            Error::IoError(ref err) => error::Error::description(err),
-            Error::InvalidEncoding(ref ib) => ib.desc,
-            Error::SequenceMustHaveLength => "bincode can't encode infinite sequences",
-            Error::SizeLimit => "the size limit for decoding has been reached",
-            Error::Custom(ref msg) => msg,
+            ErrorKind::IoError(ref err) => error::Error::description(err),
+            ErrorKind::InvalidEncoding(ref ib) => ib.desc,
+            ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
+            ErrorKind::SizeLimit => "the size limit for decoding has been reached",
+            ErrorKind::Custom(ref msg) => msg,
 
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            Error::IoError(ref err) => err.cause(),
-            Error::InvalidEncoding(_) => None,
-            Error::SequenceMustHaveLength => None,
-            Error::SizeLimit => None,
-            Error::Custom(_) => None,
+            ErrorKind::IoError(ref err) => err.cause(),
+            ErrorKind::InvalidEncoding(_) => None,
+            ErrorKind::SequenceMustHaveLength => None,
+            ErrorKind::SizeLimit => None,
+            ErrorKind::Custom(_) => None,
         }
     }
 }
 
 impl From<IoError> for Error {
     fn from(err: IoError) -> Error {
-        Error::IoError(err)
+        ErrorKind::IoError(err).into()
     }
 }
 
-impl fmt::Display for Error {
+impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::IoError(ref ioerr) =>
+            ErrorKind::IoError(ref ioerr) =>
                 write!(fmt, "IoError: {}", ioerr),
-            Error::InvalidEncoding(ref ib) =>
+            ErrorKind::InvalidEncoding(ref ib) =>
                 write!(fmt, "InvalidEncoding: {}", ib),
-            Error::SequenceMustHaveLength =>
+            ErrorKind::SequenceMustHaveLength =>
                 write!(fmt, "Bincode can only encode sequences and maps that have a knowable size ahead of time."),
-            Error::SizeLimit =>
+            ErrorKind::SizeLimit =>
                 write!(fmt, "SizeLimit"),
-            Error::Custom(ref s) =>
+            ErrorKind::Custom(ref s) =>
                 s.fmt(fmt),
         }
     }
@@ -92,13 +95,13 @@ impl fmt::Display for Error {
 
 impl serde::de::Error for Error {
     fn custom<T: fmt::Display>(desc: T) -> Error {
-        Error::Custom(desc.to_string())
+        ErrorKind::Custom(desc.to_string()).into()
     }
 }
 
 impl serde::ser::Error for Error {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        Error::Custom(msg.to_string())
+        ErrorKind::Custom(msg.to_string()).into()
     }
 } 
 
@@ -155,10 +158,7 @@ pub fn serialize<T: ?Sized>(value: &T, size_limit: SizeLimit) -> Result<Vec<u8>>
     // the right size.
     let mut writer = match size_limit {
         SizeLimit::Bounded(size_limit) => {
-            let actual_size = match serialized_size_bounded(value, size_limit) {
-                Some(actual_size) => actual_size,
-                None => { return Err(Error::SizeLimit); }
-            };
+            let actual_size = try!(serialized_size_bounded(value, size_limit).ok_or(ErrorKind::SizeLimit));
             Vec::with_capacity(actual_size as usize)
         }
         SizeLimit::Infinite => Vec::new()

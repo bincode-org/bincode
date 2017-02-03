@@ -5,7 +5,7 @@ use serde_crate as serde;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use super::{Result, Error};
+use super::{Result, Error, ErrorKind};
 
 /// An Serializer that encodes values directly into a Writer.
 ///
@@ -92,16 +92,16 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
 
     fn serialize_str(self, v: &str) -> Result<()> {
         try!(self.serialize_u64(v.len() as u64));
-        self.writer.write_all(v.as_bytes()).map_err(Error::IoError)
+        self.writer.write_all(v.as_bytes()).map_err(Into::into)
     }
 
     fn serialize_char(self, c: char) -> Result<()> {
-        self.writer.write_all(encode_utf8(c).as_slice()).map_err(Error::IoError)
+        self.writer.write_all(encode_utf8(c).as_slice()).map_err(Into::into)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
         try!(self.serialize_u64(v.len() as u64));
-        self.writer.write_all(v).map_err(Error::IoError)
+        self.writer.write_all(v).map_err(Into::into)
     }
 
     fn serialize_none(self) -> Result<()> {
@@ -111,12 +111,12 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<()>
         where T: serde::Serialize,
     {
-        try!(self.writer.write_u8(1).map_err(|err| -> Error {err.into()}));
+        try!(self.writer.write_u8(1));
         v.serialize(self)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
-        let len = try!(len.ok_or(Error::SequenceMustHaveLength));
+        let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
         try!(self.serialize_u64(len as u64));
         Ok(Compound {ser: self})
     }
@@ -144,7 +144,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
-        let len = try!(len.ok_or(Error::SequenceMustHaveLength));
+        let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
         try!(self.serialize_u64(len as u64));
         Ok(Compound {ser: self})
     }
@@ -208,7 +208,7 @@ impl SizeChecker {
         if self.written <= self.size_limit {
             Ok(())
         } else {
-            Err(Error::SizeLimit)
+            Err(ErrorKind::SizeLimit.into())
         }
     }
 
@@ -311,7 +311,7 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
-        let len = try!(len.ok_or(Error::SequenceMustHaveLength));
+        let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
 
         try!(self.serialize_u64(len as u64));
         Ok(SizeCompound {ser: self})
@@ -341,7 +341,7 @@ impl<'a> serde::Serializer for &'a mut SizeChecker {
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap>
     {
-        let len = try!(len.ok_or(Error::SequenceMustHaveLength));
+        let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
 
         try!(self.serialize_u64(len as u64));
         Ok(SizeCompound {ser: self})

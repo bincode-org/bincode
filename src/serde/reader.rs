@@ -5,7 +5,7 @@ use serde_crate as serde;
 use serde_crate::de::value::ValueDeserializer;
 use serde_crate::de::Error as DeError;
 use ::SizeLimit;
-use super::{Result, Error, InvalidEncoding};
+use super::{Result, Error, ErrorKind, InvalidEncoding};
 
 /// A Deserializer that reads bytes from a buffer.
 ///
@@ -42,7 +42,7 @@ impl<R: Read> Deserializer<R> {
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
             SizeLimit::Bounded(x) if self.read <= x => Ok(()),
-            SizeLimit::Bounded(_) => Err(Error::SizeLimit)
+            SizeLimit::Bounded(_) => Err(ErrorKind::SizeLimit.into())
         }
     }
 
@@ -59,10 +59,10 @@ impl<R: Read> Deserializer<R> {
         try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buffer));
 
         String::from_utf8(buffer).map_err(|err|
-            Error::InvalidEncoding(InvalidEncoding {
+            ErrorKind::InvalidEncoding(InvalidEncoding {
                 desc: "error while decoding utf8 string",
                 detail: Some(format!("Deserialize error: {}", err))
-            }))
+            }).into())
     }
 }
 
@@ -99,10 +99,10 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
             1 => visitor.visit_bool(true),
             0 => visitor.visit_bool(false),
             value => {
-                Err(Error::InvalidEncoding(InvalidEncoding {
+                Err(ErrorKind::InvalidEncoding(InvalidEncoding {
                     desc: "invalid u8 when decoding bool",
                     detail: Some(format!("Expected 0 or 1, got {}", value))
-                }))
+                }).into())
             }
         }
     }
@@ -144,10 +144,10 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
     {
         use std::str;
 
-        let error = Error::InvalidEncoding(InvalidEncoding {
+        let error = ErrorKind::InvalidEncoding(InvalidEncoding {
             desc: "Invalid char encoding",
             detail: None
-        });
+        }).into();
 
         let mut buf = [0];
 
@@ -259,10 +259,10 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
         match value {
             0 => visitor.visit_none(),
             1 => visitor.visit_some(&mut *self),
-            _ => Err(Error::InvalidEncoding(InvalidEncoding {
+            _ => Err(ErrorKind::InvalidEncoding(InvalidEncoding {
                 desc: "invalid tag when decoding Option",
                 detail: Some(format!("Expected 0 or 1, got {}", value))
-            })),
+            }).into()),
         }
     }
 

@@ -13,7 +13,7 @@ use std::ops::Deref;
 use bincode::refbox::{RefBox, StrBox, SliceBox};
 
 use bincode::SizeLimit::{self, Infinite, Bounded};
-use bincode::{serialize, serialized_size, deserialize, deserialize_from, Error, Result};
+use bincode::{serialize, serialized_size, deserialize, deserialize_from, ErrorKind, Result};
 
 fn proxy_encode<V>(element: &V, size_limit: SizeLimit) -> Vec<u8>
     where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
@@ -214,11 +214,11 @@ fn test_fixed_size_array() {
 #[test]
 fn deserializing_errors() {
     fn isize_invalid_deserialize<T: Debug>(res: Result<T>) {
-        match res {
-            Err(Error::InvalidEncoding(_)) => {},
-            Err(Error::Custom(ref s)) if s.contains("invalid encoding") => {},
-            Err(Error::Custom(ref s)) if s.contains("invalid value") => {},
-            _ => panic!("Expecting InvalidEncoding, got {:?}", res),
+        match res.map_err(|e| *e) {
+            Err(ErrorKind::InvalidEncoding(_)) => {},
+            Err(ErrorKind::Custom(ref s)) if s.contains("invalid encoding") => {},
+            Err(ErrorKind::Custom(ref s)) if s.contains("invalid value") => {},
+            other => panic!("Expecting InvalidEncoding, got {:?}", other),
         }
     }
 
