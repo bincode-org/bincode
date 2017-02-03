@@ -245,28 +245,8 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
     }
 
     fn deserialize_seq_fixed_size<V>(self,
-                            _: usize,
-                            visitor: V) -> Result<V::Value>
-        where V: serde::de::Visitor,
-    {
-        self.deserialize_seq(visitor)
-    }
-
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
-        where V: serde::de::Visitor,
-    {
-        let value: u8 = try!(serde::de::Deserialize::deserialize(&mut *self));
-        match value {
-            0 => visitor.visit_none(),
-            1 => visitor.visit_some(&mut *self),
-            _ => Err(ErrorKind::InvalidEncoding(InvalidEncoding {
-                desc: "invalid tag when decoding Option",
-                detail: Some(format!("Expected 0 or 1, got {}", value))
-            }).into()),
-        }
-    }
-
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
+                            len: usize,
+                            visitor: V) -> DeserializeResult<V::Value>
         where V: serde::de::Visitor,
     {
         struct SeqVisitor<'a, R: Read + 'a> {
@@ -290,9 +270,29 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
             }
         }
 
+        visitor.visit_seq(SeqVisitor { deserializer: self, len: len })
+    }
+
+    fn deserialize_option<V>(self, visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
+        let value: u8 = try!(serde::de::Deserialize::deserialize(&mut *self));
+        match value {
+            0 => visitor.visit_none(),
+            1 => visitor.visit_some(&mut *self),
+            _ => Err(DeserializeError::InvalidEncoding(InvalidEncoding {
+                desc: "invalid tag when decoding Option",
+                detail: Some(format!("Expected 0 or 1, got {}", value))
+            })),
+        }
+    }
+
+    fn deserialize_seq<V>(self, visitor: V) -> DeserializeResult<V::Value>
+        where V: serde::de::Visitor,
+    {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
 
-        visitor.visit_seq(SeqVisitor { deserializer: self, len: len })
+        self.deserialize_seq_fixed_size(len, visitor)
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
