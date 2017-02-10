@@ -213,7 +213,7 @@ fn test_fixed_size_array() {
 fn deserializing_errors() {
     fn isize_invalid_deserialize<T: Debug>(res: Result<T>) {
         match res.map_err(|e| *e) {
-            Err(ErrorKind::InvalidEncoding(_)) => {},
+            Err(ErrorKind::InvalidEncoding{..}) => {},
             Err(ErrorKind::Custom(ref s)) if s.contains("invalid encoding") => {},
             Err(ErrorKind::Custom(ref s)) if s.contains("invalid value") => {},
             other => panic!("Expecting InvalidEncoding, got {:?}", other),
