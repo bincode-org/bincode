@@ -398,3 +398,11 @@ fn bytes() {
     assert_eq!(s[..], s2[8..]);
 }
 
+
+#[test]
+fn endian_difference() {
+    let x = 10u64;
+    let little = serialize::<_, byteorder::LittleEndian>(&x, Infinite).unwrap();
+    let big = serialize::<_, byteorder::BigEndian>(&x, Infinite).unwrap();
+    assert!(little != big);
+}
