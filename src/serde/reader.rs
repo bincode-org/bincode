@@ -5,7 +5,7 @@ use serde_crate as serde;
 use serde_crate::de::value::ValueDeserializer;
 use serde_crate::de::Error as DeError;
 use ::SizeLimit;
-use super::{Result, Error, ErrorKind, InvalidEncoding};
+use super::{Result, Error, ErrorKind};
 
 /// A Deserializer that reads bytes from a buffer.
 ///
@@ -59,10 +59,10 @@ impl<R: Read> Deserializer<R> {
         try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buffer));
 
         String::from_utf8(buffer).map_err(|err|
-            ErrorKind::InvalidEncoding(InvalidEncoding {
+            ErrorKind::InvalidEncoding{
                 desc: "error while decoding utf8 string",
                 detail: Some(format!("Deserialize error: {}", err))
-            }).into())
+            }.into())
     }
 }
 
@@ -99,10 +99,10 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
             1 => visitor.visit_bool(true),
             0 => visitor.visit_bool(false),
             value => {
-                Err(ErrorKind::InvalidEncoding(InvalidEncoding {
+                Err(ErrorKind::InvalidEncoding{
                     desc: "invalid u8 when decoding bool",
                     detail: Some(format!("Expected 0 or 1, got {}", value))
-                }).into())
+                }.into())
             }
         }
     }
@@ -144,10 +144,10 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
     {
         use std::str;
 
-        let error = ErrorKind::InvalidEncoding(InvalidEncoding {
+        let error = ErrorKind::InvalidEncoding{
             desc: "Invalid char encoding",
             detail: None
-        }).into();
+        }.into();
 
         let mut buf = [0];
 
@@ -280,10 +280,10 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
         match value {
             0 => visitor.visit_none(),
             1 => visitor.visit_some(&mut *self),
-            _ => Err(ErrorKind::InvalidEncoding(InvalidEncoding {
+            _ => Err(ErrorKind::InvalidEncoding{
                 desc: "invalid tag when decoding Option",
                 detail: Some(format!("Expected 0 or 1, got {}", value))
-            }).into()),
+            }.into()),
         }
     }
 

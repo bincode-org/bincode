@@ -39,7 +39,10 @@ pub enum ErrorKind {
     /// encoding, this error will be returned.  This error is only possible
     /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
     /// should **never** produce an InvalidEncoding error.
-    InvalidEncoding(InvalidEncoding),
+    InvalidEncoding{
+        desc: &'static str, 
+        detail: Option<String>
+    },
     /// If (de)serializing a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
@@ -51,7 +54,7 @@ impl error::Error for ErrorKind {
     fn description(&self) -> &str {
         match *self {
             ErrorKind::IoError(ref err) => error::Error::description(err),
-            ErrorKind::InvalidEncoding(ref ib) => ib.desc,
+            ErrorKind::InvalidEncoding{desc, ..} => desc,
             ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
             ErrorKind::SizeLimit => "the size limit for decoding has been reached",
             ErrorKind::Custom(ref msg) => msg,
@@ -62,7 +65,7 @@ impl error::Error for ErrorKind {
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             ErrorKind::IoError(ref err) => err.cause(),
-            ErrorKind::InvalidEncoding(_) => None,
+            ErrorKind::InvalidEncoding{..} => None,
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::SizeLimit => None,
             ErrorKind::Custom(_) => None,
@@ -81,8 +84,10 @@ impl fmt::Display for ErrorKind {
         match *self {
             ErrorKind::IoError(ref ioerr) =>
                 write!(fmt, "IoError: {}", ioerr),
-            ErrorKind::InvalidEncoding(ref ib) =>
-                write!(fmt, "InvalidEncoding: {}", ib),
+            ErrorKind::InvalidEncoding{desc, detail: None}=>
+                write!(fmt, "InvalidEncoding: {}", desc),
+            ErrorKind::InvalidEncoding{desc, detail: Some(ref detail)}=>
+                write!(fmt, "InvalidEncoding: {} ({})", desc, detail),
             ErrorKind::SequenceMustHaveLength =>
                 write!(fmt, "Bincode can only encode sequences and maps that have a knowable size ahead of time."),
             ErrorKind::SizeLimit =>
@@ -104,23 +109,6 @@ impl serde::ser::Error for Error {
         ErrorKind::Custom(msg.to_string()).into()
     }
 } 
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-pub struct InvalidEncoding {
-    pub desc: &'static str,
-    pub detail: Option<String>,
-}
-
-impl fmt::Display for InvalidEncoding {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            InvalidEncoding { detail: None, desc } =>
-                write!(fmt, "{}", desc),
-            InvalidEncoding { detail: Some(ref detail), desc } =>
-                write!(fmt, "{} ({})", desc, detail)
-        }
-    }
-}
 
 /// Serializes an object directly into a `Writer`.
 ///
