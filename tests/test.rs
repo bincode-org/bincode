@@ -13,7 +13,8 @@ use bincode::refbox::{RefBox, StrBox, SliceBox};
 
 use bincode::SizeLimit::{Infinite, Bounded};
 use bincode::{serialized_size, ErrorKind, Result};
-use bincode::endian_choice::{serialize, deserialize, deserialize_from};
+use bincode::endian_choice::{serialize, deserialize};
+
 use bincode::serialize as serialize_little;
 use bincode::deserialize as deserialize_little;
 use bincode::deserialize_from as deserialize_from_little;
@@ -26,8 +27,8 @@ fn the_same<V>(element: V)
         where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
     {
         let rf = RefBox::new(v);
-        let encoded = serialize::<_, byteorder::LittleEndian>(&rf, Infinite).unwrap();
-        let decoded: RefBox<'static, V> = deserialize::<_, byteorder::LittleEndian>(&encoded[..]).unwrap();
+        let encoded = serialize_little(&rf, Infinite).unwrap();
+        let decoded: RefBox<'static, V> = deserialize_little(&encoded[..]).unwrap();
 
         decoded.take().deref() == v
     }
@@ -35,9 +36,9 @@ fn the_same<V>(element: V)
     let size = serialized_size(&element);
 
     {
-        let encoded = serialize::<_, byteorder::LittleEndian>(&element, Infinite);
+        let encoded = serialize_little(&element, Infinite);
         let encoded = encoded.unwrap();
-        let decoded = deserialize::<_, byteorder::LittleEndian>(&encoded[..]);
+        let decoded = deserialize_little(&encoded[..]);
         let decoded = decoded.unwrap();
 
         assert_eq!(element, decoded);
@@ -219,26 +220,26 @@ fn deserializing_errors() {
         }
     }
 
-    isize_invalid_deserialize(deserialize::<bool, byteorder::LittleEndian>(&vec![0xA][..]));
-    isize_invalid_deserialize(deserialize::<String, byteorder::LittleEndian>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
+    isize_invalid_deserialize(deserialize_little::<bool>(&vec![0xA][..]));
+    isize_invalid_deserialize(deserialize_little::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
     // Out-of-bounds variant
     #[derive(Serialize, Deserialize, Debug)]
     enum Test {
         One,
         Two,
     };
-    isize_invalid_deserialize(deserialize::<Test, byteorder::LittleEndian>(&vec![0, 0, 0, 5][..]));
-    isize_invalid_deserialize(deserialize::<Option<u8>, byteorder::LittleEndian>(&vec![5, 0][..]));
+    isize_invalid_deserialize(deserialize_little::<Test>(&vec![0, 0, 0, 5][..]));
+    isize_invalid_deserialize(deserialize_little::<Option<u8>>(&vec![5, 0][..]));
 }
 
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32> = deserialize_from::<_, _, byteorder::LittleEndian>(&mut &serialized[..], Bounded(3));
+    let deserialized: Result<u32> = deserialize_from_little::<_, _>(&mut &serialized[..], Bounded(3));
     assert!(deserialized.is_err());
 
     let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32> = deserialize_from::<_, _, byteorder::LittleEndian>(&mut &serialized[..], Bounded(4));
+    let deserialized: Result<u32> = deserialize_from_little::<_, _>(&mut &serialized[..], Bounded(4));
     assert!(deserialized.is_ok());
 }
 
@@ -246,8 +247,8 @@ fn too_big_deserialize() {
 fn char_serialization() {
     let chars = "Aa\0☺♪";
     for c in chars.chars() {
-        let encoded = serialize::<_, byteorder::LittleEndian>(&c, Bounded(4)).expect("serializing char failed");
-        let decoded: char = deserialize::<_, byteorder::LittleEndian>(&encoded).expect("deserializing failed");
+        let encoded = serialize_little(&c, Bounded(4)).expect("serializing char failed");
+        let decoded: char = deserialize_little(&encoded).expect("deserializing failed");
         assert_eq!(decoded, c);
     }
 }
@@ -255,17 +256,17 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char> = deserialize_from::<_, _, byteorder::LittleEndian>(&mut &serialized[..], Bounded(1));
+    let deserialized: Result<char> = deserialize_from_little::<_, _>(&mut &serialized[..], Bounded(1));
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
 
 #[test]
 fn too_big_serialize() {
-    assert!(serialize::<_, byteorder::LittleEndian>(&0u32, Bounded(3)).is_err());
-    assert!(serialize::<_, byteorder::LittleEndian>(&0u32, Bounded(4)).is_ok());
+    assert!(serialize_little(&0u32, Bounded(3)).is_err());
+    assert!(serialize_little(&0u32, Bounded(4)).is_ok());
 
-    assert!(serialize::<_, byteorder::LittleEndian>(&"abcde", Bounded(8 + 4)).is_err());
+    assert!(serialize_little(&"abcde", Bounded(8 + 4)).is_err());
     assert!(serialize_little(&"abcde", Bounded(8 + 5)).is_ok());
 }
 
@@ -402,7 +403,7 @@ fn bytes() {
 #[test]
 fn endian_difference() {
     let x = 10u64;
-    let little = serialize::<_, byteorder::LittleEndian>(&x, Infinite).unwrap();
+    let little = serialize_little(&x, Infinite).unwrap();
     let big = serialize::<_, byteorder::BigEndian>(&x, Infinite).unwrap();
-    assert!(little != big);
+    assert_ne!(little, big);
 }
