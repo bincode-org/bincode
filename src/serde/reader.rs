@@ -51,14 +51,17 @@ impl<R: Read> Deserializer<R> {
         self.read_bytes(size_of::<T>() as u64)
     }
 
-    fn read_string(&mut self) -> Result<String> {
+    fn read_vec(&mut self) -> Result<Vec<u8>> {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
         try!(self.read_bytes(len));
 
         let mut buffer = Vec::new();
         try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buffer));
+        Ok(buffer)
+    }
 
-        String::from_utf8(buffer).map_err(|err|
+    fn read_string(&mut self) -> Result<String> {
+        String::from_utf8(try!(self.read_vec())).map_err(|err|
             ErrorKind::InvalidEncoding{
                 desc: "error while decoding utf8 string",
                 detail: Some(format!("Deserialize error: {}", err))
@@ -192,13 +195,13 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
-        self.deserialize_seq(visitor)
+        visitor.visit_byte_buf(try!(self.read_vec()))
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
-        self.deserialize_seq(visitor)
+        visitor.visit_byte_buf(try!(self.read_vec()))
     }
 
     fn deserialize_enum<V>(self,
