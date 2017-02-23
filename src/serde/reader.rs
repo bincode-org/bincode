@@ -46,6 +46,16 @@ impl<R: Read> Deserializer<R> {
         }
     }
 
+    fn read_vec(&mut self) -> Result<Vec<u8>> {
+        let len: u64 = try!(serde::Deserialize::deserialize(&mut *self));
+        try!(self.read_bytes(len));
+        let len = len as usize;
+        let mut bytes = Vec::with_capacity(len);
+        unsafe { bytes.set_len(len); }
+        try!(self.reader.read_exact(&mut bytes[..]));
+        Ok(bytes)
+    }
+
     fn read_type<T>(&mut self) -> Result<()> {
         use std::mem::size_of;
         self.read_bytes(size_of::<T>() as u64)
@@ -192,13 +202,13 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
-        self.deserialize_seq(visitor)
+        visitor.visit_bytes(&try!(self.read_vec())[..])
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
-        self.deserialize_seq(visitor)
+        visitor.visit_byte_buf(try!(self.read_vec()))
     }
 
     fn deserialize_enum<V>(self,
