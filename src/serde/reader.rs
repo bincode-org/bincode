@@ -55,9 +55,11 @@ impl<R: Read> Deserializer<R> {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
         try!(self.read_bytes(len));
 
-        let mut buffer = Vec::new();
-        try!(self.reader.by_ref().take(len as u64).read_to_end(&mut buffer));
-        Ok(buffer)
+        let len = len as usize;
+        let mut bytes = Vec::with_capacity(len);
+        unsafe { bytes.set_len(len); }
+        try!(self.reader.read_exact(&mut bytes));
+        Ok(bytes)
     }
 
     fn read_string(&mut self) -> Result<String> {
@@ -195,7 +197,7 @@ impl<'a, R: Read> serde::Deserializer for &'a mut Deserializer<R> {
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
-        visitor.visit_byte_buf(try!(self.read_vec()))
+        visitor.visit_bytes(&try!(self.read_vec()))
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
