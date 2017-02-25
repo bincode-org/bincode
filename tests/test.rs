@@ -221,7 +221,7 @@ fn deserializing_errors() {
     }
 
     isize_invalid_deserialize(deserialize_little::<bool>(&vec![0xA][..]));
-    isize_invalid_deserialize(deserialize_little::<String>(&vec![0, 0, 0, 0, 0, 0, 0, 1, 0xFF][..]));
+    isize_invalid_deserialize(deserialize_little::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]));
     // Out-of-bounds variant
     #[derive(Serialize, Deserialize, Debug)]
     enum Test {
