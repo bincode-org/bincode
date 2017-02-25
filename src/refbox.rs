@@ -1,8 +1,6 @@
 use std::boxed::Box;
 use std::ops::Deref;
 
-use rustc_serialize_crate::{Encodable, Encoder, Decodable, Decoder};
-
 use serde_crate as serde;
 
 /// A struct for encoding nested reference types.
@@ -139,32 +137,18 @@ impl <T> RefBox<'static, T>  {
     }
 }
 
-
-impl <'a, T: Encodable> Encodable for RefBox<'a, T> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        self.inner.encode(s)
-    }
-}
-
-impl <T: Decodable> Decodable for RefBox<'static, T> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<RefBox<'static, T>, D::Error> {
-        let inner = try!(Decodable::decode(d));
-        Ok(RefBox{inner: inner})
-    }
-}
-
 impl<'a, T> serde::Serialize for RefBox<'a, T>
     where T: serde::Serialize,
 {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         serde::Serialize::serialize(&self.inner, serializer)
     }
 }
 
-impl<T: serde::Deserialize> serde::Deserialize for RefBox<'static, T> {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+impl<'a, T: serde::Deserialize> serde::Deserialize for RefBox<'a, T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let inner = try!(serde::Deserialize::deserialize(deserializer));
@@ -234,21 +218,9 @@ impl StrBox<'static>  {
     }
 }
 
-impl <'a> Encodable for StrBox<'a> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        self.inner.encode(s)
-    }
-}
-
-impl Decodable for StrBox<'static> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<StrBox<'static>, D::Error> {
-        let inner: RefBoxInner<'static, str, String> = try!(Decodable::decode(d));
-        Ok(StrBox{inner: inner})
-    }
-}
 
 impl<'a> serde::Serialize for StrBox<'a> {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         serde::Serialize::serialize(&self.inner, serializer)
@@ -256,7 +228,7 @@ impl<'a> serde::Serialize for StrBox<'a> {
 }
 
 impl serde::Deserialize for StrBox<'static> {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let inner = try!(serde::Deserialize::deserialize(deserializer));
@@ -321,31 +293,19 @@ impl <T> SliceBox<'static, T>  {
     }
 }
 
-impl <'a, T: Encodable> Encodable for SliceBox<'a, T> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        self.inner.encode(s)
-    }
-}
-
-impl <T: Decodable> Decodable for SliceBox<'static, T> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<SliceBox<'static, T>, D::Error> {
-        let inner: RefBoxInner<'static, [T], Vec<T>> = try!(Decodable::decode(d));
-        Ok(SliceBox{inner: inner})
-    }
-}
 
 impl<'a, T> serde::Serialize for SliceBox<'a, T>
     where T: serde::Serialize,
 {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         serde::Serialize::serialize(&self.inner, serializer)
     }
 }
 
-impl<T: serde::Deserialize> serde::Deserialize for SliceBox<'static, T> {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+impl<'a, T: serde::Deserialize> serde::Deserialize for SliceBox<'a, T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let inner = try!(serde::Deserialize::deserialize(deserializer));
@@ -353,20 +313,12 @@ impl<T: serde::Deserialize> serde::Deserialize for SliceBox<'static, T> {
     }
 }
 
-impl <'a, A: Encodable + ?Sized, B: Encodable> Encodable for RefBoxInner<'a, A, B> {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        match self {
-            &RefBoxInner::Ref(ref r) => r.encode(s),
-            &RefBoxInner::Box(ref b) => b.encode(s)
-        }
-    }
-}
 
 impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B>
     where A: serde::Serialize,
           B: serde::Serialize,
 {
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::Serializer
     {
         match self {
@@ -377,17 +329,10 @@ impl<'a, A: ?Sized, B> serde::Serialize for RefBoxInner<'a, A, B>
 }
 
 
-impl <A: ?Sized, B: Decodable> Decodable for RefBoxInner<'static, A, B> {
-    fn decode<D: Decoder>(d: &mut D) -> Result<RefBoxInner<'static, A, B>, D::Error> {
-        let decoded = try!(Decodable::decode(d));
-        Ok(RefBoxInner::Box(decoded))
-    }
-}
-
-impl<A: ?Sized, B> serde::Deserialize for RefBoxInner<'static, A, B>
+impl<'a, A: ?Sized, B> serde::Deserialize for RefBoxInner<'a, A, B>
     where B: serde::Deserialize,
 {
-    fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where D: serde::Deserializer
     {
         let deserialized = try!(serde::Deserialize::deserialize(deserializer));
