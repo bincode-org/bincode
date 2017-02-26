@@ -132,6 +132,7 @@ pub struct Bounded(pub u64);
 pub struct Infinite;
 
 impl SizeLimit for Bounded {
+    #[inline]
     fn add(&mut self, n: u64) -> Result<()> {
         if self.0 >= n {
             self.0 -= n;
@@ -140,10 +141,13 @@ impl SizeLimit for Bounded {
             Err(Box::new(ErrorKind::SizeLimit))
         }
     }
+    #[inline]
     fn limit(&self) -> Option<u64> { Some(self.0) }
 }
 
 impl SizeLimit for Infinite {
+    #[inline]
     fn add(&mut self, _: u64) -> Result<()> { Ok (()) }
+    #[inline]
     fn limit(&self) -> Option<u64> { None }
 }

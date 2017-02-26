@@ -36,19 +36,23 @@ impl<R: Read, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E> {
     }
 
     /// Returns the number of bytes read from the contained Reader.
+    #[inline]
     pub fn bytes_read(&self) -> u64 {
         self.read
     }
 
+    #[inline]
     fn read_bytes(&mut self, count: u64) -> Result<()> {
         self.size_limit.add(count)
     }
 
+    #[inline]
     fn read_type<T>(&mut self) -> Result<()> {
         use std::mem::size_of;
         self.read_bytes(size_of::<T>() as u64)
     }
 
+    #[inline]
     fn read_vec(&mut self) -> Result<Vec<u8>> {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
         try!(self.read_bytes(len));
@@ -60,6 +64,7 @@ impl<R: Read, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E> {
         Ok(bytes)
     }
 
+    #[inline]
     fn read_string(&mut self) -> Result<String> {
         String::from_utf8(try!(self.read_vec())).map_err(|err|
             ErrorKind::InvalidEncoding{
@@ -94,6 +99,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         Err(Error::custom(message))
     }
 
+    #[inline]
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -136,6 +142,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_i8(try!(self.reader.read_i8()))
     }
 
+    #[inline]
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -180,30 +187,35 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_char(res)
     }
 
+    #[inline]
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
         visitor.visit_str(&try!(self.read_string()))
     }
 
+    #[inline]
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
         visitor.visit_string(try!(self.read_string()))
     }
 
+    #[inline]
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
         visitor.visit_bytes(&try!(self.read_vec()))
     }
 
+    #[inline]
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
         visitor.visit_byte_buf(try!(self.read_vec()))
     }
 
+    #[inline]
     fn deserialize_enum<V>(self,
                      _enum: &'static str,
                      _variants: &'static [&'static str],
@@ -226,7 +238,8 @@ where R: Read, S: SizeLimit, E: ByteOrder {
 
         visitor.visit_enum(self)
     }
-    
+
+    #[inline]
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -235,6 +248,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         impl<'a, 'b: 'a, R: Read + 'b, S: SizeLimit, E: ByteOrder> serde::de::SeqVisitor for TupleVisitor<'a, R, S, E> {
             type Error = Error;
 
+            #[inline]
             fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
                 where T: serde::de::DeserializeSeed,
             {
@@ -246,6 +260,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_seq(TupleVisitor(self))
     }
 
+    #[inline]
     fn deserialize_seq_fixed_size<V>(self,
                             len: usize,
                             visitor: V) -> Result<V::Value>
@@ -259,6 +274,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         impl<'a, 'b: 'a, R: Read + 'b, S: SizeLimit, E: ByteOrder> serde::de::SeqVisitor for SeqVisitor<'a, R, S, E> {
             type Error = Error;
 
+            #[inline]
             fn visit_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
                 where T: serde::de::DeserializeSeed,
             {
@@ -275,6 +291,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_seq(SeqVisitor { deserializer: self, len: len })
     }
 
+    #[inline]
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -289,6 +306,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         }
     }
 
+    #[inline]
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -297,6 +315,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         self.deserialize_seq_fixed_size(len, visitor)
     }
 
+    #[inline]
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -333,6 +352,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_map(MapVisitor { deserializer: self, len: len })
     }
 
+    #[inline]
     fn deserialize_struct<V>(self,
                        _name: &str,
                        fields: &'static [&'static str],
@@ -342,6 +362,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         self.deserialize_tuple(fields.len(), visitor)
     }
 
+    #[inline]
     fn deserialize_struct_field<V>(self,
                                    _visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
@@ -350,6 +371,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         Err(Error::custom(message))
     }
 
+    #[inline]
     fn deserialize_newtype_struct<V>(self,
                                _name: &str,
                                visitor: V) -> Result<V::Value>
@@ -358,6 +380,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_newtype_struct(self)
     }
 
+    #[inline]
     fn deserialize_unit_struct<V>(self,
                                   _name: &'static str,
                                   visitor: V) -> Result<V::Value>
@@ -366,6 +389,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         visitor.visit_unit()
     }
 
+    #[inline]
     fn deserialize_tuple_struct<V>(self,
                                    _name: &'static str,
                                    len: usize,
@@ -375,6 +399,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         self.deserialize_tuple(len, visitor)
     }
 
+    #[inline]
     fn deserialize_ignored_any<V>(self,
                                   _visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
@@ -388,16 +413,19 @@ impl<'a, R, S, E> serde::de::VariantVisitor for &'a mut Deserializer<R, S, E>
 where R: Read, S: SizeLimit, E: ByteOrder {
     type Error = Error;
 
+    #[inline]
     fn visit_unit(self) -> Result<()> {
         Ok(())
     }
 
+    #[inline]
     fn visit_newtype_seed<T>(self, seed: T) -> Result<T::Value>
         where T: serde::de::DeserializeSeed,
     {
         serde::de::DeserializeSeed::deserialize(seed, self)
     }
 
+    #[inline]
     fn visit_tuple<V>(self,
                       len: usize,
                       visitor: V) -> Result<V::Value>
@@ -406,6 +434,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
         serde::de::Deserializer::deserialize_tuple(self, len, visitor)
     }
 
+    #[inline]
     fn visit_struct<V>(self,
                        fields: &'static [&'static str],
                        visitor: V) -> Result<V::Value>
@@ -433,6 +462,7 @@ static UTF8_CHAR_WIDTH: [u8; 256] = [
 4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0, // 0xFF
 ];
 
+#[inline]
 fn utf8_char_width(b: u8) -> usize {
     UTF8_CHAR_WIDTH[b as usize] as usize
 }
