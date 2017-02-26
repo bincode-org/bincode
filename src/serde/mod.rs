@@ -137,15 +137,15 @@ pub fn serialize_into<W: ?Sized, T: ?Sized, S, E>(writer: &mut W, value: &T, siz
 pub fn serialize<T: ?Sized, S, E>(value: &T, size_limit: S) -> Result<Vec<u8>>
     where T: serde::Serialize, S: SizeLimit, E: ByteOrder
 {
-    // Since we are putting values directly into a vector, we can do size
-    // computation out here and pre-allocate a buffer of *exactly*
-    // the right size.
     let mut writer = match size_limit.limit() {
         Some(size_limit) => {
             let actual_size = try!(serialized_size_bounded(value, size_limit).ok_or(ErrorKind::SizeLimit));
             Vec::with_capacity(actual_size as usize)
         }
-        None => Vec::new()
+        None => {
+            let size = serialized_size(value) as usize;
+            Vec::with_capacity(size)
+        }
     };
 
     try!(serialize_into::<_, _, _, E>(&mut writer, value, super::Infinite));
