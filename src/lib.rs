@@ -44,12 +44,15 @@ pub mod refbox;
 mod serde;
 
 pub mod endian_choice {
-    pub use super::serde::{serialize, serialize_into, deserialize, deserialize_from};
+    pub use super::serde::{Deserializer, Serializer, serialize, serialize_into, deserialize, deserialize_from};
 }
 
 use std::io::{Read, Write};
 
-pub use serde::{Deserializer, Serializer, ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
+pub use serde::{ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
+
+pub type Deserializer<W> = serde::Deserializer<W, byteorder::LittleEndian>;
+pub type Serializer<W> = serde::Serializer<W, byteorder::LittleEndian>;
 
 /// Deserializes a slice of bytes into an object.
 ///
