@@ -22,7 +22,7 @@ library.
 
 * [google/tarpc](https://github.com/google/tarpc): Bincode is used to serialize and deserialize networked RPC messages.
 * [servo/webrender](https://github.com/servo/webrender): Bincode records webrender API calls for record/replay-style graphics debugging.
-* [servo/icp-channel](https://github.com/servo/ipc-channel): Ipc-Channel uses Bincode to send structs between processes using a channel-like API.
+* [servo/ipc-channel](https://github.com/servo/ipc-channel): Ipc-Channel uses Bincode to send structs between processes using a channel-like API.
 
 ## Example
 ```rust
