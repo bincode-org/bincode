@@ -160,9 +160,8 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
 
         // Look at the first byte to see how many bytes must be read
         let _ = try!(self.reader.read(&mut buf[..1]));
-        let first_byte = buf[0];
-        let width = utf8_char_width(first_byte);
-        if width == 1 { return visitor.visit_char(first_byte as char) }
+        let width = utf8_char_width(buf[0]);
+        if width == 1 { return visitor.visit_char(buf[0] as char) }
         if width == 0 { return Err(error)}
 
         if self.reader.read_exact(&mut buf[1..width]).is_err() {
