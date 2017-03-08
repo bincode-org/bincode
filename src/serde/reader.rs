@@ -176,11 +176,7 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
             }
         }
 
-        let res = try!(match str::from_utf8(&buf[..width]).ok() {
-            Some(s) => Ok(s.chars().next().unwrap()),
-            None => Err(error)
-        });
-
+        let res = try!(str::from_utf8(&buf[..width]).ok().and_then(|s| s.chars().next()).ok_or(error));
         visitor.visit_char(res)
     }
 
@@ -229,7 +225,7 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
 
         visitor.visit_enum(self)
     }
-    
+
     fn deserialize_tuple<V>(self,
                       _len: usize,
                       visitor: V) -> Result<V::Value>
