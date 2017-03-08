@@ -156,15 +156,14 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
             detail: None
         }.into();
 
-        let mut buf = [0];
+        let mut buf = [0u8; 4];
 
-        let _ = try!(self.reader.read(&mut buf[..]));
+        // Look at the first byte to see how many bytes must be read
+        let _ = try!(self.reader.read(&mut buf[..1]));
         let first_byte = buf[0];
         let width = utf8_char_width(first_byte);
         if width == 1 { return visitor.visit_char(first_byte as char) }
         if width == 0 { return Err(error)}
-
-        let mut buf = [first_byte, 0, 0, 0];
         {
             let mut start = 1;
             while start < width {
