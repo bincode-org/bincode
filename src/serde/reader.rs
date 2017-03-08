@@ -41,7 +41,11 @@ impl<R: Read, E: ByteOrder> Deserializer<R, E> {
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
-        self.read += count;
+        if let (read, false) = self.read.overflowing_add(count) {
+            self.read = read;
+        } else {
+            return Err(ErrorKind::SizeLimit.into());
+        }
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
             SizeLimit::Bounded(x) if self.read <= x => Ok(()),
@@ -54,15 +58,39 @@ impl<R: Read, E: ByteOrder> Deserializer<R, E> {
         self.read_bytes(size_of::<T>() as u64)
     }
 
+    fn read_vec_small(&mut self, len: usize) -> Result<Vec<u8>> {
+        let mut result = Vec::with_capacity(len);
+        unsafe { result.set_len(len); }
+        try!(self.reader.read_exact(&mut result));
+        Ok(result)
+    }
+
+    fn read_vec_large(&mut self, mut len: usize, block: usize) -> Result<Vec<u8>> {
+        let mut result = Vec::with_capacity(block);
+        let mut buffer = Vec::with_capacity(block);
+        unsafe { buffer.set_len(block); }
+        while len >= block {
+            try!(self.reader.read_exact(&mut buffer));
+            result.extend_from_slice(&buffer);
+            len -= block;
+        }
+        if len > 0 {
+            try!(self.reader.read_exact(&mut buffer[..len]));
+            result.extend_from_slice(&buffer[..len]);
+        }
+        Ok(result)
+    }
+
     fn read_vec(&mut self) -> Result<Vec<u8>> {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
         try!(self.read_bytes(len));
 
         let len = len as usize;
-        let mut bytes = Vec::with_capacity(len);
-        unsafe { bytes.set_len(len); }
-        try!(self.reader.read_exact(&mut bytes));
-        Ok(bytes)
+        if len < 65536 {
+            self.read_vec_small(len)
+        } else {
+            self.read_vec_large(len, 65536)
+        }
     }
 
     fn read_string(&mut self) -> Result<String> {
