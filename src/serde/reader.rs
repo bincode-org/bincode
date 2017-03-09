@@ -1,3 +1,4 @@
+use std::cmp;
 use std::io::Read;
 use std::marker::PhantomData;
 
@@ -7,6 +8,8 @@ use serde_crate::de::value::ValueDeserializer;
 use serde_crate::de::Error as DeError;
 use ::SizeLimit;
 use super::{Result, Error, ErrorKind};
+
+const BLOCK_SIZE: usize = 65536;
 
 /// A Deserializer that reads bytes from a buffer.
 ///
@@ -58,11 +61,20 @@ impl<R: Read, E: ByteOrder> Deserializer<R, E> {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
         try!(self.read_bytes(len));
 
-        let len = len as usize;
-        let mut bytes = Vec::with_capacity(len);
-        unsafe { bytes.set_len(len); }
-        try!(self.reader.read_exact(&mut bytes));
-        Ok(bytes)
+        let mut result = Vec::new();
+        let mut len = len as usize;
+        let mut off = 0;
+        while len > 0 {
+            let reserve = cmp::min(len, BLOCK_SIZE);
+            unsafe {
+                result.reserve(reserve);
+                result.set_len(off + reserve);
+            }
+            try!(self.reader.read_exact(&mut result[off..]));
+            len -= reserve;
+            off += reserve;
+        }
+        Ok(result)
     }
 
     fn read_string(&mut self) -> Result<String> {
