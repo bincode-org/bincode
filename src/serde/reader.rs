@@ -151,36 +151,26 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
     {
         use std::str;
 
-        let error = ErrorKind::InvalidEncoding{
-            desc: "Invalid char encoding",
-            detail: None
-        }.into();
+        let error = || {
+            ErrorKind::InvalidEncoding{
+                desc: "Invalid char encoding",
+                detail: None,
+            }.into()
+        };
 
-        let mut buf = [0];
+        let mut buf = [0u8; 4];
 
-        let _ = try!(self.reader.read(&mut buf[..]));
-        let first_byte = buf[0];
-        let width = utf8_char_width(first_byte);
-        if width == 1 { return visitor.visit_char(first_byte as char) }
-        if width == 0 { return Err(error)}
+        // Look at the first byte to see how many bytes must be read
+        let _ = try!(self.reader.read_exact(&mut buf[..1]));
+        let width = utf8_char_width(buf[0]);
+        if width == 1 { return visitor.visit_char(buf[0] as char) }
+        if width == 0 { return Err(error())}
 
-        let mut buf = [first_byte, 0, 0, 0];
-        {
-            let mut start = 1;
-            while start < width {
-                match try!(self.reader.read(&mut buf[start .. width])) {
-                    n if n == width - start => break,
-                    n if n < width - start => { start += n; }
-                    _ => return Err(error)
-                }
-            }
+        if self.reader.read_exact(&mut buf[1..width]).is_err() {
+            return Err(error());
         }
 
-        let res = try!(match str::from_utf8(&buf[..width]).ok() {
-            Some(s) => Ok(s.chars().next().unwrap()),
-            None => Err(error)
-        });
-
+        let res = try!(str::from_utf8(&buf[..width]).ok().and_then(|s| s.chars().next()).ok_or(error()));
         visitor.visit_char(res)
     }
 
@@ -229,7 +219,7 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
 
         visitor.visit_enum(self)
     }
-    
+
     fn deserialize_tuple<V>(self,
                       _len: usize,
                       visitor: V) -> Result<V::Value>
