@@ -1,3 +1,4 @@
+use std::cmp;
 use std::io::Read;
 use std::marker::PhantomData;
 
@@ -7,6 +8,8 @@ use serde_crate::de::value::ValueDeserializer;
 use serde_crate::de::Error as DeError;
 use ::SizeLimit;
 use super::{Result, Error, ErrorKind};
+
+const BLOCK_SIZE: usize = 65536;
 
 /// A Deserializer that reads bytes from a buffer.
 ///
@@ -54,39 +57,24 @@ impl<R: Read, E: ByteOrder> Deserializer<R, E> {
         self.read_bytes(size_of::<T>() as u64)
     }
 
-    fn read_vec_small(&mut self, len: usize) -> Result<Vec<u8>> {
-        let mut result = Vec::with_capacity(len);
-        unsafe { result.set_len(len); }
-        try!(self.reader.read_exact(&mut result));
-        Ok(result)
-    }
-
-    fn read_vec_large(&mut self, mut len: usize, block: usize) -> Result<Vec<u8>> {
-        let mut result = Vec::with_capacity(block);
-        let mut buffer = Vec::with_capacity(block);
-        unsafe { buffer.set_len(block); }
-        while len >= block {
-            try!(self.reader.read_exact(&mut buffer));
-            result.extend_from_slice(&buffer);
-            len -= block;
-        }
-        if len > 0 {
-            try!(self.reader.read_exact(&mut buffer[..len]));
-            result.extend_from_slice(&buffer[..len]);
-        }
-        Ok(result)
-    }
-
     fn read_vec(&mut self) -> Result<Vec<u8>> {
         let len = try!(serde::Deserialize::deserialize(&mut *self));
         try!(self.read_bytes(len));
 
-        let len = len as usize;
-        if len < 65536 {
-            self.read_vec_small(len)
-        } else {
-            self.read_vec_large(len, 65536)
+        let mut result = Vec::new();
+        let mut len = len as usize;
+        let mut off = 0;
+        while len > 0 {
+            let reserve = cmp::min(len, BLOCK_SIZE);
+            unsafe {
+                result.reserve(reserve);
+                result.set_len(off + reserve);
+            }
+            try!(self.reader.read_exact(&mut result[off..]));
+            len -= reserve;
+            off += reserve;
         }
+        Ok(result)
     }
 
     fn read_string(&mut self) -> Result<String> {
