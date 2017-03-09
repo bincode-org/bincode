@@ -41,11 +41,7 @@ impl<R: Read, E: ByteOrder> Deserializer<R, E> {
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
-        if let (read, false) = self.read.overflowing_add(count) {
-            self.read = read;
-        } else {
-            return Err(ErrorKind::SizeLimit.into());
-        }
+        self.read += count;
         match self.size_limit {
             SizeLimit::Infinite => Ok(()),
             SizeLimit::Bounded(x) if self.read <= x => Ok(()),
