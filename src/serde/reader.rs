@@ -151,10 +151,12 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
     {
         use std::str;
 
-        let error = ErrorKind::InvalidEncoding{
-            desc: "Invalid char encoding",
-            detail: None
-        }.into();
+        let error = || {
+            ErrorKind::InvalidEncoding{
+                desc: "Invalid char encoding",
+                detail: None,
+            }.into()
+        };
 
         let mut buf = [0u8; 4];
 
@@ -162,13 +164,13 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
         let _ = try!(self.reader.read_exact(&mut buf[..1]));
         let width = utf8_char_width(buf[0]);
         if width == 1 { return visitor.visit_char(buf[0] as char) }
-        if width == 0 { return Err(error)}
+        if width == 0 { return Err(error())}
 
         if self.reader.read_exact(&mut buf[1..width]).is_err() {
-            return Err(error);
+            return Err(error());
         }
 
-        let res = try!(str::from_utf8(&buf[..width]).ok().and_then(|s| s.chars().next()).ok_or(error));
+        let res = try!(str::from_utf8(&buf[..width]).ok().and_then(|s| s.chars().next()).ok_or(error()));
         visitor.visit_char(res)
     }
 
