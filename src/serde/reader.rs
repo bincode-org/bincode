@@ -159,7 +159,7 @@ impl<'a, R: Read, E: ByteOrder> serde::Deserializer for &'a mut Deserializer<R, 
         let mut buf = [0u8; 4];
 
         // Look at the first byte to see how many bytes must be read
-        let _ = try!(self.reader.read(&mut buf[..1]));
+        let _ = try!(self.reader.read_exact(&mut buf[..1]));
         let width = utf8_char_width(buf[0]);
         if width == 1 { return visitor.visit_char(buf[0] as char) }
         if width == 0 { return Err(error)}
