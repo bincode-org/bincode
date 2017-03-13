@@ -58,14 +58,13 @@ impl<R: Read, E: ByteOrder> Deserializer<R, E> {
     }
 
     fn read_vec(&mut self) -> Result<Vec<u8>> {
-        let len = try!(serde::Deserialize::deserialize(&mut *self));
-        try!(self.read_bytes(len));
+        let mut len: usize = try!(serde::Deserialize::deserialize(&mut *self));
 
         let mut result = Vec::new();
-        let mut len = len as usize;
         let mut off = 0;
         while len > 0 {
             let reserve = cmp::min(len, BLOCK_SIZE);
+            try!(self.read_bytes(reserve as u64));
             unsafe {
                 result.reserve(reserve);
                 result.set_len(off + reserve);
