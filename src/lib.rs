@@ -122,9 +122,7 @@ pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> serde::Result<Vec<u8
 /// within that limit.  This verification occurs before any bytes are written to
 /// the Writer, so recovering from an error is easy.
 pub trait SizeLimit {
-    #[inline(always)]
     fn add(&mut self, n: u64) -> Result<()>;
-    #[inline(always)]
     fn limit(&self) -> Option<u64>;
 }
 
@@ -135,6 +133,7 @@ pub struct Bounded(pub u64);
 pub struct Infinite;
 
 impl SizeLimit for Bounded {
+    #[inline(always)]
     fn add(&mut self, n: u64) -> Result<()> {
         if self.0 >= n {
             self.0 -= n;
@@ -143,10 +142,13 @@ impl SizeLimit for Bounded {
             Err(Box::new(ErrorKind::SizeLimit))
         }
     }
+    #[inline(always)]
     fn limit(&self) -> Option<u64> { Some(self.0) }
 }
 
 impl SizeLimit for Infinite {
+    #[inline(always)]
     fn add(&mut self, _: u64) -> Result<()> { Ok (()) }
+    #[inline(always)]
     fn limit(&self) -> Option<u64> { None }
 }
