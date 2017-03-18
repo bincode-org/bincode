@@ -142,6 +142,7 @@ impl SizeLimit for Bounded {
             Err(Box::new(ErrorKind::SizeLimit))
         }
     }
+
     #[inline(always)]
     fn limit(&self) -> Option<u64> { Some(self.0) }
 }
@@ -149,6 +150,7 @@ impl SizeLimit for Bounded {
 impl SizeLimit for Infinite {
     #[inline(always)]
     fn add(&mut self, _: u64) -> Result<()> { Ok (()) }
+
     #[inline(always)]
     fn limit(&self) -> Option<u64> { None }
 }
