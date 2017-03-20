@@ -7,9 +7,7 @@ extern crate byteorder;
 
 use std::fmt::Debug;
 use std::collections::HashMap;
-use std::ops::Deref;
-
-use bincode::refbox::{RefBox, StrBox, SliceBox};
+use std::borrow::Cow;
 
 use bincode::{Infinite, Bounded};
 use bincode::{serialized_size, ErrorKind, Result};
@@ -22,17 +20,6 @@ use bincode::deserialize_from as deserialize_from_little;
 fn the_same<V>(element: V)
     where V: serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
 {
-    // Make sure that the bahavior isize correct when wrapping with a RefBox.
-    fn ref_box_correct<V>(v: &V) -> bool
-        where V: serde::Serialize + serde::Deserialize + PartialEq + Debug + 'static
-    {
-        let rf = RefBox::new(v);
-        let encoded = serialize_little(&rf, Infinite).unwrap();
-        let decoded: RefBox<'static, V> = deserialize_little(&encoded[..]).unwrap();
-
-        decoded.take().deref() == v
-    }
-
     let size = serialized_size(&element);
     {
         let encoded = serialize_little(&element, Infinite);
@@ -42,7 +29,6 @@ fn the_same<V>(element: V)
 
         assert_eq!(element, decoded);
         assert_eq!(size, encoded.len() as u64);
-        assert!(ref_box_correct(&element));
     }
 
     {
@@ -53,7 +39,6 @@ fn the_same<V>(element: V)
 
         assert_eq!(element, decoded);
         assert_eq!(size, encoded.len() as u64);
-        assert!(ref_box_correct(&element));
     }
 }
 
@@ -304,7 +289,7 @@ fn encode_box() {
 }
 
 #[test]
-fn test_refbox_serialize() {
+fn test_cow_serialize() {
     let large_object = vec![1u32,2,3,4,5,6];
     let mut large_map = HashMap::new();
     large_map.insert(1, 2);
@@ -312,28 +297,28 @@ fn test_refbox_serialize() {
 
     #[derive(Serialize, Deserialize, Debug)]
     enum Message<'a> {
-        M1(RefBox<'a, Vec<u32>>),
-        M2(RefBox<'a, HashMap<u32, u32>>)
+        M1(Cow<'a, Vec<u32>>),
+        M2(Cow<'a, HashMap<u32, u32>>)
     }
 
     // Test 1
     {
-        let serialized = serialize_little(&Message::M1(RefBox::new(&large_object)), Infinite).unwrap();
+        let serialized = serialize_little(&Message::M1(Cow::Borrowed(&large_object)), Infinite).unwrap();
         let deserialized: Message<'static> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
 
         match deserialized {
-            Message::M1(b) => assert!(b.take().deref() == &large_object),
+            Message::M1(b) => assert!(&b.into_owned() == &large_object),
             _ => assert!(false)
         }
     }
 
     // Test 2
     {
-        let serialized = serialize_little(&Message::M2(RefBox::new(&large_map)), Infinite).unwrap();
+        let serialized = serialize_little(&Message::M2(Cow::Borrowed(&large_map)), Infinite).unwrap();
         let deserialized: Message<'static> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
 
         match deserialized {
-            Message::M2(b) => assert!(b.take().deref() == &large_map),
+            Message::M2(b) => assert!(&b.into_owned() == &large_map),
             _ => assert!(false)
         }
     }
@@ -342,22 +327,23 @@ fn test_refbox_serialize() {
 #[test]
 fn test_strbox_serialize() {
     let strx: &'static str = "hello world";
-    let serialized = serialize_little(&StrBox::new(strx), Infinite).unwrap();
-    let deserialized: StrBox<'static> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
-    let stringx: String = deserialized.take();
+    let serialized = serialize_little(&Cow::Borrowed(strx), Infinite).unwrap();
+    let deserialized: Cow<'static, String> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+    let stringx: String = deserialized.into_owned();
     assert!(strx == &stringx[..]);
 }
 
 #[test]
 fn test_slicebox_serialize() {
     let slice = [1u32, 2, 3 ,4, 5];
-    let serialized = serialize_little(&SliceBox::new(&slice), Infinite).unwrap();
-    let deserialized: SliceBox<'static, u32> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+    let serialized = serialize_little(&Cow::Borrowed(&slice[..]), Infinite).unwrap();
+    println!("{:?}", serialized);
+    let deserialized: Cow<'static, Vec<u32>> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
     {
         let sb: &[u32] = &deserialized;
         assert!(slice == sb);
     }
-    let vecx: Vec<u32> = deserialized.take();
+    let vecx: Vec<u32> = deserialized.into_owned();
     assert!(slice == &vecx[..]);
 }
 

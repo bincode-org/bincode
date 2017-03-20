@@ -40,7 +40,6 @@ extern crate byteorder;
 extern crate num_traits;
 extern crate serde as serde_crate;
 
-pub mod refbox;
 mod serde;
 
 pub mod endian_choice {
