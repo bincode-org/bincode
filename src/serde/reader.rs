@@ -243,7 +243,6 @@ where R: Read, S: SizeLimit, E: ByteOrder {
                 Ok(Some(value))
             }
         }
-
         visitor.visit_seq(TupleVisitor(self))
     }
 
@@ -270,6 +269,10 @@ where R: Read, S: SizeLimit, E: ByteOrder {
                 } else {
                     Ok(None)
                 }
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (self.len, Some(self.len))
             }
         }
 
@@ -326,6 +329,10 @@ where R: Read, S: SizeLimit, E: ByteOrder {
             {
                 let value = try!(serde::de::DeserializeSeed::deserialize(seed, &mut *self.deserializer));
                 Ok(value)
+            }
+            
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (self.len, Some(self.len))
             }
         }
 
