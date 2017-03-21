@@ -23,6 +23,7 @@ use serde_crate as serde;
 mod reader;
 mod writer;
 
+/// The result of a serialization or deserialization operation.
 pub type Result<T> = result::Result<T, Error>;
 
 /// An error that can be produced during (de)serializing.
@@ -31,6 +32,7 @@ pub type Result<T> = result::Result<T, Error>;
 /// in an invalid state.
 pub type Error = Box<ErrorKind>;
 
+/// The kind of error that can be produced during a serialization or deserialization.
 #[derive(Debug)]
 pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
@@ -40,14 +42,18 @@ pub enum ErrorKind {
     /// encoding, this error will be returned.  This error is only possible
     /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
     /// should **never** produce an InvalidEncoding error.
-    InvalidEncoding{
-        desc: &'static str, 
+    InvalidEncoding {
+        #[allow(missing_docs)]
+        desc: &'static str,
+        #[allow(missing_docs)]
         detail: Option<String>
     },
     /// If (de)serializing a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
+    /// Bincode can not encode sequences of unknown length (like iterators).
     SequenceMustHaveLength,
+    /// A custom error message from Serde.
     Custom(String)
 }
 
@@ -194,7 +200,7 @@ pub fn serialized_size<T: ?Sized>(value: &T) -> u64
 ///
 /// If it can be serialized in `max` or fewer bytes, that number will be returned
 /// inside `Some`.  If it goes over bounds, then None is returned.
-pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64> 
+pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
     where T: serde::Serialize
 {
     let mut size_counter = SizeChecker {

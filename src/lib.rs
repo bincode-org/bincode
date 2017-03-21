@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 //! `bincode` is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.
 //!
@@ -7,11 +9,11 @@
 //! and decoding from a `std::io::Buffer`.
 //!
 //! ## Modules
-//! There are two ways to encode and decode structs using `bincode`, either using `rustc_serialize`
-//! or the `serde` crate.  `rustc_serialize` and `serde` are crates and and also the names of their
-//! corresponding modules inside of `bincode`.  Both modules have exactly equivalant functions, and
-//! and the only difference is whether or not the library user wants to use `rustc_serialize` or
-//! `serde`.
+//! Until "default type parameters" lands, we have an extra module called `endian_choice`
+//! that duplicates all of the core bincode functionality but with the option to choose
+//! which endianness the integers are encoded using.
+//!
+//! The default endianness is little.
 //!
 //! ### Using Basic Functions
 //!
@@ -34,14 +36,13 @@
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-#![doc(html_logo_url = "./icon.png")]
-
 extern crate byteorder;
 extern crate num_traits;
 extern crate serde as serde_crate;
 
 mod serde;
 
+/// All of the core bincode functions and types with the ability to choose endianness.
 pub mod endian_choice {
     pub use super::serde::{Deserializer, Serializer, serialize, serialize_into, deserialize, deserialize_from};
 }
@@ -50,7 +51,9 @@ use std::io::{Read, Write};
 
 pub use serde::{ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
 
+/// A Deserializer that uses LittleEndian byteorder
 pub type Deserializer<W, S> = serde::Deserializer<W, S, byteorder::LittleEndian>;
+/// A Serializer that uses LittleEndian byteorder
 pub type Serializer<W> = serde::Serializer<W, byteorder::LittleEndian>;
 
 /// Deserializes a slice of bytes into an object.
@@ -121,13 +124,20 @@ pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> serde::Result<Vec<u8
 /// within that limit.  This verification occurs before any bytes are written to
 /// the Writer, so recovering from an error is easy.
 pub trait SizeLimit {
+    /// Tells the SizeLimit that a certain number of bytes has been
+    /// read or written.  Returns Err if the limit has been exceeded.
     fn add(&mut self, n: u64) -> Result<()>;
+    /// Returns the hard limit (if one exists)
     fn limit(&self) -> Option<u64>;
 }
 
+/// A SizeLimit that restricts serialized or deserialized messages from
+/// exceeding a certain byte length.
 #[derive(Copy, Clone)]
 pub struct Bounded(pub u64);
 
+/// A SizeLimit without a limit!
+/// Use this if you don't care about the size of encoded or decoded messages.
 #[derive(Copy, Clone)]
 pub struct Infinite;
 

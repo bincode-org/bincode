@@ -16,6 +16,9 @@ const BLOCK_SIZE: usize = 65536;
 /// This struct should rarely be used.
 /// In most cases, prefer the `decode_from` function.
 ///
+/// The ByteOrder that is chosen will impact the endianness that
+/// is used to read integers out of the reader.
+///
 /// ```rust,ignore
 /// let d = Deserializer::new(&mut some_reader, SizeLimit::new());
 /// serde::Deserialize::deserialize(&mut deserializer);
@@ -29,6 +32,7 @@ pub struct Deserializer<R, S: SizeLimit, E: ByteOrder> {
 }
 
 impl<R: Read, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E> {
+    /// Creates a new Deserializer with a given `Read`er and a size_limit.
     pub fn new(r: R, size_limit: S) -> Deserializer<R, S, E> {
         Deserializer {
             reader: r,
@@ -227,7 +231,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
 
         visitor.visit_enum(self)
     }
-    
+
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor,
     {
@@ -330,7 +334,7 @@ where R: Read, S: SizeLimit, E: ByteOrder {
                 let value = try!(serde::de::DeserializeSeed::deserialize(seed, &mut *self.deserializer));
                 Ok(value)
             }
-            
+
             fn size_hint(&self) -> (usize, Option<usize>) {
                 (self.len, Some(self.len))
             }

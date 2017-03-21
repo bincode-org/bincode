@@ -11,6 +11,9 @@ use super::super::SizeLimit;
 
 /// An Serializer that encodes values directly into a Writer.
 ///
+/// The specified byte-order will impact the endianness that is
+/// used during the encoding.
+///
 /// This struct should not be used often.
 /// For most cases, prefer the `encode_into` function.
 pub struct Serializer<W, E: ByteOrder> {
@@ -19,6 +22,7 @@ pub struct Serializer<W, E: ByteOrder> {
 }
 
 impl<W: Write, E: ByteOrder> Serializer<W, E> {
+    /// Creates a new Serializer with the given `Write`r.
     pub fn new(w: W) -> Serializer<W, E> {
         Serializer {
             writer: w,
@@ -392,8 +396,8 @@ impl<'a, W, E> serde::ser::SerializeSeq for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -411,8 +415,8 @@ impl<'a, W, E> serde::ser::SerializeTuple for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -430,8 +434,8 @@ impl<'a, W, E> serde::ser::SerializeTupleStruct for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -449,8 +453,8 @@ impl<'a, W, E> serde::ser::SerializeTupleVariant for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -468,15 +472,15 @@ impl<'a, W, E> serde::ser::SerializeMap for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<()> 
-    where K: serde::ser::Serialize 
+    fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<()>
+    where K: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
 
         #[inline]
-    fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<()> 
-    where V: serde::ser::Serialize 
+    fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<()>
+    where V: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -494,8 +498,8 @@ impl<'a, W, E> serde::ser::SerializeStruct for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -513,8 +517,8 @@ impl<'a, W, E> serde::ser::SerializeStructVariant for Compound<'a, W, E>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -536,8 +540,8 @@ impl<'a, S: SizeLimit> serde::ser::SerializeSeq for SizeCompound<'a, S>
     type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -554,8 +558,8 @@ impl<'a, S: SizeLimit> serde::ser::SerializeTuple for SizeCompound<'a, S>
     type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -572,8 +576,8 @@ impl<'a, S: SizeLimit> serde::ser::SerializeTupleStruct for SizeCompound<'a, S>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -590,8 +594,8 @@ impl<'a, S: SizeLimit> serde::ser::SerializeTupleVariant for SizeCompound<'a, S>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -608,15 +612,15 @@ impl<'a, S: SizeLimit + 'a> serde::ser::SerializeMap for SizeCompound<'a, S>
     type Error = Error;
 
     #[inline]
-    fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<()> 
-    where K: serde::ser::Serialize 
+    fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<()>
+    where K: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
 
         #[inline]
-    fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<()> 
-    where V: serde::ser::Serialize 
+    fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<()>
+    where V: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -633,8 +637,8 @@ impl<'a, S: SizeLimit> serde::ser::SerializeStruct for SizeCompound<'a, S>
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
@@ -651,8 +655,8 @@ impl<'a, S: SizeLimit> serde::ser::SerializeStructVariant for SizeCompound<'a, S
     type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()> 
-    where T: serde::ser::Serialize 
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
+    where T: serde::ser::Serialize
     {
         value.serialize(&mut *self.ser)
     }
