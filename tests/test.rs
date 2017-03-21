@@ -352,18 +352,18 @@ fn test_multi_strings_serialize() {
     assert!(serialize_little(&("foo", "bar", "baz"), Infinite).is_ok());
 }
 
-/*
 #[test]
 fn test_oom_protection() {
     use std::io::Cursor;
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct FakeVec {
         len: u64,
         byte: u8
     }
-    let x = bincode::rustc_serialize::encode(&FakeVec { len: 0xffffffffffffffffu64, byte: 1 }, bincode::SizeLimit::Bounded(10)).unwrap();
-    let y : Result<Vec<u8>, _> = bincode::rustc_serialize::decode_from(&mut Cursor::new(&x[..]), bincode::SizeLimit::Bounded(10));
+    let x = serialize_little(&FakeVec { len: 0xffffffffffffffffu64, byte: 1 }, Bounded(10)).unwrap();
+    let y: Result<Vec<u8>> = deserialize_from_little(&mut Cursor::new(&x[..]), Bounded(10));
     assert!(y.is_err());
-}*/
+}
 
 #[test]
 fn path_buf() {
@@ -379,9 +379,15 @@ fn bytes() {
     use serde::bytes::Bytes;
 
     let data = b"abc\0123";
-    let s = serialize_little(&data, Infinite).unwrap();
+    let s = serialize_little(&data[..], Infinite).unwrap();
     let s2 = serialize_little(&Bytes::new(data), Infinite).unwrap();
-    assert_eq!(s[..], s2[8..]);
+    assert_eq!(s[..], s2[..]);
+}
+
+#[test]
+fn serde_bytes() {
+    use serde::bytes::ByteBuf;
+    the_same(ByteBuf::from(vec![1,2,3,4,5]));
 }
 
 
