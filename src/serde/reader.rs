@@ -27,7 +27,6 @@ const BLOCK_SIZE: usize = 65536;
 pub struct Deserializer<R, S: SizeLimit, E: ByteOrder> {
     reader: R,
     size_limit: S,
-    read: u64,
     _phantom: PhantomData<E>,
 }
 
@@ -37,14 +36,8 @@ impl<R: Read, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E> {
         Deserializer {
             reader: r,
             size_limit: size_limit,
-            read: 0,
             _phantom: PhantomData
         }
-    }
-
-    /// Returns the number of bytes read from the contained Reader.
-    pub fn bytes_read(&self) -> u64 {
-        self.read
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
