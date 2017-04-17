@@ -61,7 +61,7 @@ pub type Serializer<W> = serde::Serializer<W, byteorder::LittleEndian>;
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
 pub fn deserialize<T>(bytes: &[u8]) -> serde::Result<T>
-    where T: serde_crate::Deserialize,
+    where T: serde_crate::de::DeserializeOwned,
 {
     serde::deserialize::<_, byteorder::LittleEndian>(bytes)
 }
@@ -76,7 +76,7 @@ pub fn deserialize<T>(bytes: &[u8]) -> serde::Result<T>
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
 pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> serde::Result<T>
-    where R: Read, T: serde_crate::Deserialize, S: SizeLimit
+    where R: Read, T: serde_crate::de::DeserializeOwned, S: SizeLimit
 {
     serde::deserialize_from::<_, _, _, byteorder::LittleEndian>(reader, size_limit)
 }

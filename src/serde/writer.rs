@@ -29,14 +29,6 @@ impl<W: Write, E: ByteOrder> Serializer<W, E> {
             _phantom: PhantomData,
         }
     }
-
-    fn add_enum_tag(&mut self, tag: usize) -> Result<()> {
-        if tag > u32::MAX as usize {
-            panic!("Variant tag doesn't fit in a u32")
-        }
-
-        serde::Serializer::serialize_u32(self, tag as u32)
-    }
 }
 
 impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> {
@@ -129,10 +121,6 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
         Ok(Compound {ser: self})
     }
 
-    fn serialize_seq_fixed_size(self, _len: usize) -> Result<Self::SerializeSeq> {
-        Ok(Compound {ser: self})
-    }
-
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
         Ok(Compound {ser: self})
     }
@@ -143,11 +131,11 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
 
     fn serialize_tuple_variant(self,
                               _name: &'static str,
-                              variant_index: usize,
+                              variant_index: u32,
                               _variant: &'static str,
                               _len: usize) -> Result<Self::SerializeTupleVariant>
     {
-        try!(self.add_enum_tag(variant_index));
+        try!(self.serialize_u32(variant_index));
         Ok(Compound {ser: self})
     }
 
@@ -163,11 +151,11 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
 
     fn serialize_struct_variant(self,
                                _name: &'static str,
-                               variant_index: usize,
+                               variant_index: u32,
                                _variant: &'static str,
                                _len: usize) -> Result<Self::SerializeStructVariant>
     {
-        try!(self.add_enum_tag(variant_index));
+        try!(self.serialize_u32(variant_index));
         Ok(Compound {ser: self})
     }
 
@@ -181,20 +169,20 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
 
     fn serialize_newtype_variant<T: ?Sized>(self,
                                _name: &'static str,
-                               variant_index: usize,
+                               variant_index: u32,
                                _variant: &'static str,
                                value: &T) -> Result<()>
         where T: serde::ser::Serialize,
     {
-        try!(self.add_enum_tag(variant_index));
+        try!(self.serialize_u32(variant_index));
         value.serialize(self)
     }
 
     fn serialize_unit_variant(self,
                           _name: &'static str,
-                          variant_index: usize,
+                          variant_index: u32,
                           _variant: &'static str) -> Result<()> {
-        self.add_enum_tag(variant_index)
+        self.serialize_u32(variant_index)
     }
 }
 
@@ -216,14 +204,6 @@ impl <S: SizeLimit> SizeChecker<S> {
     fn add_value<T>(&mut self, t: T) -> Result<()> {
         use std::mem::size_of_val;
         self.add_raw(size_of_val(&t) as u64)
-    }
-
-    fn add_enum_tag(&mut self, tag: usize) -> Result<()> {
-        if tag > u32::MAX as usize {
-            panic!("Variant tag doesn't fit in a u32")
-        }
-
-        self.add_value(tag as u32)
     }
 }
 
@@ -318,10 +298,6 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
         Ok(SizeCompound {ser: self})
     }
 
-    fn serialize_seq_fixed_size(self, _len: usize) -> Result<Self::SerializeSeq> {
-        Ok(SizeCompound {ser: self})
-    }
-
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
         Ok(SizeCompound {ser: self})
     }
@@ -332,11 +308,11 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
 
     fn serialize_tuple_variant(self,
                          _name: &'static str,
-                         variant_index: usize,
+                         variant_index: u32,
                          _variant: &'static str,
                          _len: usize) -> Result<Self::SerializeTupleVariant>
     {
-        try!(self.add_enum_tag(variant_index));
+        try!(self.add_value(variant_index));
         Ok(SizeCompound {ser: self})
     }
 
@@ -354,11 +330,11 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
 
     fn serialize_struct_variant(self,
                                _name: &'static str,
-                               variant_index: usize,
+                               variant_index: u32,
                                _variant: &'static str,
                                _len: usize) -> Result<Self::SerializeStructVariant>
     {
-        try!(self.add_enum_tag(variant_index));
+        try!(self.add_value(variant_index));
         Ok(SizeCompound {ser: self})
     }
 
@@ -368,18 +344,18 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
 
     fn serialize_unit_variant(self,
                           _name: &'static str,
-                          variant_index: usize,
+                          variant_index: u32,
                           _variant: &'static str) -> Result<()> {
-        self.add_enum_tag(variant_index)
+        self.add_value(variant_index)
     }
 
     fn serialize_newtype_variant<V: serde::Serialize + ?Sized>(self,
                                _name: &'static str,
-                               variant_index: usize,
+                               variant_index: u32,
                                _variant: &'static str,
                                value: &V) -> Result<()>
     {
-        try!(self.add_enum_tag(variant_index));
+        try!(self.add_value(variant_index));
         value.serialize(self)
     }
 }
