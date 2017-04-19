@@ -3,6 +3,7 @@ extern crate serde_derive;
 
 extern crate bincode;
 extern crate serde;
+extern crate serde_bytes;
 extern crate byteorder;
 
 use std::fmt::Debug;
@@ -18,7 +19,7 @@ use bincode::deserialize as deserialize_little;
 use bincode::deserialize_from as deserialize_from_little;
 
 fn the_same<V>(element: V)
-    where V: serde::Serialize+serde::Deserialize+PartialEq+Debug+'static
+    where V: serde::Serialize+serde::de::DeserializeOwned+PartialEq+Debug+'static
 {
     let size = serialized_size(&element);
     {
@@ -376,7 +377,7 @@ fn path_buf() {
 
 #[test]
 fn bytes() {
-    use serde::bytes::Bytes;
+    use serde_bytes::Bytes;
 
     let data = b"abc\0123";
     let s = serialize_little(&data[..], Infinite).unwrap();
@@ -386,7 +387,7 @@ fn bytes() {
 
 #[test]
 fn serde_bytes() {
-    use serde::bytes::ByteBuf;
+    use serde_bytes::ByteBuf;
     the_same(ByteBuf::from(vec![1,2,3,4,5]));
 }
 

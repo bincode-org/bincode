@@ -13,9 +13,8 @@ description = "A binary serialization / deserialization strategy that uses Serde
 [dependencies]
 byteorder = "1.0.0"
 num-traits = "0.1.32"
-
-[dependencies.serde]
-version = "0.9.*"
+serde = { git = "https://github.com/serde-rs/serde", branch = "master" }
 
 [dev-dependencies]
-serde_derive = "0.9.*"
+serde_bytes = { git = "https://github.com/serde-rs/bytes", branch = "master" }
+serde_derive = { git = "https://github.com/serde-rs/serde", branch = "master" }

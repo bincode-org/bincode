@@ -223,7 +223,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
 pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Result<T>
-    where R: Read, T: serde::Deserialize, S: SizeLimit, E: ByteOrder
+    where R: Read, T: serde::de::DeserializeOwned, S: SizeLimit, E: ByteOrder
 {
     let mut deserializer = Deserializer::<_, S, E>::new(reader, size_limit);
     serde::Deserialize::deserialize(&mut deserializer)
@@ -234,7 +234,7 @@ pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Re
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
 pub fn deserialize<T, E: ByteOrder>(bytes: &[u8]) -> Result<T>
-    where T: serde::Deserialize,
+    where T: serde::de::DeserializeOwned,
 {
     let mut reader = bytes;
     deserialize_from::<_, _, _, E>(&mut reader, super::Infinite)
