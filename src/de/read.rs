@@ -3,11 +3,11 @@ use std::cmp::min;
 
 pub trait BincodeRead<'storage>: IoRead {
     fn read_into<'a, 'b>(&'a mut self, out: &'b mut [u8]) -> IoResult<usize>;
-    fn advance_internal_buffer<'a: 'storage>(&'a mut self, length: usize) -> IoResult<&'a [u8]>;
+    fn advance_internal_buffer<'a>(&'a mut self, length: usize) -> IoResult<&'a [u8]>;
 }
 
 pub struct SliceReader<'storage> {
-    slice: &'storage[u8]
+    slice: &'storage [u8]
 }
 
 pub struct IoReadReader<R> {
@@ -53,7 +53,7 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
         Ok(write_length)
     }
 
-    fn advance_internal_buffer<'a: 'storage>(&'a mut self, length: usize) -> IoResult<&'a [u8]> {
+    fn advance_internal_buffer<'a>(&'a mut self, length: usize) -> IoResult<&'a [u8]> {
         let split_point = min(self.slice.len(), length);
         let (before, after) = self.slice.split_at(split_point);
         self.slice = after;
@@ -61,12 +61,12 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 }
 
-impl <'storage, R> BincodeRead<'storage> for IoReadReader<R> where R: IoRead {
+impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
     fn read_into<'a, 'b>(&'a mut self, out: &'b mut [u8]) -> IoResult<usize> {
         self.reader.read(out)
     }
 
-    fn advance_internal_buffer<'a: 'storage>(&'a mut self, length: usize) -> IoResult<&'a [u8]> {
+    fn advance_internal_buffer<'a>(&'a mut self, length: usize) -> IoResult<&'a [u8]> {
         let current_length = self.temp_buffer.len();
         if length > current_length{
             self.temp_buffer.reserve_exact(length - current_length);

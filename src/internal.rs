@@ -231,14 +231,10 @@ pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Re
 ///
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<T, E: ByteOrder>(bytes: &[u8]) -> Result<T>
-    where T: serde::de::DeserializeOwned,
+pub fn deserialize<'a, T, E: ByteOrder>(bytes: &'a [u8]) -> Result<T>
+    where T: serde::de::Deserialize<'a>,
 {
-    let mut bytes = bytes;
-    deserialize_from::<_, T, _, E>(&mut bytes, super::Infinite)
-    /*
     let reader = ::de::read::SliceReader::new(bytes);
     let mut deserializer = Deserializer::<_, _, E>::new(reader, super::Infinite);
     serde::Deserialize::deserialize(&mut deserializer)
-    */
 }

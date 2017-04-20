@@ -62,8 +62,8 @@ pub type Serializer<W> = internal::Serializer<W, byteorder::LittleEndian>;
 ///
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<T>(bytes: &[u8]) -> internal::Result<T>
-    where T: serde_crate::de::DeserializeOwned,
+pub fn deserialize<'a, T>(bytes: &'a [u8]) -> internal::Result<T>
+    where T: serde_crate::de::Deserialize<'a>,
 {
     internal::deserialize::<_, byteorder::LittleEndian>(bytes)
 }
