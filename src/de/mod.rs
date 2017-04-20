@@ -185,16 +185,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
         where V: serde::de::Visitor<'de>,
     {
         let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
-        let internal_buffer = self.reader.advance_internal_buffer(len)?;
-        let string = match ::std::str::from_utf8(internal_buffer) {
-            Ok(s) => s,
-            Err(_) => return Err(Box::new(ErrorKind::InvalidEncoding {
-                desc: "string was not valid utf8",
-                detail: None,
-            })),
-        };
-
-        visitor.visit_str(string)
+        self.reader.forward_read_str(len, visitor)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
@@ -207,8 +198,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
         where V: serde::de::Visitor<'de>,
     {
         let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
-        let internal_buffer = self.reader.advance_internal_buffer(len)?;
-        visitor.visit_bytes(internal_buffer)
+        self.reader.forward_read_bytes(len, visitor)
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
