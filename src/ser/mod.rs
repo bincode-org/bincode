@@ -7,7 +7,7 @@ use serde_crate as serde;
 use byteorder::{WriteBytesExt, ByteOrder};
 
 use super::{Result, Error, ErrorKind};
-use super::super::SizeLimit;
+use super::SizeLimit;
 
 /// An Serializer that encodes values directly into a Writer.
 ///
