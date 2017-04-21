@@ -2,21 +2,28 @@ use std::io::{Read as IoRead, Result as IoResult, Error as IoError, ErrorKind as
 use ::Result;
 use serde_crate as serde;
 
+/// A byte-oriented reading trait that is specialized for
+/// slices and generic readers.
 pub trait BincodeRead<'storage>: IoRead {
+    #[doc(hidden)]
     fn forward_read_str<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>;
+    #[doc(hidden)]
     fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>;
 }
 
+/// A BincodeRead implementation for byte slices
 pub struct SliceReader<'storage> {
     slice: &'storage [u8]
 }
 
+/// A BincodeRead implementation for io::Readers
 pub struct IoReadReader<R> {
     reader: R,
     temp_buffer: Vec<u8>,
 }
 
 impl <'storage> SliceReader<'storage> {
+    /// Constructs a slice reader
     pub fn new(bytes: &'storage [u8]) -> SliceReader<'storage> {
         SliceReader {
             slice: bytes,
@@ -25,6 +32,7 @@ impl <'storage> SliceReader<'storage> {
 }
 
 impl <R> IoReadReader<R> {
+    /// Constructs an IoReadReader
     pub fn new(r: R) -> IoReadReader<R> {
         IoReadReader {
             reader: r,

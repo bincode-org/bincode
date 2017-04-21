@@ -10,7 +10,7 @@ use ::SizeLimit;
 use super::{Result, Error, ErrorKind};
 use self::read::BincodeRead;
 
-pub(crate) mod read;
+pub mod read;
 
 const BLOCK_SIZE: usize = 65536;
 

@@ -40,13 +40,12 @@ extern crate byteorder;
 extern crate num_traits;
 extern crate serde as serde_crate;
 
-pub(crate) mod ser;
-pub(crate) mod de;
-pub(crate) mod internal;
+mod ser;
+mod de;
+pub mod internal;
 
-/// All of the core bincode functions and types with the ability to choose endianness.
-pub mod endian_choice {
-    pub use super::internal::{Deserializer, Serializer, serialize, serialize_into, deserialize, deserialize_from};
+pub mod read_types {
+    pub use ::de::read::{SliceReader, BincodeRead, IoReadReader};
 }
 
 use std::io::{Read, Write};
