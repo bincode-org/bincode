@@ -12,7 +12,7 @@ use std::borrow::Cow;
 
 use bincode::{Infinite, Bounded};
 use bincode::{serialized_size, ErrorKind, Result};
-use bincode::endian_choice::{serialize, deserialize, deserialize_from};
+use bincode::internal::{serialize, deserialize, deserialize_from};
 
 use bincode::serialize as serialize_little;
 use bincode::deserialize as deserialize_little;
@@ -401,7 +401,7 @@ fn endian_difference() {
 
 #[test]
 fn test_zero_copy_parse() {
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
     struct Foo<'a> {
         borrowed_str: &'a str,
         borrowed_bytes: &'a [u8],
@@ -414,5 +414,6 @@ fn test_zero_copy_parse() {
     {
         let encoded = serialize_little(&f, Infinite).unwrap();
         let out: Foo = deserialize_little(&encoded[..]).unwrap();
+        assert_eq!(out, f);
     }
 }
