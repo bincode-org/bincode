@@ -6,9 +6,12 @@ use serde_crate as serde;
 /// slices and generic readers.
 pub trait BincodeRead<'storage>: IoRead {
     #[doc(hidden)]
-    fn forward_read_str<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>;
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    where V: serde::de::Visitor<'storage>;
+
     #[doc(hidden)]
-    fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>;
+    fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    where V: serde::de::Visitor<'storage>;
 }
 
 /// A BincodeRead implementation for byte slices

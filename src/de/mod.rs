@@ -185,6 +185,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
         where V: serde::de::Visitor<'de>,
     {
         let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
+        try!(self.read_bytes(len as u64));
         self.reader.forward_read_str(len, visitor)
     }
 
@@ -198,6 +199,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
         where V: serde::de::Visitor<'de>,
     {
         let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
+        try!(self.read_bytes(len as u64));
         self.reader.forward_read_bytes(len, visitor)
     }
 
