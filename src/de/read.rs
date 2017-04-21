@@ -13,7 +13,7 @@ pub trait BincodeRead<'storage>: IoRead {
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>>;
 
     #[doc(hidden)]
-    fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'storage>;
 }
 
@@ -59,11 +59,18 @@ impl <R: IoRead> IoRead for IoReadReader<R> {
     }
 }
 
+impl <'storage> SliceReader<'storage> {
+    fn unexpected_eof() -> Box<::ErrorKind> {
+        return Box::new(::ErrorKind::IoError(IoError::new(IoErrorKind::UnexpectedEof, "")));
+    }
+}
+
 impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
-    fn forward_read_str<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value> {
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    where V: serde::de::Visitor<'storage> {
         use ::ErrorKind;
         if length > self.slice.len() {
-            return Err(Box::new(ErrorKind::IoError(IoError::new(IoErrorKind::UnexpectedEof, ""))));
+            return Err(SliceReader::unexpected_eof());
         }
 
         let string = match ::std::str::from_utf8(&self.slice[..length]) {
@@ -79,12 +86,8 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
-        use ::ErrorKind;
         if length > self.slice.len() {
-            return Err(Box::new(ErrorKind::InvalidEncoding {
-                            desc: "string was not valid utf8",
-                            detail: None,
-                        }));
+            return Err(SliceReader::unexpected_eof());
         }
 
         let r = &self.slice[..length];
@@ -92,10 +95,10 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
         Ok(r.to_vec())
     }
 
-    fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value> {
-        use ::ErrorKind;
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    where V: serde::de::Visitor<'storage> {
         if length > self.slice.len() {
-            return Err(Box::new(ErrorKind::IoError(IoError::new(IoErrorKind::UnexpectedEof, ""))));
+            return Err(SliceReader::unexpected_eof());
         }
 
         let r = visitor.visit_borrowed_bytes(&self.slice[..length]);
@@ -104,18 +107,27 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 }
 
-impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
-    fn forward_read_str<V: serde::de::Visitor<'static>>(&mut self, length: usize, visitor: V) ->  Result<V::Value> {
-        use ::ErrorKind;
+impl <R> IoReadReader<R> where R: IoRead {
+    fn fill_buffer(&mut self, length: usize) -> Result<()> {
         let current_length = self.temp_buffer.len();
         if length > current_length{
             self.temp_buffer.reserve_exact(length - current_length);
+            unsafe { self.temp_buffer.set_len(length); }
         }
 
         self.reader.read_exact(&mut self.temp_buffer[..length])?;
+        Ok(())
+    }
+}
+
+impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    where V: serde::de::Visitor<'static> {
+        self.fill_buffer(length)?;
+
         let string = match ::std::str::from_utf8(&self.temp_buffer[..length]) {
             Ok(s) => s,
-            Err(_) => return Err(Box::new(ErrorKind::InvalidEncoding {
+            Err(_) => return Err(Box::new(::ErrorKind::InvalidEncoding {
                 desc: "string was not valid utf8",
                 detail: None,
             })),
@@ -126,26 +138,13 @@ impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
     }
 
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
-        let current_length = self.temp_buffer.len();
-        if length > current_length{
-            self.temp_buffer.reserve_exact(length - current_length);
-            unsafe { self.temp_buffer.set_len(length); }
-        }
-
-        self.reader.read_exact(&mut self.temp_buffer[..length])?;
-
+        self.fill_buffer(length)?;
         Ok(self.temp_buffer[..length].to_vec())
     }
 
-    fn forward_read_bytes<V: serde::de::Visitor<'static>>(&mut self, length: usize, visitor: V) ->  Result<V::Value> {
-        let current_length = self.temp_buffer.len();
-        if length > current_length{
-            self.temp_buffer.reserve_exact(length - current_length);
-            unsafe { self.temp_buffer.set_len(length); }
-        }
-
-        self.reader.read_exact(&mut self.temp_buffer[..length])?;
-
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
+    where V: serde::de::Visitor<'static> {
+        self.fill_buffer(length)?;
         let r = visitor.visit_bytes(&self.temp_buffer[..length]);
         r
     }
