@@ -8,20 +8,17 @@ use std::{error, fmt, result};
 use ::SizeLimit;
 use byteorder::{ByteOrder};
 
-pub use self::reader::{
+pub use super::de::{
     Deserializer,
 };
 
-pub use self::writer::{
+pub use super::ser::{
     Serializer,
 };
 
-use self::writer::SizeChecker;
+use super::ser::SizeChecker;
 
 use serde_crate as serde;
-
-mod reader;
-mod writer;
 
 /// The result of a serialization or deserialization operation.
 pub type Result<T> = result::Result<T, Error>;
@@ -225,6 +222,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Result<T>
     where R: Read, T: serde::de::DeserializeOwned, S: SizeLimit, E: ByteOrder
 {
+    let reader = ::de::read::IoReadReader::new(reader);
     let mut deserializer = Deserializer::<_, S, E>::new(reader, size_limit);
     serde::Deserialize::deserialize(&mut deserializer)
 }
@@ -233,9 +231,10 @@ pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Re
 ///
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<T, E: ByteOrder>(bytes: &[u8]) -> Result<T>
-    where T: serde::de::DeserializeOwned,
+pub fn deserialize<'a, T, E: ByteOrder>(bytes: &'a [u8]) -> Result<T>
+    where T: serde::de::Deserialize<'a>,
 {
-    let mut reader = bytes;
-    deserialize_from::<_, _, _, E>(&mut reader, super::Infinite)
+    let reader = ::de::read::SliceReader::new(bytes);
+    let mut deserializer = Deserializer::<_, _, E>::new(reader, super::Infinite);
+    serde::Deserialize::deserialize(&mut deserializer)
 }

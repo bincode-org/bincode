@@ -40,30 +40,32 @@ extern crate byteorder;
 extern crate num_traits;
 extern crate serde as serde_crate;
 
-mod serde;
+mod ser;
+mod de;
+pub mod internal;
 
-/// All of the core bincode functions and types with the ability to choose endianness.
-pub mod endian_choice {
-    pub use super::serde::{Deserializer, Serializer, serialize, serialize_into, deserialize, deserialize_from};
+pub mod read_types {
+    //! The types that the deserializer uses for optimizations
+    pub use ::de::read::{SliceReader, BincodeRead, IoReadReader};
 }
 
 use std::io::{Read, Write};
 
-pub use serde::{ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
+pub use internal::{ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
 
 /// A Deserializer that uses LittleEndian byteorder
-pub type Deserializer<W, S> = serde::Deserializer<W, S, byteorder::LittleEndian>;
+pub type Deserializer<W, S> = internal::Deserializer<W, S, byteorder::LittleEndian>;
 /// A Serializer that uses LittleEndian byteorder
-pub type Serializer<W> = serde::Serializer<W, byteorder::LittleEndian>;
+pub type Serializer<W> = internal::Serializer<W, byteorder::LittleEndian>;
 
 /// Deserializes a slice of bytes into an object.
 ///
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<T>(bytes: &[u8]) -> serde::Result<T>
-    where T: serde_crate::de::DeserializeOwned,
+pub fn deserialize<'a, T>(bytes: &'a [u8]) -> internal::Result<T>
+    where T: serde_crate::de::Deserialize<'a>,
 {
-    serde::deserialize::<_, byteorder::LittleEndian>(bytes)
+    internal::deserialize::<_, byteorder::LittleEndian>(bytes)
 }
 
 /// Deserializes an object directly from a `Buffer`ed Reader.
@@ -75,10 +77,10 @@ pub fn deserialize<T>(bytes: &[u8]) -> serde::Result<T>
 /// If this returns an `Error`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> serde::Result<T>
+pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> internal::Result<T>
     where R: Read, T: serde_crate::de::DeserializeOwned, S: SizeLimit
 {
-    serde::deserialize_from::<_, _, _, byteorder::LittleEndian>(reader, size_limit)
+    internal::deserialize_from::<_, _, _, byteorder::LittleEndian>(reader, size_limit)
 }
 
 /// Serializes an object directly into a `Writer`.
@@ -89,20 +91,20 @@ pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> serde
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized, S>(writer: &mut W, value: &T, size_limit: S) -> serde::Result<()>
+pub fn serialize_into<W: ?Sized, T: ?Sized, S>(writer: &mut W, value: &T, size_limit: S) -> internal::Result<()>
     where W: Write, T: serde_crate::Serialize, S: SizeLimit
 {
-    serde::serialize_into::<_, _, _, byteorder::LittleEndian>(writer, value, size_limit)
+    internal::serialize_into::<_, _, _, byteorder::LittleEndian>(writer, value, size_limit)
 }
 
 /// Serializes a serializable object into a `Vec` of bytes.
 ///
 /// If the serialization would take more bytes than allowed by `size_limit`,
 /// an error is returned.
-pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> serde::Result<Vec<u8>>
+pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> internal::Result<Vec<u8>>
     where T: serde_crate::Serialize, S: SizeLimit
 {
-    serde::serialize::<_, _, byteorder::LittleEndian>(value, size_limit)
+    internal::serialize::<_, _, byteorder::LittleEndian>(value, size_limit)
 }
 
 /// A limit on the amount of bytes that can be read or written.

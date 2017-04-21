@@ -12,7 +12,7 @@ use std::borrow::Cow;
 
 use bincode::{Infinite, Bounded};
 use bincode::{serialized_size, ErrorKind, Result};
-use bincode::endian_choice::{serialize, deserialize};
+use bincode::internal::{serialize, deserialize, deserialize_from};
 
 use bincode::serialize as serialize_little;
 use bincode::deserialize as deserialize_little;
@@ -22,23 +22,22 @@ fn the_same<V>(element: V)
     where V: serde::Serialize+serde::de::DeserializeOwned+PartialEq+Debug+'static
 {
     let size = serialized_size(&element);
+
     {
-        let encoded = serialize_little(&element, Infinite);
-        let encoded = encoded.unwrap();
-        let decoded = deserialize_little(&encoded[..]);
-        let decoded = decoded.unwrap();
+        let encoded = serialize_little(&element, Infinite).unwrap();
+        let decoded = deserialize_little(&encoded[..]).unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(size, encoded.len() as u64);
     }
 
     {
-        let encoded = serialize::<_, _, byteorder::BigEndian>(&element, Infinite);
-        let encoded = encoded.unwrap();
-        let decoded = deserialize::<_, byteorder::BigEndian>(&encoded[..]);
-        let decoded = decoded.unwrap();
+        let encoded = serialize::<_, _, byteorder::BigEndian>(&element, Infinite).unwrap();
+        let decoded = deserialize::<_, byteorder::BigEndian>(&encoded[..]).unwrap();
+        let decoded_reader = deserialize_from::<_, _, _, byteorder::BigEndian>(&mut &encoded[..], Infinite).unwrap();
 
         assert_eq!(element, decoded);
+        assert_eq!(element, decoded_reader);
         assert_eq!(size, encoded.len() as u64);
     }
 }
@@ -398,4 +397,23 @@ fn endian_difference() {
     let little = serialize_little(&x, Infinite).unwrap();
     let big = serialize::<_, _, byteorder::BigEndian>(&x, Infinite).unwrap();
     assert_ne!(little, big);
+}
+
+#[test]
+fn test_zero_copy_parse() {
+    #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+    struct Foo<'a> {
+        borrowed_str: &'a str,
+        borrowed_bytes: &'a [u8],
+    }
+
+    let f = Foo {
+        borrowed_str: "hi",
+        borrowed_bytes: &[0, 1, 2, 3],
+    };
+    {
+        let encoded = serialize_little(&f, Infinite).unwrap();
+        let out: Foo = deserialize_little(&encoded[..]).unwrap();
+        assert_eq!(out, f);
+    }
 }
