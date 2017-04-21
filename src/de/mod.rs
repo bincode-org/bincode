@@ -1,4 +1,3 @@
-use std::cmp;
 use std::io::Read;
 use std::marker::PhantomData;
 
@@ -11,8 +10,6 @@ use super::{Result, Error, ErrorKind};
 use self::read::BincodeRead;
 
 pub mod read;
-
-const BLOCK_SIZE: usize = 65536;
 
 /// A Deserializer that reads bytes from a buffer.
 ///
@@ -53,22 +50,9 @@ impl<'de, R: BincodeRead<'de>, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E>
     }
 
     fn read_vec(&mut self) -> Result<Vec<u8>> {
-        let mut len: usize = try!(serde::Deserialize::deserialize(&mut *self));
-
-        let mut result = Vec::new();
-        let mut off = 0;
-        while len > 0 {
-            let reserve = cmp::min(len, BLOCK_SIZE);
-            try!(self.read_bytes(reserve as u64));
-            unsafe {
-                result.reserve(reserve);
-                result.set_len(off + reserve);
-            }
-            try!(self.reader.read_exact(&mut result[off..]));
-            len -= reserve;
-            off += reserve;
-        }
-        Ok(result)
+        let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
+        self.read_bytes(len as u64)?;
+        self.reader.get_byte_buffer(len)
     }
 
     fn read_string(&mut self) -> Result<String> {

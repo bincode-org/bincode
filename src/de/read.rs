@@ -10,6 +10,9 @@ pub trait BincodeRead<'storage>: IoRead {
     where V: serde::de::Visitor<'storage>;
 
     #[doc(hidden)]
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>>;
+
+    #[doc(hidden)]
     fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'storage>;
 }
@@ -74,6 +77,21 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
         self.slice = &self.slice[length..];
         r
     }
+
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        use ::ErrorKind;
+        if length > self.slice.len() {
+            return Err(Box::new(ErrorKind::InvalidEncoding {
+                            desc: "string was not valid utf8",
+                            detail: None,
+                        }));
+        }
+
+        let r = &self.slice[..length];
+        self.slice = &self.slice[length..];
+        Ok(r.to_vec())
+    }
+
     fn forward_read_bytes<V: serde::de::Visitor<'storage>>(&mut self, length: usize, visitor: V) ->  Result<V::Value> {
         use ::ErrorKind;
         if length > self.slice.len() {
@@ -106,10 +124,24 @@ impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
         let r = visitor.visit_str(string);
         r
     }
+
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        let current_length = self.temp_buffer.len();
+        if length > current_length{
+            self.temp_buffer.reserve_exact(length - current_length);
+            unsafe { self.temp_buffer.set_len(length); }
+        }
+
+        self.reader.read_exact(&mut self.temp_buffer[..length])?;
+
+        Ok(self.temp_buffer[..length].to_vec())
+    }
+
     fn forward_read_bytes<V: serde::de::Visitor<'static>>(&mut self, length: usize, visitor: V) ->  Result<V::Value> {
         let current_length = self.temp_buffer.len();
         if length > current_length{
             self.temp_buffer.reserve_exact(length - current_length);
+            unsafe { self.temp_buffer.set_len(length); }
         }
 
         self.reader.read_exact(&mut self.temp_buffer[..length])?;
