@@ -8,13 +8,6 @@
 //! functions which respectively allow encoding into a `std::io::Writer`
 //! and decoding from a `std::io::Buffer`.
 //!
-//! ## Modules
-//! Until "default type parameters" lands, we have an extra module called `endian_choice`
-//! that duplicates all of the core bincode functionality but with the option to choose
-//! which endianness the integers are encoded using.
-//!
-//! The default endianness is little.
-//!
 //! ### Using Basic Functions
 //!
 //! ```rust
@@ -44,7 +37,9 @@ mod internal;
 mod config;
 
 pub use internal::*;
-pub use config::*;
+use config::*;
+
+pub use config::DEFAULT_CONFIG;
 
 pub mod read {
     //! The types that the deserializer uses for optimizations
