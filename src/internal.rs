@@ -5,8 +5,8 @@
 use std::io::{Write, Read};
 use std::io::Error as IoError;
 use std::{error, fmt, result};
-use ::SizeLimit;
-use byteorder::{ByteOrder};
+use SizeLimit;
+use config::Config;
 
 pub use super::de::{
     Deserializer,
@@ -122,14 +122,20 @@ impl serde::ser::Error for Error {
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized, S, E>(writer: &mut W, value: &T, size_limit: S) -> Result<()>
-    where W: Write, T: serde::Serialize, S: SizeLimit, E: ByteOrder
+pub fn serialize_into<W: ?Sized, T: ?Sized, C>(writer: &mut W, value: &T, mut config: C) -> Result<()>
+    where W: Write, T: serde::Serialize, C: Config
 {
-    if let Some(limit) = size_limit.limit() {
+    if let Some(limit) = config.limit().limit() {
         try!(serialized_size_bounded(value, limit).ok_or(ErrorKind::SizeLimit));
     }
 
-    let mut serializer = Serializer::<_, E>::new(writer);
+    serialize_into_no_size_checks(writer, value, config)
+}
+
+fn serialize_into_no_size_checks<W: ?Sized, T: ?Sized, C>(writer: &mut W, value: &T, config: C) -> Result<()>
+    where W: Write, T: serde::Serialize, C: Config
+{
+    let mut serializer = Serializer::<_, C>::new(writer, config);
     serde::Serialize::serialize(value, &mut serializer)
 }
 
@@ -137,10 +143,10 @@ pub fn serialize_into<W: ?Sized, T: ?Sized, S, E>(writer: &mut W, value: &T, siz
 ///
 /// If the serialization would take more bytes than allowed by `size_limit`,
 /// an error is returned.
-pub fn serialize<T: ?Sized, S, E>(value: &T, size_limit: S) -> Result<Vec<u8>>
-    where T: serde::Serialize, S: SizeLimit, E: ByteOrder
+pub fn serialize<T: ?Sized, C>(value: &T, mut config: C) -> Result<Vec<u8>>
+    where T: serde::Serialize, C: Config
 {
-    let mut writer = match size_limit.limit() {
+    let mut writer = match config.limit().limit() {
         Some(size_limit) => {
             let actual_size = try!(serialized_size_bounded(value, size_limit).ok_or(ErrorKind::SizeLimit));
             Vec::with_capacity(actual_size as usize)
@@ -151,7 +157,7 @@ pub fn serialize<T: ?Sized, S, E>(value: &T, size_limit: S) -> Result<Vec<u8>>
         }
     };
 
-    try!(serialize_into::<_, _, _, E>(&mut writer, value, super::Infinite));
+    serialize_into_no_size_checks(&mut writer, value, config)?;
     Ok(writer)
 }
 
@@ -219,11 +225,11 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 /// If this returns an `Error`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Result<T>
-    where R: Read, T: serde::de::DeserializeOwned, S: SizeLimit, E: ByteOrder
+pub fn deserialize_from<R: ?Sized, T, C>(reader: &mut R, config: C) -> Result<T>
+    where R: Read, T: serde::de::DeserializeOwned, C: Config
 {
     let reader = ::de::read::IoReadReader::new(reader);
-    let mut deserializer = Deserializer::<_, S, E>::new(reader, size_limit);
+    let mut deserializer = Deserializer::<_, C>::new(reader, config);
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
@@ -231,10 +237,10 @@ pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Re
 ///
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<'a, T, E: ByteOrder>(bytes: &'a [u8]) -> Result<T>
+pub fn deserialize<'a, T, C: Config>(bytes: &'a [u8], config: C) -> Result<T>
     where T: serde::de::Deserialize<'a>,
 {
     let reader = ::de::read::SliceReader::new(bytes);
-    let mut deserializer = Deserializer::<_, _, E>::new(reader, super::Infinite);
+    let mut deserializer = Deserializer::<_, C>::new(reader, config);
     serde::Deserialize::deserialize(&mut deserializer)
 }

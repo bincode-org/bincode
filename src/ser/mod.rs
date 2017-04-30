@@ -1,12 +1,12 @@
 use std::io::Write;
 use std::u32;
-use std::marker::PhantomData;
+use super::config::Config;
 
 use serde_crate as serde;
 
-use byteorder::{WriteBytesExt, ByteOrder};
+use byteorder::WriteBytesExt;
 
-use super::{Result, Error, ErrorKind};
+use super::internal::{Result, Error, ErrorKind};
 use super::SizeLimit;
 
 /// An Serializer that encodes values directly into a Writer.
@@ -16,31 +16,31 @@ use super::SizeLimit;
 ///
 /// This struct should not be used often.
 /// For most cases, prefer the `encode_into` function.
-pub struct Serializer<W, E: ByteOrder> {
+pub struct Serializer<W, C: Config> {
     writer: W,
-    _phantom: PhantomData<E>,
+    _config: C,
 }
 
-impl<W: Write, E: ByteOrder> Serializer<W, E> {
+impl<W: Write, C: Config> Serializer<W, C> {
     /// Creates a new Serializer with the given `Write`r.
-    pub fn new(w: W) -> Serializer<W, E> {
+    pub fn new(w: W, config: C) -> Serializer<W, C> {
         Serializer {
             writer: w,
-            _phantom: PhantomData,
+            _config: config,
         }
     }
 }
 
-impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> {
+impl<'a, W: Write, C: Config> serde::Serializer for &'a mut Serializer<W, C> {
     type Ok = ();
     type Error = Error;
-    type SerializeSeq = Compound<'a, W, E>;
-    type SerializeTuple = Compound<'a, W, E>;
-    type SerializeTupleStruct = Compound<'a, W, E>;
-    type SerializeTupleVariant = Compound<'a, W, E>;
-    type SerializeMap = Compound<'a, W, E>;
-    type SerializeStruct = Compound<'a, W, E>;
-    type SerializeStructVariant = Compound<'a, W, E>;
+    type SerializeSeq = Compound<'a, W, C>;
+    type SerializeTuple = Compound<'a, W, C>;
+    type SerializeTupleStruct = Compound<'a, W, C>;
+    type SerializeTupleVariant = Compound<'a, W, C>;
+    type SerializeMap = Compound<'a, W, C>;
+    type SerializeStruct = Compound<'a, W, C>;
+    type SerializeStructVariant = Compound<'a, W, C>;
 
     fn serialize_unit(self) -> Result<()> { Ok(()) }
 
@@ -55,15 +55,15 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     }
 
     fn serialize_u16(self, v: u16) -> Result<()> {
-        self.writer.write_u16::<E>(v).map_err(Into::into)
+        self.writer.write_u16::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_u32(self, v: u32) -> Result<()> {
-        self.writer.write_u32::<E>(v).map_err(Into::into)
+        self.writer.write_u32::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_u64(self, v: u64) -> Result<()> {
-        self.writer.write_u64::<E>(v).map_err(Into::into)
+        self.writer.write_u64::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_i8(self, v: i8) -> Result<()> {
@@ -71,23 +71,23 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     }
 
     fn serialize_i16(self, v: i16) -> Result<()> {
-        self.writer.write_i16::<E>(v).map_err(Into::into)
+        self.writer.write_i16::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_i32(self, v: i32) -> Result<()> {
-        self.writer.write_i32::<E>(v).map_err(Into::into)
+        self.writer.write_i32::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_i64(self, v: i64) -> Result<()> {
-        self.writer.write_i64::<E>(v).map_err(Into::into)
+        self.writer.write_i64::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
-        self.writer.write_f32::<E>(v).map_err(Into::into)
+        self.writer.write_f32::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_f64(self, v: f64) -> Result<()> {
-        self.writer.write_f64::<E>(v).map_err(Into::into)
+        self.writer.write_f64::<C::Endianness>(v).map_err(Into::into)
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
@@ -361,12 +361,12 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
 }
 
 #[doc(hidden)]
-pub struct Compound<'a, W: 'a, E: ByteOrder + 'a> {
-    ser: &'a mut Serializer<W, E>,
+pub struct Compound<'a, W: 'a, C: Config + 'a> {
+    ser: &'a mut Serializer<W, C>,
 }
 
-impl<'a, W, E> serde::ser::SerializeSeq for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeSeq for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
@@ -384,8 +384,8 @@ impl<'a, W, E> serde::ser::SerializeSeq for Compound<'a, W, E>
     }
 }
 
-impl<'a, W, E> serde::ser::SerializeTuple for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeTuple for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
@@ -403,8 +403,8 @@ impl<'a, W, E> serde::ser::SerializeTuple for Compound<'a, W, E>
     }
 }
 
-impl<'a, W, E> serde::ser::SerializeTupleStruct for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeTupleStruct for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
@@ -422,8 +422,8 @@ impl<'a, W, E> serde::ser::SerializeTupleStruct for Compound<'a, W, E>
     }
 }
 
-impl<'a, W, E> serde::ser::SerializeTupleVariant for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeTupleVariant for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
@@ -441,8 +441,8 @@ impl<'a, W, E> serde::ser::SerializeTupleVariant for Compound<'a, W, E>
     }
 }
 
-impl<'a, W, E> serde::ser::SerializeMap for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeMap for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
@@ -467,8 +467,8 @@ impl<'a, W, E> serde::ser::SerializeMap for Compound<'a, W, E>
     }
 }
 
-impl<'a, W, E> serde::ser::SerializeStruct for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeStruct for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
@@ -486,8 +486,8 @@ impl<'a, W, E> serde::ser::SerializeStruct for Compound<'a, W, E>
     }
 }
 
-impl<'a, W, E> serde::ser::SerializeStructVariant for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+impl<'a, W, C> serde::ser::SerializeStructVariant for Compound<'a, W, C>
+    where W: Write, C: Config
 {
     type Ok = ();
     type Error = Error;
