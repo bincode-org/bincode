@@ -9,12 +9,15 @@ use super::internal::ErrorKind;
 ///
 /// Endianness: BigEndian - Big endian is the fastest option on most modern CPU architectures
 /// SizeLimit: Infinite - This default is the least surprising
-pub static DEFAULT_CONFIG: BasicConfig<::byteorder::LittleEndian, Infinite> = BasicConfig {
+pub static DEFAULT_CONFIG: BasicConfig<::byteorder::LittleEndian, Infinite, private::H> = BasicConfig {
     limit: Infinite,
     _phantom_byte_order: PhantomData,
+    _phantom_o: PhantomData,
 };
 
 mod private {
+    #[derive(Copy, Clone)]
+    pub struct H;
     pub trait Hidden {}
 }
 
@@ -32,57 +35,63 @@ pub trait Config: private::Hidden {
 
 /// The only implementation of Config.
 #[derive(Copy, Clone)]
-pub struct BasicConfig<E: ByteOrder, L: SizeLimit> {
+pub struct BasicConfig<E: ByteOrder, L: SizeLimit, O> {
     limit: L,
     _phantom_byte_order: PhantomData<E>,
+    _phantom_o: PhantomData<O>,
 }
 
-impl <E: ByteOrder, L: SizeLimit> private::Hidden for BasicConfig<E, L> {}
+impl <E: ByteOrder, L: SizeLimit, O> private::Hidden for BasicConfig<E, L, O> {}
 
-impl <E: ByteOrder, L: SizeLimit> BasicConfig<E, L> {
+impl <E: ByteOrder, L: SizeLimit, O> BasicConfig<E, L, O> {
     /// Produces a new configuration but with a big endian byte order
-    pub fn with_big_endian(self) -> BasicConfig<::byteorder::BigEndian, L> {
+    pub fn with_big_endian(self) -> BasicConfig<::byteorder::BigEndian, L, O> {
         BasicConfig {
             limit: self.limit,
             _phantom_byte_order: PhantomData,
+            _phantom_o: PhantomData,
         }
     }
 
     /// Produces a new configuration but with a little endian byte order
-    pub fn with_little_endian(self) -> BasicConfig<::byteorder::LittleEndian, L> {
+    pub fn with_little_endian(self) -> BasicConfig<::byteorder::LittleEndian, L, O> {
         BasicConfig {
             limit: self.limit,
             _phantom_byte_order: PhantomData,
+            _phantom_o: PhantomData,
         }
     }
 
     /// Produces a new configuration but with a the byte order specified by the machine
     /// that the code is compiled for.
-    pub fn with_native_endian(self) -> BasicConfig<::byteorder::NativeEndian, L> {
+    pub fn with_native_endian(self) -> BasicConfig<::byteorder::NativeEndian, L, O> {
         BasicConfig {
             limit: self.limit,
             _phantom_byte_order: PhantomData,
+            _phantom_o: PhantomData,
         }
     }
 
     /// Produces a new configuration but with a bounded size limit
-    pub fn with_size_limit(self, limit: u64) -> BasicConfig<E, Bounded> {
+    pub fn with_size_limit(self, limit: u64) -> BasicConfig<E, Bounded, O> {
         BasicConfig {
             limit: Bounded(limit),
             _phantom_byte_order: PhantomData,
+            _phantom_o: PhantomData,
         }
     }
 
     /// Produces a new configuration but without a bounded size limit
-    pub fn without_size_limit(self) -> BasicConfig<E, Infinite> {
+    pub fn without_size_limit(self) -> BasicConfig<E, Infinite, O> {
         BasicConfig {
             limit: Infinite,
             _phantom_byte_order: PhantomData,
+            _phantom_o: PhantomData,
         }
     }
 }
 
-impl <E: ByteOrder, L: SizeLimit> Config for BasicConfig<E, L> {
+impl <E: ByteOrder, L: SizeLimit, O> Config for BasicConfig<E, L, O> {
     type Endianness = E;
     type Limit = L;
     fn limit(&mut self) -> &mut Self::Limit {
