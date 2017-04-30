@@ -34,7 +34,7 @@ extern crate serde as serde_crate;
 mod ser;
 mod de;
 mod internal;
-mod config;
+pub mod config;
 
 pub use internal::*;
 use config::*;
