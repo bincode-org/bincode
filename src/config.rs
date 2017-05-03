@@ -7,7 +7,7 @@ use super::internal::ErrorKind;
 
 /// The default configuration options for bincode.
 ///
-/// Endianness: BigEndian - Big endian is the fastest option on most modern CPU architectures
+/// Endianness: LittleEndian - Little endian is the fastest option on most modern CPU architectures
 /// SizeLimit: Infinite - This default is the least surprising
 pub static DEFAULT_CONFIG: BasicConfig<::byteorder::LittleEndian, Infinite, private::H> = BasicConfig {
     limit: Infinite,
