@@ -67,7 +67,7 @@ then the contents.
 However, there are some implementation details to be aware of:
 
 * `isize`/`usize` are encoded as `i64`/`u64`, for portability.
-* enums variants are encoded as a `u32` instead of a `uint`.
+* enums variants are encoded as a `u32` instead of a `usize`.
   `u32` is enough for all practical uses.
 * `str` is encoded as `(u64, &[u8])`, where the `u64` is the number of
   bytes contained in the encoded string.
