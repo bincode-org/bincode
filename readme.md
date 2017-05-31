@@ -51,7 +51,7 @@ fn main() {
 
     let decoded: World = deserialize(&encoded[..]).unwrap();
 
-    assert!(world == decoded);
+    assert_eq!(world, decoded);
 }
 ```
 
