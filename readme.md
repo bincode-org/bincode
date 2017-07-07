@@ -32,13 +32,13 @@ extern crate bincode;
 
 use bincode::{serialize, deserialize, Infinite};
 
-#[derive(Serialize, Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Entity {
     x: f32,
     y: f32,
 }
 
-#[derive(Serialize, Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct World(Vec<Entity>);
 
 fn main() {
