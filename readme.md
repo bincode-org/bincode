@@ -16,7 +16,7 @@ perfectly with other stream-based apis such as rust files, network streams,
 and the [flate2-rs](https://github.com/alexcrichton/flate2-rs) compression
 library.
 
-## [Api Documentation](http://tyoverby.github.io/bincode/bincode/)
+## [Api Documentation](http://docs.rs/bincode/)
 
 ## Bincode in the wild
 
