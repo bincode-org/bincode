@@ -34,7 +34,7 @@ pub type Error = Box<ErrorKind>;
 pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
     /// during (de)serialization, that error will be stored and returned here.
-    IoError(IoError),
+    Io(IoError),
     /// If the bytes in the reader are not decodable because of an invalid
     /// encoding, this error will be returned.  This error is only possible
     /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
@@ -57,7 +57,7 @@ pub enum ErrorKind {
 impl error::Error for ErrorKind {
     fn description(&self) -> &str {
         match *self {
-            ErrorKind::IoError(ref err) => error::Error::description(err),
+            ErrorKind::Io(ref err) => error::Error::description(err),
             ErrorKind::InvalidEncoding{desc, ..} => desc,
             ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
             ErrorKind::SizeLimit => "the size limit for decoding has been reached",
@@ -68,7 +68,7 @@ impl error::Error for ErrorKind {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            ErrorKind::IoError(ref err) => err.cause(),
+            ErrorKind::Io(ref err) => err.cause(),
             ErrorKind::InvalidEncoding{..} => None,
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::SizeLimit => None,
@@ -79,16 +79,16 @@ impl error::Error for ErrorKind {
 
 impl From<IoError> for Error {
     fn from(err: IoError) -> Error {
-        ErrorKind::IoError(err).into()
+        ErrorKind::Io(err).into()
     }
 }
 
 impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ErrorKind::IoError(ref ioerr) =>
-                write!(fmt, "IoError: {}", ioerr),
-            ErrorKind::InvalidEncoding{desc, detail: None}=>
+            ErrorKind::Io(ref ioerr) => 
+                write!(fmt, "Io: {}", ioerr),
+            ErrorKind::InvalidEncoding{desc, detail: None}=> 
                 write!(fmt, "InvalidEncoding: {}", desc),
             ErrorKind::InvalidEncoding{desc, detail: Some(ref detail)}=>
                 write!(fmt, "InvalidEncoding: {} ({})", desc, detail),
@@ -201,7 +201,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
     where T: serde::Serialize
 {
     let mut size_counter = SizeChecker {
-        size_limit: CountSize { total: 0, limit: Some(max) }
+        size_limit: CountSize { total: 0, limit: Some(max) } 
     };
 
     match value.serialize(&mut size_counter) {

@@ -61,7 +61,7 @@ impl <R: IoRead> IoRead for IoReadReader<R> {
 
 impl <'storage> SliceReader<'storage> {
     fn unexpected_eof() -> Box<::ErrorKind> {
-        return Box::new(::ErrorKind::IoError(IoError::new(IoErrorKind::UnexpectedEof, "")));
+        return Box::new(::ErrorKind::Io(IoError::new(IoErrorKind::UnexpectedEof, "")));
     }
 }
 
