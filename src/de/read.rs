@@ -1,5 +1,5 @@
 use std::io::{Read as IoRead, Result as IoResult, Error as IoError, ErrorKind as IoErrorKind};
-use ::Result;
+use internal::{Result, ErrorKind};
 use serde_crate as serde;
 
 /// A byte-oriented reading trait that is specialized for
@@ -60,15 +60,14 @@ impl <R: IoRead> IoRead for IoReadReader<R> {
 }
 
 impl <'storage> SliceReader<'storage> {
-    fn unexpected_eof() -> Box<::ErrorKind> {
-        return Box::new(::ErrorKind::IoError(IoError::new(IoErrorKind::UnexpectedEof, "")));
+    fn unexpected_eof() -> Box<ErrorKind> {
+        return Box::new(::internal::ErrorKind::IoError(IoError::new(IoErrorKind::UnexpectedEof, "")));
     }
 }
 
 impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'storage> {
-        use ::ErrorKind;
         if length > self.slice.len() {
             return Err(SliceReader::unexpected_eof());
         }
@@ -127,7 +126,7 @@ impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
 
         let string = match ::std::str::from_utf8(&self.temp_buffer[..length]) {
             Ok(s) => s,
-            Err(_) => return Err(Box::new(::ErrorKind::InvalidEncoding {
+            Err(_) => return Err(Box::new(ErrorKind::InvalidEncoding {
                 desc: "string was not valid utf8",
                 detail: None,
             })),

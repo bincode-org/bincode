@@ -1,13 +1,13 @@
 use std::io::Read;
-use std::marker::PhantomData;
 
-use byteorder::{ReadBytesExt, ByteOrder};
+use byteorder::ReadBytesExt;
 use serde_crate as serde;
 use serde_crate::de::IntoDeserializer;
 use serde_crate::de::Error as DeError;
 use ::SizeLimit;
-use super::{Result, Error, ErrorKind};
+use super::config::Config;
 use self::read::BincodeRead;
+use super::internal::*;
 
 pub mod read;
 
@@ -24,24 +24,22 @@ pub mod read;
 /// serde::Deserialize::deserialize(&mut deserializer);
 /// let bytes_read = d.bytes_read();
 /// ```
-pub struct Deserializer<R, S: SizeLimit, E: ByteOrder> {
+pub struct Deserializer<R, C: Config> {
     reader: R,
-    size_limit: S,
-    _phantom: PhantomData<E>,
+    config: C,
 }
 
-impl<'de, R: BincodeRead<'de>, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E> {
+impl<'de, R: BincodeRead<'de>, C: Config> Deserializer<R, C> {
     /// Creates a new Deserializer with a given `Read`er and a size_limit.
-    pub fn new(r: R, size_limit: S) -> Deserializer<R, S, E> {
+    pub fn new(r: R, config: C) -> Deserializer<R, C> {
         Deserializer {
             reader: r,
-            size_limit: size_limit,
-            _phantom: PhantomData
+            config: config,
         }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
-        self.size_limit.add(count)
+        self.config.limit().add(count)
     }
 
     fn read_type<T>(&mut self) -> Result<()> {
@@ -71,14 +69,14 @@ macro_rules! impl_nums {
             where V: serde::de::Visitor<'de>,
         {
             try!(self.read_type::<$ty>());
-            let value = try!(self.reader.$reader_method::<E>());
+            let value = try!(self.reader.$reader_method::<C::Endianness>());
             visitor.$visitor_method(value)
         }
     }
 }
 
-impl<'de, 'a, R, S, E> serde::Deserializer<'de> for &'a mut Deserializer<R, S, E>
-where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
+impl<'de, 'a, R, C> serde::Deserializer<'de> for &'a mut Deserializer<R, C>
+where R: BincodeRead<'de>, C: Config {
     type Error = Error;
 
     #[inline]
@@ -199,8 +197,8 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
                      visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor<'de>,
     {
-        impl<'de, 'a, R: 'a, S, E> serde::de::EnumAccess<'de> for &'a mut Deserializer<R, S, E>
-        where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
+        impl<'de, 'a, R: 'a, C> serde::de::EnumAccess<'de> for &'a mut Deserializer<R, C>
+        where R: BincodeRead<'de>, C: Config {
             type Error = Error;
             type Variant = Self;
 
@@ -221,12 +219,12 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
                             visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor<'de>,
     {
-        struct Access<'a, R: Read + 'a, S: SizeLimit + 'a, E: ByteOrder + 'a> {
-            deserializer: &'a mut Deserializer<R, S, E>,
+        struct Access<'a, R: Read + 'a, C: Config + 'a> {
+            deserializer: &'a mut Deserializer<R, C>,
             len: usize,
         }
 
-        impl<'de, 'a, 'b: 'a, R: BincodeRead<'de>+ 'b, S: SizeLimit, E: ByteOrder> serde::de::SeqAccess<'de> for Access<'a, R, S, E> {
+        impl<'de, 'a, 'b: 'a, R: BincodeRead<'de>+ 'b, C: Config> serde::de::SeqAccess<'de> for Access<'a, R, C> {
             type Error = Error;
 
             fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
@@ -274,12 +272,12 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor<'de>,
     {
-        struct Access<'a, R: Read + 'a, S: SizeLimit + 'a, E: ByteOrder + 'a> {
-            deserializer: &'a mut Deserializer<R, S, E>,
+        struct Access<'a, R: Read + 'a, C: Config + 'a> {
+            deserializer: &'a mut Deserializer<R, C>,
             len: usize,
         }
 
-        impl<'de, 'a, 'b: 'a, R: BincodeRead<'de> + 'b, S: SizeLimit, E: ByteOrder> serde::de::MapAccess<'de> for Access<'a, R, S, E> {
+        impl<'de, 'a, 'b: 'a, R: BincodeRead<'de> + 'b, C: Config> serde::de::MapAccess<'de> for Access<'a, R, C> {
             type Error = Error;
 
             fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
@@ -362,8 +360,8 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
     }
 }
 
-impl<'de, 'a, R, S, E> serde::de::VariantAccess<'de> for &'a mut Deserializer<R, S, E>
-where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
+impl<'de, 'a, R, C> serde::de::VariantAccess<'de> for &'a mut Deserializer<R, C>
+where R: BincodeRead<'de>, C: Config {
     type Error = Error;
 
     fn unit_variant(self) -> Result<()> {
