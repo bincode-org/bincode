@@ -3,3 +3,4 @@
 *.swp
 *.swo
 .cargo
+.vscode
