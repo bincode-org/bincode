@@ -68,7 +68,7 @@ impl error::Error for ErrorKind {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            ErrorKind::Io(ref err) => err.cause(),
+            ErrorKind::Io(ref err) => Some(err),
             ErrorKind::InvalidEncoding{..} => None,
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::SizeLimit => None,
