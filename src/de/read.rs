@@ -4,7 +4,7 @@ use serde_crate as serde;
 
 /// A byte-oriented reading trait that is specialized for
 /// slices and generic readers.
-pub trait BincodeRead<'storage>: IoRead {
+pub trait BincodeRead<'storage>: IoRead + ::private::Sealed {
     #[doc(hidden)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'storage>;
