@@ -125,7 +125,7 @@ pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> internal::Result<Vec
 /// encoding function, the encoder will verify that the structure can be encoded
 /// within that limit.  This verification occurs before any bytes are written to
 /// the Writer, so recovering from an error is easy.
-pub trait SizeLimit {
+pub trait SizeLimit: private::Sealed {
     /// Tells the SizeLimit that a certain number of bytes has been
     /// read or written.  Returns Err if the limit has been exceeded.
     fn add(&mut self, n: u64) -> Result<()>;
@@ -142,6 +142,11 @@ pub struct Bounded(pub u64);
 /// Use this if you don't care about the size of encoded or decoded messages.
 #[derive(Copy, Clone)]
 pub struct Infinite;
+
+struct CountSize {
+    total: u64,
+    limit: Option<u64>,
+}
 
 impl SizeLimit for Bounded {
     #[inline(always)]
@@ -164,4 +169,14 @@ impl SizeLimit for Infinite {
 
     #[inline(always)]
     fn limit(&self) -> Option<u64> { None }
+}
+
+mod private {
+    pub trait Sealed {}
+
+    impl<'a> Sealed for super::de::read::SliceReader<'a> {}
+    impl<R> Sealed for super::de::read::IoReadReader<R> {}
+    impl Sealed for super::Infinite {}
+    impl Sealed for super::Bounded {}
+    impl Sealed for super::CountSize {}
 }

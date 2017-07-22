@@ -5,7 +5,7 @@
 use std::io::{Write, Read};
 use std::io::Error as IoError;
 use std::{error, fmt, result};
-use ::SizeLimit;
+use ::{CountSize, SizeLimit};
 use byteorder::{ByteOrder};
 
 pub use super::de::{
@@ -153,12 +153,6 @@ pub fn serialize<T: ?Sized, S, E>(value: &T, size_limit: S) -> Result<Vec<u8>>
 
     try!(serialize_into::<_, _, _, E>(&mut writer, value, super::Infinite));
     Ok(writer)
-}
-
-
-struct CountSize {
-    total: u64,
-    limit: Option<u64>,
 }
 
 impl SizeLimit for CountSize {
