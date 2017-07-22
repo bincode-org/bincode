@@ -86,9 +86,9 @@ impl From<IoError> for Error {
 impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ErrorKind::Io(ref ioerr) => 
+            ErrorKind::Io(ref ioerr) =>
                 write!(fmt, "Io: {}", ioerr),
-            ErrorKind::InvalidEncoding{desc, detail: None}=> 
+            ErrorKind::InvalidEncoding{desc, detail: None}=>
                 write!(fmt, "InvalidEncoding: {}", desc),
             ErrorKind::InvalidEncoding{desc, detail: Some(ref detail)}=>
                 write!(fmt, "InvalidEncoding: {} ({})", desc, detail),
@@ -195,7 +195,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
     where T: serde::Serialize
 {
     let mut size_counter = SizeChecker {
-        size_limit: CountSize { total: 0, limit: Some(max) } 
+        size_limit: CountSize { total: 0, limit: Some(max) }
     };
 
     match value.serialize(&mut size_counter) {
