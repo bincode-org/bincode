@@ -35,6 +35,8 @@ pub enum ErrorKind {
     SizeLimit,
     /// Bincode can not encode sequences of unknown length (like iterators).
     SequenceMustHaveLength,
+    /// Bincode will not decode from slices that have trailing bytes
+    TrailingBytes,
     /// A custom error message from Serde.
     Custom(String),
 }
@@ -54,6 +56,7 @@ impl StdError for ErrorKind {
                 "Bincode doesn't support serde::Deserializer::deserialize_any"
             }
             ErrorKind::SizeLimit => "the size limit has been reached",
+            ErrorKind::TrailingBytes => "input slice has extra bytes after decoding",
             ErrorKind::Custom(ref msg) => msg,
         }
     }
@@ -68,6 +71,7 @@ impl StdError for ErrorKind {
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::DeserializeAnyNotSupported => None,
             ErrorKind::SizeLimit => None,
+            ErrorKind::TrailingBytes => None,
             ErrorKind::Custom(_) => None,
         }
     }
@@ -93,6 +97,7 @@ impl fmt::Display for ErrorKind {
             }
             ErrorKind::SequenceMustHaveLength => write!(fmt, "{}", self.description()),
             ErrorKind::SizeLimit => write!(fmt, "{}", self.description()),
+            ErrorKind::TrailingBytes => write!(fmt, "{}", self.description()),
             ErrorKind::DeserializeAnyNotSupported => write!(
                 fmt,
                 "Bincode does not support the serde::Deserializer::deserialize_any method"

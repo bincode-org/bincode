@@ -278,6 +278,14 @@ fn deserializing_errors() {
 }
 
 #[test]
+fn trailing_bytes() {
+    match deserialize::<char>(b"1x").map_err(|e| *e) {
+        Err(ErrorKind::TrailingBytes) => {},
+        other => panic!("Expecting TrailingBytes, got {:?}", other)
+    }
+}
+
+#[test]
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
     let deserialized: Result<u32> = DefaultOptions::new()

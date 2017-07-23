@@ -111,7 +111,17 @@ where
     T: serde::de::DeserializeSeed<'a>,
     O: InternalOptions,
 {
-    let reader = ::de::read::SliceReader::new(bytes);
+    let mut reader = ::de::read::SliceReader::new(bytes);
     let options = ::config::WithOtherLimit::new(options, Infinite);
-    deserialize_from_custom_seed(seed, reader, options)
+
+    match deserialize_from_custom_seed(seed, &mut reader, options) {
+        Ok(val) => {
+            if reader.is_finished() {
+                Ok(val)
+            } else {
+                Err(Box::new(ErrorKind::TrailingBytes))
+            }
+        },
+        err => err
+    }
 }

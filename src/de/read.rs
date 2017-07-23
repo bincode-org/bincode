@@ -52,6 +52,10 @@ impl<'storage> SliceReader<'storage> {
         self.slice = remaining;
         Ok(read_slice)
     }
+
+    pub(crate) fn is_finished(&self) -> bool {
+        self.slice.is_empty()
+    }
 }
 
 impl<R> IoReader<R> {
@@ -64,7 +68,7 @@ impl<R> IoReader<R> {
     }
 }
 
-impl<'storage> io::Read for SliceReader<'storage> {
+impl<'a, 'storage> io::Read for &'a mut SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         if out.len() > self.slice.len() {
@@ -104,7 +108,7 @@ impl<'storage> SliceReader<'storage> {
     }
 }
 
-impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
+impl<'a, 'storage> BincodeRead<'storage> for &'a mut SliceReader<'storage> {
     #[inline(always)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
