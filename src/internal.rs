@@ -215,7 +215,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Result<T>
     where R: Read, T: serde::de::DeserializeOwned, S: SizeLimit, E: ByteOrder
 {
-    let reader = ::de::read::IoReadReader::new(reader);
+    let reader = ::de::read::IoReader::new(reader);
     let mut deserializer = Deserializer::<_, S, E>::new(reader, size_limit);
     serde::Deserialize::deserialize(&mut deserializer)
 }

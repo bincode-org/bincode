@@ -46,7 +46,7 @@ pub mod internal;
 
 pub mod read_types {
     //! The types that the deserializer uses for optimizations
-    pub use ::de::read::{SliceReader, BincodeRead, IoReadReader};
+    pub use ::de::read::{SliceReader, BincodeRead, IoReader};
 }
 
 use std::io::{Read, Write};
@@ -175,7 +175,7 @@ mod private {
     pub trait Sealed {}
 
     impl<'a> Sealed for super::de::read::SliceReader<'a> {}
-    impl<R> Sealed for super::de::read::IoReadReader<R> {}
+    impl<R> Sealed for super::de::read::IoReader<R> {}
     impl Sealed for super::Infinite {}
     impl Sealed for super::Bounded {}
     impl Sealed for super::CountSize {}

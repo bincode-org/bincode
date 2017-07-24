@@ -23,7 +23,7 @@ pub struct SliceReader<'storage> {
 }
 
 /// A BincodeRead implementation for io::Readers
-pub struct IoReadReader<R> {
+pub struct IoReader<R> {
     reader: R,
     temp_buffer: Vec<u8>,
 }
@@ -37,10 +37,10 @@ impl <'storage> SliceReader<'storage> {
     }
 }
 
-impl <R> IoReadReader<R> {
+impl <R> IoReader<R> {
     /// Constructs an IoReadReader
-    pub fn new(r: R) -> IoReadReader<R> {
-        IoReadReader {
+    pub fn new(r: R) -> IoReader<R> {
+        IoReader {
             reader: r,
             temp_buffer: vec![],
         }
@@ -53,7 +53,7 @@ impl <'storage> io::Read for SliceReader<'storage> {
     }
 }
 
-impl <R: io::Read> io::Read for IoReadReader<R> {
+impl <R: io::Read> io::Read for IoReader<R> {
     fn read(&mut self, out: & mut [u8]) -> io::Result<usize> {
         self.reader.read(out)
     }
@@ -107,7 +107,7 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 }
 
-impl <R> IoReadReader<R> where R: io::Read {
+impl <R> IoReader<R> where R: io::Read {
     fn fill_buffer(&mut self, length: usize) -> Result<()> {
         let current_length = self.temp_buffer.len();
         if length > current_length{
@@ -120,7 +120,7 @@ impl <R> IoReadReader<R> where R: io::Read {
     }
 }
 
-impl <R> BincodeRead<'static> for IoReadReader<R> where R: io::Read {
+impl <R> BincodeRead<'static> for IoReader<R> where R: io::Read {
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'static> {
         self.fill_buffer(length)?;
