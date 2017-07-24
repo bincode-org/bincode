@@ -2,8 +2,7 @@
 //! that use the `serde` crate for the serializable and deserializable
 //! implementation.
 
-use std::io::{Write, Read};
-use std::io::Error as IoError;
+use std::io::{self, Write, Read};
 use std::{error, fmt, result};
 use ::{CountSize, SizeLimit};
 use byteorder::{ByteOrder};
@@ -34,7 +33,7 @@ pub type Error = Box<ErrorKind>;
 pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
     /// during (de)serialization, that error will be stored and returned here.
-    Io(IoError),
+    Io(io::Error),
     /// If the bytes in the reader are not decodable because of an invalid
     /// encoding, this error will be returned.  This error is only possible
     /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
@@ -77,8 +76,8 @@ impl error::Error for ErrorKind {
     }
 }
 
-impl From<IoError> for Error {
-    fn from(err: IoError) -> Error {
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
         ErrorKind::Io(err).into()
     }
 }

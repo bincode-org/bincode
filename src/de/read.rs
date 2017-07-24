@@ -1,10 +1,10 @@
-use std::io::{Read as IoRead, Result as IoResult, Error as IoError, ErrorKind as IoErrorKind};
+use std::io;
 use ::Result;
 use serde_crate as serde;
 
 /// A byte-oriented reading trait that is specialized for
 /// slices and generic readers.
-pub trait BincodeRead<'storage>: IoRead + ::private::Sealed {
+pub trait BincodeRead<'storage>: io::Read + ::private::Sealed {
     #[doc(hidden)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'storage>;
@@ -47,21 +47,21 @@ impl <R> IoReadReader<R> {
     }
 }
 
-impl <'storage> IoRead for SliceReader<'storage> {
-    fn read(&mut self, out: & mut [u8]) -> IoResult<usize> {
+impl <'storage> io::Read for SliceReader<'storage> {
+    fn read(&mut self, out: & mut [u8]) -> io::Result<usize> {
         (&mut self.slice).read(out)
     }
 }
 
-impl <R: IoRead> IoRead for IoReadReader<R> {
-    fn read(&mut self, out: & mut [u8]) -> IoResult<usize> {
+impl <R: io::Read> io::Read for IoReadReader<R> {
+    fn read(&mut self, out: & mut [u8]) -> io::Result<usize> {
         self.reader.read(out)
     }
 }
 
 impl <'storage> SliceReader<'storage> {
     fn unexpected_eof() -> Box<::ErrorKind> {
-        return Box::new(::ErrorKind::Io(IoError::new(IoErrorKind::UnexpectedEof, "")));
+        return Box::new(::ErrorKind::Io(io::Error::new(io::ErrorKind::UnexpectedEof, "")));
     }
 }
 
@@ -107,7 +107,7 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 }
 
-impl <R> IoReadReader<R> where R: IoRead {
+impl <R> IoReadReader<R> where R: io::Read {
     fn fill_buffer(&mut self, length: usize) -> Result<()> {
         let current_length = self.temp_buffer.len();
         if length > current_length{
@@ -120,7 +120,7 @@ impl <R> IoReadReader<R> where R: IoRead {
     }
 }
 
-impl <R> BincodeRead<'static> for IoReadReader<R> where R: IoRead {
+impl <R> BincodeRead<'static> for IoReadReader<R> where R: io::Read {
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) ->  Result<V::Value>
     where V: serde::de::Visitor<'static> {
         self.fill_buffer(length)?;
