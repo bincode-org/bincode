@@ -121,7 +121,7 @@ impl serde::ser::Error for Error {
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized, S, E>(writer: &mut W, value: &T, size_limit: S) -> Result<()>
+pub fn serialize_into<W, T: ?Sized, S, E>(writer: W, value: &T, size_limit: S) -> Result<()>
     where W: Write, T: serde::Serialize, S: SizeLimit, E: ByteOrder
 {
     if let Some(limit) = size_limit.limit() {
@@ -212,7 +212,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 /// If this returns an `Error`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Result<T>
+pub fn deserialize_from<R, T, S, E>(reader: R, size_limit: S) -> Result<T>
     where R: Read, T: serde::de::DeserializeOwned, S: SizeLimit, E: ByteOrder
 {
     let reader = ::de::read::IoReader::new(reader);
