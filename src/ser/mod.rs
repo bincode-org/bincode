@@ -42,12 +42,18 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     type SerializeStruct = Compound<'a, W, E>;
     type SerializeStructVariant = Compound<'a, W, E>;
 
-    fn serialize_unit(self) -> Result<()> { Ok(()) }
+    fn serialize_unit(self) -> Result<()> {
+        Ok(())
+    }
 
-    fn serialize_unit_struct(self, _: &'static str) -> Result<()> { Ok(()) }
+    fn serialize_unit_struct(self, _: &'static str) -> Result<()> {
+        Ok(())
+    }
 
     fn serialize_bool(self, v: bool) -> Result<()> {
-        self.writer.write_u8(if v {1} else {0}).map_err(Into::into)
+        self.writer.write_u8(if v { 1 } else { 0 }).map_err(
+            Into::into,
+        )
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
@@ -96,7 +102,9 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     }
 
     fn serialize_char(self, c: char) -> Result<()> {
-        self.writer.write_all(encode_utf8(c).as_slice()).map_err(Into::into)
+        self.writer.write_all(encode_utf8(c).as_slice()).map_err(
+            Into::into,
+        )
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
@@ -109,7 +117,8 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     }
 
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<()>
-        where T: serde::Serialize,
+    where
+        T: serde::Serialize,
     {
         try!(self.writer.write_u8(1));
         v.serialize(self)
@@ -118,70 +127,80 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
         try!(self.serialize_u64(len as u64));
-        Ok(Compound {ser: self})
+        Ok(Compound { ser: self })
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
-        Ok(Compound {ser: self})
+        Ok(Compound { ser: self })
     }
 
-    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct> {
-        Ok(Compound {ser: self})
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct> {
+        Ok(Compound { ser: self })
     }
 
-    fn serialize_tuple_variant(self,
-                              _name: &'static str,
-                              variant_index: u32,
-                              _variant: &'static str,
-                              _len: usize) -> Result<Self::SerializeTupleVariant>
-    {
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant> {
         try!(self.serialize_u32(variant_index));
-        Ok(Compound {ser: self})
+        Ok(Compound { ser: self })
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
         try!(self.serialize_u64(len as u64));
-        Ok(Compound {ser: self})
+        Ok(Compound { ser: self })
     }
 
     fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
-        Ok(Compound {ser: self})
+        Ok(Compound { ser: self })
     }
 
-    fn serialize_struct_variant(self,
-                               _name: &'static str,
-                               variant_index: u32,
-                               _variant: &'static str,
-                               _len: usize) -> Result<Self::SerializeStructVariant>
-    {
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant> {
         try!(self.serialize_u32(variant_index));
-        Ok(Compound {ser: self})
+        Ok(Compound { ser: self })
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(self,
-                               _name: &'static str,
-                               value: &T) -> Result<()>
-        where T: serde::ser::Serialize,
+    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, value: &T) -> Result<()>
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(self,
-                               _name: &'static str,
-                               variant_index: u32,
-                               _variant: &'static str,
-                               value: &T) -> Result<()>
-        where T: serde::ser::Serialize,
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        value: &T,
+    ) -> Result<()>
+    where
+        T: serde::ser::Serialize,
     {
         try!(self.serialize_u32(variant_index));
         value.serialize(self)
     }
 
-    fn serialize_unit_variant(self,
-                          _name: &'static str,
-                          variant_index: u32,
-                          _variant: &'static str) -> Result<()> {
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+    ) -> Result<()> {
         self.serialize_u32(variant_index)
     }
 }
@@ -190,11 +209,9 @@ pub struct SizeChecker<S: SizeLimit> {
     pub size_limit: S,
 }
 
-impl <S: SizeLimit> SizeChecker<S> {
+impl<S: SizeLimit> SizeChecker<S> {
     pub fn new(size_limit: S) -> SizeChecker<S> {
-        SizeChecker {
-            size_limit: size_limit
-        }
+        SizeChecker { size_limit: size_limit }
     }
 
     fn add_raw(&mut self, size: u64) -> Result<()> {
@@ -218,9 +235,13 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
     type SerializeStruct = SizeCompound<'a, S>;
     type SerializeStructVariant = SizeCompound<'a, S>;
 
-    fn serialize_unit(self) -> Result<()> { Ok(()) }
+    fn serialize_unit(self) -> Result<()> {
+        Ok(())
+    }
 
-    fn serialize_unit_struct(self, _: &'static str) -> Result<()> { Ok(()) }
+    fn serialize_unit_struct(self, _: &'static str) -> Result<()> {
+        Ok(())
+    }
 
     fn serialize_bool(self, _: bool) -> Result<()> {
         self.add_value(0 as u8)
@@ -285,7 +306,8 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
     }
 
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<()>
-        where T: serde::Serialize,
+    where
+        T: serde::Serialize,
     {
         try!(self.add_value(1 as u8));
         v.serialize(self)
@@ -295,66 +317,78 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
 
         try!(self.serialize_u64(len as u64));
-        Ok(SizeCompound {ser: self})
+        Ok(SizeCompound { ser: self })
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> {
-        Ok(SizeCompound {ser: self})
+        Ok(SizeCompound { ser: self })
     }
 
-    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct> {
-        Ok(SizeCompound {ser: self})
+    fn serialize_tuple_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleStruct> {
+        Ok(SizeCompound { ser: self })
     }
 
-    fn serialize_tuple_variant(self,
-                         _name: &'static str,
-                         variant_index: u32,
-                         _variant: &'static str,
-                         _len: usize) -> Result<Self::SerializeTupleVariant>
-    {
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeTupleVariant> {
         try!(self.add_value(variant_index));
-        Ok(SizeCompound {ser: self})
+        Ok(SizeCompound { ser: self })
     }
 
-    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap>
-    {
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
 
         try!(self.serialize_u64(len as u64));
-        Ok(SizeCompound {ser: self})
+        Ok(SizeCompound { ser: self })
     }
 
     fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
-        Ok(SizeCompound {ser: self})
+        Ok(SizeCompound { ser: self })
     }
 
-    fn serialize_struct_variant(self,
-                               _name: &'static str,
-                               variant_index: u32,
-                               _variant: &'static str,
-                               _len: usize) -> Result<Self::SerializeStructVariant>
-    {
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStructVariant> {
         try!(self.add_value(variant_index));
-        Ok(SizeCompound {ser: self})
+        Ok(SizeCompound { ser: self })
     }
 
-    fn serialize_newtype_struct<V: serde::Serialize + ?Sized>(self, _name: &'static str, v: &V) -> Result<()> {
+    fn serialize_newtype_struct<V: serde::Serialize + ?Sized>(
+        self,
+        _name: &'static str,
+        v: &V,
+    ) -> Result<()> {
         v.serialize(self)
     }
 
-    fn serialize_unit_variant(self,
-                          _name: &'static str,
-                          variant_index: u32,
-                          _variant: &'static str) -> Result<()> {
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+    ) -> Result<()> {
         self.add_value(variant_index)
     }
 
-    fn serialize_newtype_variant<V: serde::Serialize + ?Sized>(self,
-                               _name: &'static str,
-                               variant_index: u32,
-                               _variant: &'static str,
-                               value: &V) -> Result<()>
-    {
+    fn serialize_newtype_variant<V: serde::Serialize + ?Sized>(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        value: &V,
+    ) -> Result<()> {
         try!(self.add_value(variant_index));
         value.serialize(self)
     }
@@ -366,14 +400,17 @@ pub struct Compound<'a, W: 'a, E: ByteOrder + 'a> {
 }
 
 impl<'a, W, E> serde::ser::SerializeSeq for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -385,14 +422,17 @@ impl<'a, W, E> serde::ser::SerializeSeq for Compound<'a, W, E>
 }
 
 impl<'a, W, E> serde::ser::SerializeTuple for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -404,14 +444,17 @@ impl<'a, W, E> serde::ser::SerializeTuple for Compound<'a, W, E>
 }
 
 impl<'a, W, E> serde::ser::SerializeTupleStruct for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -423,14 +466,17 @@ impl<'a, W, E> serde::ser::SerializeTupleStruct for Compound<'a, W, E>
 }
 
 impl<'a, W, E> serde::ser::SerializeTupleVariant for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -442,21 +488,25 @@ impl<'a, W, E> serde::ser::SerializeTupleVariant for Compound<'a, W, E>
 }
 
 impl<'a, W, E> serde::ser::SerializeMap for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<()>
-    where K: serde::ser::Serialize
+    where
+        K: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
 
-        #[inline]
+    #[inline]
     fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<()>
-    where V: serde::ser::Serialize
+    where
+        V: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -468,14 +518,17 @@ impl<'a, W, E> serde::ser::SerializeMap for Compound<'a, W, E>
 }
 
 impl<'a, W, E> serde::ser::SerializeStruct for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -487,14 +540,17 @@ impl<'a, W, E> serde::ser::SerializeStruct for Compound<'a, W, E>
 }
 
 impl<'a, W, E> serde::ser::SerializeStructVariant for Compound<'a, W, E>
-    where W: Write, E: ByteOrder
+where
+    W: Write,
+    E: ByteOrder,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -510,14 +566,14 @@ pub struct SizeCompound<'a, S: SizeLimit + 'a> {
     ser: &'a mut SizeChecker<S>,
 }
 
-impl<'a, S: SizeLimit> serde::ser::SerializeSeq for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit> serde::ser::SerializeSeq for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -528,14 +584,14 @@ impl<'a, S: SizeLimit> serde::ser::SerializeSeq for SizeCompound<'a, S>
     }
 }
 
-impl<'a, S: SizeLimit> serde::ser::SerializeTuple for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit> serde::ser::SerializeTuple for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -546,14 +602,14 @@ impl<'a, S: SizeLimit> serde::ser::SerializeTuple for SizeCompound<'a, S>
     }
 }
 
-impl<'a, S: SizeLimit> serde::ser::SerializeTupleStruct for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit> serde::ser::SerializeTupleStruct for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -564,14 +620,14 @@ impl<'a, S: SizeLimit> serde::ser::SerializeTupleStruct for SizeCompound<'a, S>
     }
 }
 
-impl<'a, S: SizeLimit> serde::ser::SerializeTupleVariant for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit> serde::ser::SerializeTupleVariant for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -582,21 +638,22 @@ impl<'a, S: SizeLimit> serde::ser::SerializeTupleVariant for SizeCompound<'a, S>
     }
 }
 
-impl<'a, S: SizeLimit + 'a> serde::ser::SerializeMap for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit + 'a> serde::ser::SerializeMap for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<()>
-    where K: serde::ser::Serialize
+    where
+        K: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
 
-        #[inline]
+    #[inline]
     fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<()>
-    where V: serde::ser::Serialize
+    where
+        V: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -607,14 +664,14 @@ impl<'a, S: SizeLimit + 'a> serde::ser::SerializeMap for SizeCompound<'a, S>
     }
 }
 
-impl<'a, S: SizeLimit> serde::ser::SerializeStruct for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit> serde::ser::SerializeStruct for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -625,14 +682,14 @@ impl<'a, S: SizeLimit> serde::ser::SerializeStruct for SizeCompound<'a, S>
     }
 }
 
-impl<'a, S: SizeLimit> serde::ser::SerializeStructVariant for SizeCompound<'a, S>
-{
+impl<'a, S: SizeLimit> serde::ser::SerializeStructVariant for SizeCompound<'a, S> {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<()>
-    where T: serde::ser::Serialize
+    where
+        T: serde::ser::Serialize,
     {
         value.serialize(&mut *self.ser)
     }
@@ -642,13 +699,13 @@ impl<'a, S: SizeLimit> serde::ser::SerializeStructVariant for SizeCompound<'a, S
         Ok(())
     }
 }
-const TAG_CONT: u8    = 0b1000_0000;
-const TAG_TWO_B: u8   = 0b1100_0000;
+const TAG_CONT: u8 = 0b1000_0000;
+const TAG_TWO_B: u8 = 0b1100_0000;
 const TAG_THREE_B: u8 = 0b1110_0000;
-const TAG_FOUR_B: u8  = 0b1111_0000;
-const MAX_ONE_B: u32   =     0x80;
-const MAX_TWO_B: u32   =    0x800;
-const MAX_THREE_B: u32 =  0x10000;
+const TAG_FOUR_B: u8 = 0b1111_0000;
+const MAX_ONE_B: u32 = 0x80;
+const MAX_TWO_B: u32 = 0x800;
+const MAX_THREE_B: u32 = 0x10000;
 
 fn encode_utf8(c: char) -> EncodeUtf8 {
     let code = c as u32;
@@ -662,13 +719,13 @@ fn encode_utf8(c: char) -> EncodeUtf8 {
         2
     } else if code < MAX_THREE_B {
         buf[1] = (code >> 12 & 0x0F) as u8 | TAG_THREE_B;
-        buf[2] = (code >>  6 & 0x3F) as u8 | TAG_CONT;
+        buf[2] = (code >> 6 & 0x3F) as u8 | TAG_CONT;
         buf[3] = (code & 0x3F) as u8 | TAG_CONT;
         1
     } else {
         buf[0] = (code >> 18 & 0x07) as u8 | TAG_FOUR_B;
         buf[1] = (code >> 12 & 0x3F) as u8 | TAG_CONT;
-        buf[2] = (code >>  6 & 0x3F) as u8 | TAG_CONT;
+        buf[2] = (code >> 6 & 0x3F) as u8 | TAG_CONT;
         buf[3] = (code & 0x3F) as u8 | TAG_CONT;
         0
     };
