@@ -18,8 +18,9 @@ description = "A binary serialization / deserialization strategy that uses Serde
 
 [dependencies]
 byteorder = "1.0.0"
-serde = "1.*.*"
+serde = "1.0.16"
 
 [dev-dependencies]
 serde_bytes = "0.10.*"
-serde_derive = "1.*.*"
+serde_derive = "1.0.16"
+

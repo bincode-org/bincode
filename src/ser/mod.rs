@@ -203,6 +203,10 @@ impl<'a, W: Write, E: ByteOrder> serde::Serializer for &'a mut Serializer<W, E> 
     ) -> Result<()> {
         self.serialize_u32(variant_index)
     }
+
+    fn is_human_readable(&self) -> bool {
+        false
+    }
 }
 
 pub struct SizeChecker<S: SizeLimit> {
@@ -391,6 +395,10 @@ impl<'a, S: SizeLimit> serde::Serializer for &'a mut SizeChecker<S> {
     ) -> Result<()> {
         try!(self.add_value(variant_index));
         value.serialize(self)
+    }
+
+    fn is_human_readable(&self) -> bool {
+        false
     }
 }
 
