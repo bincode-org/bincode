@@ -4,7 +4,7 @@
 //! serialization strategy.
 //!
 //! There are simple functions for encoding to `Vec<u8>` and decoding from
-//! `&[u8]`, but the meat of the library is the `encode_into` and `decode_from`
+//! `&[u8]`, but the meat of the library is the `serialize_into` and `deserialize_from`
 //! functions which respectively allow encoding into a `std::io::Writer`
 //! and decoding from a `std::io::Buffer`.
 //!
