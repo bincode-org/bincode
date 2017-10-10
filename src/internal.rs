@@ -2,10 +2,9 @@
 //! that use the `serde` crate for the serializable and deserializable
 //! implementation.
 
-use std::io::{Write, Read};
-use std::io::Error as IoError;
+use std::io::{self, Write, Read};
 use std::{error, fmt, result};
-use ::SizeLimit;
+use ::{CountSize, SizeLimit};
 use byteorder::{ByteOrder};
 
 pub use super::de::{
@@ -34,7 +33,7 @@ pub type Error = Box<ErrorKind>;
 pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
     /// during (de)serialization, that error will be stored and returned here.
-    IoError(IoError),
+    Io(io::Error),
     /// If the bytes in the reader are not decodable because of an invalid
     /// encoding, this error will be returned.  This error is only possible
     /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
@@ -57,7 +56,7 @@ pub enum ErrorKind {
 impl error::Error for ErrorKind {
     fn description(&self) -> &str {
         match *self {
-            ErrorKind::IoError(ref err) => error::Error::description(err),
+            ErrorKind::Io(ref err) => error::Error::description(err),
             ErrorKind::InvalidEncoding{desc, ..} => desc,
             ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
             ErrorKind::SizeLimit => "the size limit for decoding has been reached",
@@ -68,7 +67,7 @@ impl error::Error for ErrorKind {
 
     fn cause(&self) -> Option<&error::Error> {
         match *self {
-            ErrorKind::IoError(ref err) => err.cause(),
+            ErrorKind::Io(ref err) => Some(err),
             ErrorKind::InvalidEncoding{..} => None,
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::SizeLimit => None,
@@ -77,17 +76,17 @@ impl error::Error for ErrorKind {
     }
 }
 
-impl From<IoError> for Error {
-    fn from(err: IoError) -> Error {
-        ErrorKind::IoError(err).into()
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        ErrorKind::Io(err).into()
     }
 }
 
 impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ErrorKind::IoError(ref ioerr) =>
-                write!(fmt, "IoError: {}", ioerr),
+            ErrorKind::Io(ref ioerr) =>
+                write!(fmt, "Io: {}", ioerr),
             ErrorKind::InvalidEncoding{desc, detail: None}=>
                 write!(fmt, "InvalidEncoding: {}", desc),
             ErrorKind::InvalidEncoding{desc, detail: Some(ref detail)}=>
@@ -122,7 +121,7 @@ impl serde::ser::Error for Error {
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized, S, E>(writer: &mut W, value: &T, size_limit: S) -> Result<()>
+pub fn serialize_into<W, T: ?Sized, S, E>(writer: W, value: &T, size_limit: S) -> Result<()>
     where W: Write, T: serde::Serialize, S: SizeLimit, E: ByteOrder
 {
     if let Some(limit) = size_limit.limit() {
@@ -153,12 +152,6 @@ pub fn serialize<T: ?Sized, S, E>(value: &T, size_limit: S) -> Result<Vec<u8>>
 
     try!(serialize_into::<_, _, _, E>(&mut writer, value, super::Infinite));
     Ok(writer)
-}
-
-
-struct CountSize {
-    total: u64,
-    limit: Option<u64>,
 }
 
 impl SizeLimit for CountSize {
@@ -219,10 +212,10 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 /// If this returns an `Error`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn deserialize_from<R: ?Sized, T, S, E>(reader: &mut R, size_limit: S) -> Result<T>
+pub fn deserialize_from<R, T, S, E>(reader: R, size_limit: S) -> Result<T>
     where R: Read, T: serde::de::DeserializeOwned, S: SizeLimit, E: ByteOrder
 {
-    let reader = ::de::read::IoReadReader::new(reader);
+    let reader = ::de::read::IoReader::new(reader);
     let mut deserializer = Deserializer::<_, S, E>::new(reader, size_limit);
     serde::Deserialize::deserialize(&mut deserializer)
 }
