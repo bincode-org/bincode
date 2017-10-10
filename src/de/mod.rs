@@ -144,7 +144,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
 
         let error = || {
             ErrorKind::InvalidEncoding{
-                desc: "Invalid char encoding",
+                desc: "invalid char encoding",
                 detail: None,
             }.into()
         };
