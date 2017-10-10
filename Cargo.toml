@@ -2,6 +2,7 @@
 name = "bincode"
 version = "0.8.1"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
+publish = false
 
 repository = "https://github.com/TyOverby/bincode"
 documentation = "https://docs.rs/bincode"
