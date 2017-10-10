@@ -51,11 +51,17 @@ impl <'storage> io::Read for SliceReader<'storage> {
     fn read(&mut self, out: & mut [u8]) -> io::Result<usize> {
         (&mut self.slice).read(out)
     }
+    fn read_exact(&mut self, out: & mut [u8]) -> io::Result<()> {
+        (&mut self.slice).read_exact(out)
+    }
 }
 
 impl <R: io::Read> io::Read for IoReader<R> {
     fn read(&mut self, out: & mut [u8]) -> io::Result<usize> {
         self.reader.read(out)
+    }
+    fn read_exact(&mut self, out: & mut [u8]) -> io::Result<()> {
+        self.reader.read_exact(out)
     }
 }
 
