@@ -37,7 +37,6 @@
 #![crate_type = "dylib"]
 
 extern crate byteorder;
-extern crate num_traits;
 extern crate serde as serde_crate;
 
 mod ser;
