@@ -23,9 +23,6 @@ use serde_crate as serde;
 pub type Result<T> = result::Result<T, Error>;
 
 /// An error that can be produced during (de)serializing.
-///
-/// If decoding from a Buffer, assume that the buffer has been left
-/// in an invalid state.
 pub type Error = Box<ErrorKind>;
 
 /// The kind of error that can be produced during a serialization or deserialization.
@@ -203,7 +200,7 @@ pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
     }
 }
 
-/// Deserializes an object directly from a `Buffer`ed Reader.
+/// Deserializes an object directly from a `Read`er.
 ///
 /// If the provided `SizeLimit` is reached, the deserialization will bail immediately.
 /// A SizeLimit can help prevent an attacker from flooding your server with
