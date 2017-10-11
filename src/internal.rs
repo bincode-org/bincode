@@ -86,15 +86,15 @@ impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ErrorKind::Io(ref ioerr) =>
-                write!(fmt, "Io: {}", ioerr),
+                write!(fmt, "io error: {}", ioerr),
             ErrorKind::InvalidEncoding{desc, detail: None}=>
-                write!(fmt, "InvalidEncoding: {}", desc),
+                write!(fmt, "invalid encoding: {}", desc),
             ErrorKind::InvalidEncoding{desc, detail: Some(ref detail)}=>
-                write!(fmt, "InvalidEncoding: {} ({})", desc, detail),
+                write!(fmt, "invalid encoding: {} ({})", desc, detail),
             ErrorKind::SequenceMustHaveLength =>
-                write!(fmt, "Bincode can only encode sequences and maps that have a knowable size ahead of time."),
+                write!(fmt, "bincode can only encode sequences and maps that have a knowable size ahead of time."),
             ErrorKind::SizeLimit =>
-                write!(fmt, "SizeLimit"),
+                write!(fmt, "size limit was exceeded"),
             ErrorKind::Custom(ref s) =>
                 s.fmt(fmt),
         }
