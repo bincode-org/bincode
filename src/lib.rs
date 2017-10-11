@@ -45,7 +45,7 @@ pub mod internal;
 
 pub mod read_types {
     //! The types that the deserializer uses for optimizations
-    pub use ::de::read::{SliceReader, BincodeRead, IoReader};
+    pub use de::read::{SliceReader, BincodeRead, IoReader};
 }
 
 use std::io::{Read, Write};
@@ -62,7 +62,8 @@ pub type Serializer<W> = internal::Serializer<W, byteorder::LittleEndian>;
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
 pub fn deserialize<'a, T>(bytes: &'a [u8]) -> internal::Result<T>
-    where T: serde_crate::de::Deserialize<'a>,
+where
+    T: serde_crate::de::Deserialize<'a>,
 {
     internal::deserialize::<_, byteorder::LittleEndian>(bytes)
 }
@@ -77,7 +78,10 @@ pub fn deserialize<'a, T>(bytes: &'a [u8]) -> internal::Result<T>
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
 pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> internal::Result<T>
-    where R: Read, T: serde_crate::de::DeserializeOwned, S: SizeLimit
+where
+    R: Read,
+    T: serde_crate::de::DeserializeOwned,
+    S: SizeLimit,
 {
     internal::deserialize_from::<_, _, _, byteorder::LittleEndian>(reader, size_limit)
 }
@@ -90,8 +94,15 @@ pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> inter
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized, S>(writer: &mut W, value: &T, size_limit: S) -> internal::Result<()>
-    where W: Write, T: serde_crate::Serialize, S: SizeLimit
+pub fn serialize_into<W: ?Sized, T: ?Sized, S>(
+    writer: &mut W,
+    value: &T,
+    size_limit: S,
+) -> internal::Result<()>
+where
+    W: Write,
+    T: serde_crate::Serialize,
+    S: SizeLimit,
 {
     internal::serialize_into::<_, _, _, byteorder::LittleEndian>(writer, value, size_limit)
 }
@@ -101,7 +112,9 @@ pub fn serialize_into<W: ?Sized, T: ?Sized, S>(writer: &mut W, value: &T, size_l
 /// If the serialization would take more bytes than allowed by `size_limit`,
 /// an error is returned.
 pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> internal::Result<Vec<u8>>
-    where T: serde_crate::Serialize, S: SizeLimit
+where
+    T: serde_crate::Serialize,
+    S: SizeLimit,
 {
     internal::serialize::<_, _, byteorder::LittleEndian>(value, size_limit)
 }
@@ -159,15 +172,21 @@ impl SizeLimit for Bounded {
     }
 
     #[inline(always)]
-    fn limit(&self) -> Option<u64> { Some(self.0) }
+    fn limit(&self) -> Option<u64> {
+        Some(self.0)
+    }
 }
 
 impl SizeLimit for Infinite {
     #[inline(always)]
-    fn add(&mut self, _: u64) -> Result<()> { Ok (()) }
+    fn add(&mut self, _: u64) -> Result<()> {
+        Ok(())
+    }
 
     #[inline(always)]
-    fn limit(&self) -> Option<u64> { None }
+    fn limit(&self) -> Option<u64> {
+        None
+    }
 }
 
 mod private {
