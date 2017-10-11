@@ -85,8 +85,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
         where V: serde::de::Visitor<'de>,
     {
-        let message = "bincode does not support Deserializer::deserialize_any";
-        Err(Error::custom(message))
+        Err(Box::new(ErrorKind::DeserializeAnyNotSupported))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>

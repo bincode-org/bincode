@@ -44,6 +44,9 @@ pub enum ErrorKind {
         #[allow(missing_docs)]
         detail: Option<String>
     },
+    /// Serde has a deserialize_any method that lets the format hint to the
+    /// object which route to take in deserializing.
+    DeserializeAnyNotSupported,
     /// If (de)serializing a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
@@ -59,6 +62,7 @@ impl error::Error for ErrorKind {
             ErrorKind::Io(ref err) => error::Error::description(err),
             ErrorKind::InvalidEncoding{desc, ..} => desc,
             ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
+            ErrorKind::DeserializeAnyNotSupported => "bincode doesn't support serde::Deserializer::deserialize_any",
             ErrorKind::SizeLimit => "the size limit for decoding has been reached",
             ErrorKind::Custom(ref msg) => msg,
 
@@ -70,6 +74,7 @@ impl error::Error for ErrorKind {
             ErrorKind::Io(ref err) => Some(err),
             ErrorKind::InvalidEncoding{..} => None,
             ErrorKind::SequenceMustHaveLength => None,
+            ErrorKind::DeserializeAnyNotSupported => None,
             ErrorKind::SizeLimit => None,
             ErrorKind::Custom(_) => None,
         }
@@ -95,6 +100,8 @@ impl fmt::Display for ErrorKind {
                 write!(fmt, "Bincode can only encode sequences and maps that have a knowable size ahead of time."),
             ErrorKind::SizeLimit =>
                 write!(fmt, "SizeLimit"),
+            ErrorKind::DeserializeAnyNotSupported=>
+                write!(fmt, "bincode does not support the serde::Deserializer::deserialize_any method"),
             ErrorKind::Custom(ref s) =>
                 s.fmt(fmt),
         }
