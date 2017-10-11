@@ -5,8 +5,8 @@
 //!
 //! There are simple functions for encoding to `Vec<u8>` and decoding from
 //! `&[u8]`, but the meat of the library is the `serialize_into` and `deserialize_from`
-//! functions which respectively allow encoding into a `std::io::Writer`
-//! and decoding from a `std::io::Buffer`.
+//! functions which respectively allow encoding into any `std::io::Write`
+//! or decode from any `std::io::Read`.
 //!
 //! ## Modules
 //! Until "default type parameters" lands, we have an extra module called `endian_choice`
