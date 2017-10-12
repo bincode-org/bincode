@@ -81,10 +81,7 @@ impl <'storage> BincodeRead<'storage> for SliceReader<'storage> {
 
         let string = match ::std::str::from_utf8(&self.slice[..length]) {
             Ok(s) => s,
-            Err(_) => return Err(Box::new(ErrorKind::InvalidEncoding {
-                desc: "string was not valid utf8",
-                detail: None,
-            })),
+            Err(e) => return Err(ErrorKind::InvalidUtf8Encoding(e).into()),
         };
         let r = visitor.visit_borrowed_str(string);
         self.slice = &self.slice[length..];
@@ -133,10 +130,7 @@ impl <R> BincodeRead<'static> for IoReader<R> where R: io::Read {
 
         let string = match ::std::str::from_utf8(&self.temp_buffer[..length]) {
             Ok(s) => s,
-            Err(_) => return Err(Box::new(::ErrorKind::InvalidEncoding {
-                desc: "string was not valid utf8",
-                detail: None,
-            })),
+            Err(e) => return Err(::ErrorKind::InvalidUtf8Encoding(e).into()),
         };
 
         let r = visitor.visit_str(string);

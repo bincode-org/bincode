@@ -56,11 +56,9 @@ impl<'de, R: BincodeRead<'de>, E: ByteOrder, S: SizeLimit> Deserializer<R, S, E>
     }
 
     fn read_string(&mut self) -> Result<String> {
-        String::from_utf8(try!(self.read_vec())).map_err(|err|
-            ErrorKind::InvalidEncoding{
-                desc: "error while decoding utf8 string",
-                detail: Some(format!("Deserialize error: {}", err))
-            }.into())
+        let vec = self.read_vec()?;
+        String::from_utf8(vec).map_err(|e|
+            ErrorKind::InvalidUtf8Encoding(e.utf8_error()).into())
     }
 }
 
@@ -96,10 +94,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
             1 => visitor.visit_bool(true),
             0 => visitor.visit_bool(false),
             value => {
-                Err(ErrorKind::InvalidEncoding{
-                    desc: "invalid u8 when decoding bool",
-                    detail: Some(format!("Expected 0 or 1, got {}", value))
-                }.into())
+                Err(ErrorKind::InvalidBoolEncoding(value).into())
             }
         }
     }
@@ -142,10 +137,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
         use std::str;
 
         let error = || {
-            ErrorKind::InvalidEncoding{
-                desc: "invalid char encoding",
-                detail: None,
-            }.into()
+            ErrorKind::InvalidCharEncoding.into()
         };
 
         let mut buf = [0u8; 4];
@@ -255,10 +247,7 @@ where R: BincodeRead<'de>, S: SizeLimit, E: ByteOrder {
         match value {
             0 => visitor.visit_none(),
             1 => visitor.visit_some(&mut *self),
-            _ => Err(ErrorKind::InvalidEncoding{
-                desc: "invalid tag when decoding Option",
-                detail: Some(format!("Expected 0 or 1, got {}", value))
-            }.into()),
+            v => Err(ErrorKind::InvalidTagEncoding(v as usize).into())
         }
     }
 

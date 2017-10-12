@@ -3,6 +3,7 @@ name = "bincode"
 version = "0.8.1"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
 
+# Adding ErrorKind::Invalid*Encoding is a breaking change
 # Adding ErrorKind::DeserializeAnyNotSupported is a breaking change
 publish = false
 

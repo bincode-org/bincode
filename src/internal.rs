@@ -4,8 +4,10 @@
 
 use std::io::{self, Write, Read};
 use std::{error, fmt, result};
+use std::str::Utf8Error;
 use ::{CountSize, SizeLimit};
 use byteorder::{ByteOrder};
+use std::error::Error as StdError;
 
 pub use super::de::{
     Deserializer,
@@ -31,16 +33,16 @@ pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
     /// during (de)serialization, that error will be stored and returned here.
     Io(io::Error),
-    /// If the bytes in the reader are not decodable because of an invalid
-    /// encoding, this error will be returned.  This error is only possible
-    /// if a stream is corrupted.  A stream produced from `encode` or `encode_into`
-    /// should **never** produce an InvalidEncoding error.
-    InvalidEncoding {
-        #[allow(missing_docs)]
-        desc: &'static str,
-        #[allow(missing_docs)]
-        detail: Option<String>
-    },
+    /// Returned if the deserializer attempts to deserialize a string that is not valid utf8
+    InvalidUtf8Encoding(Utf8Error),
+    /// Returned if the deserializer attempts to deserialize a bool that was
+    /// not encoded as either a 1 or a 0
+    InvalidBoolEncoding(u8),
+    /// Returned if the deserializer attempts to deserialize a char that is not in the correct format.
+    InvalidCharEncoding,
+    /// Returned if the deserializer attempts to deserialize the tag of an enum that is
+    /// not in the expected ranges
+    InvalidTagEncoding(usize),
     /// Serde has a deserialize_any method that lets the format hint to the
     /// object which route to take in deserializing.
     DeserializeAnyNotSupported,
@@ -53,11 +55,14 @@ pub enum ErrorKind {
     Custom(String)
 }
 
-impl error::Error for ErrorKind {
+impl StdError for ErrorKind {
     fn description(&self) -> &str {
         match *self {
             ErrorKind::Io(ref err) => error::Error::description(err),
-            ErrorKind::InvalidEncoding{desc, ..} => desc,
+            ErrorKind::InvalidUtf8Encoding(_) => "string is not valid utf8",
+            ErrorKind::InvalidBoolEncoding(_) => "invalid u8 while decoding bool",
+            ErrorKind::InvalidCharEncoding => "char is not valid",
+            ErrorKind::InvalidTagEncoding(_) => "tag for enum is not valid",
             ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
             ErrorKind::DeserializeAnyNotSupported => "bincode doesn't support serde::Deserializer::deserialize_any",
             ErrorKind::SizeLimit => "the size limit for decoding has been reached",
@@ -69,7 +74,10 @@ impl error::Error for ErrorKind {
     fn cause(&self) -> Option<&error::Error> {
         match *self {
             ErrorKind::Io(ref err) => Some(err),
-            ErrorKind::InvalidEncoding{..} => None,
+            ErrorKind::InvalidUtf8Encoding(_) => None,
+            ErrorKind::InvalidBoolEncoding(_) => None,
+            ErrorKind::InvalidCharEncoding => None,
+            ErrorKind::InvalidTagEncoding(_) => None,
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::DeserializeAnyNotSupported => None,
             ErrorKind::SizeLimit => None,
@@ -89,10 +97,14 @@ impl fmt::Display for ErrorKind {
         match *self {
             ErrorKind::Io(ref ioerr) =>
                 write!(fmt, "io error: {}", ioerr),
-            ErrorKind::InvalidEncoding{desc, detail: None}=>
-                write!(fmt, "invalid encoding: {}", desc),
-            ErrorKind::InvalidEncoding{desc, detail: Some(ref detail)}=>
-                write!(fmt, "invalid encoding: {} ({})", desc, detail),
+            ErrorKind::InvalidUtf8Encoding(ref e) =>
+                write!(fmt, "{}: {}", self.description(), e),
+            ErrorKind::InvalidBoolEncoding(b) =>
+                write!(fmt, "{}, expected 0 or 1, found {}", self.description(), b),
+            ErrorKind::InvalidCharEncoding =>
+                write!(fmt, "{}", self.description()),
+            ErrorKind::InvalidTagEncoding(tag) =>
+                write!(fmt, "{}, found {}", self.description(), tag),
             ErrorKind::SequenceMustHaveLength =>
                 write!(fmt, "bincode can only encode sequences and maps that have a knowable size ahead of time."),
             ErrorKind::SizeLimit =>
