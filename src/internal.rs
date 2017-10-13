@@ -108,7 +108,7 @@ impl fmt::Display for ErrorKind {
                     "bincode can only encode sequences and maps that have a knowable size ahead of time."
                 )
             }
-            ErrorKind::SizeLimit => write!(fmt, "size limit was exceeded"),
+            ErrorKind::SizeLimit => write!(fmt, self.description()),
             ErrorKind::DeserializeAnyNotSupported => {
                 write!(
                     fmt,
