@@ -10,16 +10,17 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::borrow::Cow;
 
-use bincode::{Infinite, Bounded};
+use bincode::{Bounded, Infinite};
 use bincode::{serialized_size, ErrorKind, Result};
-use bincode::internal::{serialize, deserialize, deserialize_from};
+use bincode::internal::{deserialize, deserialize_from, serialize};
 
 use bincode::serialize as serialize_little;
 use bincode::deserialize as deserialize_little;
 use bincode::deserialize_from as deserialize_from_little;
 
 fn the_same<V>(element: V)
-    where V: serde::Serialize+serde::de::DeserializeOwned+PartialEq+Debug+'static
+where
+    V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
 {
     let size = serialized_size(&element);
 
@@ -34,7 +35,8 @@ fn the_same<V>(element: V)
     {
         let encoded = serialize::<_, _, byteorder::BigEndian>(&element, Infinite).unwrap();
         let decoded = deserialize::<_, byteorder::BigEndian>(&encoded[..]).unwrap();
-        let decoded_reader = deserialize_from::<_, _, _, byteorder::BigEndian>(&mut &encoded[..], Infinite).unwrap();
+        let decoded_reader =
+            deserialize_from::<_, _, _, byteorder::BigEndian>(&mut &encoded[..], Infinite).unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(element, decoded_reader);
@@ -79,8 +81,8 @@ fn test_string() {
 #[test]
 fn test_tuple() {
     the_same((1isize,));
-    the_same((1isize,2isize,3isize));
-    the_same((1isize,"foo".to_string(),()));
+    the_same((1isize, 2isize, 3isize));
+    the_same((1isize, "foo".to_string(), ()));
 }
 
 #[test]
@@ -89,9 +91,13 @@ fn test_basic_struct() {
     struct Easy {
         x: isize,
         s: String,
-        y: usize
+        y: usize,
     }
-    the_same(Easy{x: -4, s: "foo".to_string(), y: 10});
+    the_same(Easy {
+        x: -4,
+        s: "foo".to_string(),
+        y: 10,
+    });
 }
 
 #[test]
@@ -100,19 +106,27 @@ fn test_nested_struct() {
     struct Easy {
         x: isize,
         s: String,
-        y: usize
+        y: usize,
     }
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct Nest {
         f: Easy,
         b: usize,
-        s: Easy
+        s: Easy,
     }
 
     the_same(Nest {
-        f: Easy {x: -1, s: "foo".to_string(), y: 20},
+        f: Easy {
+            x: -1,
+            s: "foo".to_string(),
+            y: 20,
+        },
         b: 100,
-        s: Easy {x: -100, s: "bar".to_string(), y: 20}
+        s: Easy {
+            x: -100,
+            s: "bar".to_string(),
+            y: 20,
+        },
     });
 }
 
@@ -147,15 +161,19 @@ fn test_enum() {
         OneArg(usize),
         Args(usize, usize),
         AnotherNoArg,
-        StructLike{x: usize, y: f32}
+        StructLike { x: usize, y: f32 },
     }
     the_same(TestEnum::NoArg);
     the_same(TestEnum::OneArg(4));
     //the_same(TestEnum::Args(4, 5));
     the_same(TestEnum::AnotherNoArg);
-    the_same(TestEnum::StructLike{x: 4, y: 3.14159});
-    the_same(vec![TestEnum::NoArg, TestEnum::OneArg(5), TestEnum::AnotherNoArg,
-                  TestEnum::StructLike{x: 4, y:1.4}]);
+    the_same(TestEnum::StructLike { x: 4, y: 3.14159 });
+    the_same(vec![
+        TestEnum::NoArg,
+        TestEnum::OneArg(5),
+        TestEnum::AnotherNoArg,
+        TestEnum::StructLike { x: 4, y: 1.4 },
+    ]);
 }
 
 #[test]
@@ -163,7 +181,7 @@ fn test_vec() {
     let v: Vec<u8> = vec![];
     the_same(v);
     the_same(vec![1u64]);
-    the_same(vec![1u64,2,3,4,5,6]);
+    the_same(vec![1u64, 2, 3, 4, 5, 6]);
 }
 
 #[test]
@@ -197,11 +215,11 @@ fn test_fixed_size_array() {
 fn deserializing_errors() {
 
     match *deserialize_little::<bool>(&vec![0xA][..]).unwrap_err() {
-        ErrorKind::InvalidBoolEncoding(0xA) => {},
+        ErrorKind::InvalidBoolEncoding(0xA) => {}
         _ => panic!(),
     }
     match *deserialize_little::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]).unwrap_err() {
-        ErrorKind::InvalidUtf8Encoding(_) => {},
+        ErrorKind::InvalidUtf8Encoding(_) => {}
         _ => panic!(),
     }
 
@@ -214,23 +232,25 @@ fn deserializing_errors() {
 
     match *deserialize_little::<Test>(&vec![0, 0, 0, 5][..]).unwrap_err() {
         // Error message comes from serde
-        ErrorKind::Custom(_) => {},
+        ErrorKind::Custom(_) => {}
         _ => panic!(),
     }
     match *deserialize_little::<Option<u8>>(&vec![5, 0][..]).unwrap_err() {
-        ErrorKind::InvalidTagEncoding(_) => {},
+        ErrorKind::InvalidTagEncoding(_) => {}
         _ => panic!(),
     }
 }
 
 #[test]
 fn too_big_deserialize() {
-    let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32> = deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(3));
+    let serialized = vec![0, 0, 0, 3];
+    let deserialized: Result<u32> =
+        deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(3));
     assert!(deserialized.is_err());
 
-    let serialized = vec![0,0,0,3];
-    let deserialized: Result<u32> = deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(4));
+    let serialized = vec![0, 0, 0, 3];
+    let deserialized: Result<u32> =
+        deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(4));
     assert!(deserialized.is_ok());
 }
 
@@ -247,7 +267,8 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char> = deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(1));
+    let deserialized: Result<char> =
+        deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(1));
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
@@ -297,7 +318,7 @@ fn encode_box() {
 
 #[test]
 fn test_cow_serialize() {
-    let large_object = vec![1u32,2,3,4,5,6];
+    let large_object = vec![1u32, 2, 3, 4, 5, 6];
     let mut large_map = HashMap::new();
     large_map.insert(1, 2);
 
@@ -305,28 +326,32 @@ fn test_cow_serialize() {
     #[derive(Serialize, Deserialize, Debug)]
     enum Message<'a> {
         M1(Cow<'a, Vec<u32>>),
-        M2(Cow<'a, HashMap<u32, u32>>)
+        M2(Cow<'a, HashMap<u32, u32>>),
     }
 
     // Test 1
     {
-        let serialized = serialize_little(&Message::M1(Cow::Borrowed(&large_object)), Infinite).unwrap();
-        let deserialized: Message<'static> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+        let serialized =
+            serialize_little(&Message::M1(Cow::Borrowed(&large_object)), Infinite).unwrap();
+        let deserialized: Message<'static> =
+            deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
 
         match deserialized {
             Message::M1(b) => assert!(&b.into_owned() == &large_object),
-            _ => assert!(false)
+            _ => assert!(false),
         }
     }
 
     // Test 2
     {
-        let serialized = serialize_little(&Message::M2(Cow::Borrowed(&large_map)), Infinite).unwrap();
-        let deserialized: Message<'static> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+        let serialized =
+            serialize_little(&Message::M2(Cow::Borrowed(&large_map)), Infinite).unwrap();
+        let deserialized: Message<'static> =
+            deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
 
         match deserialized {
             Message::M2(b) => assert!(&b.into_owned() == &large_map),
-            _ => assert!(false)
+            _ => assert!(false),
         }
     }
 }
@@ -335,17 +360,19 @@ fn test_cow_serialize() {
 fn test_strbox_serialize() {
     let strx: &'static str = "hello world";
     let serialized = serialize_little(&Cow::Borrowed(strx), Infinite).unwrap();
-    let deserialized: Cow<'static, String> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+    let deserialized: Cow<'static, String> =
+        deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
     let stringx: String = deserialized.into_owned();
     assert!(strx == &stringx[..]);
 }
 
 #[test]
 fn test_slicebox_serialize() {
-    let slice = [1u32, 2, 3 ,4, 5];
+    let slice = [1u32, 2, 3, 4, 5];
     let serialized = serialize_little(&Cow::Borrowed(&slice[..]), Infinite).unwrap();
     println!("{:?}", serialized);
-    let deserialized: Cow<'static, Vec<u32>> = deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+    let deserialized: Cow<'static, Vec<u32>> =
+        deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
     {
         let sb: &[u32] = &deserialized;
         assert!(slice == sb);
@@ -365,9 +392,15 @@ fn test_oom_protection() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct FakeVec {
         len: u64,
-        byte: u8
+        byte: u8,
     }
-    let x = serialize_little(&FakeVec { len: 0xffffffffffffffffu64, byte: 1 }, Bounded(10)).unwrap();
+    let x = serialize_little(
+        &FakeVec {
+            len: 0xffffffffffffffffu64,
+            byte: 1,
+        },
+        Bounded(10),
+    ).unwrap();
     let y: Result<Vec<u8>> = deserialize_from_little(&mut Cursor::new(&x[..]), Bounded(10));
     assert!(y.is_err());
 }
@@ -394,7 +427,7 @@ fn bytes() {
 #[test]
 fn serde_bytes() {
     use serde_bytes::ByteBuf;
-    the_same(ByteBuf::from(vec![1,2,3,4,5]));
+    the_same(ByteBuf::from(vec![1, 2, 3, 4, 5]));
 }
 
 

@@ -2,7 +2,7 @@
 extern crate serde_derive;
 extern crate bincode;
 
-use bincode::{serialize, deserialize, Infinite};
+use bincode::{deserialize, serialize, Infinite};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Entity {
