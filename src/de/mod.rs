@@ -14,7 +14,7 @@ pub mod read;
 /// A Deserializer that reads bytes from a buffer.
 ///
 /// This struct should rarely be used.
-/// In most cases, prefer the `decode_from` function.
+/// In most cases, prefer the `deserialize_from` function.
 ///
 /// The ByteOrder that is chosen will impact the endianness that
 /// is used to read integers out of the reader.
