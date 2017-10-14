@@ -4,7 +4,8 @@ version = "0.9.2"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
 exclude = ["logo.png", "tests/*", "examples/*", ".gitignore", ".travis.yml", "changelist.org", "LICENSE.md"]
 
-publish = true
+# renamed `read_types` to `read`
+publish = false
 
 repository = "https://github.com/TyOverby/bincode"
 documentation = "https://docs.rs/bincode"

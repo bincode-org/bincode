@@ -43,7 +43,7 @@ mod ser;
 mod de;
 pub mod internal;
 
-pub mod read_types {
+pub mod read {
     //! The types that the deserializer uses for optimizations
     pub use de::read::{SliceReader, BincodeRead, IoReader};
 }
