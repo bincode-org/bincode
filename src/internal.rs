@@ -63,7 +63,7 @@ impl StdError for ErrorKind {
             ErrorKind::DeserializeAnyNotSupported => {
                 "bincode doesn't support serde::Deserializer::deserialize_any"
             }
-            ErrorKind::SizeLimit => "the size limit for decoding has been reached",
+            ErrorKind::SizeLimit => "the size limit has been reached",
             ErrorKind::Custom(ref msg) => msg,
 
         }
