@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 
-//! `bincode` is a crate for encoding and decoding using a tiny binary
+//! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.
 //!
 //! There are simple functions for encoding to `Vec<u8>` and decoding from
@@ -10,7 +10,7 @@
 //!
 //! ## Modules
 //! Until "default type parameters" lands, we have an extra module called `endian_choice`
-//! that duplicates all of the core bincode functionality but with the option to choose
+//! that duplicates all of the core Bincode functionality but with the option to choose
 //! which endianness the integers are encoded using.
 //!
 //! The default endianness is little.

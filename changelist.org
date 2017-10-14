@@ -5,7 +5,7 @@
  big user-friendliness issues.  Major congratulations to Serde for coming this far!
 
 ** Moved Refbox, Strbox and Slicebox into a "refbox" module
- Refbox, Strbox and Slicebox are still an integral piece of bincode, but since
+ Refbox, Strbox and Slicebox are still an integral piece of Bincode, but since
  they are mainly used by power-users, this move will make the crate API more organized
  and easier for new users to understand.
 

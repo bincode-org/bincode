@@ -60,9 +60,9 @@ impl StdError for ErrorKind {
             ErrorKind::InvalidCharEncoding => "char is not valid",
             ErrorKind::InvalidTagEncoding(_) => "tag for enum is not valid",
             ErrorKind::SequenceMustHaveLength =>
-                "bincode can only encode sequences and maps that have a knowable size ahead of time",
+                "Bincode can only encode sequences and maps that have a knowable size ahead of time",
             ErrorKind::DeserializeAnyNotSupported => {
-                "bincode doesn't support serde::Deserializer::deserialize_any"
+                "Bincode doesn't support serde::Deserializer::deserialize_any"
             }
             ErrorKind::SizeLimit => "the size limit has been reached",
             ErrorKind::Custom(ref msg) => msg,
@@ -110,7 +110,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::DeserializeAnyNotSupported => {
                 write!(
                     fmt,
-                    "bincode does not support the serde::Deserializer::deserialize_any method"
+                    "Bincode does not support the serde::Deserializer::deserialize_any method"
                 )
             }
             ErrorKind::Custom(ref s) => s.fmt(fmt),
@@ -202,7 +202,7 @@ impl SizeLimit for CountSize {
     }
 }
 
-/// Returns the size that an object would be if serialized using bincode.
+/// Returns the size that an object would be if serialized using Bincode.
 ///
 /// This is used internally as part of the check for encode_into, but it can
 /// be useful for preallocating buffers if thats your style.

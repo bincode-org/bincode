@@ -370,7 +370,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let message = "bincode does not support Deserializer::deserialize_identifier";
+        let message = "Bincode does not support Deserializer::deserialize_identifier";
         Err(Error::custom(message))
     }
 
@@ -404,7 +404,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let message = "bincode does not support Deserializer::deserialize_ignored_any";
+        let message = "Bincode does not support Deserializer::deserialize_ignored_any";
         Err(Error::custom(message))
     }
 }
