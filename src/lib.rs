@@ -53,7 +53,7 @@ use std::io::{Read, Write};
 pub use internal::{ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
 
 /// A Deserializer that uses LittleEndian byteorder
-pub type Deserializer<W, S> = internal::Deserializer<W, S, byteorder::LittleEndian>;
+pub type Deserializer<R, S> = internal::Deserializer<R, S, byteorder::LittleEndian>;
 /// A Serializer that uses LittleEndian byteorder
 pub type Serializer<W> = internal::Serializer<W, byteorder::LittleEndian>;
 
