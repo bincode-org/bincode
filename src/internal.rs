@@ -59,7 +59,8 @@ impl StdError for ErrorKind {
             ErrorKind::InvalidBoolEncoding(_) => "invalid u8 while decoding bool",
             ErrorKind::InvalidCharEncoding => "char is not valid",
             ErrorKind::InvalidTagEncoding(_) => "tag for enum is not valid",
-            ErrorKind::SequenceMustHaveLength => "bincode can't encode infinite sequences",
+            ErrorKind::SequenceMustHaveLength =>
+                "bincode can only encode sequences and maps that have a knowable size ahead of time",
             ErrorKind::DeserializeAnyNotSupported => {
                 "bincode doesn't support serde::Deserializer::deserialize_any"
             }
@@ -103,10 +104,7 @@ impl fmt::Display for ErrorKind {
                 write!(fmt, "{}, found {}", self.description(), tag)
             }
             ErrorKind::SequenceMustHaveLength => {
-                write!(
-                    fmt,
-                    "bincode can only encode sequences and maps that have a knowable size ahead of time."
-                )
+                write!(fmt, "{}", self.description())
             }
             ErrorKind::SizeLimit => write!(fmt, "{}", self.description()),
             ErrorKind::DeserializeAnyNotSupported => {
