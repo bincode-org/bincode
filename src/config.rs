@@ -2,7 +2,7 @@ use super::{SizeLimit, Infinite, Bounded};
 use byteorder::{ByteOrder, BigEndian, LittleEndian, NativeEndian};
 use std::marker::PhantomData;
 
-trait Options {
+pub(crate) trait Options {
     type Limit: SizeLimit + 'static;
     type Endian: ByteOrder + 'static;
 

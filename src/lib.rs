@@ -37,88 +37,16 @@
 #![crate_type = "dylib"]
 
 extern crate byteorder;
-extern crate serde as serde_crate;
+extern crate serde;
 
 mod config;
 mod ser;
+mod error;
 mod de;
-pub mod internal;
+mod internal;
 
-pub mod read {
-    //! The types that the deserializer uses for optimizations
-    pub use de::read::{SliceReader, BincodeRead, IoReader};
-}
-
-use std::io::{Read, Write};
-
-pub use internal::{ErrorKind, Error, Result, serialized_size, serialized_size_bounded};
-
-/// A Deserializer that uses LittleEndian byteorder
-pub type Deserializer<R, S> = internal::Deserializer<R, S, byteorder::LittleEndian>;
-/// A Serializer that uses LittleEndian byteorder
-pub type Serializer<W> = internal::Serializer<W, byteorder::LittleEndian>;
-
-/// Deserializes a slice of bytes into an object.
-///
-/// This method does not have a size-limit because if you already have the bytes
-/// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<'a, T>(bytes: &'a [u8]) -> internal::Result<T>
-where
-    T: serde_crate::de::Deserialize<'a>,
-{
-    internal::deserialize::<_, byteorder::LittleEndian>(bytes)
-}
-
-/// Deserializes an object directly from a `Buffer`ed Reader.
-///
-/// If the provided `SizeLimit` is reached, the deserialization will bail immediately.
-/// A SizeLimit can help prevent an attacker from flooding your server with
-/// a neverending stream of values that runs your server out of memory.
-///
-/// If this returns an `Error`, assume that the buffer that you passed
-/// in is in an invalid state, as the error could be returned during any point
-/// in the reading.
-pub fn deserialize_from<R: ?Sized, T, S>(reader: &mut R, size_limit: S) -> internal::Result<T>
-where
-    R: Read,
-    T: serde_crate::de::DeserializeOwned,
-    S: SizeLimit,
-{
-    internal::deserialize_from::<_, _, _, byteorder::LittleEndian>(reader, size_limit)
-}
-
-/// Serializes an object directly into a `Writer`.
-///
-/// If the serialization would take more bytes than allowed by `size_limit`, an error
-/// is returned and *no bytes* will be written into the `Writer`.
-///
-/// If this returns an `Error` (other than SizeLimit), assume that the
-/// writer is in an invalid state, as writing could bail out in the middle of
-/// serializing.
-pub fn serialize_into<W: ?Sized, T: ?Sized, S>(
-    writer: &mut W,
-    value: &T,
-    size_limit: S,
-) -> internal::Result<()>
-where
-    W: Write,
-    T: serde_crate::Serialize,
-    S: SizeLimit,
-{
-    internal::serialize_into::<_, _, _, byteorder::LittleEndian>(writer, value, size_limit)
-}
-
-/// Serializes a serializable object into a `Vec` of bytes.
-///
-/// If the serialization would take more bytes than allowed by `size_limit`,
-/// an error is returned.
-pub fn serialize<T: ?Sized, S>(value: &T, size_limit: S) -> internal::Result<Vec<u8>>
-where
-    T: serde_crate::Serialize,
-    S: SizeLimit,
-{
-    internal::serialize::<_, _, byteorder::LittleEndian>(value, size_limit)
-}
+pub use error::{Error, ErrorKind};
+use error::Result;
 
 /// A limit on the amount of bytes that can be read or written.
 ///
@@ -138,7 +66,7 @@ where
 /// encoding function, the encoder will verify that the structure can be encoded
 /// within that limit.  This verification occurs before any bytes are written to
 /// the Writer, so recovering from an error is easy.
-pub trait SizeLimit: private::Sealed {
+pub(crate) trait SizeLimit {
     /// Tells the SizeLimit that a certain number of bytes has been
     /// read or written.  Returns Err if the limit has been exceeded.
     fn add(&mut self, n: u64) -> Result<()>;
@@ -155,11 +83,6 @@ pub struct Bounded(pub u64);
 /// Use this if you don't care about the size of encoded or decoded messages.
 #[derive(Copy, Clone)]
 pub struct Infinite;
-
-struct CountSize {
-    total: u64,
-    limit: Option<u64>,
-}
 
 impl SizeLimit for Bounded {
     #[inline(always)]
@@ -188,14 +111,4 @@ impl SizeLimit for Infinite {
     fn limit(&self) -> Option<u64> {
         None
     }
-}
-
-mod private {
-    pub trait Sealed {}
-
-    impl<'a> Sealed for super::de::read::SliceReader<'a> {}
-    impl<R> Sealed for super::de::read::IoReader<R> {}
-    impl Sealed for super::Infinite {}
-    impl Sealed for super::Bounded {}
-    impl Sealed for super::CountSize {}
 }

@@ -1,10 +1,10 @@
 use std::io;
-use Result;
-use serde_crate as serde;
+use error::Result;
+use serde;
 
 /// A byte-oriented reading trait that is specialized for
 /// slices and generic readers.
-pub trait BincodeRead<'storage>: io::Read + ::private::Sealed {
+pub(crate) trait BincodeRead<'storage>: io::Read {
     #[doc(hidden)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where

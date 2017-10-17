@@ -1,133 +1,13 @@
-//! A collection of serialization and deserialization functions
-//! that use the `serde` crate for the serializable and deserializable
-//! implementation.
+use std::io::{Write, Read};
+use serde;
 
-use std::io::{self, Write, Read};
-use std::{error, fmt, result};
-use std::str::Utf8Error;
-use {CountSize, SizeLimit};
-use byteorder::ByteOrder;
-use std::error::Error as StdError;
+use ::config::Options;
+use ::{ErrorKind, Result};
+use ::SizeLimit;
 
-pub use super::de::Deserializer;
-
-pub use super::ser::Serializer;
-
-use super::ser::SizeChecker;
-
-use serde_crate as serde;
-
-/// The result of a serialization or deserialization operation.
-pub type Result<T> = result::Result<T, Error>;
-
-/// An error that can be produced during (de)serializing.
-pub type Error = Box<ErrorKind>;
-
-/// The kind of error that can be produced during a serialization or deserialization.
-#[derive(Debug)]
-pub enum ErrorKind {
-    /// If the error stems from the reader/writer that is being used
-    /// during (de)serialization, that error will be stored and returned here.
-    Io(io::Error),
-    /// Returned if the deserializer attempts to deserialize a string that is not valid utf8
-    InvalidUtf8Encoding(Utf8Error),
-    /// Returned if the deserializer attempts to deserialize a bool that was
-    /// not encoded as either a 1 or a 0
-    InvalidBoolEncoding(u8),
-    /// Returned if the deserializer attempts to deserialize a char that is not in the correct format.
-    InvalidCharEncoding,
-    /// Returned if the deserializer attempts to deserialize the tag of an enum that is
-    /// not in the expected ranges
-    InvalidTagEncoding(usize),
-    /// Serde has a deserialize_any method that lets the format hint to the
-    /// object which route to take in deserializing.
-    DeserializeAnyNotSupported,
-    /// If (de)serializing a message takes more than the provided size limit, this
-    /// error is returned.
-    SizeLimit,
-    /// Bincode can not encode sequences of unknown length (like iterators).
-    SequenceMustHaveLength,
-    /// A custom error message from Serde.
-    Custom(String),
-}
-
-impl StdError for ErrorKind {
-    fn description(&self) -> &str {
-        match *self {
-            ErrorKind::Io(ref err) => error::Error::description(err),
-            ErrorKind::InvalidUtf8Encoding(_) => "string is not valid utf8",
-            ErrorKind::InvalidBoolEncoding(_) => "invalid u8 while decoding bool",
-            ErrorKind::InvalidCharEncoding => "char is not valid",
-            ErrorKind::InvalidTagEncoding(_) => "tag for enum is not valid",
-            ErrorKind::SequenceMustHaveLength =>
-                "Bincode can only encode sequences and maps that have a knowable size ahead of time",
-            ErrorKind::DeserializeAnyNotSupported => {
-                "Bincode doesn't support serde::Deserializer::deserialize_any"
-            }
-            ErrorKind::SizeLimit => "the size limit has been reached",
-            ErrorKind::Custom(ref msg) => msg,
-
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match *self {
-            ErrorKind::Io(ref err) => Some(err),
-            ErrorKind::InvalidUtf8Encoding(_) => None,
-            ErrorKind::InvalidBoolEncoding(_) => None,
-            ErrorKind::InvalidCharEncoding => None,
-            ErrorKind::InvalidTagEncoding(_) => None,
-            ErrorKind::SequenceMustHaveLength => None,
-            ErrorKind::DeserializeAnyNotSupported => None,
-            ErrorKind::SizeLimit => None,
-            ErrorKind::Custom(_) => None,
-        }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        ErrorKind::Io(err).into()
-    }
-}
-
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ErrorKind::Io(ref ioerr) => write!(fmt, "io error: {}", ioerr),
-            ErrorKind::InvalidUtf8Encoding(ref e) => write!(fmt, "{}: {}", self.description(), e),
-            ErrorKind::InvalidBoolEncoding(b) => {
-                write!(fmt, "{}, expected 0 or 1, found {}", self.description(), b)
-            }
-            ErrorKind::InvalidCharEncoding => write!(fmt, "{}", self.description()),
-            ErrorKind::InvalidTagEncoding(tag) => {
-                write!(fmt, "{}, found {}", self.description(), tag)
-            }
-            ErrorKind::SequenceMustHaveLength => {
-                write!(fmt, "{}", self.description())
-            }
-            ErrorKind::SizeLimit => write!(fmt, "{}", self.description()),
-            ErrorKind::DeserializeAnyNotSupported => {
-                write!(
-                    fmt,
-                    "Bincode does not support the serde::Deserializer::deserialize_any method"
-                )
-            }
-            ErrorKind::Custom(ref s) => s.fmt(fmt),
-        }
-    }
-}
-
-impl serde::de::Error for Error {
-    fn custom<T: fmt::Display>(desc: T) -> Error {
-        ErrorKind::Custom(desc.to_string()).into()
-    }
-}
-
-impl serde::ser::Error for Error {
-    fn custom<T: fmt::Display>(msg: T) -> Self {
-        ErrorKind::Custom(msg.to_string()).into()
-    }
+struct CountSize {
+    total: u64,
+    limit: Option<u64>,
 }
 
 /// Serializes an object directly into a `Writer`.
@@ -138,20 +18,19 @@ impl serde::ser::Error for Error {
 /// If this returns an `Error` (other than SizeLimit), assume that the
 /// writer is in an invalid state, as writing could bail out in the middle of
 /// serializing.
-pub fn serialize_into<W, T: ?Sized, S, E>(writer: W, value: &T, size_limit: S) -> Result<()>
+pub(crate) fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T, mut options: O) -> Result<()>
 where
     W: Write,
     T: serde::Serialize,
-    S: SizeLimit,
-    E: ByteOrder,
+    O: Options,
 {
-    if let Some(limit) = size_limit.limit() {
+    if let Some(limit) = options.limit().limit() {
         try!(serialized_size_bounded(value, limit).ok_or(
             ErrorKind::SizeLimit,
         ));
     }
 
-    let mut serializer = Serializer::<_, E>::new(writer);
+    let mut serializer = ::ser::Serializer::<_, O>::new(writer, options);
     serde::Serialize::serialize(value, &mut serializer)
 }
 
@@ -159,13 +38,12 @@ where
 ///
 /// If the serialization would take more bytes than allowed by `size_limit`,
 /// an error is returned.
-pub fn serialize<T: ?Sized, S, E>(value: &T, size_limit: S) -> Result<Vec<u8>>
+pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
-    S: SizeLimit,
-    E: ByteOrder,
+    O: Options,
 {
-    let mut writer = match size_limit.limit() {
+    let mut writer = match options.limit().limit() {
         Some(size_limit) => {
             let actual_size = try!(serialized_size_bounded(value, size_limit).ok_or(
                 ErrorKind::SizeLimit,
@@ -178,15 +56,15 @@ where
         }
     };
 
-    try!(serialize_into::<_, _, _, E>(
+    try!(serialize_into::<_, _, O>(
         &mut writer,
         value,
-        super::Infinite,
+        options
     ));
     Ok(writer)
 }
 
-impl SizeLimit for CountSize {
+impl ::SizeLimit for CountSize {
     fn add(&mut self, c: u64) -> Result<()> {
         self.total += c;
         if let Some(limit) = self.limit {
@@ -202,16 +80,24 @@ impl SizeLimit for CountSize {
     }
 }
 
+pub(crate) fn serialized_size<T: ?Sized>(value: &T) -> u64 {
+    unimplemented!();
+}
+
+pub(crate) fn serialized_size_bounded<T: ?Sized>(value: &T, b: u64) -> Option<u64> {
+    unimplemented!();
+}
+/*
 /// Returns the size that an object would be if serialized using Bincode.
 ///
 /// This is used internally as part of the check for encode_into, but it can
 /// be useful for preallocating buffers if thats your style.
-pub fn serialized_size<T: ?Sized>(value: &T) -> u64
+pub(crate) fn serialized_size<T: ?Sized>(value: &T) -> u64
 where
     T: serde::Serialize,
 {
-    let mut size_counter = SizeChecker {
-        size_limit: CountSize {
+    let mut size_counter = ::ser::SizeChecker {
+        options: CountSize {
             total: 0,
             limit: None,
         },
@@ -226,11 +112,11 @@ where
 ///
 /// If it can be serialized in `max` or fewer bytes, that number will be returned
 /// inside `Some`.  If it goes over bounds, then None is returned.
-pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
+pub(crate) fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
 where
     T: serde::Serialize,
 {
-    let mut size_counter = SizeChecker {
+    let mut size_counter = ::ser::SizeChecker {
         size_limit: CountSize {
             total: 0,
             limit: Some(max),
@@ -242,6 +128,7 @@ where
         Err(_) => None,
     }
 }
+*/
 
 /// Deserializes an object directly from a `Read`er.
 ///
@@ -252,15 +139,14 @@ where
 /// If this returns an `Error`, assume that the buffer that you passed
 /// in is in an invalid state, as the error could be returned during any point
 /// in the reading.
-pub fn deserialize_from<R, T, S, E>(reader: R, size_limit: S) -> Result<T>
+pub(crate) fn deserialize_from<R, T, O>(reader: R, options: O) -> Result<T>
 where
     R: Read,
     T: serde::de::DeserializeOwned,
-    S: SizeLimit,
-    E: ByteOrder,
+    O: Options,
 {
     let reader = ::de::read::IoReader::new(reader);
-    let mut deserializer = Deserializer::<_, S, E>::new(reader, size_limit);
+    let mut deserializer = ::de::Deserializer::<_, O>::new(reader, options);
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
@@ -268,11 +154,12 @@ where
 ///
 /// This method does not have a size-limit because if you already have the bytes
 /// in memory, then you don't gain anything by having a limiter.
-pub fn deserialize<'a, T, E: ByteOrder>(bytes: &'a [u8]) -> Result<T>
+pub(crate) fn deserialize<'a, T, O>(bytes: &'a [u8], options: O) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
+    O: Options
 {
     let reader = ::de::read::SliceReader::new(bytes);
-    let mut deserializer = Deserializer::<_, _, E>::new(reader, super::Infinite);
+    let mut deserializer = ::de::Deserializer::<_, O>::new(reader, options);
     serde::Deserialize::deserialize(&mut deserializer)
 }
