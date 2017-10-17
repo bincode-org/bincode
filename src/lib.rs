@@ -39,6 +39,7 @@
 extern crate byteorder;
 extern crate serde as serde_crate;
 
+mod config;
 mod ser;
 mod de;
 pub mod internal;
