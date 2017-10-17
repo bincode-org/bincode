@@ -7,7 +7,7 @@ use byteorder::WriteBytesExt;
 
 use super::{Result, Error, ErrorKind};
 use ::config::Options;
-use super::SizeLimit;
+use super::internal::SizeLimit;
 
 /// An Serializer that encodes values directly into a Writer.
 ///

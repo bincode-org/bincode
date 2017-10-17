@@ -19,14 +19,12 @@
 //!
 //! ```rust
 //! extern crate bincode;
-//! use bincode::{serialize, deserialize, Bounded};
+//! use bincode::{serialize, deserialize};
 //! fn main() {
 //!     // The object that we will serialize.
 //!     let target = Some("hello world".to_string());
-//!     // The maximum size of the encoded message.
-//!     let limit = Bounded(20);
 //!
-//!     let encoded: Vec<u8>        = serialize(&target, limit).unwrap();
+//!     let encoded: Vec<u8>        = serialize(&target).unwrap();
 //!     let decoded: Option<String> = deserialize(&encoded[..]).unwrap();
 //!     assert_eq!(target, decoded);
 //! }
@@ -45,71 +43,86 @@ mod error;
 mod de;
 mod internal;
 
-pub use error::{Error, ErrorKind};
+pub use error::{Error, ErrorKind, Result};
 pub use config::Config;
-use error::Result;
 
-/// A limit on the amount of bytes that can be read or written.
-///
-/// Size limits are an incredibly important part of both encoding and decoding.
-///
-/// In order to prevent DOS attacks on a decoder, it is important to limit the
-/// amount of bytes that a single encoded message can be; otherwise, if you
-/// are decoding bytes right off of a TCP stream for example, it would be
-/// possible for an attacker to flood your server with a 3TB vec, causing the
-/// decoder to run out of memory and crash your application!
-/// Because of this, you can provide a maximum-number-of-bytes that can be read
-/// during decoding, and the decoder will explicitly fail if it has to read
-/// any more than that.
-///
-/// On the other side, you want to make sure that you aren't encoding a message
-/// that is larger than your decoder expects.  By supplying a size limit to an
-/// encoding function, the encoder will verify that the structure can be encoded
-/// within that limit.  This verification occurs before any bytes are written to
-/// the Writer, so recovering from an error is easy.
-pub(crate) trait SizeLimit {
-    /// Tells the SizeLimit that a certain number of bytes has been
-    /// read or written.  Returns Err if the limit has been exceeded.
-    fn add(&mut self, n: u64) -> Result<()>;
-    /// Returns the hard limit (if one exists)
-    fn limit(&self) -> Option<u64>;
+/// TODO: Document
+pub fn config() -> Config {
+    Config::new()
 }
 
-/// A SizeLimit that restricts serialized or deserialized messages from
-/// exceeding a certain byte length.
-#[derive(Copy, Clone)]
-pub struct Bounded(pub u64);
-
-/// A SizeLimit without a limit!
-/// Use this if you don't care about the size of encoded or decoded messages.
-#[derive(Copy, Clone)]
-pub struct Infinite;
-
-impl SizeLimit for Bounded {
-    #[inline(always)]
-    fn add(&mut self, n: u64) -> Result<()> {
-        if self.0 >= n {
-            self.0 -= n;
-            Ok(())
-        } else {
-            Err(Box::new(ErrorKind::SizeLimit))
-        }
-    }
-
-    #[inline(always)]
-    fn limit(&self) -> Option<u64> {
-        Some(self.0)
-    }
+/// Serializes an object directly into a `Writer` using the default configuration.
+///
+/// If the serialization would take more bytes than allowed by `size_limit`, an error
+/// is returned and *no bytes* will be written into the `Writer`.
+///
+/// If this returns an `Error` (other than SizeLimit), assume that the
+/// writer is in an invalid state, as writing could bail out in the middle of
+/// serializing.
+pub fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T) -> Result<()>
+where
+    W: std::io::Write,
+    T: serde::Serialize,
+{
+    config().serialize_into(writer, value)
 }
 
-impl SizeLimit for Infinite {
-    #[inline(always)]
-    fn add(&mut self, _: u64) -> Result<()> {
-        Ok(())
-    }
+/// Serializes a serializable object into a `Vec` of bytes using the default configuration.
+///
+/// If the serialization would take more bytes than allowed by `size_limit`,
+/// an error is returned.
+pub fn serialize<T: ?Sized>(value: &T) -> Result<Vec<u8>>
+where
+    T: serde::Serialize,
+{
+    config().serialize(value)
+}
 
-    #[inline(always)]
-    fn limit(&self) -> Option<u64> {
-        None
-    }
+/// Deserializes an object directly from a `Read`er using the default configuration.
+///
+/// If the provided `SizeLimit` is reached, the deserialization will bail immediately.
+/// A SizeLimit can help prevent an attacker from flooding your server with
+/// a neverending stream of values that runs your server out of memory.
+///
+/// If this returns an `Error`, assume that the buffer that you passed
+/// in is in an invalid state, as the error could be returned during any point
+/// in the reading.
+pub fn deserialize_from<R, T>(reader: R) -> Result<T>
+where
+    R: std::io::Read,
+    T: serde::de::DeserializeOwned,
+{
+    config().deserialize_from(reader)
+}
+
+/// Deserializes a slice of bytes into an object.
+///
+/// This method does not have a size-limit because if you already have the bytes
+/// in memory, then you don't gain anything by having a limiter.
+pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
+where
+    T: serde::de::Deserialize<'a>,
+{
+    config().deserialize(bytes)
+}
+
+/// Returns the size that an object would be if serialized using Bincode.
+///
+/// This is used internally as part of the check for encode_into, but it can
+/// be useful for preallocating buffers if thats your style.
+pub fn serialized_size<T: ?Sized>(value: &T) -> u64
+where T: serde::Serialize,
+{
+    config().serialized_size(value)
+}
+
+/// Given a maximum size limit, check how large an object would be if it
+/// were to be serialized.
+///
+/// If it can be serialized in `max` or fewer bytes, that number will be returned
+/// inside `Some`.  If it goes over bounds, then None is returned.
+pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
+where T: serde::Serialize,
+{
+    config().serialized_size_bounded(value, max)
 }

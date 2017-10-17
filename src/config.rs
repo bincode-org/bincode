@@ -1,8 +1,12 @@
-use super::{SizeLimit, Infinite, Bounded};
-use ::Result;
-use byteorder::{ByteOrder, BigEndian, LittleEndian, NativeEndian};
+use super::internal::{Bounded, Infinite, SizeLimit};
+use ::error::Result;
+use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use serde;
+use std::io::{Write, Read};
 use std::marker::PhantomData;
+
+use self::LimitOption::*;
+use self::EndianOption::*;
 
 struct DefaultOptions(Infinite);
 
@@ -10,41 +14,48 @@ pub(crate) trait Options {
     type Limit: SizeLimit + 'static;
     type Endian: ByteOrder + 'static;
 
+    #[inline(always)]
     fn limit(&mut self) -> &mut Self::Limit;
 }
 
-trait OptionsExt: Options + Sized {
+pub(crate) trait OptionsExt: Options + Sized {
+    #[inline(always)]
     fn with_no_limit(self) -> WithOtherLimit<Self, Infinite> {
         WithOtherLimit::new(self, Infinite)
     }
 
+    #[inline(always)]
     fn with_limit(self, limit: u64) -> WithOtherLimit<Self, Bounded> {
         WithOtherLimit::new(self, Bounded(limit))
     }
 
+    #[inline(always)]
     fn with_little_endian(self) -> WithOtherEndian<Self, LittleEndian> {
         WithOtherEndian::new(self)
     }
 
+    #[inline(always)]
     fn with_big_endian(self) -> WithOtherEndian<Self, BigEndian> {
         WithOtherEndian::new(self)
     }
 
+    #[inline(always)]
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
     }
 }
 
-impl <'a, O: Options> Options for &'a mut O {
+impl<'a, O: Options> Options for &'a mut O {
     type Limit = O::Limit;
     type Endian = O::Endian;
 
+    #[inline(always)]
     fn limit(&mut self) -> &mut Self::Limit {
         (*self).limit()
     }
 }
 
-impl <T: Options> OptionsExt for T {}
+impl<T: Options> OptionsExt for T {}
 
 impl DefaultOptions {
     fn new() -> DefaultOptions {
@@ -56,6 +67,7 @@ impl Options for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
 
+    #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
         &mut self.0
     }
@@ -64,14 +76,14 @@ impl Options for DefaultOptions {
 #[derive(Clone, Copy)]
 enum LimitOption {
     Unlimited,
-    Limited(u64)
+    Limited(u64),
 }
 
 #[derive(Clone, Copy)]
 enum EndianOption {
     Big,
     Little,
-    Native
+    Native,
 }
 
 /// TODO: document
@@ -82,7 +94,7 @@ pub struct Config {
 
 pub(crate) struct WithOtherLimit<O: Options, L: SizeLimit> {
     _options: O,
-    pub (crate) new_limit: L,
+    pub(crate) new_limit: L,
 }
 
 pub(crate) struct WithOtherEndian<O: Options, E: ByteOrder> {
@@ -91,34 +103,37 @@ pub(crate) struct WithOtherEndian<O: Options, E: ByteOrder> {
 }
 
 
-impl <O: Options, L: SizeLimit> WithOtherLimit<O, L> {
+impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
+    #[inline(always)]
     pub(crate) fn new(options: O, limit: L) -> WithOtherLimit<O, L> {
         WithOtherLimit {
             _options: options,
-            new_limit: limit
+            new_limit: limit,
         }
     }
 }
 
-impl <O: Options, E: ByteOrder> WithOtherEndian<O, E> {
+impl<O: Options, E: ByteOrder> WithOtherEndian<O, E> {
+    #[inline(always)]
     pub(crate) fn new(options: O) -> WithOtherEndian<O, E> {
         WithOtherEndian {
             options: options,
-            _endian: PhantomData
+            _endian: PhantomData,
         }
     }
 }
 
-impl <O: Options, E: ByteOrder + 'static> Options for WithOtherEndian<O, E> {
+impl<O: Options, E: ByteOrder + 'static> Options for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
 
+    #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
         self.options.limit()
     }
 }
 
-impl <O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
+impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     type Limit = L;
     type Endian = O::Endian;
 
@@ -128,7 +143,7 @@ impl <O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
 }
 
 macro_rules! config_map {
-    ($limit:expr, $endian:expr, $opts:ident => $call:tt) => {
+    ($limit:expr, $endian:expr, $opts:ident => $call:expr) => {
         match ($limit, $endian) {
             (Unlimited, Little) => {
                 let $opts = DefaultOptions::new().with_no_limit().with_little_endian();
@@ -160,7 +175,8 @@ macro_rules! config_map {
 }
 
 impl Config {
-    fn new() -> Config {
+    #[inline(always)]
+    pub(crate) fn new() -> Config {
         Config {
             limit: LimitOption::Unlimited,
             endian: EndianOption::Little,
@@ -168,77 +184,83 @@ impl Config {
     }
 
     /// TODO: Document
+    #[inline(always)]
     pub fn with_no_limit(self) -> Config {
         Config {
             limit: LimitOption::Unlimited,
-            .. self
+            ..self
         }
     }
 
     /// TODO: Document
+    #[inline(always)]
     pub fn with_limit(self, limit: u64) -> Config {
         Config {
             limit: LimitOption::Limited(limit),
-            .. self
+            ..self
         }
     }
 
     /// TODO: Document
+    #[inline(always)]
     pub fn with_little_endian(self) -> Config {
         Config {
             endian: EndianOption::Little,
-            .. self
+            ..self
         }
     }
 
     /// TODO: Document
+    #[inline(always)]
     pub fn with_big_endian(self) -> Config {
         Config {
             endian: EndianOption::Big,
-            .. self
+            ..self
         }
     }
 
     /// TODO: Document
+    #[inline(always)]
     pub fn with_native_endian(self) -> Config {
         Config {
             endian: EndianOption::Native,
-            .. self
+            ..self
         }
     }
 
     /// TODO: Document
+    #[inline(always)]
     pub fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
-        use self::LimitOption::*;
-        use self::EndianOption::*;
+        config_map!(self.limit, self.endian, opts => ::internal::serialize(t, opts))
+    }
 
-        match (self.limit, self.endian) {
-            (Unlimited, Little) => {
-                let opts = DefaultOptions::new().with_no_limit().with_little_endian();
-                ::internal::serialize(t, opts)
-            }
-            (Unlimited, Big) => {
-                let opts = DefaultOptions::new().with_no_limit().with_big_endian();
-                ::internal::serialize(t, opts)
-            }
-            (Unlimited, Native) => {
-                let opts = DefaultOptions::new().with_no_limit().with_native_endian();
-                ::internal::serialize(t, opts)
-            }
+    /// TODO: Document
+    #[inline(always)]
+    pub fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> u64 {
+        config_map!(self.limit, self.endian, opts => ::internal::serialized_size(t, opts))
+    }
 
-            (Limited(l), Little) => {
-                let opts = DefaultOptions::new().with_limit(l).with_little_endian();
-                ::internal::serialize(t, opts)
-            }
-            (Limited(l), Big) => {
-                let opts = DefaultOptions::new().with_limit(l).with_big_endian();
-                ::internal::serialize(t, opts)
-            }
-            (Limited(l), Native) => {
-                let opts = DefaultOptions::new().with_limit(l).with_native_endian();
-                ::internal::serialize(t, opts)
-            }
-        }
+    /// TODO: Document
+    #[inline(always)]
+    pub fn serialized_size_bounded<T: ?Sized + serde::Serialize>(&self, t: &T, bound: u64) -> Option<u64> {
+        config_map!(self.limit, self.endian, opts => ::internal::serialized_size_bounded(t, bound, opts))
+    }
 
+    /// TODO: Document
+    #[inline(always)]
+    pub fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(&self, w: W, t: &T) -> Result<()> {
+        config_map!(self.limit, self.endian, opts => ::internal::serialize_into(w, t, opts))
+    }
+
+    /// TODO: Document
+    #[inline(always)]
+    pub fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
+        config_map!(self.limit, self.endian, opts => ::internal::deserialize(bytes, opts))
+    }
+
+    /// TODO: Document
+    #[inline(always)]
+    pub fn deserialize_from<'a, R: Read, T: serde::de::DeserializeOwned>(&self, r: R) -> Result<T> {
+        config_map!(self.limit, self.endian, opts => ::internal::deserialize_from(r, opts))
     }
 }

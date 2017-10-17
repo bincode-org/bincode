@@ -5,9 +5,8 @@ use serde;
 use byteorder::ReadBytesExt;
 use serde::de::IntoDeserializer;
 use serde::de::Error as DeError;
-use SizeLimit;
-use super::{Error, ErrorKind};
-use super::error::Result;
+use ::{Error, ErrorKind, Result};
+use ::internal::SizeLimit;
 use self::read::BincodeRead;
 
 pub mod read;
