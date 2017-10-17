@@ -1,7 +1,10 @@
 use super::{SizeLimit, Infinite, Bounded};
+use ::Result;
 use byteorder::{ByteOrder, BigEndian, LittleEndian, NativeEndian};
 use serde;
 use std::marker::PhantomData;
+
+struct DefaultOptions(Infinite);
 
 pub(crate) trait Options {
     type Limit: SizeLimit + 'static;
@@ -10,25 +13,71 @@ pub(crate) trait Options {
     fn limit(&mut self) -> &mut Self::Limit;
 }
 
+trait OptionsExt: Options + Sized {
+    fn with_no_limit(self) -> WithOtherLimit<Self, Infinite> {
+        WithOtherLimit::new(self, Infinite)
+    }
+
+    fn with_limit(self, limit: u64) -> WithOtherLimit<Self, Bounded> {
+        WithOtherLimit::new(self, Bounded(limit))
+    }
+
+    fn with_little_endian(self) -> WithOtherEndian<Self, LittleEndian> {
+        WithOtherEndian::new(self)
+    }
+
+    fn with_big_endian(self) -> WithOtherEndian<Self, BigEndian> {
+        WithOtherEndian::new(self)
+    }
+
+    fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
+        WithOtherEndian::new(self)
+    }
+}
+
 impl <'a, O: Options> Options for &'a mut O {
     type Limit = O::Limit;
     type Endian = O::Endian;
 
     fn limit(&mut self) -> &mut Self::Limit {
-        self.limit()
+        (*self).limit()
     }
 }
 
-pub trait Config {
-    fn with_no_limit(self: Box<Self>) -> Box<Config>;
-    fn with_limit(self: Box<Self>, u64) -> Box<Config>;
-    fn with_little_endian(self: Box<Self>) -> Box<Config>;
-    fn with_big_endian(self: Box<Self>) -> Box<Config>;
-    fn with_native_endian(self: Box<Self>) -> Box<Config>;
+impl <T: Options> OptionsExt for T {}
+
+impl DefaultOptions {
+    fn new() -> DefaultOptions {
+        DefaultOptions(Infinite)
+    }
 }
 
-struct DefaultOptions {
-    infinite: Infinite
+impl Options for DefaultOptions {
+    type Limit = Infinite;
+    type Endian = LittleEndian;
+
+    fn limit(&mut self) -> &mut Infinite {
+        &mut self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+enum LimitOption {
+    Unlimited,
+    Limited(u64)
+}
+
+#[derive(Clone, Copy)]
+enum EndianOption {
+    Big,
+    Little,
+    Native
+}
+
+/// TODO: document
+pub struct Config {
+    limit: LimitOption,
+    endian: EndianOption,
 }
 
 pub(crate) struct WithOtherLimit<O: Options, L: SizeLimit> {
@@ -41,37 +90,6 @@ pub(crate) struct WithOtherEndian<O: Options, E: ByteOrder> {
     _endian: PhantomData<E>,
 }
 
-// This is a "shallow" config impl.  This matters when boxing.
-pub(crate) struct ConfigImpl<L: SizeLimit + 'static, E: ByteOrder + 'static> {
-    limit: L,
-    _e: PhantomData<E>,
- }
-
-impl Options for DefaultOptions {
-    type Limit = Infinite;
-    type Endian = LittleEndian;
-
-    fn limit(&mut self) -> &mut Self::Limit {
-        &mut self.infinite
-    }
-}
-
-impl <L: SizeLimit + 'static, E: ByteOrder + 'static> Options for ConfigImpl<L, E> {
-    type Limit = L;
-    type Endian = E;
-
-    fn limit(&mut self) -> &mut Self::Limit {
-        &mut self.limit
-    }
-}
-impl <L: SizeLimit, E: ByteOrder> ConfigImpl<L, E> {
-    fn new(limit: L) -> ConfigImpl<L, E> {
-        ConfigImpl {
-            limit: limit,
-            _e: PhantomData,
-        }
-    }
-}
 
 impl <O: Options, L: SizeLimit> WithOtherLimit<O, L> {
     pub(crate) fn new(options: O, limit: L) -> WithOtherLimit<O, L> {
@@ -109,88 +127,118 @@ impl <O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     }
 }
 
-impl Config for DefaultOptions {
-    fn with_no_limit(self: Box<Self>) -> Box<Config> {
-        Box::new(WithOtherLimit::new(*self, Infinite))
-    }
-    fn with_limit(self: Box<Self>, limit: u64) -> Box<Config> {
-        Box::new(WithOtherLimit::new(*self, Bounded(limit)))
-    }
-    fn with_little_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, LittleEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-    fn with_big_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, BigEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-    fn with_native_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, NativeEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
+macro_rules! config_map {
+    ($limit:expr, $endian:expr, $opts:ident => $call:tt) => {
+        match ($limit, $endian) {
+            (Unlimited, Little) => {
+                let $opts = DefaultOptions::new().with_no_limit().with_little_endian();
+                $call
+            }
+            (Unlimited, Big) => {
+                let $opts = DefaultOptions::new().with_no_limit().with_big_endian();
+                $call
+            }
+            (Unlimited, Native) => {
+                let $opts = DefaultOptions::new().with_no_limit().with_native_endian();
+                $call
+            }
+
+            (Limited(l), Little) => {
+                let $opts = DefaultOptions::new().with_limit(l).with_little_endian();
+                $call
+            }
+            (Limited(l), Big) => {
+                let $opts = DefaultOptions::new().with_limit(l).with_big_endian();
+                $call
+            }
+            (Limited(l), Native) => {
+                let $opts = DefaultOptions::new().with_limit(l).with_native_endian();
+                $call
+            }
+        }
     }
 }
 
-impl <O: Options + 'static, L: SizeLimit + 'static> Config for WithOtherLimit<O, L>{
-    fn with_no_limit(self: Box<Self>) -> Box<Config> {
-        Box::new(WithOtherLimit::new(*self, Infinite))
+impl Config {
+    fn new() -> Config {
+        Config {
+            limit: LimitOption::Unlimited,
+            endian: EndianOption::Little,
+        }
     }
-    fn with_limit(self: Box<Self>, limit: u64) -> Box<Config> {
-        Box::new(WithOtherLimit::new(*self, Bounded(limit)))
-    }
-    fn with_little_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, LittleEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-    fn with_big_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, BigEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-    fn with_native_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, NativeEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-}
 
-impl <O: Options + 'static, E: ByteOrder + 'static> Config for WithOtherEndian<O, E>{
-    fn with_no_limit(self: Box<Self>) -> Box<Config> {
-        Box::new(WithOtherLimit::new(*self, Infinite))
+    /// TODO: Document
+    pub fn with_no_limit(self) -> Config {
+        Config {
+            limit: LimitOption::Unlimited,
+            .. self
+        }
     }
-    fn with_limit(self: Box<Self>, limit: u64) -> Box<Config> {
-        Box::new(WithOtherLimit::new(*self, Bounded(limit)))
-    }
-    fn with_little_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, LittleEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-    fn with_big_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, BigEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-    fn with_native_endian(self: Box<Self>) -> Box<Config> {
-        let r: WithOtherEndian<_, NativeEndian> = WithOtherEndian::new(*self);
-        Box::new(r)
-    }
-}
 
-impl <L: SizeLimit + 'static, E: ByteOrder + 'static> Config for ConfigImpl<L, E>{
-    fn with_no_limit(self: Box<Self>) -> Box<Config> {
-        let r: ConfigImpl<Infinite, E> = ConfigImpl::new(Infinite);
-        Box::new(r)
+    /// TODO: Document
+    pub fn with_limit(self, limit: u64) -> Config {
+        Config {
+            limit: LimitOption::Limited(limit),
+            .. self
+        }
     }
-    fn with_limit(self: Box<Self>, limit: u64) -> Box<Config> {
-        let r: ConfigImpl<Bounded, E> = ConfigImpl::new(Bounded(limit));
-        Box::new(r)
+
+    /// TODO: Document
+    pub fn with_little_endian(self) -> Config {
+        Config {
+            endian: EndianOption::Little,
+            .. self
+        }
     }
-    fn with_little_endian(self: Box<Self>) -> Box<Config> {
-        let r: ConfigImpl<L, LittleEndian> = ConfigImpl::new(self.limit);
-        Box::new(r)
+
+    /// TODO: Document
+    pub fn with_big_endian(self) -> Config {
+        Config {
+            endian: EndianOption::Big,
+            .. self
+        }
     }
-    fn with_big_endian(self: Box<Self>) -> Box<Config> {
-        let r: ConfigImpl<L, BigEndian> = ConfigImpl::new(self.limit);
-        Box::new(r)
+
+    /// TODO: Document
+    pub fn with_native_endian(self) -> Config {
+        Config {
+            endian: EndianOption::Native,
+            .. self
+        }
     }
-    fn with_native_endian(self: Box<Self>) -> Box<Config> {
-        let r: ConfigImpl<L, NativeEndian> = ConfigImpl::new(self.limit);
-        Box::new(r)
+
+    /// TODO: Document
+    pub fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
+        use self::LimitOption::*;
+        use self::EndianOption::*;
+
+        match (self.limit, self.endian) {
+            (Unlimited, Little) => {
+                let opts = DefaultOptions::new().with_no_limit().with_little_endian();
+                ::internal::serialize(t, opts)
+            }
+            (Unlimited, Big) => {
+                let opts = DefaultOptions::new().with_no_limit().with_big_endian();
+                ::internal::serialize(t, opts)
+            }
+            (Unlimited, Native) => {
+                let opts = DefaultOptions::new().with_no_limit().with_native_endian();
+                ::internal::serialize(t, opts)
+            }
+
+            (Limited(l), Little) => {
+                let opts = DefaultOptions::new().with_limit(l).with_little_endian();
+                ::internal::serialize(t, opts)
+            }
+            (Limited(l), Big) => {
+                let opts = DefaultOptions::new().with_limit(l).with_big_endian();
+                ::internal::serialize(t, opts)
+            }
+            (Limited(l), Native) => {
+                let opts = DefaultOptions::new().with_limit(l).with_native_endian();
+                ::internal::serialize(t, opts)
+            }
+        }
+
     }
 }

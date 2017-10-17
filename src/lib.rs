@@ -46,6 +46,7 @@ mod de;
 mod internal;
 
 pub use error::{Error, ErrorKind};
+pub use config::Config;
 use error::Result;
 
 /// A limit on the amount of bytes that can be read or written.
