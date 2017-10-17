@@ -2,7 +2,7 @@ use std::io::{Write, Read};
 use serde;
 
 use ::config::Options;
-use ::{ErrorKind, Result};
+use ::{ErrorKind, Result, Infinite};
 use ::SizeLimit;
 
 struct CountSize {
@@ -25,7 +25,7 @@ where
     O: Options,
 {
     if let Some(limit) = options.limit().limit() {
-        try!(serialized_size_bounded(value, limit).ok_or(
+        try!(serialized_size_bounded(value, limit, &mut options).ok_or(
             ErrorKind::SizeLimit,
         ));
     }
@@ -45,22 +45,19 @@ where
 {
     let mut writer = match options.limit().limit() {
         Some(size_limit) => {
-            let actual_size = try!(serialized_size_bounded(value, size_limit).ok_or(
+            let actual_size = try!(serialized_size_bounded(value, size_limit, &mut options).ok_or(
                 ErrorKind::SizeLimit,
             ));
             Vec::with_capacity(actual_size as usize)
         }
         None => {
-            let size = serialized_size(value) as usize;
+            let size = serialized_size(value, &mut options) as usize;
             Vec::with_capacity(size)
         }
     };
 
-    try!(serialize_into::<_, _, O>(
-        &mut writer,
-        value,
-        options
-    ));
+    let options = ::config::WithOtherLimit::new(&mut options, Infinite);
+    serialize_into( &mut writer, value, options)?;
     Ok(writer)
 }
 
@@ -80,31 +77,23 @@ impl ::SizeLimit for CountSize {
     }
 }
 
-pub(crate) fn serialized_size<T: ?Sized>(value: &T) -> u64 {
-    unimplemented!();
-}
-
-pub(crate) fn serialized_size_bounded<T: ?Sized>(value: &T, b: u64) -> Option<u64> {
-    unimplemented!();
-}
-/*
 /// Returns the size that an object would be if serialized using Bincode.
 ///
 /// This is used internally as part of the check for encode_into, but it can
 /// be useful for preallocating buffers if thats your style.
-pub(crate) fn serialized_size<T: ?Sized>(value: &T) -> u64
+pub(crate) fn serialized_size<T: ?Sized, O: Options>(value: &T, options: O) -> u64
 where
     T: serde::Serialize,
 {
     let mut size_counter = ::ser::SizeChecker {
-        options: CountSize {
+        options: ::config::WithOtherLimit::new(options, CountSize {
             total: 0,
             limit: None,
-        },
+        }),
     };
 
     value.serialize(&mut size_counter).ok();
-    size_counter.size_limit.total
+    size_counter.options.new_limit.total
 }
 
 /// Given a maximum size limit, check how large an object would be if it
@@ -112,23 +101,22 @@ where
 ///
 /// If it can be serialized in `max` or fewer bytes, that number will be returned
 /// inside `Some`.  If it goes over bounds, then None is returned.
-pub(crate) fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
+pub(crate) fn serialized_size_bounded<T: ?Sized, O: Options>(value: &T, max: u64, options: O) -> Option<u64>
 where
     T: serde::Serialize,
 {
     let mut size_counter = ::ser::SizeChecker {
-        size_limit: CountSize {
+        options: ::config::WithOtherLimit::new(options, CountSize {
             total: 0,
             limit: Some(max),
-        },
+        }),
     };
 
     match value.serialize(&mut size_counter) {
-        Ok(_) => Some(size_counter.size_limit.total),
+        Ok(_) => Some(size_counter.options.new_limit.total),
         Err(_) => None,
     }
 }
-*/
 
 /// Deserializes an object directly from a `Read`er.
 ///
@@ -160,6 +148,7 @@ where
     O: Options
 {
     let reader = ::de::read::SliceReader::new(bytes);
-    let mut deserializer = ::de::Deserializer::<_, O>::new(reader, options);
+    let options = ::config::WithOtherLimit::new(options, Infinite);
+    let mut deserializer = ::de::Deserializer::new(reader, options);
     serde::Deserialize::deserialize(&mut deserializer)
 }
