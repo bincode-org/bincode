@@ -35,10 +35,10 @@ where
     }
 
     {
-        let encoded = config().with_big_endian().serialize(&element).unwrap();
-        let decoded = config().with_big_endian().deserialize(&encoded[..]).unwrap();
+        let encoded = config().big_endian().serialize(&element).unwrap();
+        let decoded = config().big_endian().deserialize(&encoded[..]).unwrap();
         let decoded_reader =
-            config().with_big_endian().deserialize_from(&mut &encoded[..]).unwrap();
+            config().big_endian().deserialize_from(&mut &encoded[..]).unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(element, decoded_reader);
@@ -246,12 +246,12 @@ fn deserializing_errors() {
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
     let deserialized: Result<u32> =
-        config().with_limit(3).deserialize_from(&mut &serialized[..]);
+        config().limit(3).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_err());
 
     let serialized = vec![0, 0, 0, 3];
     let deserialized: Result<u32> =
-        config().with_limit(4).deserialize_from(&mut &serialized[..]);
+        config().limit(4).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
 }
 
@@ -259,7 +259,7 @@ fn too_big_deserialize() {
 fn char_serialization() {
     let chars = "Aa\0☺♪";
     for c in chars.chars() {
-        let encoded = config().with_limit(4).serialize(&c).expect("serializing char failed");
+        let encoded = config().limit(4).serialize(&c).expect("serializing char failed");
         let decoded: char = deserialize(&encoded).expect("deserializing failed");
         assert_eq!(decoded, c);
     }
@@ -269,18 +269,18 @@ fn char_serialization() {
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
     let deserialized: Result<char> =
-        config().with_limit(1).deserialize_from(&mut &serialized[..]);
+        config().limit(1).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
 
 #[test]
 fn too_big_serialize() {
-    assert!(config().with_limit(3).serialize(&0u32).is_err());
-    assert!(config().with_limit(4).serialize(&0u32).is_ok());
+    assert!(config().limit(3).serialize(&0u32).is_err());
+    assert!(config().limit(4).serialize(&0u32).is_ok());
 
-    assert!(config().with_limit(8 + 4).serialize(&"abcde").is_err());
-    assert!(config().with_limit(8 + 5).serialize(&"abcde").is_ok());
+    assert!(config().limit(8 + 4).serialize(&"abcde").is_err());
+    assert!(config().limit(8 + 5).serialize(&"abcde").is_ok());
 }
 
 #[test]
@@ -380,13 +380,13 @@ fn test_oom_protection() {
         len: u64,
         byte: u8,
     }
-    let x = config().with_limit(10).serialize(
+    let x = config().limit(10).serialize(
         &FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
         }
     ).unwrap();
-    let y: Result<Vec<u8>> = config().with_limit(10).deserialize_from(&mut Cursor::new(&x[..]));
+    let y: Result<Vec<u8>> = config().limit(10).deserialize_from(&mut Cursor::new(&x[..]));
     assert!(y.is_err());
 }
 
@@ -420,7 +420,7 @@ fn serde_bytes() {
 fn endian_difference() {
     let x = 10u64;
     let little = serialize(&x).unwrap();
-    let big = config().with_big_endian().serialize(&x).unwrap();
+    let big = config().big_endian().serialize(&x).unwrap();
     assert_ne!(little, big);
 }
 

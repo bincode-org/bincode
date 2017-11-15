@@ -19,27 +19,22 @@ pub(crate) trait Options {
 }
 
 pub(crate) trait OptionsExt: Options + Sized {
-    #[inline(always)]
     fn with_no_limit(self) -> WithOtherLimit<Self, Infinite> {
         WithOtherLimit::new(self, Infinite)
     }
 
-    #[inline(always)]
     fn with_limit(self, limit: u64) -> WithOtherLimit<Self, Bounded> {
         WithOtherLimit::new(self, Bounded(limit))
     }
 
-    #[inline(always)]
     fn with_little_endian(self) -> WithOtherEndian<Self, LittleEndian> {
         WithOtherEndian::new(self)
     }
 
-    #[inline(always)]
     fn with_big_endian(self) -> WithOtherEndian<Self, BigEndian> {
         WithOtherEndian::new(self)
     }
 
-    #[inline(always)]
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
     }
@@ -185,47 +180,37 @@ impl Config {
 
     /// TODO: Document
     #[inline(always)]
-    pub fn with_no_limit(self) -> Config {
-        Config {
-            limit: LimitOption::Unlimited,
-            ..self
-        }
+    pub fn no_limit(&mut self) -> &mut Self {
+        self.limit = LimitOption::Unlimited;
+        self
     }
 
     /// TODO: Document
     #[inline(always)]
-    pub fn with_limit(self, limit: u64) -> Config {
-        Config {
-            limit: LimitOption::Limited(limit),
-            ..self
-        }
+    pub fn limit(&mut self, limit: u64) -> &mut Self {
+        self.limit = LimitOption::Limited(limit);
+        self
     }
 
     /// TODO: Document
     #[inline(always)]
-    pub fn with_little_endian(self) -> Config {
-        Config {
-            endian: EndianOption::Little,
-            ..self
-        }
+    pub fn little_endian(&mut self) -> &mut Self {
+        self.endian= EndianOption::Little;
+        self
     }
 
     /// TODO: Document
     #[inline(always)]
-    pub fn with_big_endian(self) -> Config {
-        Config {
-            endian: EndianOption::Big,
-            ..self
-        }
+    pub fn big_endian(&mut self) -> &mut Self {
+        self.endian= EndianOption::Big;
+        self
     }
 
     /// TODO: Document
     #[inline(always)]
-    pub fn with_native_endian(self) -> Config {
-        Config {
-            endian: EndianOption::Native,
-            ..self
-        }
+    pub fn native_endian(&mut self) -> &mut Self {
+        self.endian = EndianOption::Native;
+        self
     }
 
     /// TODO: Document
