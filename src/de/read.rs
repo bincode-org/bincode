@@ -5,15 +5,12 @@ use serde;
 /// A byte-oriented reading trait that is specialized for
 /// slices and generic readers.
 pub(crate) trait BincodeRead<'storage>: io::Read {
-    #[doc(hidden)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
 
-    #[doc(hidden)]
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>>;
 
-    #[doc(hidden)]
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
@@ -48,9 +45,11 @@ impl<R> IoReader<R> {
 }
 
 impl<'storage> io::Read for SliceReader<'storage> {
+    #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         (&mut self.slice).read(out)
     }
+    #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
         (&mut self.slice).read_exact(out)
     }
@@ -66,6 +65,7 @@ impl<R: io::Read> io::Read for IoReader<R> {
 }
 
 impl<'storage> SliceReader<'storage> {
+    #[inline(always)]
     fn unexpected_eof() -> Box<::ErrorKind> {
         return Box::new(::ErrorKind::Io(
             io::Error::new(io::ErrorKind::UnexpectedEof, ""),
@@ -74,6 +74,7 @@ impl<'storage> SliceReader<'storage> {
 }
 
 impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
+    #[inline(always)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>,
@@ -92,6 +93,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         r
     }
 
+    #[inline(always)]
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
         if length > self.slice.len() {
             return Err(SliceReader::unexpected_eof());
@@ -102,6 +104,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         Ok(r.to_vec())
     }
 
+    #[inline(always)]
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>,

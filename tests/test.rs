@@ -2,29 +2,21 @@
 extern crate serde_derive;
 
 extern crate bincode;
+extern crate byteorder;
 extern crate serde;
 extern crate serde_bytes;
-extern crate byteorder;
 
 use std::fmt::Debug;
 use std::collections::HashMap;
 use std::borrow::Cow;
 
-use bincode::{
-    serialize,
-    deserialize,
-    deserialize_from,
-    config,
-    serialized_size,
-    ErrorKind,
-    Result,
-};
+use bincode::{config, deserialize, deserialize_from, serialize, serialized_size, ErrorKind, Result};
 
 fn the_same<V>(element: V)
 where
     V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
 {
-    let size = serialized_size(&element);
+    let size = serialized_size(&element).unwrap();
 
     {
         let encoded = serialize(&element).unwrap();
@@ -37,8 +29,10 @@ where
     {
         let encoded = config().big_endian().serialize(&element).unwrap();
         let decoded = config().big_endian().deserialize(&encoded[..]).unwrap();
-        let decoded_reader =
-            config().big_endian().deserialize_from(&mut &encoded[..]).unwrap();
+        let decoded_reader = config()
+            .big_endian()
+            .deserialize_from(&mut &encoded[..])
+            .unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(element, decoded_reader);
@@ -214,7 +208,6 @@ fn test_fixed_size_array() {
 
 #[test]
 fn deserializing_errors() {
-
     match *deserialize::<bool>(&vec![0xA][..]).unwrap_err() {
         ErrorKind::InvalidBoolEncoding(0xA) => {}
         _ => panic!(),
@@ -245,13 +238,11 @@ fn deserializing_errors() {
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> =
-        config().limit(3).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<u32> = config().limit(3).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_err());
 
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> =
-        config().limit(4).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<u32> = config().limit(4).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
 }
 
@@ -259,7 +250,10 @@ fn too_big_deserialize() {
 fn char_serialization() {
     let chars = "Aa\0☺♪";
     for c in chars.chars() {
-        let encoded = config().limit(4).serialize(&c).expect("serializing char failed");
+        let encoded = config()
+            .limit(4)
+            .serialize(&c)
+            .expect("serializing char failed");
         let decoded: char = deserialize(&encoded).expect("deserializing failed");
         assert_eq!(decoded, c);
     }
@@ -268,8 +262,7 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char> =
-        config().limit(1).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<char> = config().limit(1).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
@@ -285,16 +278,44 @@ fn too_big_serialize() {
 
 #[test]
 fn test_serialized_size() {
-    assert!(serialized_size(&0u8) == 1);
-    assert!(serialized_size(&0u16) == 2);
-    assert!(serialized_size(&0u32) == 4);
-    assert!(serialized_size(&0u64) == 8);
+    assert!(serialized_size(&0u8).unwrap() == 1);
+    assert!(serialized_size(&0u16).unwrap() == 2);
+    assert!(serialized_size(&0u32).unwrap() == 4);
+    assert!(serialized_size(&0u64).unwrap() == 8);
 
     // length isize stored as u64
-    assert!(serialized_size(&"") == 8);
-    assert!(serialized_size(&"a") == 8 + 1);
+    assert!(serialized_size(&"").unwrap() == 8);
+    assert!(serialized_size(&"a").unwrap() == 8 + 1);
 
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
+    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == 8 + 3 * (4));
+}
+
+#[test]
+fn test_serialized_size_bounded() {
+    // JUST RIGHT
+    assert!(config().limit(1).serialized_size(&0u8).unwrap() == 1);
+    assert!(config().limit(2).serialized_size(&0u16).unwrap() == 2);
+    assert!(config().limit(4).serialized_size(&0u32).unwrap() == 4);
+    assert!(config().limit(8).serialized_size(&0u64).unwrap() == 8);
+    assert!(config().limit(8).serialized_size(&"").unwrap() == 8);
+    assert!(config().limit(8 + 1).serialized_size(&"a").unwrap() == 8 + 1);
+    assert!(
+        config()
+            .limit(8 + 3 * 4)
+            .serialized_size(&vec![0u32, 1u32, 2u32])
+            .unwrap() == 8 + 3 * 4
+    );
+    // Below
+    assert!(config().limit(0).serialized_size(&0u8).is_err());
+    assert!(config().limit(1).serialized_size(&0u16).is_err());
+    assert!(config().limit(3).serialized_size(&0u32).is_err());
+    assert!(config().limit(7).serialized_size(&0u64).is_err());
+    assert!(config().limit(7).serialized_size(&"").is_err());
+    assert!(config().limit(8 + 0).serialized_size(&"a").is_err());
+    assert!(
+        config()
+            .limit(8 + 3 * 4 - 1)
+            .serialized_size(&vec![0u32, 1u32, 2u32]).is_err());
 }
 
 #[test]
@@ -317,10 +338,8 @@ fn test_cow_serialize() {
 
     // Test 1
     {
-        let serialized =
-            serialize(&Message::M1(Cow::Borrowed(&large_object))).unwrap();
-        let deserialized: Message<'static> =
-            deserialize_from(&mut &serialized[..]).unwrap();
+        let serialized = serialize(&Message::M1(Cow::Borrowed(&large_object))).unwrap();
+        let deserialized: Message<'static> = deserialize_from(&mut &serialized[..]).unwrap();
 
         match deserialized {
             Message::M1(b) => assert!(&b.into_owned() == &large_object),
@@ -330,10 +349,8 @@ fn test_cow_serialize() {
 
     // Test 2
     {
-        let serialized =
-            serialize(&Message::M2(Cow::Borrowed(&large_map))).unwrap();
-        let deserialized: Message<'static> =
-            deserialize_from(&mut &serialized[..]).unwrap();
+        let serialized = serialize(&Message::M2(Cow::Borrowed(&large_map))).unwrap();
+        let deserialized: Message<'static> = deserialize_from(&mut &serialized[..]).unwrap();
 
         match deserialized {
             Message::M2(b) => assert!(&b.into_owned() == &large_map),
@@ -346,8 +363,7 @@ fn test_cow_serialize() {
 fn test_strbox_serialize() {
     let strx: &'static str = "hello world";
     let serialized = serialize(&Cow::Borrowed(strx)).unwrap();
-    let deserialized: Cow<'static, String> =
-        deserialize_from(&mut &serialized[..]).unwrap();
+    let deserialized: Cow<'static, String> = deserialize_from(&mut &serialized[..]).unwrap();
     let stringx: String = deserialized.into_owned();
     assert!(strx == &stringx[..]);
 }
@@ -357,8 +373,7 @@ fn test_slicebox_serialize() {
     let slice = [1u32, 2, 3, 4, 5];
     let serialized = serialize(&Cow::Borrowed(&slice[..])).unwrap();
     println!("{:?}", serialized);
-    let deserialized: Cow<'static, Vec<u32>> =
-        deserialize_from(&mut &serialized[..]).unwrap();
+    let deserialized: Cow<'static, Vec<u32>> = deserialize_from(&mut &serialized[..]).unwrap();
     {
         let sb: &[u32] = &deserialized;
         assert!(slice == sb);
@@ -380,13 +395,16 @@ fn test_oom_protection() {
         len: u64,
         byte: u8,
     }
-    let x = config().limit(10).serialize(
-        &FakeVec {
+    let x = config()
+        .limit(10)
+        .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
-        }
-    ).unwrap();
-    let y: Result<Vec<u8>> = config().limit(10).deserialize_from(&mut Cursor::new(&x[..]));
+        })
+        .unwrap();
+    let y: Result<Vec<u8>> = config()
+        .limit(10)
+        .deserialize_from(&mut Cursor::new(&x[..]));
     assert!(y.is_err());
 }
 

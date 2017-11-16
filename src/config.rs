@@ -221,14 +221,8 @@ impl Config {
 
     /// TODO: Document
     #[inline(always)]
-    pub fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> u64 {
+    pub fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
         config_map!(self.limit, self.endian, opts => ::internal::serialized_size(t, opts))
-    }
-
-    /// TODO: Document
-    #[inline(always)]
-    pub fn serialized_size_bounded<T: ?Sized + serde::Serialize>(&self, t: &T, bound: u64) -> Option<u64> {
-        config_map!(self.limit, self.endian, opts => ::internal::serialized_size_bounded(t, bound, opts))
     }
 
     /// TODO: Document

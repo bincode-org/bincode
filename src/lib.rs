@@ -110,19 +110,9 @@ where
 ///
 /// This is used internally as part of the check for encode_into, but it can
 /// be useful for preallocating buffers if thats your style.
-pub fn serialized_size<T: ?Sized>(value: &T) -> u64
-where T: serde::Serialize,
+pub fn serialized_size<T: ?Sized>(value: &T) -> Result<u64>
+where
+    T: serde::Serialize,
 {
     config().serialized_size(value)
-}
-
-/// Given a maximum size limit, check how large an object would be if it
-/// were to be serialized.
-///
-/// If it can be serialized in `max` or fewer bytes, that number will be returned
-/// inside `Some`.  If it goes over bounds, then None is returned.
-pub fn serialized_size_bounded<T: ?Sized>(value: &T, max: u64) -> Option<u64>
-where T: serde::Serialize,
-{
-    config().serialized_size_bounded(value, max)
 }
