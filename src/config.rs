@@ -14,7 +14,6 @@ pub(crate) trait Options {
     type Limit: SizeLimit + 'static;
     type Endian: ByteOrder + 'static;
 
-    #[inline(always)]
     fn limit(&mut self) -> &mut Self::Limit;
 }
 
