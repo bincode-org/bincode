@@ -457,3 +457,12 @@ fn test_zero_copy_parse() {
         assert_eq!(out, f);
     }
 }
+
+#[test]
+fn not_human_readable() {
+    use std::net::Ipv4Addr;
+    let ip = Ipv4Addr::new(1, 2, 3, 4);
+    the_same(ip);
+    assert_eq!(&ip.octets()[..], &serialize_little(&ip, Infinite).unwrap()[..]);
+    assert_eq!(::std::mem::size_of::<Ipv4Addr>() as u64, serialized_size(&ip));
+}
