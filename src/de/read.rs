@@ -134,12 +134,13 @@ where
         let current_length = self.temp_buffer.len();
         if length > current_length {
             self.temp_buffer.reserve_exact(length - current_length);
-            unsafe {
-                self.temp_buffer.set_len(length);
-            }
         }
 
-        self.reader.read_exact(&mut self.temp_buffer[..length])?;
+        unsafe {
+            self.temp_buffer.set_len(length);
+        }
+
+        self.reader.read_exact(&mut self.temp_buffer)?;
         Ok(())
     }
 }
@@ -154,7 +155,7 @@ where
     {
         self.fill_buffer(length)?;
 
-        let string = match ::std::str::from_utf8(&self.temp_buffer[..length]) {
+        let string = match ::std::str::from_utf8(&self.temp_buffer[..]) {
             Ok(s) => s,
             Err(e) => return Err(::ErrorKind::InvalidUtf8Encoding(e).into()),
         };
@@ -165,7 +166,7 @@ where
 
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
         self.fill_buffer(length)?;
-        Ok(self.temp_buffer[..length].to_vec())
+        Ok(::std::mem::replace(&mut self.temp_buffer, Vec::new()))
     }
 
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
@@ -173,7 +174,7 @@ where
         V: serde::de::Visitor<'static>,
     {
         self.fill_buffer(length)?;
-        let r = visitor.visit_bytes(&self.temp_buffer[..length]);
+        let r = visitor.visit_bytes(&self.temp_buffer[..]);
         r
     }
 }

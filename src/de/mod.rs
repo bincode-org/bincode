@@ -402,6 +402,10 @@ where
         let message = "Bincode does not support Deserializer::deserialize_ignored_any";
         Err(Error::custom(message))
     }
+
+    fn is_human_readable(&self) -> bool {
+        false
+    }
 }
 
 impl<'de, 'a, R, O> serde::de::VariantAccess<'de> for &'a mut Deserializer<R, O>
