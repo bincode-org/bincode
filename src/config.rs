@@ -150,8 +150,8 @@ impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
 }
 
 macro_rules! config_map {
-    ($limit:expr, $endian:expr, $opts:ident => $call:expr) => {
-        match ($limit, $endian) {
+    ($self:expr, $opts:ident => $call:expr) => {
+        match ($self.limit, $self.endian) {
             (Unlimited, Little) => {
                 let $opts = DefaultOptions::new().with_no_limit().with_little_endian();
                 $call
@@ -230,13 +230,13 @@ impl Config {
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
     pub fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
-        config_map!(self.limit, self.endian, opts => ::internal::serialize(t, opts))
+        config_map!(self, opts => ::internal::serialize(t, opts))
     }
 
     /// Returns the size that an object would be if serialized using Bincode with this configuration
     #[inline(always)]
     pub fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
-        config_map!(self.limit, self.endian, opts => ::internal::serialized_size(t, opts))
+        config_map!(self, opts => ::internal::serialized_size(t, opts))
     }
 
     /// Serializes an object directly into a `Writer` using this configuration
@@ -245,13 +245,13 @@ impl Config {
     /// is returned and *no bytes* will be written into the `Writer`
     #[inline(always)]
     pub fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(&self, w: W, t: &T) -> Result<()> {
-        config_map!(self.limit, self.endian, opts => ::internal::serialize_into(w, t, opts))
+        config_map!(self, opts => ::internal::serialize_into(w, t, opts))
     }
 
     /// Deserializes a slice of bytes into an instance of `T` using this configuration
     #[inline(always)]
     pub fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
-        config_map!(self.limit, self.endian, opts => ::internal::deserialize(bytes, opts))
+        config_map!(self, opts => ::internal::deserialize(bytes, opts))
     }
 
     /// Deserializes an object directly from a `Read`er using this configuration
@@ -259,7 +259,7 @@ impl Config {
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     pub fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
-        config_map!(self.limit, self.endian, opts => ::internal::deserialize_from(reader, opts))
+        config_map!(self, opts => ::internal::deserialize_from(reader, opts))
     }
 
     /// Deserializes an object from a custom `BincodeRead`er using this configuration
@@ -267,6 +267,6 @@ impl Config {
     /// If this returns an `Error`, `reader` may be in an invalid state
     #[inline(always)]
     pub fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
-        config_map!(self.limit, self.endian, opts => ::internal::deserialize_from_custom(reader, opts))
+        config_map!(self, opts => ::internal::deserialize_from_custom(reader, opts))
     }
 }
