@@ -1,19 +1,9 @@
 #![deny(missing_docs)]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
-//! serialization strategy.
-//!
-//! There are simple functions for encoding to `Vec<u8>` and decoding from
-//! `&[u8]`, but the meat of the library is the `serialize_into` and `deserialize_from`
-//! functions which respectively allow encoding into any `std::io::Write`
-//! or decode from any `std::io::Read`.
-//!
-//! ## Modules
-//! Until "default type parameters" lands, we have an extra module called `endian_choice`
-//! that duplicates all of the core Bincode functionality but with the option to choose
-//! which endianness the integers are encoded using.
-//!
-//! The default endianness is little.
+//! serialization strategy.  Using it, you can easily go from having
+//! an object in memory, quickly serialize it to bytes, and then
+//! deserialize it back just as fast!
 //!
 //! ### Using Basic Functions
 //!
@@ -22,7 +12,7 @@
 //! use bincode::{serialize, deserialize};
 //! fn main() {
 //!     // The object that we will serialize.
-//!     let target: Option<String> = Some("hello world".to_string());
+//!     let target: Option<String>  = Some("hello world".to_string());
 //!
 //!     let encoded: Vec<u8>        = serialize(&target).unwrap();
 //!     let decoded: Option<String> = deserialize(&encoded[..]).unwrap();
@@ -47,8 +37,9 @@ pub use error::{Error, ErrorKind, Result};
 pub use config::Config;
 pub use de::read::BincodeRead;
 
-/// The default bincode configuration.
+/// Get a default configuration object.
 ///
+/// ### Default Configuration:
 /// Byte limit: Unlimited
 /// Endianness: Little
 pub fn config() -> Config {
@@ -87,6 +78,8 @@ where
 }
 
 /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
+/// It is highly recommended to use `deserialize_from` unless you need to implement
+/// `BincodeRead` for performance reasons.
 ///
 /// If this returns an `Error`, `reader` may be in an invalid state.
 pub fn deserialize_from_custom<'a, R, T>(reader: R) -> Result<T>

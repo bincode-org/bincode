@@ -262,9 +262,11 @@ impl Config {
         config_map!(self, opts => ::internal::deserialize_from(reader, opts))
     }
 
-    /// Deserializes an object from a custom `BincodeRead`er using this configuration
-    ///
-    /// If this returns an `Error`, `reader` may be in an invalid state
+    /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
+    /// It is highly recommended to use `deserialize_from` unless you need to implement
+    /// `BincodeRead` for performance reasons.
+    /// 
+    /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     pub fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
         config_map!(self, opts => ::internal::deserialize_from_custom(reader, opts))
