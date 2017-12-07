@@ -2,15 +2,20 @@ use std::io;
 use error::Result;
 use serde;
 
-/// A byte-oriented reading trait that is specialized for
-/// slices and generic readers.
-pub(crate) trait BincodeRead<'storage>: io::Read {
+/// An optional Read trait for advanced Bincode usage.
+///
+/// It is highly recommended to use bincode with `io::Read` or `&[u8]` before
+/// implementing a custom `BincodeRead`.
+pub trait BincodeRead<'storage>: io::Read {
+    /// Forwards reading `length` bytes of a string on to the serde reader.
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
 
+    /// Return the first `length` bytes of the internal byte buffer.
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>>;
 
+    /// Forwards reading `length` bytes on to the serde reader.
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
@@ -56,9 +61,11 @@ impl<'storage> io::Read for SliceReader<'storage> {
 }
 
 impl<R: io::Read> io::Read for IoReader<R> {
+    #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         self.reader.read(out)
     }
+    #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
         self.reader.read_exact(out)
     }

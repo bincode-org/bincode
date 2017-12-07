@@ -2,6 +2,7 @@ use std::io::{Read, Write};
 use serde;
 
 use config::{Options, OptionsExt};
+use de::read::BincodeRead;
 use {ErrorKind, Result};
 
 #[derive(Clone)]
@@ -10,14 +11,6 @@ struct CountSize<L: SizeLimit> {
     other_limit: L,
 }
 
-/// Serializes an object directly into a `Writer`.
-///
-/// If the serialization would take more bytes than allowed by `size_limit`, an error
-/// is returned and *no bytes* will be written into the `Writer`.
-///
-/// If this returns an `Error` (other than SizeLimit), assume that the
-/// writer is in an invalid state, as writing could bail out in the middle of
-/// serializing.
 pub(crate) fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T, mut options: O) -> Result<()>
 where
     W: Write,
@@ -34,10 +27,6 @@ where
     serde::Serialize::serialize(value, &mut serializer)
 }
 
-/// Serializes a serializable object into a `Vec` of bytes.
-///
-/// If the serialization would take more bytes than allowed by `size_limit`,
-/// an error is returned.
 pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
@@ -64,10 +53,6 @@ impl<L: SizeLimit> SizeLimit for CountSize<L> {
     }
 }
 
-/// Returns the size that an object would be if serialized using Bincode.
-///
-/// This is used internally as part of the check for encode_into, but it can
-/// be useful for preallocating buffers if thats your style.
 pub(crate) fn serialized_size<T: ?Sized, O: Options>(value: &T, mut options: O) -> Result<u64>
 where
     T: serde::Serialize,
@@ -87,15 +72,6 @@ where
     result.map(|_| size_counter.options.new_limit.total)
 }
 
-/// Deserializes an object directly from a `Read`er.
-///
-/// If the provided `SizeLimit` is reached, the deserialization will bail immediately.
-/// A SizeLimit can help prevent an attacker from flooding your server with
-/// a neverending stream of values that runs your server out of memory.
-///
-/// If this returns an `Error`, assume that the buffer that you passed
-/// in is in an invalid state, as the error could be returned during any point
-/// in the reading.
 pub(crate) fn deserialize_from<R, T, O>(reader: R, options: O) -> Result<T>
 where
     R: Read,
@@ -107,10 +83,16 @@ where
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
-/// Deserializes a slice of bytes into an object.
-///
-/// This method does not have a size-limit because if you already have the bytes
-/// in memory, then you don't gain anything by having a limiter.
+pub(crate) fn deserialize_from_custom<'a, R, T, O>(reader: R, options: O) -> Result<T>
+where
+    R: BincodeRead<'a>,
+    T: serde::de::DeserializeOwned,
+    O: Options,
+{
+    let mut deserializer = ::de::Deserializer::<_, O>::new(reader, options);
+    serde::Deserialize::deserialize(&mut deserializer)
+}
+
 pub(crate) fn deserialize<'a, T, O>(bytes: &'a [u8], options: O) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
@@ -123,24 +105,6 @@ where
 }
 
 
-/// A limit on the amount of bytes that can be read or written.
-///
-/// Size limits are an incredibly important part of both encoding and decoding.
-///
-/// In order to prevent DOS attacks on a decoder, it is important to limit the
-/// amount of bytes that a single encoded message can be; otherwise, if you
-/// are decoding bytes right off of a TCP stream for example, it would be
-/// possible for an attacker to flood your server with a 3TB vec, causing the
-/// decoder to run out of memory and crash your application!
-/// Because of this, you can provide a maximum-number-of-bytes that can be read
-/// during decoding, and the decoder will explicitly fail if it has to read
-/// any more than that.
-///
-/// On the other side, you want to make sure that you aren't encoding a message
-/// that is larger than your decoder expects.  By supplying a size limit to an
-/// encoding function, the encoder will verify that the structure can be encoded
-/// within that limit.  This verification occurs before any bytes are written to
-/// the Writer, so recovering from an error is easy.
 pub(crate) trait SizeLimit: Clone {
     /// Tells the SizeLimit that a certain number of bytes has been
     /// read or written.  Returns Err if the limit has been exceeded.

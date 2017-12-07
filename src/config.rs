@@ -4,6 +4,7 @@ use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use serde;
 use std::io::{Write, Read};
 use std::marker::PhantomData;
+use de::read::BincodeRead;
 
 use self::LimitOption::*;
 use self::EndianOption::*;
@@ -80,7 +81,19 @@ enum EndianOption {
     Native,
 }
 
-/// TODO: document
+/// A configuration builder whose options Bincode will use
+/// while serializing and deserializing.
+///
+/// ### Options
+/// Endianness: The endianness with which multi-byte integers will be read/written.  *default: little endian*
+/// Limit: The maximum number of bytes that will be read/written in a bincode serialize/deserialize. *default: unlimited*
+///
+/// ### Byte Limit Details
+/// The purpose of byte-limiting is to prevent Denial-Of-Service attacks whereby malicious attackers get bincode
+/// deserialization to crash your process by allocating too much memory or keeping a connection open for too long.
+///
+/// When a byte limit is set, bincode will return `Err` on any deserialization that goes over the limit, or any
+/// serialization that goes over the limit.
 pub struct Config {
     limit: LimitOption,
     endian: EndianOption,
@@ -177,68 +190,83 @@ impl Config {
         }
     }
 
-    /// TODO: Document
+    /// Sets the byte limit to be unlimited.
+    /// This is the default.
     #[inline(always)]
     pub fn no_limit(&mut self) -> &mut Self {
         self.limit = LimitOption::Unlimited;
         self
     }
 
-    /// TODO: Document
+    /// Sets the byte limit to `limit`.
     #[inline(always)]
     pub fn limit(&mut self, limit: u64) -> &mut Self {
         self.limit = LimitOption::Limited(limit);
         self
     }
 
-    /// TODO: Document
+    /// Sets the endianness to little-endian
+    /// This is the default.
     #[inline(always)]
     pub fn little_endian(&mut self) -> &mut Self {
-        self.endian= EndianOption::Little;
+        self.endian = EndianOption::Little;
         self
     }
 
-    /// TODO: Document
+    /// Sets the endianness to big-endian
     #[inline(always)]
     pub fn big_endian(&mut self) -> &mut Self {
         self.endian= EndianOption::Big;
         self
     }
 
-    /// TODO: Document
+    /// Sets the endianness to the the machine-native endianness
     #[inline(always)]
     pub fn native_endian(&mut self) -> &mut Self {
         self.endian = EndianOption::Native;
         self
     }
 
-    /// TODO: Document
+    /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
     pub fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
         config_map!(self.limit, self.endian, opts => ::internal::serialize(t, opts))
     }
 
-    /// TODO: Document
+    /// Returns the size that an object would be if serialized using Bincode with this configuration
     #[inline(always)]
     pub fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
         config_map!(self.limit, self.endian, opts => ::internal::serialized_size(t, opts))
     }
 
-    /// TODO: Document
+    /// Serializes an object directly into a `Writer` using this configuration
+    ///
+    /// If the serialization would take more bytes than allowed by the size limit, an error
+    /// is returned and *no bytes* will be written into the `Writer`
     #[inline(always)]
     pub fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(&self, w: W, t: &T) -> Result<()> {
         config_map!(self.limit, self.endian, opts => ::internal::serialize_into(w, t, opts))
     }
 
-    /// TODO: Document
+    /// Deserializes a slice of bytes into an instance of `T` using this configuration
     #[inline(always)]
     pub fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
         config_map!(self.limit, self.endian, opts => ::internal::deserialize(bytes, opts))
     }
 
-    /// TODO: Document
+    /// Deserializes an object directly from a `Read`er using this configuration
+    ///
+    /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
-    pub fn deserialize_from<'a, R: Read, T: serde::de::DeserializeOwned>(&self, r: R) -> Result<T> {
-        config_map!(self.limit, self.endian, opts => ::internal::deserialize_from(r, opts))
+    pub fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
+        config_map!(self.limit, self.endian, opts => ::internal::deserialize_from(reader, opts))
+    }
+
+    /// Deserializes an object from a custom `BincodeRead`er using this configuration
+    ///
+    /// If this returns an `Error`, `reader` may be in an invalid state
+    #[inline(always)]
+    pub fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
+        config_map!(self.limit, self.endian, opts => ::internal::deserialize_from_custom(reader, opts))
     }
 }
