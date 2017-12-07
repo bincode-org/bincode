@@ -37,6 +37,28 @@ pub use error::{Error, ErrorKind, Result};
 pub use config::Config;
 pub use de::read::BincodeRead;
 
+/// An object that implements this trait can be passed a
+/// serde::Deserializer without knowing its concrete type.
+///
+/// This trait should be used only for `with_deserializer` functions.
+pub trait DeserializerAcceptor<'a> {
+    /// The return type for the accept method
+    type Output;
+    /// Accept a serde::Deserializer and do whatever you want with it.
+    fn accept<T: serde::Deserializer<'a>>(self, T) -> Self::Output;
+}
+
+/// An object that implements this trait can be passed a
+/// serde::Serializer without knowing its concrete type.
+///
+/// This trait should be used only for `with_serializer` functions.
+pub trait SerializerAcceptor {
+    /// The return type for the accept method
+    type Output;
+    /// Accept a serde::Serializer and do whatever you want with it.
+    fn accept<T: serde::Serializer>(self, T) -> Self::Output;
+}
+
 /// Get a default configuration object.
 ///
 /// ### Default Configuration:
@@ -104,4 +126,20 @@ where
     T: serde::Serialize,
 {
     config().serialized_size(value)
+}
+
+/// Executes the acceptor with a serde::Deserializer instance.
+pub fn with_deserializer<'a, A,  R>(reader: R, acceptor: A) -> A::Output
+where A: DeserializerAcceptor<'a>,
+        R: BincodeRead<'a>
+{
+    config().with_deserializer(reader, acceptor)
+}
+
+/// Executes the acceptor with a serde::Serializer instance.
+pub fn with_serializer<A, W>(writer: W, acceptor: A) -> A::Output
+where A: SerializerAcceptor,
+    W: std::io::Write
+{
+    config().with_serializer(writer, acceptor)
 }

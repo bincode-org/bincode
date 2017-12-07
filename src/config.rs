@@ -1,6 +1,7 @@
 use super::internal::{Bounded, Infinite, SizeLimit};
 use ::error::Result;
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
+use {DeserializerAcceptor, SerializerAcceptor};
 use serde;
 use std::io::{Write, Read};
 use std::marker::PhantomData;
@@ -265,10 +266,32 @@ impl Config {
     /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
     /// It is highly recommended to use `deserialize_from` unless you need to implement
     /// `BincodeRead` for performance reasons.
-    /// 
+    ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     pub fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
         config_map!(self, opts => ::internal::deserialize_from_custom(reader, opts))
+    }
+
+    /// Executes the acceptor with a serde::Deserializer instance.
+    pub fn with_deserializer<'a, A,  R>(&self, reader: R, acceptor: A) -> A::Output
+    where A: DeserializerAcceptor<'a>,
+          R: BincodeRead<'a>
+    {
+        config_map!(self, opts => {
+            let mut deserializer = ::de::Deserializer::new(reader, opts);
+            acceptor.accept(&mut deserializer)
+        })
+    }
+
+    /// Executes the acceptor with a serde::Serializer instance.
+    pub fn with_serializer<A, W>(&self, writer: W, acceptor: A) -> A::Output
+    where A: SerializerAcceptor,
+        W: Write
+    {
+        config_map!(self, opts => {
+            let mut serializer = ::ser::Serializer::new(writer, opts);
+            acceptor.accept(&mut serializer)
+        })
     }
 }
