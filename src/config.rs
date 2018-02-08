@@ -258,7 +258,11 @@ impl Config {
     /// TODO: document
     #[doc(hidden)]
     #[inline(always)]
-    pub fn deserialize_in_place<'a, T: serde::de::Deserialize<'a>>(&self, reader: &'a [u8], place: &mut T) -> Result<()> {
+    pub fn deserialize_in_place<'a, R, T: >(&self, reader: R, place: &mut T) -> Result<()>
+    where
+        R: BincodeRead<'a>,
+        T: serde::de::Deserialize<'a>
+    {
         config_map!(self, opts => ::internal::deserialize_in_place(reader, opts, place))
     }
 

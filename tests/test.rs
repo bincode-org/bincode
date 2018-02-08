@@ -466,6 +466,80 @@ fn test_zero_copy_parse() {
 
 #[test]
 fn test_zero_copy_parse_deserialize_into() {
+    use bincode::BincodeRead;
+    use std::io;
+
+    /// A BincodeRead implementation for byte slices
+    pub struct SliceReader<'storage> {
+        slice: &'storage [u8],
+    }
+
+    impl<'storage> SliceReader<'storage> {
+        #[inline(always)]
+        fn unexpected_eof() -> Box<::ErrorKind> {
+            return Box::new(::ErrorKind::Io(
+                io::Error::new(io::ErrorKind::UnexpectedEof, ""),
+            ));
+        }
+    }
+
+    impl<'storage> io::Read for SliceReader<'storage> {
+        #[inline(always)]
+        fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
+            (&mut self.slice).read(out)
+        }
+        #[inline(always)]
+        fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
+            (&mut self.slice).read_exact(out)
+        }
+    }
+
+    impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
+        #[inline(always)]
+        fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+        where
+            V: serde::de::Visitor<'storage>,
+        {
+            use ErrorKind;
+            if length > self.slice.len() {
+                return Err(SliceReader::unexpected_eof());
+            }
+
+            let string = match ::std::str::from_utf8(&self.slice[..length]) {
+                Ok(s) => s,
+                Err(e) => return Err(ErrorKind::InvalidUtf8Encoding(e).into()),
+            };
+            let r = visitor.visit_borrowed_str(string);
+            self.slice = &self.slice[length..];
+            r
+        }
+
+        #[inline(always)]
+        fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+            if length > self.slice.len() {
+                return Err(SliceReader::unexpected_eof());
+            }
+
+            let r = &self.slice[..length];
+            self.slice = &self.slice[length..];
+            Ok(r.to_vec())
+        }
+
+        #[inline(always)]
+        fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+        where
+            V: serde::de::Visitor<'storage>,
+        {
+            if length > self.slice.len() {
+                return Err(SliceReader::unexpected_eof());
+            }
+
+            let r = visitor.visit_borrowed_bytes(&self.slice[..length]);
+            self.slice = &self.slice[length..];
+            r
+        }
+    }
+
     #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
     struct Foo<'a> {
         borrowed_str: &'a str,
@@ -483,7 +557,12 @@ fn test_zero_copy_parse_deserialize_into() {
             borrowed_str: "hello",
             borrowed_bytes: &[10, 11, 12, 13],
         };
-        deserialize_in_place(&encoded[..], &mut target).unwrap();
+        deserialize_in_place(
+            SliceReader {
+                slice: &encoded[..],
+            },
+            &mut target,
+        ).unwrap();
         assert_eq!(target, f);
     }
 }

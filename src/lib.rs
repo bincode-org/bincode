@@ -114,11 +114,12 @@ where
 
 /// TODO: document
 #[doc(hidden)]
-pub fn deserialize_in_place<'a, T>(bytes: &'a[u8], place: &mut T) -> Result<()>
+pub fn deserialize_in_place<'a, R, T>(reader: R, place: &mut T) -> Result<()>
 where
     T: serde::de::Deserialize<'a>,
+    R: BincodeRead<'a>
 {
-    config().deserialize_in_place(bytes, place)
+    config().deserialize_in_place(reader, place)
 }
 
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
