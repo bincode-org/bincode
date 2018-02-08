@@ -22,11 +22,15 @@ pub trait BincodeRead<'storage>: io::Read {
 }
 
 /// A BincodeRead implementation for byte slices
+/// NOT A PART OF THE STABLE PUBLIC API
+#[doc(hidden)]
 pub struct SliceReader<'storage> {
     slice: &'storage [u8],
 }
 
 /// A BincodeRead implementation for io::Readers
+/// NOT A PART OF THE STABLE PUBLIC API
+#[doc(hidden)]
 pub struct IoReader<R> {
     reader: R,
     temp_buffer: Vec<u8>,

@@ -35,7 +35,7 @@ mod internal;
 
 pub use error::{Error, ErrorKind, Result};
 pub use config::Config;
-pub use de::read::BincodeRead;
+pub use de::read::{BincodeRead, IoReader, SliceReader};
 
 /// An object that implements this trait can be passed a
 /// serde::Deserializer without knowing its concrete type.
