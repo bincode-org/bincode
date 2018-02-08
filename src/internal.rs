@@ -93,6 +93,21 @@ where
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
+pub(crate) fn deserialize_in_place<'a, T, O>(
+    bytes: &'a [u8],
+    options: O,
+    place: &mut T,
+) -> Result<()>
+where
+    T: serde::de::Deserialize<'a>,
+    O: Options,
+{
+    let reader = ::de::read::SliceReader::new(bytes);
+    let options = ::config::WithOtherLimit::new(options, Infinite);
+    let mut deserializer = ::de::Deserializer::<_, _>::new(reader, options);
+    serde::Deserialize::deserialize_in_place(&mut deserializer, place)
+}
+
 pub(crate) fn deserialize<'a, T, O>(bytes: &'a [u8], options: O) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,

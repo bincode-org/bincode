@@ -112,6 +112,15 @@ where
     config().deserialize_from_custom(reader)
 }
 
+/// TODO: document
+#[doc(hidden)]
+pub fn deserialize_in_place<'a, T>(bytes: &'a[u8], place: &mut T) -> Result<()>
+where
+    T: serde::de::Deserialize<'a>,
+{
+    config().deserialize_in_place(bytes, place)
+}
+
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
 pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
 where

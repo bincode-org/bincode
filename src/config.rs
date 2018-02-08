@@ -255,6 +255,13 @@ impl Config {
         config_map!(self, opts => ::internal::deserialize(bytes, opts))
     }
 
+    /// TODO: document
+    #[doc(hidden)]
+    #[inline(always)]
+    pub fn deserialize_in_place<'a, T: serde::de::Deserialize<'a>>(&self, reader: &'a [u8], place: &mut T) -> Result<()> {
+        config_map!(self, opts => ::internal::deserialize_in_place(reader, opts, place))
+    }
+
     /// Deserializes an object directly from a `Read`er using this configuration
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.

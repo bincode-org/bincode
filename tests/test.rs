@@ -10,7 +10,8 @@ use std::fmt::Debug;
 use std::collections::HashMap;
 use std::borrow::Cow;
 
-use bincode::{config, deserialize, deserialize_from, serialize, serialized_size, ErrorKind, Result};
+use bincode::{config, deserialize, deserialize_from, deserialize_in_place, serialize,
+              serialized_size, ErrorKind, Result};
 
 fn the_same<V>(element: V)
 where
@@ -315,7 +316,9 @@ fn test_serialized_size_bounded() {
     assert!(
         config()
             .limit(8 + 3 * 4 - 1)
-            .serialized_size(&vec![0u32, 1u32, 2u32]).is_err());
+            .serialized_size(&vec![0u32, 1u32, 2u32])
+            .is_err()
+    );
 }
 
 #[test]
@@ -462,10 +465,37 @@ fn test_zero_copy_parse() {
 }
 
 #[test]
+fn test_zero_copy_parse_deserialize_into() {
+    #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+    struct Foo<'a> {
+        borrowed_str: &'a str,
+        borrowed_bytes: &'a [u8],
+    }
+
+    let f = Foo {
+        borrowed_str: "hi",
+        borrowed_bytes: &[0, 1, 2, 3],
+    };
+
+    {
+        let encoded = serialize(&f).unwrap();
+        let mut target = Foo {
+            borrowed_str: "hello",
+            borrowed_bytes: &[10, 11, 12, 13],
+        };
+        deserialize_in_place(&encoded[..], &mut target).unwrap();
+        assert_eq!(target, f);
+    }
+}
+
+#[test]
 fn not_human_readable() {
     use std::net::Ipv4Addr;
     let ip = Ipv4Addr::new(1, 2, 3, 4);
     the_same(ip);
     assert_eq!(&ip.octets()[..], &serialize(&ip).unwrap()[..]);
-    assert_eq!(::std::mem::size_of::<Ipv4Addr>() as u64, serialized_size(&ip).unwrap());
+    assert_eq!(
+        ::std::mem::size_of::<Ipv4Addr>() as u64,
+        serialized_size(&ip).unwrap()
+    );
 }
