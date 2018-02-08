@@ -74,7 +74,7 @@ pub fn config() -> Config {
 ///
 /// If the serialization would take more bytes than allowed by the size limit, an error
 /// is returned and *no bytes* will be written into the `Writer`.
-pub fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T) -> Result<()>
+pub fn serialize_into<W, T: ?Sized>(writer: W, value: &T) -> Result<()>
 where
     W: std::io::Write,
     T: serde::Serialize,
