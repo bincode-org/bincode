@@ -1,19 +1,21 @@
 use std::io;
-use Result;
-use serde_crate as serde;
+use error::Result;
+use serde;
 
-/// A byte-oriented reading trait that is specialized for
-/// slices and generic readers.
-pub trait BincodeRead<'storage>: io::Read + ::private::Sealed {
-    #[doc(hidden)]
+/// An optional Read trait for advanced Bincode usage.
+///
+/// It is highly recommended to use bincode with `io::Read` or `&[u8]` before
+/// implementing a custom `BincodeRead`.
+pub trait BincodeRead<'storage>: io::Read {
+    /// Forwards reading `length` bytes of a string on to the serde reader.
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
 
-    #[doc(hidden)]
+    /// Return the first `length` bytes of the internal byte buffer.
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>>;
 
-    #[doc(hidden)]
+    /// Forwards reading `length` bytes on to the serde reader.
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
@@ -48,24 +50,29 @@ impl<R> IoReader<R> {
 }
 
 impl<'storage> io::Read for SliceReader<'storage> {
+    #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         (&mut self.slice).read(out)
     }
+    #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
         (&mut self.slice).read_exact(out)
     }
 }
 
 impl<R: io::Read> io::Read for IoReader<R> {
+    #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         self.reader.read(out)
     }
+    #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
         self.reader.read_exact(out)
     }
 }
 
 impl<'storage> SliceReader<'storage> {
+    #[inline(always)]
     fn unexpected_eof() -> Box<::ErrorKind> {
         return Box::new(::ErrorKind::Io(
             io::Error::new(io::ErrorKind::UnexpectedEof, ""),
@@ -74,6 +81,7 @@ impl<'storage> SliceReader<'storage> {
 }
 
 impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
+    #[inline(always)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>,
@@ -92,6 +100,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         r
     }
 
+    #[inline(always)]
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
         if length > self.slice.len() {
             return Err(SliceReader::unexpected_eof());
@@ -102,6 +111,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         Ok(r.to_vec())
     }
 
+    #[inline(always)]
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>,

@@ -2,48 +2,43 @@
 extern crate serde_derive;
 
 extern crate bincode;
+extern crate byteorder;
 extern crate serde;
 extern crate serde_bytes;
-extern crate byteorder;
 
 use std::fmt::Debug;
 use std::collections::HashMap;
 use std::borrow::Cow;
 
-use bincode::{Bounded, Infinite};
-use bincode::{serialized_size, ErrorKind, Result};
-use bincode::internal::{deserialize, deserialize_from, serialize};
-
-use bincode::serialize as serialize_little;
-use bincode::deserialize as deserialize_little;
-use bincode::deserialize_from as deserialize_from_little;
+use bincode::{config, deserialize, deserialize_from, serialize, serialized_size, ErrorKind, Result};
 
 fn the_same<V>(element: V)
 where
     V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
 {
-    let size = serialized_size(&element);
+    let size = serialized_size(&element).unwrap();
 
     {
-        let encoded = serialize_little(&element, Infinite).unwrap();
-        let decoded = deserialize_little(&encoded[..]).unwrap();
+        let encoded = serialize(&element).unwrap();
+        let decoded = deserialize(&encoded[..]).unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(size, encoded.len() as u64);
     }
 
     {
-        let encoded = serialize::<_, _, byteorder::BigEndian>(&element, Infinite).unwrap();
-        let decoded = deserialize::<_, byteorder::BigEndian>(&encoded[..]).unwrap();
-        let decoded_reader =
-            deserialize_from::<_, _, _, byteorder::BigEndian>(&mut &encoded[..], Infinite).unwrap();
+        let encoded = config().big_endian().serialize(&element).unwrap();
+        let decoded = config().big_endian().deserialize(&encoded[..]).unwrap();
+        let decoded_reader = config()
+            .big_endian()
+            .deserialize_from(&mut &encoded[..])
+            .unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(element, decoded_reader);
         assert_eq!(size, encoded.len() as u64);
     }
 }
-
 #[test]
 fn test_numbers() {
     // unsigned positive
@@ -213,12 +208,11 @@ fn test_fixed_size_array() {
 
 #[test]
 fn deserializing_errors() {
-
-    match *deserialize_little::<bool>(&vec![0xA][..]).unwrap_err() {
+    match *deserialize::<bool>(&vec![0xA][..]).unwrap_err() {
         ErrorKind::InvalidBoolEncoding(0xA) => {}
         _ => panic!(),
     }
-    match *deserialize_little::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]).unwrap_err() {
+    match *deserialize::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]).unwrap_err() {
         ErrorKind::InvalidUtf8Encoding(_) => {}
         _ => panic!(),
     }
@@ -230,12 +224,12 @@ fn deserializing_errors() {
         Two,
     };
 
-    match *deserialize_little::<Test>(&vec![0, 0, 0, 5][..]).unwrap_err() {
+    match *deserialize::<Test>(&vec![0, 0, 0, 5][..]).unwrap_err() {
         // Error message comes from serde
         ErrorKind::Custom(_) => {}
         _ => panic!(),
     }
-    match *deserialize_little::<Option<u8>>(&vec![5, 0][..]).unwrap_err() {
+    match *deserialize::<Option<u8>>(&vec![5, 0][..]).unwrap_err() {
         ErrorKind::InvalidTagEncoding(_) => {}
         _ => panic!(),
     }
@@ -244,13 +238,11 @@ fn deserializing_errors() {
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> =
-        deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(3));
+    let deserialized: Result<u32> = config().limit(3).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_err());
 
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> =
-        deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(4));
+    let deserialized: Result<u32> = config().limit(4).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
 }
 
@@ -258,8 +250,11 @@ fn too_big_deserialize() {
 fn char_serialization() {
     let chars = "Aa\0☺♪";
     for c in chars.chars() {
-        let encoded = serialize_little(&c, Bounded(4)).expect("serializing char failed");
-        let decoded: char = deserialize_little(&encoded).expect("deserializing failed");
+        let encoded = config()
+            .limit(4)
+            .serialize(&c)
+            .expect("serializing char failed");
+        let decoded: char = deserialize(&encoded).expect("deserializing failed");
         assert_eq!(decoded, c);
     }
 }
@@ -267,48 +262,60 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char> =
-        deserialize_from_little::<_, _, _>(&mut &serialized[..], Bounded(1));
+    let deserialized: Result<char> = config().limit(1).deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
 
 #[test]
 fn too_big_serialize() {
-    assert!(serialize_little(&0u32, Bounded(3)).is_err());
-    assert!(serialize_little(&0u32, Bounded(4)).is_ok());
+    assert!(config().limit(3).serialize(&0u32).is_err());
+    assert!(config().limit(4).serialize(&0u32).is_ok());
 
-    assert!(serialize_little(&"abcde", Bounded(8 + 4)).is_err());
-    assert!(serialize_little(&"abcde", Bounded(8 + 5)).is_ok());
-}
-
-#[test]
-fn test_proxy_encoded_size() {
-    assert!(serialized_size(&0u8) == 1);
-    assert!(serialized_size(&0u16) == 2);
-    assert!(serialized_size(&0u32) == 4);
-    assert!(serialized_size(&0u64) == 8);
-
-    // length isize stored as u64
-    assert!(serialized_size(&"") == 8);
-    assert!(serialized_size(&"a") == 8 + 1);
-
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
-
+    assert!(config().limit(8 + 4).serialize(&"abcde").is_err());
+    assert!(config().limit(8 + 5).serialize(&"abcde").is_ok());
 }
 
 #[test]
 fn test_serialized_size() {
-    assert!(serialized_size(&0u8) == 1);
-    assert!(serialized_size(&0u16) == 2);
-    assert!(serialized_size(&0u32) == 4);
-    assert!(serialized_size(&0u64) == 8);
+    assert!(serialized_size(&0u8).unwrap() == 1);
+    assert!(serialized_size(&0u16).unwrap() == 2);
+    assert!(serialized_size(&0u32).unwrap() == 4);
+    assert!(serialized_size(&0u64).unwrap() == 8);
 
     // length isize stored as u64
-    assert!(serialized_size(&"") == 8);
-    assert!(serialized_size(&"a") == 8 + 1);
+    assert!(serialized_size(&"").unwrap() == 8);
+    assert!(serialized_size(&"a").unwrap() == 8 + 1);
 
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]) == 8 + 3 * (4))
+    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == 8 + 3 * (4));
+}
+
+#[test]
+fn test_serialized_size_bounded() {
+    // JUST RIGHT
+    assert!(config().limit(1).serialized_size(&0u8).unwrap() == 1);
+    assert!(config().limit(2).serialized_size(&0u16).unwrap() == 2);
+    assert!(config().limit(4).serialized_size(&0u32).unwrap() == 4);
+    assert!(config().limit(8).serialized_size(&0u64).unwrap() == 8);
+    assert!(config().limit(8).serialized_size(&"").unwrap() == 8);
+    assert!(config().limit(8 + 1).serialized_size(&"a").unwrap() == 8 + 1);
+    assert!(
+        config()
+            .limit(8 + 3 * 4)
+            .serialized_size(&vec![0u32, 1u32, 2u32])
+            .unwrap() == 8 + 3 * 4
+    );
+    // Below
+    assert!(config().limit(0).serialized_size(&0u8).is_err());
+    assert!(config().limit(1).serialized_size(&0u16).is_err());
+    assert!(config().limit(3).serialized_size(&0u32).is_err());
+    assert!(config().limit(7).serialized_size(&0u64).is_err());
+    assert!(config().limit(7).serialized_size(&"").is_err());
+    assert!(config().limit(8 + 0).serialized_size(&"a").is_err());
+    assert!(
+        config()
+            .limit(8 + 3 * 4 - 1)
+            .serialized_size(&vec![0u32, 1u32, 2u32]).is_err());
 }
 
 #[test]
@@ -331,10 +338,8 @@ fn test_cow_serialize() {
 
     // Test 1
     {
-        let serialized =
-            serialize_little(&Message::M1(Cow::Borrowed(&large_object)), Infinite).unwrap();
-        let deserialized: Message<'static> =
-            deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+        let serialized = serialize(&Message::M1(Cow::Borrowed(&large_object))).unwrap();
+        let deserialized: Message<'static> = deserialize_from(&mut &serialized[..]).unwrap();
 
         match deserialized {
             Message::M1(b) => assert!(&b.into_owned() == &large_object),
@@ -344,10 +349,8 @@ fn test_cow_serialize() {
 
     // Test 2
     {
-        let serialized =
-            serialize_little(&Message::M2(Cow::Borrowed(&large_map)), Infinite).unwrap();
-        let deserialized: Message<'static> =
-            deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+        let serialized = serialize(&Message::M2(Cow::Borrowed(&large_map))).unwrap();
+        let deserialized: Message<'static> = deserialize_from(&mut &serialized[..]).unwrap();
 
         match deserialized {
             Message::M2(b) => assert!(&b.into_owned() == &large_map),
@@ -359,9 +362,8 @@ fn test_cow_serialize() {
 #[test]
 fn test_strbox_serialize() {
     let strx: &'static str = "hello world";
-    let serialized = serialize_little(&Cow::Borrowed(strx), Infinite).unwrap();
-    let deserialized: Cow<'static, String> =
-        deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+    let serialized = serialize(&Cow::Borrowed(strx)).unwrap();
+    let deserialized: Cow<'static, String> = deserialize_from(&mut &serialized[..]).unwrap();
     let stringx: String = deserialized.into_owned();
     assert!(strx == &stringx[..]);
 }
@@ -369,10 +371,9 @@ fn test_strbox_serialize() {
 #[test]
 fn test_slicebox_serialize() {
     let slice = [1u32, 2, 3, 4, 5];
-    let serialized = serialize_little(&Cow::Borrowed(&slice[..]), Infinite).unwrap();
+    let serialized = serialize(&Cow::Borrowed(&slice[..])).unwrap();
     println!("{:?}", serialized);
-    let deserialized: Cow<'static, Vec<u32>> =
-        deserialize_from_little(&mut &serialized[..], Infinite).unwrap();
+    let deserialized: Cow<'static, Vec<u32>> = deserialize_from(&mut &serialized[..]).unwrap();
     {
         let sb: &[u32] = &deserialized;
         assert!(slice == sb);
@@ -383,7 +384,7 @@ fn test_slicebox_serialize() {
 
 #[test]
 fn test_multi_strings_serialize() {
-    assert!(serialize_little(&("foo", "bar", "baz"), Infinite).is_ok());
+    assert!(serialize(&("foo", "bar", "baz")).is_ok());
 }
 
 #[test]
@@ -394,14 +395,16 @@ fn test_oom_protection() {
         len: u64,
         byte: u8,
     }
-    let x = serialize_little(
-        &FakeVec {
+    let x = config()
+        .limit(10)
+        .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
-        },
-        Bounded(10),
-    ).unwrap();
-    let y: Result<Vec<u8>> = deserialize_from_little(&mut Cursor::new(&x[..]), Bounded(10));
+        })
+        .unwrap();
+    let y: Result<Vec<u8>> = config()
+        .limit(10)
+        .deserialize_from(&mut Cursor::new(&x[..]));
     assert!(y.is_err());
 }
 
@@ -409,8 +412,8 @@ fn test_oom_protection() {
 fn path_buf() {
     use std::path::{Path, PathBuf};
     let path = Path::new("foo").to_path_buf();
-    let serde_encoded = serialize_little(&path, Infinite).unwrap();
-    let decoded: PathBuf = deserialize_little(&serde_encoded).unwrap();
+    let serde_encoded = serialize(&path).unwrap();
+    let decoded: PathBuf = deserialize(&serde_encoded).unwrap();
     assert!(path.to_str() == decoded.to_str());
 }
 
@@ -419,8 +422,8 @@ fn bytes() {
     use serde_bytes::Bytes;
 
     let data = b"abc\0123";
-    let s = serialize_little(&data[..], Infinite).unwrap();
-    let s2 = serialize_little(&Bytes::new(data), Infinite).unwrap();
+    let s = serialize(&data[..]).unwrap();
+    let s2 = serialize(&Bytes::new(data)).unwrap();
     assert_eq!(s[..], s2[..]);
 }
 
@@ -434,8 +437,8 @@ fn serde_bytes() {
 #[test]
 fn endian_difference() {
     let x = 10u64;
-    let little = serialize_little(&x, Infinite).unwrap();
-    let big = serialize::<_, _, byteorder::BigEndian>(&x, Infinite).unwrap();
+    let little = serialize(&x).unwrap();
+    let big = config().big_endian().serialize(&x).unwrap();
     assert_ne!(little, big);
 }
 
@@ -452,8 +455,8 @@ fn test_zero_copy_parse() {
         borrowed_bytes: &[0, 1, 2, 3],
     };
     {
-        let encoded = serialize_little(&f, Infinite).unwrap();
-        let out: Foo = deserialize_little(&encoded[..]).unwrap();
+        let encoded = serialize(&f).unwrap();
+        let out: Foo = deserialize(&encoded[..]).unwrap();
         assert_eq!(out, f);
     }
 }
@@ -463,6 +466,6 @@ fn not_human_readable() {
     use std::net::Ipv4Addr;
     let ip = Ipv4Addr::new(1, 2, 3, 4);
     the_same(ip);
-    assert_eq!(&ip.octets()[..], &serialize_little(&ip, Infinite).unwrap()[..]);
-    assert_eq!(::std::mem::size_of::<Ipv4Addr>() as u64, serialized_size(&ip));
+    assert_eq!(&ip.octets()[..], &serialize(&ip).unwrap()[..]);
+    assert_eq!(::std::mem::size_of::<Ipv4Addr>() as u64, serialized_size(&ip).unwrap());
 }
