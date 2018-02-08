@@ -41,6 +41,7 @@ pub use de::read::BincodeRead;
 /// serde::Deserializer without knowing its concrete type.
 ///
 /// This trait should be used only for `with_deserializer` functions.
+#[doc(hidden)]
 pub trait DeserializerAcceptor<'a> {
     /// The return type for the accept method
     type Output;
@@ -52,6 +53,7 @@ pub trait DeserializerAcceptor<'a> {
 /// serde::Serializer without knowing its concrete type.
 ///
 /// This trait should be used only for `with_serializer` functions.
+#[doc(hidden)]
 pub trait SerializerAcceptor {
     /// The return type for the accept method
     type Output;
@@ -139,6 +141,8 @@ where
 }
 
 /// Executes the acceptor with a serde::Deserializer instance.
+/// NOT A PART OF THE STABLE PUBLIC API
+#[doc(hidden)]
 pub fn with_deserializer<'a, A,  R>(reader: R, acceptor: A) -> A::Output
 where A: DeserializerAcceptor<'a>,
         R: BincodeRead<'a>
@@ -147,6 +151,8 @@ where A: DeserializerAcceptor<'a>,
 }
 
 /// Executes the acceptor with a serde::Serializer instance.
+/// NOT A PART OF THE STABLE PUBLIC API
+#[doc(hidden)]
 pub fn with_serializer<A, W>(writer: W, acceptor: A) -> A::Output
 where A: SerializerAcceptor,
     W: std::io::Write

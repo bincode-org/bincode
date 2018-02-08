@@ -285,6 +285,8 @@ impl Config {
     }
 
     /// Executes the acceptor with a serde::Deserializer instance.
+    /// NOT A PART OF THE STABLE PUBLIC API
+    #[doc(hidden)]
     pub fn with_deserializer<'a, A,  R>(&self, reader: R, acceptor: A) -> A::Output
     where A: DeserializerAcceptor<'a>,
           R: BincodeRead<'a>
@@ -296,6 +298,8 @@ impl Config {
     }
 
     /// Executes the acceptor with a serde::Serializer instance.
+    /// NOT A PART OF THE STABLE PUBLIC API
+    #[doc(hidden)]
     pub fn with_serializer<A, W>(&self, writer: W, acceptor: A) -> A::Output
     where A: SerializerAcceptor,
         W: Write
