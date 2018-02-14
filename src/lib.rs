@@ -64,8 +64,10 @@ pub trait SerializerAcceptor {
 /// Get a default configuration object.
 ///
 /// ### Default Configuration:
-/// Byte limit: Unlimited
-/// Endianness: Little
+///
+/// | Byte limit | Endianness |
+/// |------------|------------|
+/// | Unlimited  | Little     |
 pub fn config() -> Config {
     Config::new()
 }
@@ -114,7 +116,9 @@ where
     config().deserialize_from_custom(reader)
 }
 
-/// TODO: document
+/// Only use this if you know what you're doing.
+///
+/// This is part of the public API.
 #[doc(hidden)]
 pub fn deserialize_in_place<'a, R, T>(reader: R, place: &mut T) -> Result<()>
 where
