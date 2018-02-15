@@ -1,11 +1,10 @@
 [package]
 name = "bincode"
-version = "0.9.3"
+version = "1.0.0"
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
 exclude = ["logo.png", "tests/*", "examples/*", ".gitignore", ".travis.yml", "changelist.org"]
 
-# renamed `read_types` to `read`
-publish = false
+publish =  true
 
 repository = "https://github.com/TyOverby/bincode"
 documentation = "https://docs.rs/bincode"
