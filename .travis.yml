@@ -3,3 +3,7 @@ rust:
     - stable
     - beta
     - nightly
+
+script:
+    - cargo test
+    - cargo test --features "i128"
