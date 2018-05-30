@@ -19,12 +19,24 @@
 //!     assert_eq!(target, decoded);
 //! }
 //! ```
+//! 
+//! ### 128bit numbers
+//! 
+//! Support for `i128` and `u128` on Rust toolchains after `1.26.0` is 
+//! enabled through the `i128` feature. Add the following to your 
+//! `Cargo.toml`:
+//! 
+//! ```toml,ignore
+//! [dependencies.bincode]
+//! features = ["i128"]
+//! ```
 
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
 extern crate byteorder;
+#[macro_use]
 extern crate serde;
 
 mod config;
