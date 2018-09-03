@@ -115,6 +115,17 @@ where
 }
 
 
+pub(crate) fn deserialize_seed<'a, T, O>(seed: T, bytes: &'a [u8], options: O) -> Result<T::Value>
+where
+    T: serde::de::DeserializeSeed<'a>,
+    O: Options,
+{
+    let reader = ::de::read::SliceReader::new(bytes);
+    let options = ::config::WithOtherLimit::new(options, Infinite);
+    let mut deserializer = ::de::Deserializer::new(reader, options);
+    seed.deserialize(&mut deserializer)
+}
+
 pub(crate) trait SizeLimit: Clone {
     /// Tells the SizeLimit that a certain number of bytes has been
     /// read or written.  Returns Err if the limit has been exceeded.
