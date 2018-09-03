@@ -266,6 +266,12 @@ impl Config {
         config_map!(self, opts => ::internal::deserialize_in_place(reader, opts, place))
     }
 
+    /// Deserializes a slice of bytes with state `seed` using this configuration.
+    #[inline(always)]
+    pub fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(&self, seed: T, bytes: &'a [u8]) -> Result<T::Value> {
+        config_map!(self, opts => ::internal::deserialize_seed(seed, bytes, opts))
+    }
+
     /// Deserializes an object directly from a `Read`er using this configuration
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
