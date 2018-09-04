@@ -6,12 +6,16 @@ extern crate byteorder;
 extern crate serde;
 extern crate serde_bytes;
 
-use std::fmt::Debug;
-use std::collections::HashMap;
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::fmt::{self, Debug};
+use std::result::Result as StdResult;
 
-use bincode::{config, deserialize, deserialize_from, deserialize_in_place, serialize,
-              serialized_size, ErrorKind, Result};
+use bincode::{
+    config, deserialize, deserialize_from, deserialize_in_place, serialize, serialized_size,
+    ErrorKind, Result,
+};
+use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
 fn the_same<V>(element: V)
 where
@@ -591,4 +595,88 @@ fn not_human_readable() {
         ::std::mem::size_of::<Ipv4Addr>() as u64,
         serialized_size(&ip).unwrap()
     );
+}
+
+// The example is taken from serde::de::DeserializeSeed.
+struct ExtendVec<'a, T: 'a>(&'a mut Vec<T>);
+
+impl<'de, 'a, T> DeserializeSeed<'de> for ExtendVec<'a, T>
+where
+    T: Deserialize<'de>,
+{
+    // The return type of the `deserialize` method. This implementation
+    // appends onto an existing vector but does not create any new data
+    // structure, so the return type is ().
+    type Value = ();
+
+    fn deserialize<D>(self, deserializer: D) -> StdResult<Self::Value, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Visitor implementation that will walk an inner array of the JSON
+        // input.
+        struct ExtendVecVisitor<'a, T: 'a>(&'a mut Vec<T>);
+
+        impl<'de, 'a, T> Visitor<'de> for ExtendVecVisitor<'a, T>
+        where
+            T: Deserialize<'de>,
+        {
+            type Value = ();
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "an array of integers")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> StdResult<(), A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                // Visit each element in the inner array and push it onto
+                // the existing vector.
+                while let Some(elem) = seq.next_element()? {
+                    self.0.push(elem);
+                }
+                Ok(())
+            }
+        }
+
+        deserializer.deserialize_seq(ExtendVecVisitor(self.0))
+    }
+}
+
+#[test]
+fn test_default_deserialize_seed() {
+    let config = config();
+
+    let data: Vec<_> = (10..100).collect();
+    let bytes = config.serialize(&data).expect("Config::serialize failed");
+
+    let mut seed_data: Vec<_> = (0..10).collect();
+    {
+        let seed = ExtendVec(&mut seed_data);
+        config
+            .deserialize_seed(seed, &bytes)
+            .expect("Config::deserialize_seed failed");
+    }
+
+    assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
+}
+
+#[test]
+fn test_big_endian_deserialize_seed() {
+    let mut config = config();
+    config.big_endian();
+
+    let data: Vec<_> = (10..100).collect();
+    let bytes = config.serialize(&data).expect("Config::serialize failed");
+
+    let mut seed_data: Vec<_> = (0..10).collect();
+    {
+        let seed = ExtendVec(&mut seed_data);
+        config
+            .deserialize_seed(seed, &bytes)
+            .expect("Config::deserialize_seed failed");
+    }
+
+    assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
 }
