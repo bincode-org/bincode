@@ -1,6 +1,6 @@
-use std::io;
 use error::Result;
 use serde;
+use std::io;
 
 /// An optional Read trait for advanced Bincode usage.
 ///
@@ -78,9 +78,10 @@ impl<R: io::Read> io::Read for IoReader<R> {
 impl<'storage> SliceReader<'storage> {
     #[inline(always)]
     fn unexpected_eof() -> Box<::ErrorKind> {
-        return Box::new(::ErrorKind::Io(
-            io::Error::new(io::ErrorKind::UnexpectedEof, ""),
-        ));
+        return Box::new(::ErrorKind::Io(io::Error::new(
+            io::ErrorKind::UnexpectedEof,
+            "",
+        )));
     }
 }
 

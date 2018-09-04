@@ -19,13 +19,13 @@
 //!     assert_eq!(target, decoded);
 //! }
 //! ```
-//! 
+//!
 //! ### 128bit numbers
-//! 
-//! Support for `i128` and `u128` on Rust toolchains after `1.26.0` is 
-//! enabled through the `i128` feature. Add the following to your 
+//!
+//! Support for `i128` and `u128` on Rust toolchains after `1.26.0` is
+//! enabled through the `i128` feature. Add the following to your
 //! `Cargo.toml`:
-//! 
+//!
 //! ```toml,ignore
 //! [dependencies.bincode]
 //! features = ["i128"]
@@ -40,14 +40,14 @@ extern crate byteorder;
 extern crate serde;
 
 mod config;
-mod ser;
-mod error;
 mod de;
+mod error;
 mod internal;
+mod ser;
 
-pub use error::{Error, ErrorKind, Result};
 pub use config::Config;
 pub use de::read::{BincodeRead, IoReader, SliceReader};
+pub use error::{Error, ErrorKind, Result};
 
 /// An object that implements this trait can be passed a
 /// serde::Deserializer without knowing its concrete type.
@@ -135,7 +135,7 @@ where
 pub fn deserialize_in_place<'a, R, T>(reader: R, place: &mut T) -> Result<()>
 where
     T: serde::de::Deserialize<'a>,
-    R: BincodeRead<'a>
+    R: BincodeRead<'a>,
 {
     config().deserialize_in_place(reader, place)
 }
@@ -159,9 +159,10 @@ where
 /// Executes the acceptor with a serde::Deserializer instance.
 /// NOT A PART OF THE STABLE PUBLIC API
 #[doc(hidden)]
-pub fn with_deserializer<'a, A,  R>(reader: R, acceptor: A) -> A::Output
-where A: DeserializerAcceptor<'a>,
-        R: BincodeRead<'a>
+pub fn with_deserializer<'a, A, R>(reader: R, acceptor: A) -> A::Output
+where
+    A: DeserializerAcceptor<'a>,
+    R: BincodeRead<'a>,
 {
     config().with_deserializer(reader, acceptor)
 }
@@ -170,8 +171,9 @@ where A: DeserializerAcceptor<'a>,
 /// NOT A PART OF THE STABLE PUBLIC API
 #[doc(hidden)]
 pub fn with_serializer<A, W>(writer: W, acceptor: A) -> A::Output
-where A: SerializerAcceptor,
-    W: std::io::Write
+where
+    A: SerializerAcceptor,
+    W: std::io::Write,
 {
     config().with_serializer(writer, acceptor)
 }

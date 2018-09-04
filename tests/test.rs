@@ -322,7 +322,8 @@ fn test_serialized_size_bounded() {
         config()
             .limit(8 + 3 * 4)
             .serialized_size(&vec![0u32, 1u32, 2u32])
-            .unwrap() == 8 + 3 * 4
+            .unwrap()
+            == 8 + 3 * 4
     );
     // Below
     assert!(config().limit(0).serialized_size(&0u8).is_err());
@@ -349,7 +350,6 @@ fn test_cow_serialize() {
     let large_object = vec![1u32, 2, 3, 4, 5, 6];
     let mut large_map = HashMap::new();
     large_map.insert(1, 2);
-
 
     #[derive(Serialize, Deserialize, Debug)]
     enum Message<'a> {
@@ -421,8 +421,7 @@ fn test_oom_protection() {
         .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
-        })
-        .unwrap();
+        }).unwrap();
     let y: Result<Vec<u8>> = config()
         .limit(10)
         .deserialize_from(&mut Cursor::new(&x[..]));
@@ -453,7 +452,6 @@ fn serde_bytes() {
     use serde_bytes::ByteBuf;
     the_same(ByteBuf::from(vec![1, 2, 3, 4, 5]));
 }
-
 
 #[test]
 fn endian_difference() {
@@ -495,9 +493,10 @@ fn test_zero_copy_parse_deserialize_into() {
     impl<'storage> SliceReader<'storage> {
         #[inline(always)]
         fn unexpected_eof() -> Box<::ErrorKind> {
-            return Box::new(::ErrorKind::Io(
-                io::Error::new(io::ErrorKind::UnexpectedEof, ""),
-            ));
+            return Box::new(::ErrorKind::Io(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "",
+            )));
         }
     }
 

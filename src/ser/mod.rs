@@ -5,9 +5,9 @@ use serde;
 
 use byteorder::WriteBytesExt;
 
-use super::{Result, Error, ErrorKind};
-use ::config::Options;
 use super::internal::SizeLimit;
+use super::{Error, ErrorKind, Result};
+use config::Options;
 
 /// An Serializer that encodes values directly into a Writer.
 ///
@@ -51,9 +51,9 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_bool(self, v: bool) -> Result<()> {
-        self.writer.write_u8(if v { 1 } else { 0 }).map_err(
-            Into::into,
-        )
+        self.writer
+            .write_u8(if v { 1 } else { 0 })
+            .map_err(Into::into)
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
@@ -110,7 +110,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         #[cfg(not(feature = "i128"))]
         fn serialize_i128(self, v: i128) -> Result<()> {
             use serde::ser::Error;
-            
+
             let _ = v;
             Err(Error::custom("i128 is not supported. Enable the `i128` feature of `bincode`"))
         }
@@ -130,9 +130,9 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_char(self, c: char) -> Result<()> {
-        self.writer.write_all(encode_utf8(c).as_slice()).map_err(
-            Into::into,
-        )
+        self.writer
+            .write_all(encode_utf8(c).as_slice())
+            .map_err(Into::into)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
@@ -682,7 +682,7 @@ impl<'a, O: Options> serde::ser::SerializeTupleVariant for SizeCompound<'a, O> {
     }
 }
 
-impl<'a, O: Options+ 'a> serde::ser::SerializeMap for SizeCompound<'a, O> {
+impl<'a, O: Options + 'a> serde::ser::SerializeMap for SizeCompound<'a, O> {
     type Ok = ();
     type Error = Error;
 

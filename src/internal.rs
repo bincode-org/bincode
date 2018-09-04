@@ -1,5 +1,5 @@
-use std::io::{Read, Write};
 use serde;
+use std::io::{Read, Write};
 
 use config::{Options, OptionsExt};
 use de::read::BincodeRead;
@@ -114,7 +114,6 @@ where
     serde::Deserialize::deserialize(&mut deserializer)
 }
 
-
 pub(crate) fn deserialize_seed<'a, T, O>(seed: T, bytes: &'a [u8], options: O) -> Result<T::Value>
 where
     T: serde::de::DeserializeSeed<'a>,
@@ -133,7 +132,6 @@ pub(crate) trait SizeLimit: Clone {
     /// Returns the hard limit (if one exists)
     fn limit(&self) -> Option<u64>;
 }
-
 
 /// A SizeLimit that restricts serialized or deserialized messages from
 /// exceeding a certain byte length.
