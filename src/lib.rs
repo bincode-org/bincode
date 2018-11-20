@@ -80,6 +80,7 @@ pub trait SerializerAcceptor {
 /// | Byte limit | Endianness |
 /// |------------|------------|
 /// | Unlimited  | Little     |
+#[inline(always)]
 pub fn config() -> Config {
     Config::new()
 }
