@@ -11,6 +11,7 @@ documentation = "https://docs.rs/bincode"
 readme = "./readme.md"
 categories = ["network-programming"]
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
+build = "build.rs"
 
 license = "MIT"
 description = "A binary serialization / deserialization strategy that uses Serde for transforming structs into bytes and vice versa!"
@@ -23,8 +24,14 @@ serde = "^1.0.63"
 serde_bytes = "^0.10.3"
 serde_derive = "^1.0.27"
 
+[build-dependencies]
+autocfg = "0.1"
+
 [features]
-i128 = ["byteorder/i128"]
+# This feature is no longer used and is DEPRECATED. This crate now
+# automatically enables i128 support for Rust compilers that support it. The
+# feature will be removed if and when a new major version is released.
+i128 = []
 
 [badges]
 travis-ci = { repository = "TyOverby/bincode" }

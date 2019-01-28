@@ -22,14 +22,8 @@
 //!
 //! ### 128bit numbers
 //!
-//! Support for `i128` and `u128` on Rust toolchains after `1.26.0` is
-//! enabled through the `i128` feature. Add the following to your
-//! `Cargo.toml`:
-//!
-//! ```toml,ignore
-//! [dependencies.bincode]
-//! features = ["i128"]
-//! ```
+//! Support for `i128` and `u128` is automatically enabled on Rust toolchains
+//! greater than or equal to `1.26.0`.
 
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
