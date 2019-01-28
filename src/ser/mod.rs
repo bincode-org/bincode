@@ -88,31 +88,31 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         self.writer.write_i64::<O::Endian>(v).map_err(Into::into)
     }
 
-    #[cfg(feature = "i128")]
+    #[cfg(has_i128)]
     fn serialize_u128(self, v: u128) -> Result<()> {
         self.writer.write_u128::<O::Endian>(v).map_err(Into::into)
     }
 
-    #[cfg(feature = "i128")]
+    #[cfg(has_i128)]
     fn serialize_i128(self, v: i128) -> Result<()> {
         self.writer.write_i128::<O::Endian>(v).map_err(Into::into)
     }
 
     serde_if_integer128! {
-        #[cfg(not(feature = "i128"))]
+        #[cfg(not(has_i128))]
         fn serialize_u128(self, v: u128) -> Result<()> {
             use serde::ser::Error;
 
             let _ = v;
-            Err(Error::custom("u128 is not supported. Enable the `i128` feature of `bincode`"))
+            Err(Error::custom("u128 is not supported. Use Rustc ≥ 1.26."))
         }
 
-        #[cfg(not(feature = "i128"))]
+        #[cfg(not(has_i128))]
         fn serialize_i128(self, v: i128) -> Result<()> {
             use serde::ser::Error;
 
             let _ = v;
-            Err(Error::custom("i128 is not supported. Enable the `i128` feature of `bincode`"))
+            Err(Error::custom("i128 is not supported. Use Rustc ≥ 1.26."))
         }
     }
 

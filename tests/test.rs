@@ -72,7 +72,7 @@ fn test_numbers() {
     the_same(5f64);
 }
 
-#[cfg(feature = "i128")]
+#[cfg(has_i128)]
 #[test]
 fn test_numbers_128bit() {
     // unsigned positive
