@@ -1,15 +1,7 @@
 language: rust
+
 rust:
     - stable
     - beta
     - nightly
-
-matrix:
-  include:
-  - rust: 1.18.0
-    script:
-    - cargo test
-
-script:
-    - cargo test
-    - cargo test --features "i128"
+    - 1.18.0
