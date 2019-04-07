@@ -4,4 +4,10 @@ rust:
     - stable
     - beta
     - nightly
-    - 1.18.0
+
+script: cargo test
+
+matrix:
+  include:
+    - rust: 1.18.0
+      script: cargo build
