@@ -25,7 +25,7 @@
 //! Support for `i128` and `u128` is automatically enabled on Rust toolchains
 //! greater than or equal to `1.26.0`.
 
-#![doc(html_root_url = "https://docs.rs/bincode/1.1.1")]
+#![doc(html_root_url = "https://docs.rs/bincode/1.1.3")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
