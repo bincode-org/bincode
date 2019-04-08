@@ -9,7 +9,7 @@ publish =  true
 repository = "https://github.com/TyOverby/bincode"
 documentation = "https://docs.rs/bincode"
 readme = "./readme.md"
-categories = ["network-programming"]
+categories = ["encoding", "network-programming"]
 keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 build = "build.rs"
 
