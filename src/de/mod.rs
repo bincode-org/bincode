@@ -19,7 +19,7 @@ pub mod read;
 /// The ByteOrder that is chosen will impact the endianness that
 /// is used to read integers out of the reader.
 ///
-/// ```rust,ignore
+/// ```ignore
 /// let d = Deserializer::new(&mut some_reader, SizeLimit::new());
 /// serde::Deserialize::deserialize(&mut deserializer);
 /// let bytes_read = d.bytes_read();

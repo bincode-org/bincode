@@ -7,7 +7,7 @@
 //!
 //! ### Using Basic Functions
 //!
-//! ```rust
+//! ```
 //! extern crate bincode;
 //! use bincode::{serialize, deserialize};
 //! fn main() {
