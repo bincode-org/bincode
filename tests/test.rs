@@ -699,8 +699,18 @@ fn test_big_endian_deserialize_seed() {
 #[cfg(feature = "varint")]
 #[test]
 fn test_varint_length_prefixes() {
-    assert_eq!(serialized_size(&vec![0u8; 127][..]).unwrap(), 1 + 127); // 2 ** 7 - 1
-    assert_eq!(serialized_size(&vec![0u8; 128][..]).unwrap(), 2 + 128); // 2 ** 7
-    assert_eq!(serialized_size(&vec![0u8; 16383][..]).unwrap(), 2 + 16383); // 2 ** 14 - 1
-    assert_eq!(serialized_size(&vec![0u8; 16384][..]).unwrap(), 3 + 16384); // 2 ** 14
+    let a = vec![0u8; 127]; // 2 ** 7 - 1
+    let b = vec![0u8; 128]; // 2 ** 7
+    let c = vec![0u8; 16383]; // 2 ** 14 - 1
+    let d = vec![0u8; 16384]; // 2 ** 14
+
+    assert_eq!(serialized_size(&a[..]).unwrap(), 1 + 127); // 2 ** 7 - 1
+    assert_eq!(serialized_size(&b[..]).unwrap(), 2 + 128); // 2 ** 7
+    assert_eq!(serialized_size(&c[..]).unwrap(), 2 + 16383); // 2 ** 14 - 1
+    assert_eq!(serialized_size(&d[..]).unwrap(), 3 + 16384); // 2 ** 14
+
+    the_same(a);
+    the_same(b);
+    the_same(c);
+    the_same(d);
 }
