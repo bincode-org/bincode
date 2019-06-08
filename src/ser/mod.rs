@@ -314,11 +314,15 @@ impl<O: Options> SizeChecker<O> {
         self.add_varint(len)
     }
 
-    fn add_varint(&mut self, int: usize) -> Result<()> {
-        use std::mem::size_of;
-        let bits = size_of::<usize>() * 8 - int.leading_zeros() as usize;
+    fn add_varint(&mut self, mut n: usize) -> Result<()> {
+        let mut bytes = 1;
 
-        self.add_raw(((bits.saturating_sub(1) / 7) + 1) as u64)
+        while n > 127 {
+            n >>= 7;
+            bytes += 1;
+        }
+
+        self.add_raw(bytes)
     }
 }
 
