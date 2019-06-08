@@ -82,11 +82,18 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 
     fn deserialize_varint(&mut self) -> Result<usize> {
+        use std::mem::size_of;
+
         let mut n = 0;
         let mut shift = 0;
         let mut byte: u8 = try!(serde::Deserialize::deserialize(&mut *self));
 
-        while byte > 127 {
+        // Only allow reading size_of + 1 bytes to avoid overflows on bitshifts
+        for _ in 0..(size_of::<usize>()) {
+            if byte < 128 {
+                break;
+            }
+
             n |= ((byte & 127) as usize) << shift;
             shift += 7;
             byte = try!(serde::Deserialize::deserialize(&mut *self));
