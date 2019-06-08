@@ -96,16 +96,17 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 
     fn deserialize_varint(&mut self) -> Result<usize> {
-        let mut byte: u8 = try!(serde::Deserialize::deserialize(&mut *self));
         let mut n = 0;
+        let mut shift = 0;
+        let mut byte: u8 = try!(serde::Deserialize::deserialize(&mut *self));
 
         while byte > 127 {
-            n |= (byte & 127) as usize;
+            n |= ((byte & 127) as usize) << shift;
+            shift += 7;
             byte = try!(serde::Deserialize::deserialize(&mut *self));
-            n <<= 7;
         }
 
-        Ok(n | byte as usize)
+        Ok(n | ((byte as usize) << shift))
     }
 }
 
