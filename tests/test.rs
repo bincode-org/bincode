@@ -18,6 +18,11 @@ use bincode::{
 };
 use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
+#[cfg(not(feature = "varint"))]
+const LEN_SIZE: u64 = 8;
+#[cfg(feature = "varint")]
+const LEN_SIZE: u64 = 1;
+
 fn the_same<V>(element: V)
 where
     V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
@@ -233,14 +238,19 @@ fn test_fixed_size_array() {
     the_same([0u8; 19]);
 }
 
-#[cfg(not(feature = "varint"))]
 #[test]
 fn deserializing_errors() {
     match *deserialize::<bool>(&vec![0xA][..]).unwrap_err() {
         ErrorKind::InvalidBoolEncoding(0xA) => {}
         _ => panic!(),
     }
-    match *deserialize::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]).unwrap_err() {
+
+    #[cfg(not(feature = "varint"))]
+    let invalid_str = vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF];
+    #[cfg(feature = "varint")]
+    let invalid_str = vec![1, 0xFF];
+
+    match *deserialize::<String>(&invalid_str[..]).unwrap_err() {
         ErrorKind::InvalidUtf8Encoding(_) => {}
         _ => panic!(),
     }
@@ -252,38 +262,12 @@ fn deserializing_errors() {
         Two,
     };
 
-    match *deserialize::<Test>(&vec![0, 0, 0, 5][..]).unwrap_err() {
-        // Error message comes from serde
-        ErrorKind::Custom(_) => {}
-        _ => panic!(),
-    }
-    match *deserialize::<Option<u8>>(&vec![5, 0][..]).unwrap_err() {
-        ErrorKind::InvalidTagEncoding(_) => {}
-        _ => panic!(),
-    }
-}
+    #[cfg(not(feature = "varint"))]
+    let invalid_enum = vec![0, 0, 0, 5];
+    #[cfg(feature = "varint")]
+    let invalid_enum = vec![5];
 
-
-#[cfg(feature = "varint")]
-#[test]
-fn deserializing_errors() {
-    match *deserialize::<bool>(&vec![0xA][..]).unwrap_err() {
-        ErrorKind::InvalidBoolEncoding(0xA) => {}
-        _ => panic!(),
-    }
-    match *deserialize::<String>(&vec![1, 0xFF][..]).unwrap_err() {
-        ErrorKind::InvalidUtf8Encoding(_) => {}
-        _ => panic!(),
-    }
-
-    // Out-of-bounds variant
-    #[derive(Serialize, Deserialize, Debug)]
-    enum Test {
-        One,
-        Two,
-    };
-
-    match *deserialize::<Test>(&vec![5][..]).unwrap_err() {
+    match *deserialize::<Test>(&invalid_enum[..]).unwrap_err() {
         // Error message comes from serde
         ErrorKind::Custom(_) => {}
         _ => panic!(),
@@ -332,7 +316,6 @@ fn too_big_char_deserialize() {
     assert_eq!(deserialized.unwrap(), 'A');
 }
 
-#[cfg(not(feature = "varint"))]
 #[test]
 fn too_big_serialize() {
     assert!(DefaultOptions::new()
@@ -342,26 +325,15 @@ fn too_big_serialize() {
     assert!(DefaultOptions::new().with_limit(4).serialize(&0u32).is_ok());
 
     assert!(DefaultOptions::new()
-        .with_limit(8 + 4)
+        .with_limit(LEN_SIZE + 4)
         .serialize(&"abcde")
         .is_err());
     assert!(DefaultOptions::new()
-        .with_limit(8 + 5)
+        .with_limit(LEN_SIZE + 5)
         .serialize(&"abcde")
         .is_ok());
 }
 
-#[cfg(feature = "varint")]
-#[test]
-fn too_big_serialize() {
-    assert!(config().limit(3).serialize(&0u32).is_err());
-    assert!(config().limit(4).serialize(&0u32).is_ok());
-
-    assert!(config().limit(1 + 4).serialize(&"abcde").is_err());
-    assert!(config().limit(1 + 5).serialize(&"abcde").is_ok());
-}
-
-#[cfg(not(feature = "varint"))]
 #[test]
 fn test_serialized_size() {
     assert!(serialized_size(&0u8).unwrap() == 1);
@@ -370,28 +342,12 @@ fn test_serialized_size() {
     assert!(serialized_size(&0u64).unwrap() == 8);
 
     // length isize stored as u64
-    assert!(serialized_size(&"").unwrap() == 8);
-    assert!(serialized_size(&"a").unwrap() == 8 + 1);
+    assert!(serialized_size(&"").unwrap() == LEN_SIZE);
+    assert!(serialized_size(&"a").unwrap() == LEN_SIZE + 1);
 
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == 8 + 3 * (4));
+    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == LEN_SIZE + 3 * (4));
 }
 
-#[cfg(feature = "varint")]
-#[test]
-fn test_serialized_size() {
-    assert!(serialized_size(&0u8).unwrap() == 1);
-    assert!(serialized_size(&0u16).unwrap() == 2);
-    assert!(serialized_size(&0u32).unwrap() == 4);
-    assert!(serialized_size(&0u64).unwrap() == 8);
-
-    // length isize stored as varint
-    assert!(serialized_size(&"").unwrap() == 1);
-    assert!(serialized_size(&"a").unwrap() == 1 + 1);
-
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == 1 + 3 * (4));
-}
-
-#[cfg(not(feature = "varint"))]
 #[test]
 fn test_serialized_size_bounded() {
     // JUST RIGHT
@@ -428,21 +384,21 @@ fn test_serialized_size_bounded() {
             .with_limit(8)
             .serialized_size(&"")
             .unwrap()
-            == 8
+            == LEN_SIZE
     );
     assert!(
         DefaultOptions::new()
             .with_limit(8 + 1)
             .serialized_size(&"a")
             .unwrap()
-            == 8 + 1
+            == LEN_SIZE + 1
     );
     assert!(
         DefaultOptions::new()
-            .with_limit(8 + 3 * 4)
+            .with_limit(LEN_SIZE + 3 * 4)
             .serialized_size(&vec![0u32, 1u32, 2u32])
             .unwrap()
-            == 8 + 3 * 4
+            == LEN_SIZE + 3 * 4
     );
     // Below
     assert!(DefaultOptions::new()
@@ -885,4 +841,13 @@ fn test_big_endian_deserialize_from_seed() {
     }
 
     assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
+}
+
+#[cfg(feature = "varint")]
+#[test]
+fn test_varint_length_prefixes() {
+    assert_eq!(serialized_size(&vec![0u8; 127][..]).unwrap(), 1 + 127); // 2 ** 7 - 1
+    assert_eq!(serialized_size(&vec![0u8; 128][..]).unwrap(), 2 + 128); // 2 ** 7
+    assert_eq!(serialized_size(&vec![0u8; 16383][..]).unwrap(), 2 + 16383); // 2 ** 14 - 1
+    assert_eq!(serialized_size(&vec![0u8; 16384][..]).unwrap(), 3 + 16384); // 2 ** 14
 }
