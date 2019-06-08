@@ -33,5 +33,9 @@ autocfg = "0.1.2"
 # feature will be removed if and when a new major version is released.
 i128 = []
 
+# Enabling this feature will make bincode treat enum discriminants and
+# sequence lengths as varints instead of u32s.
+varint = []
+
 [badges]
 travis-ci = { repository = "servo/bincode" }

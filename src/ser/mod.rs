@@ -31,6 +31,43 @@ impl<W: Write, O: Options> Serializer<W, O> {
     }
 }
 
+#[cfg(not(feature = "varint"))]
+impl<W: Write, O: Options> Serializer<W, O> {
+    fn serialize_discriminant(&mut self, idx: u32) -> Result<()> {
+        use serde::Serialize;
+
+        idx.serialize(self)
+    }
+
+    fn serialize_len(&mut self, len: usize) -> Result<()> {
+        use serde::Serialize;
+
+        (len as u64).serialize(self)
+    }
+}
+
+#[cfg(feature = "varint")]
+impl<W: Write, O: Options> Serializer<W, O> {
+    fn serialize_discriminant(&mut self, idx: u32) -> Result<()> {
+        self.serialize_varint(idx as usize)
+    }
+
+    fn serialize_len(&mut self, len: usize) -> Result<()> {
+        self.serialize_varint(len)
+    }
+
+    fn serialize_varint(&mut self, mut n: usize) -> Result<()> {
+        use serde::Serialize;
+
+        while n > 127 {
+            try!((128 | n as u8).serialize(&mut *self));
+            n >>= 7;
+        }
+
+        (n as u8).serialize(&mut *self)
+    }
+}
+
 impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     type Ok = ();
     type Error = Error;
@@ -125,7 +162,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
-        try!(self.serialize_u64(v.len() as u64));
+        try!(self.serialize_len(v.len()));
         self.writer.write_all(v.as_bytes()).map_err(Into::into)
     }
 
@@ -136,7 +173,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
-        try!(self.serialize_u64(v.len() as u64));
+        try!(self.serialize_len(v.len()));
         self.writer.write_all(v).map_err(Into::into)
     }
 
@@ -154,7 +191,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
-        try!(self.serialize_u64(len as u64));
+        try!(self.serialize_len(len));
         Ok(Compound { ser: self })
     }
 
@@ -177,13 +214,13 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        try!(self.serialize_u32(variant_index));
+        try!(self.serialize_discriminant(variant_index));
         Ok(Compound { ser: self })
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
-        try!(self.serialize_u64(len as u64));
+        try!(self.serialize_len(len));
         Ok(Compound { ser: self })
     }
 
@@ -198,7 +235,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        try!(self.serialize_u32(variant_index));
+        try!(self.serialize_discriminant(variant_index));
         Ok(Compound { ser: self })
     }
 
@@ -219,7 +256,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     where
         T: serde::ser::Serialize,
     {
-        try!(self.serialize_u32(variant_index));
+        try!(self.serialize_discriminant(variant_index));
         value.serialize(self)
     }
 
@@ -229,7 +266,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
-        self.serialize_u32(variant_index)
+        self.serialize_discriminant(variant_index)
     }
 
     fn is_human_readable(&self) -> bool {
@@ -253,6 +290,35 @@ impl<O: Options> SizeChecker<O> {
     fn add_value<T>(&mut self, t: T) -> Result<()> {
         use std::mem::size_of_val;
         self.add_raw(size_of_val(&t) as u64)
+    }
+}
+
+#[cfg(not(feature = "varint"))]
+impl<O: Options> SizeChecker<O> {
+    fn add_discriminant(&mut self, idx: u32) -> Result<()> {
+        self.add_value(idx)
+    }
+
+    fn add_len(&mut self, _: usize) -> Result<()> {
+        self.add_value(0 as u64)
+    }
+}
+
+#[cfg(feature = "varint")]
+impl<O: Options> SizeChecker<O> {
+    fn add_discriminant(&mut self, idx: u32) -> Result<()> {
+        self.add_varint(idx as usize)
+    }
+
+    fn add_len(&mut self, len: usize) -> Result<()> {
+        self.add_varint(len)
+    }
+
+    fn add_varint(&mut self, int: usize) -> Result<()> {
+        use std::mem::size_of;
+        let bits = size_of::<usize>() * 8 - int.leading_zeros() as usize;
+
+        self.add_raw(((bits.saturating_sub(1) / 7) + 1) as u64)
     }
 }
 
@@ -330,7 +396,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
-        try!(self.add_value(0 as u64));
+        try!(self.add_len(v.len()));
         self.add_raw(v.len() as u64)
     }
 
@@ -339,7 +405,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
-        try!(self.add_value(0 as u64));
+        try!(self.add_len(v.len()));
         self.add_raw(v.len() as u64)
     }
 
@@ -358,7 +424,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
 
-        try!(self.serialize_u64(len as u64));
+        try!(self.add_len(len));
         Ok(SizeCompound { ser: self })
     }
 
@@ -388,7 +454,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         let len = try!(len.ok_or(ErrorKind::SequenceMustHaveLength));
 
-        try!(self.serialize_u64(len as u64));
+        try!(self.add_len(len));
         Ok(SizeCompound { ser: self })
     }
 
@@ -403,7 +469,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        try!(self.add_value(variant_index));
+        try!(self.add_discriminant(variant_index));
         Ok(SizeCompound { ser: self })
     }
 
@@ -421,7 +487,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
-        self.add_value(variant_index)
+        self.add_discriminant(variant_index)
     }
 
     fn serialize_newtype_variant<V: serde::Serialize + ?Sized>(
@@ -431,7 +497,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         _variant: &'static str,
         value: &V,
     ) -> Result<()> {
-        try!(self.add_value(variant_index));
+        try!(self.add_discriminant(variant_index));
         value.serialize(self)
     }
 
