@@ -39,6 +39,66 @@ pub enum ErrorKind {
     Custom(String),
 }
 
+impl Clone for ErrorKind {
+    fn clone(&self) -> ErrorKind {
+        match self {
+            ErrorKind::Io(ioe) => {
+                ErrorKind::Io(std::io::Error::new(ioe.kind(), format!("{:?}", ioe)))
+            }
+            ErrorKind::InvalidUtf8Encoding(utferror) => {
+                ErrorKind::InvalidUtf8Encoding(utferror.clone())
+            }
+            ErrorKind::InvalidBoolEncoding(boo) => ErrorKind::InvalidBoolEncoding(boo.clone()),
+            ErrorKind::InvalidCharEncoding => ErrorKind::InvalidCharEncoding,
+            ErrorKind::InvalidTagEncoding(size) => ErrorKind::InvalidTagEncoding(size.clone()),
+            ErrorKind::DeserializeAnyNotSupported => ErrorKind::DeserializeAnyNotSupported,
+            ErrorKind::SizeLimit => ErrorKind::SizeLimit,
+            ErrorKind::SequenceMustHaveLength => ErrorKind::SequenceMustHaveLength,
+            ErrorKind::Custom(what) => ErrorKind::Custom(what.clone()),
+        }
+    }
+}
+
+impl PartialEq for ErrorKind {
+    fn eq(&self, other: &ErrorKind) -> bool {
+        match *self {
+            ErrorKind::Io(_) => false,
+            ErrorKind::InvalidUtf8Encoding(ref l) => {
+                if let ErrorKind::InvalidUtf8Encoding(ref r) = *other {
+                    l == r
+                } else {
+                    false
+                }
+            }
+            ErrorKind::InvalidBoolEncoding(ref l) => {
+                if let ErrorKind::InvalidBoolEncoding(ref r) = *other {
+                    l == r
+                } else {
+                    false
+                }
+            }
+            ErrorKind::InvalidCharEncoding => true,
+            ErrorKind::InvalidTagEncoding(ref l) => {
+                if let ErrorKind::InvalidTagEncoding(ref r) = *other {
+                    l == r
+                } else {
+                    false
+                }
+            }
+            ErrorKind::DeserializeAnyNotSupported => true,
+            ErrorKind::SizeLimit => true,
+            ErrorKind::SequenceMustHaveLength => true,
+            ErrorKind::Custom(ref l) => {
+                if let ErrorKind::Custom(ref r) = *other {
+                    l == r
+                } else {
+                    false
+                }
+            }
+        }
+    }
+}
+
 impl StdError for ErrorKind {
     fn description(&self) -> &str {
         match *self {

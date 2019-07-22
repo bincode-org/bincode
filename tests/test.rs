@@ -255,6 +255,32 @@ fn deserializing_errors() {
 }
 
 #[test]
+fn error_cloning() {
+    let a = *deserialize::<bool>(&vec![0xA][..]).unwrap_err();
+    let b = a.clone();
+    assert_eq!(a, b);
+
+    let c = *deserialize::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]).unwrap_err();
+    let d = c.clone();
+    assert_eq!(c, d);
+
+    // Out-of-bounds variant
+    #[derive(Serialize, Deserialize, Debug)]
+    enum Test {
+        One,
+        Two,
+    };
+
+    let e = *deserialize::<Test>(&vec![0, 0, 0, 5][..]).unwrap_err();
+    let f = e.clone();
+    assert_eq!(e, f);
+
+    let g = *deserialize::<Option<u8>>(&vec![5, 0][..]).unwrap_err();
+    let h = g.clone();
+    assert_eq!(g, h);
+}
+
+#[test]
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
     let deserialized: Result<u32> = config().limit(3).deserialize_from(&mut &serialized[..]);
@@ -332,12 +358,10 @@ fn test_serialized_size_bounded() {
     assert!(config().limit(7).serialized_size(&0u64).is_err());
     assert!(config().limit(7).serialized_size(&"").is_err());
     assert!(config().limit(8 + 0).serialized_size(&"a").is_err());
-    assert!(
-        config()
-            .limit(8 + 3 * 4 - 1)
-            .serialized_size(&vec![0u32, 1u32, 2u32])
-            .is_err()
-    );
+    assert!(config()
+        .limit(8 + 3 * 4 - 1)
+        .serialized_size(&vec![0u32, 1u32, 2u32])
+        .is_err());
 }
 
 #[test]
@@ -421,7 +445,8 @@ fn test_oom_protection() {
         .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
-        }).unwrap();
+        })
+        .unwrap();
     let y: Result<Vec<u8>> = config()
         .limit(10)
         .deserialize_from(&mut Cursor::new(&x[..]));
@@ -579,7 +604,8 @@ fn test_zero_copy_parse_deserialize_into() {
                 slice: &encoded[..],
             },
             &mut target,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(target, f);
     }
 }
