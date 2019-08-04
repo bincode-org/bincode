@@ -150,13 +150,13 @@ where
     }
 }
 
-impl<R> BincodeRead<'static> for IoReader<R>
+impl<'a, R> BincodeRead<'a> for IoReader<R>
 where
     R: io::Read,
 {
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
-        V: serde::de::Visitor<'static>,
+        V: serde::de::Visitor<'a>,
     {
         self.fill_buffer(length)?;
 
@@ -176,7 +176,7 @@ where
 
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
-        V: serde::de::Visitor<'static>,
+        V: serde::de::Visitor<'a>,
     {
         self.fill_buffer(length)?;
         let r = visitor.visit_bytes(&self.temp_buffer[..]);
