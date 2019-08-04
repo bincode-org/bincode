@@ -679,3 +679,40 @@ fn test_big_endian_deserialize_seed() {
 
     assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
 }
+
+#[test]
+fn test_default_deserialize_from_seed() {
+    let config = config();
+
+    let data: Vec<_> = (10..100).collect();
+    let bytes = config.serialize(&data).expect("Config::serialize failed");
+
+    let mut seed_data: Vec<_> = (0..10).collect();
+    {
+        let seed = ExtendVec(&mut seed_data);
+        config
+            .deserialize_from_seed(seed, &mut &*bytes)
+            .expect("Config::deserialize_from_seed failed");
+    }
+
+    assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
+}
+
+#[test]
+fn test_big_endian_deserialize_from_seed() {
+    let mut config = config();
+    config.big_endian();
+
+    let data: Vec<_> = (10..100).collect();
+    let bytes = config.serialize(&data).expect("Config::serialize failed");
+
+    let mut seed_data: Vec<_> = (0..10).collect();
+    {
+        let seed = ExtendVec(&mut seed_data);
+        config
+            .deserialize_from_seed(seed, &mut &*bytes)
+            .expect("Config::deserialize_from_seed failed");
+    }
+
+    assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
+}
