@@ -3,6 +3,7 @@ extern crate serde_derive;
 
 extern crate bincode;
 extern crate byteorder;
+#[macro_use]
 extern crate serde;
 extern crate serde_bytes;
 
@@ -72,18 +73,19 @@ fn test_numbers() {
     the_same(5f64);
 }
 
-#[cfg(has_i128)]
-#[test]
-fn test_numbers_128bit() {
-    // unsigned positive
-    the_same(5u128);
-    the_same(u128::max_value());
-    // signed positive
-    the_same(5i128);
-    the_same(i128::max_value());
-    // signed negative
-    the_same(-5i128);
-    the_same(i128::min_value());
+serde_if_integer128! {
+    #[test]
+    fn test_numbers_128bit() {
+        // unsigned positive
+        the_same(5u128);
+        the_same(u128::max_value());
+        // signed positive
+        the_same(5i128);
+        the_same(i128::max_value());
+        // signed negative
+        the_same(-5i128);
+        the_same(i128::min_value());
+    }
 }
 
 #[test]
