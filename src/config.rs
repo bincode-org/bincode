@@ -69,13 +69,13 @@ impl Options for DefaultOptions {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum LimitOption {
     Unlimited,
     Limited(u64),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum EndianOption {
     Big,
     Little,
@@ -95,7 +95,7 @@ enum EndianOption {
 ///
 /// When a byte limit is set, bincode will return `Err` on any deserialization that goes over the limit, or any
 /// serialization that goes over the limit.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Config {
     limit: LimitOption,
     endian: EndianOption,
