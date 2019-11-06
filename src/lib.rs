@@ -51,7 +51,9 @@ pub trait DeserializerAcceptor<'a> {
     /// The return type for the accept method
     type Output;
     /// Accept a serde::Deserializer and do whatever you want with it.
-    fn accept<T: serde::Deserializer<'a>>(self, T) -> Self::Output;
+    fn accept<T>(self, T) -> Self::Output
+    where
+        T: serde::Deserializer<'a, Error = Error>;
 }
 
 /// An object that implements this trait can be passed a
@@ -63,7 +65,9 @@ pub trait SerializerAcceptor {
     /// The return type for the accept method
     type Output;
     /// Accept a serde::Serializer and do whatever you want with it.
-    fn accept<T: serde::Serializer>(self, T) -> Self::Output;
+    fn accept<T>(self, T) -> Self::Output
+    where
+        T: serde::Serializer<Ok = (), Error = Error>;
 }
 
 /// Get a default configuration object.
