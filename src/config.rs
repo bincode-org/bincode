@@ -1,4 +1,4 @@
-use super::internal::{Bounded, Infinite, SizeLimit, SizeType};
+use super::internal::{Bounded, Infinite, SizeLimit, SizeType, U8, U16, U32, U64};
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
 use error::Result;
@@ -9,7 +9,6 @@ use {DeserializerAcceptor, SerializerAcceptor};
 
 use self::EndianOption::*;
 use self::LimitOption::*;
-use internal::U64;
 
 struct DefaultOptions(Infinite);
 
@@ -41,6 +40,14 @@ pub(crate) trait OptionsExt: Options + Sized {
 
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
+    }
+
+    fn with_string_size<S>(self) -> WithOtherStringLength<Self, S> where S: SizeType {
+        WithOtherStringLength::new(self)
+    }
+
+    fn with_array_size<S>(self) -> WithOtherArrayLength<Self, S> where S: SizeType {
+        WithOtherArrayLength::new(self)
     }
 }
 
@@ -90,7 +97,7 @@ enum EndianOption {
 }
 
 #[derive(Clone, Copy)]
-enum LengthOption {
+pub enum LengthOption {
     U64,
     U32,
     U16,
@@ -137,13 +144,13 @@ pub(crate) struct WithOtherEndian<O: Options, E: ByteOrder> {
 }
 
 pub(crate) struct WithOtherStringLength<O: Options, L: SizeType> {
-    _options: O,
-    pub(crate) new_string_length: L,
+    options: O,
+    _new_string_length: PhantomData<L>,
 }
 
 pub(crate) struct WithOtherArrayLength<O: Options, L: SizeType> {
-    _options: O,
-    pub(crate) new_array_length: L,
+    options: O,
+    _new_array_length: PhantomData<L>,
 }
 
 impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
@@ -168,20 +175,20 @@ impl<O: Options, E: ByteOrder> WithOtherEndian<O, E> {
 
 impl<O: Options, L: SizeType> WithOtherStringLength<O, L> {
     #[inline(always)]
-    pub(crate) fn new(options: O, limit: L) -> WithOtherStringLength<O, L> {
+    pub(crate) fn new(options: O) -> WithOtherStringLength<O, L> {
         WithOtherStringLength {
-            _options: options,
-            new_string_length: limit,
+            options: options,
+            _new_string_length: PhantomData,
         }
     }
 }
 
 impl<O: Options, L: SizeType> WithOtherArrayLength<O, L> {
     #[inline(always)]
-    pub(crate) fn new(options: O, limit: L) -> WithOtherArrayLength<O, L> {
+    pub(crate) fn new(options: O) -> WithOtherArrayLength<O, L> {
         WithOtherArrayLength {
-            _options: options,
-            new_array_length: limit,
+            options: options,
+            _new_array_length: PhantomData,
         }
     }
 }
@@ -206,6 +213,28 @@ impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
 
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
+    }
+}
+
+impl<O: Options, L: SizeType + 'static> Options for WithOtherStringLength<O, L> {
+    type Limit = O::Limit;
+    type Endian = O::Endian;
+    type StringSize = L;
+    type ArraySize = O::ArraySize;
+
+    fn limit(&mut self) -> &mut O::Limit {
+        self.options.limit()
+    }
+}
+
+impl<O: Options, L: SizeType + 'static> Options for WithOtherArrayLength<O, L> {
+    type Limit = O::Limit;
+    type Endian = O::Endian;
+    type StringSize = O::StringSize;
+    type ArraySize = L;
+
+    fn limit(&mut self) -> &mut O::Limit {
+        self.options.limit()
     }
 }
 
@@ -243,10 +272,59 @@ macro_rules! config_map_endian {
     }
 }
 
+macro_rules! config_map_string_length {
+    ($self:expr, $opts:ident => $call:expr) => {
+        match $self.string_size {
+            LengthOption::U64 => {
+                let $opts = $opts.with_string_size::<U64>();
+                $call
+            }
+            LengthOption::U32 => {
+                let $opts = $opts.with_string_size::<U32>();
+                $call
+            }
+            LengthOption::U16 => {
+                let $opts = $opts.with_string_size::<U16>();
+                $call
+            }
+            LengthOption::U8 => {
+                let $opts = $opts.with_string_size::<U8>();
+                $call
+            }
+        }
+    }
+}
+
+macro_rules! config_map_array_length {
+    ($self:expr, $opts:ident => $call:expr) => {
+        match $self.array_size {
+            LengthOption::U64 => {
+                let $opts = $opts.with_array_size::<U64>();
+                $call
+            }
+            LengthOption::U32 => {
+                let $opts = $opts.with_array_size::<U32>();
+                $call
+            }
+            LengthOption::U16 => {
+                let $opts = $opts.with_array_size::<U16>();
+                $call
+            }
+            LengthOption::U8 => {
+                let $opts = $opts.with_array_size::<U8>();
+                $call
+            }
+        }
+    }
+}
+
 macro_rules! config_map {
     ($self:expr, $opts:ident => $call:expr) => {{
         let $opts = DefaultOptions::new();
-        config_map_limit!($self, $opts => config_map_endian!($self, $opts => $call))
+        config_map_limit!($self, $opts =>
+            config_map_endian!($self, $opts =>
+                config_map_string_length!($self, $opts =>
+                    config_map_array_length!($self, $opts => $call))))
     }}
 }
 
@@ -295,6 +373,20 @@ impl Config {
     #[inline(always)]
     pub fn native_endian(&mut self) -> &mut Self {
         self.endian = EndianOption::Native;
+        self
+    }
+
+    /// Sets the size used for lengths of strings
+    #[inline(always)]
+    pub fn string_length(&mut self, size: LengthOption) -> &mut Self {
+        self.string_size = size;
+        self
+    }
+
+    /// Sets the size used for lengths of arrays
+    #[inline(always)]
+    pub fn array_length(&mut self, size: LengthOption) -> &mut Self {
+        self.array_size = size;
         self
     }
 
