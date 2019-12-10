@@ -1,4 +1,4 @@
-use super::internal::{Bounded, Infinite, SizeLimit};
+use super::internal::{Bounded, Infinite, SizeLimit, SizeType};
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
 use error::Result;
@@ -9,12 +9,15 @@ use {DeserializerAcceptor, SerializerAcceptor};
 
 use self::EndianOption::*;
 use self::LimitOption::*;
+use internal::U64;
 
 struct DefaultOptions(Infinite);
 
 pub(crate) trait Options {
     type Limit: SizeLimit + 'static;
     type Endian: ByteOrder + 'static;
+    type StringSize: SizeType + 'static;
+    type ArraySize: SizeType + 'static;
 
     fn limit(&mut self) -> &mut Self::Limit;
 }
@@ -44,6 +47,8 @@ pub(crate) trait OptionsExt: Options + Sized {
 impl<'a, O: Options> Options for &'a mut O {
     type Limit = O::Limit;
     type Endian = O::Endian;
+    type StringSize = O::StringSize;
+    type ArraySize = O::ArraySize;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut Self::Limit {
@@ -62,6 +67,8 @@ impl DefaultOptions {
 impl Options for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
+    type StringSize = U64;
+    type ArraySize = U64;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
@@ -82,6 +89,15 @@ enum EndianOption {
     Native,
 }
 
+#[derive(Clone, Copy)]
+enum LengthOption {
+    U64,
+    U32,
+    U16,
+    U8,
+}
+
+
 /// A configuration builder whose options Bincode will use
 /// while serializing and deserializing.
 ///
@@ -95,10 +111,19 @@ enum EndianOption {
 ///
 /// When a byte limit is set, bincode will return `Err` on any deserialization that goes over the limit, or any
 /// serialization that goes over the limit.
+/// ### Array and String sizes
+/// When writing a string or an array is serialized the length is written at the beginning so that the data
+/// can be deserialized. The option is a way to configure how this length is encoded. The default for both
+/// is `U64`.
+///
+/// If a string or array is attempted to be serialized that is not fit within the type specified bincode will return `Err`
+/// on serialization.
 #[derive(Clone)]
 pub struct Config {
     limit: LimitOption,
     endian: EndianOption,
+    string_size: LengthOption,
+    array_size: LengthOption,
 }
 
 pub(crate) struct WithOtherLimit<O: Options, L: SizeLimit> {
@@ -109,6 +134,16 @@ pub(crate) struct WithOtherLimit<O: Options, L: SizeLimit> {
 pub(crate) struct WithOtherEndian<O: Options, E: ByteOrder> {
     options: O,
     _endian: PhantomData<E>,
+}
+
+pub(crate) struct WithOtherStringLength<O: Options, L: SizeType> {
+    _options: O,
+    pub(crate) new_string_length: L,
+}
+
+pub(crate) struct WithOtherArrayLength<O: Options, L: SizeType> {
+    _options: O,
+    pub(crate) new_array_length: L,
 }
 
 impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
@@ -131,9 +166,31 @@ impl<O: Options, E: ByteOrder> WithOtherEndian<O, E> {
     }
 }
 
+impl<O: Options, L: SizeType> WithOtherStringLength<O, L> {
+    #[inline(always)]
+    pub(crate) fn new(options: O, limit: L) -> WithOtherStringLength<O, L> {
+        WithOtherStringLength {
+            _options: options,
+            new_string_length: limit,
+        }
+    }
+}
+
+impl<O: Options, L: SizeType> WithOtherArrayLength<O, L> {
+    #[inline(always)]
+    pub(crate) fn new(options: O, limit: L) -> WithOtherArrayLength<O, L> {
+        WithOtherArrayLength {
+            _options: options,
+            new_array_length: limit,
+        }
+    }
+}
+
 impl<O: Options, E: ByteOrder + 'static> Options for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
+    type StringSize = O::StringSize;
+    type ArraySize = O::ArraySize;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
@@ -144,42 +201,53 @@ impl<O: Options, E: ByteOrder + 'static> Options for WithOtherEndian<O, E> {
 impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     type Limit = L;
     type Endian = O::Endian;
+    type StringSize = O::StringSize;
+    type ArraySize = O::ArraySize;
 
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
     }
 }
 
-macro_rules! config_map {
+macro_rules! config_map_limit {
     ($self:expr, $opts:ident => $call:expr) => {
-        match ($self.limit, $self.endian) {
-            (Unlimited, Little) => {
-                let $opts = DefaultOptions::new().with_no_limit().with_little_endian();
+        match $self.limit {
+            LimitOption::Unlimited => {
+                let $opts = $opts.with_no_limit();
                 $call
             }
-            (Unlimited, Big) => {
-                let $opts = DefaultOptions::new().with_no_limit().with_big_endian();
-                $call
-            }
-            (Unlimited, Native) => {
-                let $opts = DefaultOptions::new().with_no_limit().with_native_endian();
-                $call
-            }
-
-            (Limited(l), Little) => {
-                let $opts = DefaultOptions::new().with_limit(l).with_little_endian();
-                $call
-            }
-            (Limited(l), Big) => {
-                let $opts = DefaultOptions::new().with_limit(l).with_big_endian();
-                $call
-            }
-            (Limited(l), Native) => {
-                let $opts = DefaultOptions::new().with_limit(l).with_native_endian();
+            LimitOption::Limited(l) => {
+                let $opts = $opts.with_limit(l);
                 $call
             }
         }
-    };
+    }
+}
+
+macro_rules! config_map_endian {
+    ($self:expr, $opts:ident => $call:expr) => {
+        match $self.endian {
+            EndianOption::Little => {
+                let $opts = $opts.with_little_endian();
+                $call
+            }
+            EndianOption::Big => {
+                let $opts = $opts.with_big_endian();
+                $call
+            }
+            EndianOption::Native => {
+                let $opts = $opts.with_native_endian();
+                $call
+            }
+        }
+    }
+}
+
+macro_rules! config_map {
+    ($self:expr, $opts:ident => $call:expr) => {{
+        let $opts = DefaultOptions::new();
+        config_map_limit!($self, $opts => config_map_endian!($self, $opts => $call))
+    }}
 }
 
 impl Config {
@@ -188,6 +256,8 @@ impl Config {
         Config {
             limit: LimitOption::Unlimited,
             endian: EndianOption::Little,
+            string_size: LengthOption::U64,
+            array_size: LengthOption::U64,
         }
     }
 

@@ -189,3 +189,25 @@ impl SizeLimit for Infinite {
         None
     }
 }
+
+pub(crate) trait SizeType: Clone{}
+
+/// An 8 byte length
+#[derive(Copy, Clone)]
+pub struct U64;
+impl SizeType for U64{}
+
+/// A 4 byte length
+#[derive(Copy, Clone)]
+pub struct U32;
+impl SizeType for U32{}
+
+/// A 2 byte length
+#[derive(Copy, Clone)]
+pub struct U16;
+impl SizeType for U16{}
+
+/// A 1 byte length
+#[derive(Copy, Clone)]
+pub struct U8;
+impl SizeType for U8{}
