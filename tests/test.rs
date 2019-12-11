@@ -469,6 +469,10 @@ fn test_oom_protection() {
         .limit(10)
         .deserialize_from(&mut Cursor::new(&x[..]));
     assert!(y.is_err());
+    let y: Result<String> = config()
+        .limit(10)
+        .deserialize_from(&mut Cursor::new(&x[..]));
+    assert!(y.is_err());
 }
 
 #[test]
