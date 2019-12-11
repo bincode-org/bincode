@@ -96,11 +96,16 @@ enum EndianOption {
     Native,
 }
 
+/// Used to specify the unit used for length of strings and arrays via `config.string_length` or `config.array_length`.
 #[derive(Clone, Copy)]
 pub enum LengthOption {
+    ///64 unsigned bits
     U64,
+    ///32 unsigned bits
     U32,
+    ///16 unsigned bits
     U16,
+    ///8 unsigned bits
     U8,
 }
 

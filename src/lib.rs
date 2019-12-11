@@ -38,7 +38,7 @@ mod error;
 mod internal;
 mod ser;
 
-pub use config::Config;
+pub use config::{Config, LengthOption};
 pub use de::read::{BincodeRead, IoReader, SliceReader};
 pub use error::{Error, ErrorKind, Result};
 
