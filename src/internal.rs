@@ -204,7 +204,7 @@ pub(crate) trait SizeType: Clone {
         S: serde::Serializer,
         Box<ErrorKind>: From<S::Error>,
     {
-        let value: Self::Primitive = value.try_into().map_err(|e| ErrorKind::SizeTypeLimit)?;
+        let value: Self::Primitive = value.try_into().map_err(|_e| ErrorKind::SizeTypeLimit)?;
         Self::write_to(writer, value)
     }
 

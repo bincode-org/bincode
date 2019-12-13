@@ -7,9 +7,6 @@ use std::io::{Read, Write};
 use std::marker::PhantomData;
 use {DeserializerAcceptor, SerializerAcceptor};
 
-use self::EndianOption::*;
-use self::LimitOption::*;
-
 struct DefaultOptions(Infinite);
 
 pub(crate) trait Options {
