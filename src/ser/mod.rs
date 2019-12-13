@@ -126,7 +126,6 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         self.writer.write_f64::<O::Endian>(v).map_err(Into::into)
     }
 
-
     fn serialize_str(self, v: &str) -> Result<()> {
         let ser = &mut *self;
         O::StringSize::write(ser, v.len())?;

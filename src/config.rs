@@ -1,4 +1,4 @@
-use super::internal::{Bounded, Infinite, SizeLimit, SizeType, U8, U16, U32, U64};
+use super::internal::{Bounded, Infinite, SizeLimit, SizeType, U16, U32, U64, U8};
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
 use error::Result;
@@ -42,11 +42,17 @@ pub(crate) trait OptionsExt: Options + Sized {
         WithOtherEndian::new(self)
     }
 
-    fn with_string_size<S>(self) -> WithOtherStringLength<Self, S> where S: SizeType {
+    fn with_string_size<S>(self) -> WithOtherStringLength<Self, S>
+    where
+        S: SizeType,
+    {
         WithOtherStringLength::new(self)
     }
 
-    fn with_array_size<S>(self) -> WithOtherArrayLength<Self, S> where S: SizeType {
+    fn with_array_size<S>(self) -> WithOtherArrayLength<Self, S>
+    where
+        S: SizeType,
+    {
         WithOtherArrayLength::new(self)
     }
 }
@@ -108,7 +114,6 @@ pub enum LengthOption {
     ///8 unsigned bits
     U8,
 }
-
 
 /// A configuration builder whose options Bincode will use
 /// while serializing and deserializing.
@@ -255,7 +260,7 @@ macro_rules! config_map_limit {
                 $call
             }
         }
-    }
+    };
 }
 
 macro_rules! config_map_endian {
@@ -274,7 +279,7 @@ macro_rules! config_map_endian {
                 $call
             }
         }
-    }
+    };
 }
 
 macro_rules! config_map_string_length {
@@ -297,7 +302,7 @@ macro_rules! config_map_string_length {
                 $call
             }
         }
-    }
+    };
 }
 
 macro_rules! config_map_array_length {
@@ -320,7 +325,7 @@ macro_rules! config_map_array_length {
                 $call
             }
         }
-    }
+    };
 }
 
 macro_rules! config_map {

@@ -1,6 +1,6 @@
 use config::Options;
-use std::io::Read;
 use std::convert::TryInto;
+use std::io::Read;
 
 use self::read::BincodeRead;
 use byteorder::ReadBytesExt;
@@ -189,12 +189,10 @@ where
             return Err(error());
         }
 
-        let res = try!(
-            str::from_utf8(&buf[..width])
-                .ok()
-                .and_then(|s| s.chars().next())
-                .ok_or(error())
-        );
+        let res = try!(str::from_utf8(&buf[..width])
+            .ok()
+            .and_then(|s| s.chars().next())
+            .ok_or(error()));
         visitor.visit_char(res)
     }
 

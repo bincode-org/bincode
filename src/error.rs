@@ -56,7 +56,9 @@ impl StdError for ErrorKind {
                 "Bincode doesn't support serde::Deserializer::deserialize_any"
             }
             ErrorKind::SizeLimit => "the size limit has been reached",
-            ErrorKind::SizeTypeLimit => "the size is larger than can be represented with this config",
+            ErrorKind::SizeTypeLimit => {
+                "the size is larger than can be represented with this config"
+            }
             ErrorKind::Custom(ref msg) => msg,
         }
     }

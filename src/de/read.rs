@@ -145,9 +145,7 @@ where
         // Then create a slice with the length as our desired length. This is
         // safe as long as we only write (no reads) to this buffer, because
         // `reserve_exact` above has allocated this space.
-        let buf = unsafe {
-            slice::from_raw_parts_mut(self.temp_buffer.as_mut_ptr(), length)
-        };
+        let buf = unsafe { slice::from_raw_parts_mut(self.temp_buffer.as_mut_ptr(), length) };
 
         // This method is assumed to properly handle slices which include
         // uninitialized bytes (as ours does). See discussion at the link below.

@@ -13,7 +13,7 @@ use std::result::Result as StdResult;
 
 use bincode::{
     config, deserialize, deserialize_from, deserialize_in_place, serialize, serialized_size,
-    ErrorKind, Result, LengthOption,
+    ErrorKind, LengthOption, Result,
 };
 use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
@@ -46,8 +46,8 @@ fn test_numbers() {
 }
 
 fn the_same<V>(element: V)
-    where
-        V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
+where
+    V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
 {
     let size = serialized_size(&element).unwrap();
 
@@ -75,9 +75,15 @@ fn the_same<V>(element: V)
 
 fn the_same_str(element: String) {
     let with_length = |length: LengthOption| {
-        let size = config().string_length(length).serialized_size(&element).unwrap();
+        let size = config()
+            .string_length(length)
+            .serialized_size(&element)
+            .unwrap();
         let encoded = config().string_length(length).serialize(&element).unwrap();
-        let decoded: String = config().string_length(length).deserialize(&encoded[..]).unwrap();
+        let decoded: String = config()
+            .string_length(length)
+            .deserialize(&encoded[..])
+            .unwrap();
         let decoded_reader: String = config()
             .string_length(length)
             .deserialize_from(&mut &encoded[..])
@@ -94,11 +100,20 @@ fn the_same_str(element: String) {
     the_same(element);
 }
 
-fn the_same_vec<T>(element: Vec<T>) where T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static {
+fn the_same_vec<T>(element: Vec<T>)
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
+{
     let with_length = |length: LengthOption| {
-        let size = config().string_length(length).serialized_size(&element).unwrap();
+        let size = config()
+            .string_length(length)
+            .serialized_size(&element)
+            .unwrap();
         let encoded = config().string_length(length).serialize(&element).unwrap();
-        let decoded: Vec<T> = config().string_length(length).deserialize(&encoded[..]).unwrap();
+        let decoded: Vec<T> = config()
+            .string_length(length)
+            .deserialize(&encoded[..])
+            .unwrap();
         let decoded_reader: Vec<T> = config()
             .string_length(length)
             .deserialize_from(&mut &encoded[..])
@@ -375,12 +390,10 @@ fn test_serialized_size_bounded() {
     assert!(config().limit(7).serialized_size(&0u64).is_err());
     assert!(config().limit(7).serialized_size(&"").is_err());
     assert!(config().limit(8 + 0).serialized_size(&"a").is_err());
-    assert!(
-        config()
-            .limit(8 + 3 * 4 - 1)
-            .serialized_size(&vec![0u32, 1u32, 2u32])
-            .is_err()
-    );
+    assert!(config()
+        .limit(8 + 3 * 4 - 1)
+        .serialized_size(&vec![0u32, 1u32, 2u32])
+        .is_err());
 }
 
 #[test]
@@ -460,11 +473,12 @@ fn test_oom_protection() {
         byte: u8,
     }
     let x = config()
-                .limit(10)
+        .limit(10)
         .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
-        }).unwrap();
+        })
+        .unwrap();
     let y: Result<Vec<u8>> = config()
         .limit(10)
         .deserialize_from(&mut Cursor::new(&x[..]));
@@ -626,7 +640,8 @@ fn test_zero_copy_parse_deserialize_into() {
                 slice: &encoded[..],
             },
             &mut target,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(target, f);
     }
 }
@@ -772,20 +787,48 @@ fn test_str_size() {
     let actual = config().serialize(str).unwrap().len();
     assert_eq!(12, expected);
     assert_eq!(12, actual);
-    let expected = config().string_length(LengthOption::U64).serialized_size(str).unwrap();
-    let actual = config().string_length(LengthOption::U64).serialize(str).unwrap().len();
+    let expected = config()
+        .string_length(LengthOption::U64)
+        .serialized_size(str)
+        .unwrap();
+    let actual = config()
+        .string_length(LengthOption::U64)
+        .serialize(str)
+        .unwrap()
+        .len();
     assert_eq!(12, expected);
     assert_eq!(12, actual);
-    let expected = config().string_length(LengthOption::U32).serialized_size(str).unwrap();
-    let actual = config().string_length(LengthOption::U32).serialize(str).unwrap().len();
+    let expected = config()
+        .string_length(LengthOption::U32)
+        .serialized_size(str)
+        .unwrap();
+    let actual = config()
+        .string_length(LengthOption::U32)
+        .serialize(str)
+        .unwrap()
+        .len();
     assert_eq!(8, expected);
     assert_eq!(8, actual);
-    let expected = config().string_length(LengthOption::U16).serialized_size(str).unwrap();
-    let actual = config().string_length(LengthOption::U16).serialize(str).unwrap().len();
+    let expected = config()
+        .string_length(LengthOption::U16)
+        .serialized_size(str)
+        .unwrap();
+    let actual = config()
+        .string_length(LengthOption::U16)
+        .serialize(str)
+        .unwrap()
+        .len();
     assert_eq!(6, expected);
     assert_eq!(6, actual);
-    let expected = config().string_length(LengthOption::U8).serialized_size(str).unwrap();
-    let actual = config().string_length(LengthOption::U8).serialize(str).unwrap().len();
+    let expected = config()
+        .string_length(LengthOption::U8)
+        .serialized_size(str)
+        .unwrap();
+    let actual = config()
+        .string_length(LengthOption::U8)
+        .serialize(str)
+        .unwrap()
+        .len();
     assert_eq!(5, expected);
     assert_eq!(5, actual);
 }
@@ -798,20 +841,48 @@ fn test_vec_size() {
     let actual = config().serialize(&v).unwrap().len();
     assert_eq!(16 + 8, expected);
     assert_eq!(16 + 8, actual);
-    let expected = config().array_length(LengthOption::U64).serialized_size(&v).unwrap();
-    let actual = config().array_length(LengthOption::U64).serialize(&v).unwrap().len();
+    let expected = config()
+        .array_length(LengthOption::U64)
+        .serialized_size(&v)
+        .unwrap();
+    let actual = config()
+        .array_length(LengthOption::U64)
+        .serialize(&v)
+        .unwrap()
+        .len();
     assert_eq!(16 + 8, expected);
     assert_eq!(16 + 8, actual);
-    let expected = config().array_length(LengthOption::U32).serialized_size(&v).unwrap();
-    let actual = config().array_length(LengthOption::U32).serialize(&v).unwrap().len();
+    let expected = config()
+        .array_length(LengthOption::U32)
+        .serialized_size(&v)
+        .unwrap();
+    let actual = config()
+        .array_length(LengthOption::U32)
+        .serialize(&v)
+        .unwrap()
+        .len();
     assert_eq!(16 + 4, expected);
     assert_eq!(16 + 4, actual);
-    let expected = config().array_length(LengthOption::U16).serialized_size(&v).unwrap();
-    let actual = config().array_length(LengthOption::U16).serialize(&v).unwrap().len();
+    let expected = config()
+        .array_length(LengthOption::U16)
+        .serialized_size(&v)
+        .unwrap();
+    let actual = config()
+        .array_length(LengthOption::U16)
+        .serialize(&v)
+        .unwrap()
+        .len();
     assert_eq!(16 + 2, expected);
     assert_eq!(16 + 2, actual);
-    let expected = config().array_length(LengthOption::U8).serialized_size(&v).unwrap();
-    let actual = config().array_length(LengthOption::U8).serialize(&v).unwrap().len();
+    let expected = config()
+        .array_length(LengthOption::U8)
+        .serialized_size(&v)
+        .unwrap();
+    let actual = config()
+        .array_length(LengthOption::U8)
+        .serialize(&v)
+        .unwrap()
+        .len();
     assert_eq!(16 + 1, expected);
     assert_eq!(16 + 1, actual);
 }
