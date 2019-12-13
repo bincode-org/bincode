@@ -1,6 +1,6 @@
 use config::Options;
-use std::convert::TryInto;
 use std::io::Read;
+use super::try_into::*;
 
 use self::read::BincodeRead;
 use byteorder::ReadBytesExt;
