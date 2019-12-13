@@ -194,7 +194,7 @@ impl SizeLimit for Infinite {
 pub(crate) trait SizeType: Clone {
     type Primitive: serde::de::DeserializeOwned + TryFrom<usize> + Into<u64>;
 
-    fn read(mut reader: impl FnMut() -> Result<Self::Primitive>) -> Result<u64> {
+    fn read(reader: &mut FnMut() -> Result<Self::Primitive>) -> Result<u64> {
         let result: Self::Primitive = reader()?;
         Ok(result.into())
     }
