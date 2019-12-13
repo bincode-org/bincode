@@ -33,6 +33,8 @@ pub enum ErrorKind {
     /// If (de)serializing a message takes more than the provided size limit, this
     /// error is returned.
     SizeLimit,
+    /// If serializing a string/vec/array requires more bytes to represent the size than the config allows.
+    SizeTypeLimit,
     /// Bincode can not encode sequences of unknown length (like iterators).
     SequenceMustHaveLength,
     /// A custom error message from Serde.
@@ -54,6 +56,7 @@ impl StdError for ErrorKind {
                 "Bincode doesn't support serde::Deserializer::deserialize_any"
             }
             ErrorKind::SizeLimit => "the size limit has been reached",
+            ErrorKind::SizeTypeLimit => "the size is larger than can be represented with this config",
             ErrorKind::Custom(ref msg) => msg,
         }
     }
@@ -68,6 +71,7 @@ impl StdError for ErrorKind {
             ErrorKind::SequenceMustHaveLength => None,
             ErrorKind::DeserializeAnyNotSupported => None,
             ErrorKind::SizeLimit => None,
+            ErrorKind::SizeTypeLimit => None,
             ErrorKind::Custom(_) => None,
         }
     }
@@ -93,6 +97,7 @@ impl fmt::Display for ErrorKind {
             }
             ErrorKind::SequenceMustHaveLength => write!(fmt, "{}", self.description()),
             ErrorKind::SizeLimit => write!(fmt, "{}", self.description()),
+            ErrorKind::SizeTypeLimit => write!(fmt, "{}", self.description()),
             ErrorKind::DeserializeAnyNotSupported => write!(
                 fmt,
                 "Bincode does not support the serde::Deserializer::deserialize_any method"

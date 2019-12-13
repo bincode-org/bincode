@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use config::{Options, OptionsExt};
 use de::read::BincodeRead;
 use {ErrorKind, Result};
+use std::convert::{TryInto, TryFrom};
 
 #[derive(Clone)]
 struct CountSize<L: SizeLimit> {
@@ -190,24 +191,65 @@ impl SizeLimit for Infinite {
     }
 }
 
-pub(crate) trait SizeType: Clone{}
+pub(crate) trait SizeType: Clone {
+    type Primitive : serde::de::DeserializeOwned + TryFrom<usize> + Into<u64>;
+
+    fn read(mut reader: impl FnMut() -> Result<Self::Primitive>) -> Result<u64> {
+        let result: Self::Primitive = reader()?;
+        Ok(result.into())
+    }
+
+    fn write<S>(writer: S, value: usize) -> Result<S::Ok>
+        where S: serde::Serializer,
+              Box<ErrorKind>: From<S::Error>  {
+        let value: Self::Primitive = value.try_into().map_err(|e| ErrorKind::SizeTypeLimit)?;
+        Self::write_to(writer, value)
+    }
+
+    fn write_to<S>(writer: S, value: Self::Primitive) -> Result<S::Ok>
+        where  S: serde::Serializer, Box<ErrorKind>: From<S::Error> ;
+}
 
 /// An 8 byte length
 #[derive(Copy, Clone)]
 pub struct U64;
-impl SizeType for U64{}
+impl SizeType for U64 {
+    type Primitive = u64;
+    fn write_to<S>(writer: S, value: Self::Primitive) -> Result<S::Ok>
+        where  S: serde::Serializer, Box<ErrorKind>: From<S::Error> {
+        writer.serialize_u64(value).map_err(Into::into)
+    }
+}
 
 /// A 4 byte length
 #[derive(Copy, Clone)]
 pub struct U32;
-impl SizeType for U32{}
+impl SizeType for U32 {
+    type Primitive = u32;
+    fn write_to<S>(writer: S, value: Self::Primitive) -> Result<S::Ok>
+        where  S: serde::Serializer, Box<ErrorKind>: From<S::Error> {
+        writer.serialize_u32(value).map_err(Into::into)
+    }
+}
 
 /// A 2 byte length
 #[derive(Copy, Clone)]
 pub struct U16;
-impl SizeType for U16{}
+impl SizeType for U16 {
+    type Primitive = u16;
+    fn write_to<S>(writer: S, value: Self::Primitive) -> Result<S::Ok>
+        where  S: serde::Serializer, Box<ErrorKind>: From<S::Error> {
+        writer.serialize_u16(value).map_err(Into::into)
+    }
+}
 
 /// A 1 byte length
 #[derive(Copy, Clone)]
 pub struct U8;
-impl SizeType for U8{}
+impl SizeType for U8 {
+    type Primitive = u8;
+    fn write_to<S>(writer: S, value: Self::Primitive) -> Result<S::Ok>
+        where  S: serde::Serializer, Box<ErrorKind>: From<S::Error> {
+        writer.serialize_u8(value).map_err(Into::into)
+    }
+}

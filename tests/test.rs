@@ -75,7 +75,7 @@ fn the_same<V>(element: V)
 
 fn the_same_str(element: String) {
     let with_length = |length: LengthOption| {
-        let size = serialized_size(&element).unwrap();
+        let size = config().string_length(length).serialized_size(&element).unwrap();
         let encoded = config().string_length(length).serialize(&element).unwrap();
         let decoded: String = config().string_length(length).deserialize(&encoded[..]).unwrap();
         let decoded_reader: String = config()
@@ -96,7 +96,7 @@ fn the_same_str(element: String) {
 
 fn the_same_vec<T>(element: Vec<T>) where T: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static {
     let with_length = |length: LengthOption| {
-        let size = serialized_size(&element).unwrap();
+        let size = config().string_length(length).serialized_size(&element).unwrap();
         let encoded = config().string_length(length).serialize(&element).unwrap();
         let decoded: Vec<T> = config().string_length(length).deserialize(&encoded[..]).unwrap();
         let decoded_reader: Vec<T> = config()
@@ -768,30 +768,50 @@ fn test_big_endian_deserialize_from_seed() {
 fn test_str_size() {
     let str = "abcd";
     the_same_str(str.to_owned());
-    let size = config().serialized_size(str).unwrap();
-    assert_eq!(12, size);
-    let size = config().string_length(LengthOption::U64).serialized_size(str).unwrap();
-    assert_eq!(12, size);
-    let size = config().string_length(LengthOption::U32).serialized_size(str).unwrap();
-    assert_eq!(8, size);
-    let size = config().string_length(LengthOption::U16).serialized_size(str).unwrap();
-    assert_eq!(6, size);
-    let size = config().string_length(LengthOption::U8).serialized_size(str).unwrap();
-    assert_eq!(5, size);
+    let expected = config().serialized_size(str).unwrap();
+    let actual = config().serialize(str).unwrap().len();
+    assert_eq!(12, expected);
+    assert_eq!(12, actual);
+    let expected = config().string_length(LengthOption::U64).serialized_size(str).unwrap();
+    let actual = config().string_length(LengthOption::U64).serialize(str).unwrap().len();
+    assert_eq!(12, expected);
+    assert_eq!(12, actual);
+    let expected = config().string_length(LengthOption::U32).serialized_size(str).unwrap();
+    let actual = config().string_length(LengthOption::U32).serialize(str).unwrap().len();
+    assert_eq!(8, expected);
+    assert_eq!(8, actual);
+    let expected = config().string_length(LengthOption::U16).serialized_size(str).unwrap();
+    let actual = config().string_length(LengthOption::U16).serialize(str).unwrap().len();
+    assert_eq!(6, expected);
+    assert_eq!(6, actual);
+    let expected = config().string_length(LengthOption::U8).serialized_size(str).unwrap();
+    let actual = config().string_length(LengthOption::U8).serialize(str).unwrap().len();
+    assert_eq!(5, expected);
+    assert_eq!(5, actual);
 }
 
 #[test]
 fn test_vec_size() {
     let v = vec![1u32, 2, 3, 4];
     the_same_vec(v.clone());
-    let size = config().serialized_size(&v).unwrap();
-    assert_eq!(16 + 8, size);
-    let size = config().string_length(LengthOption::U64).serialized_size(&v).unwrap();
-    assert_eq!(16 + 8, size);
-    let size = config().string_length(LengthOption::U32).serialized_size(&v).unwrap();
-    assert_eq!(16 + 4, size);
-    let size = config().string_length(LengthOption::U16).serialized_size(&v).unwrap();
-    assert_eq!(16 + 2, size);
-    let size = config().string_length(LengthOption::U8).serialized_size(&v).unwrap();
-    assert_eq!(16 + 1, size);
+    let expected = config().serialized_size(&v).unwrap();
+    let actual = config().serialize(&v).unwrap().len();
+    assert_eq!(16 + 8, expected);
+    assert_eq!(16 + 8, actual);
+    let expected = config().array_length(LengthOption::U64).serialized_size(&v).unwrap();
+    let actual = config().array_length(LengthOption::U64).serialize(&v).unwrap().len();
+    assert_eq!(16 + 8, expected);
+    assert_eq!(16 + 8, actual);
+    let expected = config().array_length(LengthOption::U32).serialized_size(&v).unwrap();
+    let actual = config().array_length(LengthOption::U32).serialize(&v).unwrap().len();
+    assert_eq!(16 + 4, expected);
+    assert_eq!(16 + 4, actual);
+    let expected = config().array_length(LengthOption::U16).serialized_size(&v).unwrap();
+    let actual = config().array_length(LengthOption::U16).serialize(&v).unwrap().len();
+    assert_eq!(16 + 2, expected);
+    assert_eq!(16 + 2, actual);
+    let expected = config().array_length(LengthOption::U8).serialized_size(&v).unwrap();
+    let actual = config().array_length(LengthOption::U8).serialize(&v).unwrap().len();
+    assert_eq!(16 + 1, expected);
+    assert_eq!(16 + 1, actual);
 }
