@@ -48,7 +48,7 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 
     fn read_vec(&mut self) -> Result<Vec<u8>> {
-        let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
+        let len: usize = serde::Deserialize::deserialize(&mut *self)?;
         self.read_bytes(len as u64)?;
         self.reader.get_byte_buffer(len)
     }
@@ -65,8 +65,8 @@ macro_rules! impl_nums {
         fn $dser_method<V>(self, visitor: V) -> Result<V::Value>
             where V: serde::de::Visitor<'de>,
         {
-            try!(self.read_type::<$ty>());
-            let value = try!(self.reader.$reader_method::<O::Endian>());
+            self.read_type::<$ty>()?;
+            let value = self.reader.$reader_method::<O::Endian>()?;
             visitor.$visitor_method(value)
         }
     }
@@ -91,7 +91,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let value: u8 = try!(serde::Deserialize::deserialize(self));
+        let value: u8 = serde::Deserialize::deserialize(self)?;
         match value {
             1 => visitor.visit_bool(true),
             0 => visitor.visit_bool(false),
@@ -118,8 +118,8 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        try!(self.read_type::<u8>());
-        visitor.visit_u8(try!(self.reader.read_u8()))
+        self.read_type::<u8>()?;
+        visitor.visit_u8(self.reader.read_u8()?)
     }
 
     #[inline]
@@ -127,8 +127,8 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        try!(self.read_type::<i8>());
-        visitor.visit_i8(try!(self.reader.read_i8()))
+        self.read_type::<i8>()?;
+        visitor.visit_i8(self.reader.read_i8()?)
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
@@ -149,7 +149,7 @@ where
         let mut buf = [0u8; 4];
 
         // Look at the first byte to see how many bytes must be read
-        let _ = try!(self.reader.read_exact(&mut buf[..1]));
+        let _ = self.reader.read_exact(&mut buf[..1])?;
         let width = utf8_char_width(buf[0]);
         if width == 1 {
             return visitor.visit_char(buf[0] as char);
@@ -162,12 +162,10 @@ where
             return Err(error());
         }
 
-        let res = try!(
-            str::from_utf8(&buf[..width])
+        let res = str::from_utf8(&buf[..width])
                 .ok()
                 .and_then(|s| s.chars().next())
-                .ok_or(error())
-        );
+                .ok_or(error())?;
         visitor.visit_char(res)
     }
 
@@ -175,8 +173,8 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
-        try!(self.read_bytes(len as u64));
+        let len: usize = serde::Deserialize::deserialize(&mut *self)?;
+        self.read_bytes(len as u64)?;
         self.reader.forward_read_str(len, visitor)
     }
 
@@ -184,15 +182,15 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_string(try!(self.read_string()))
+        visitor.visit_string(self.read_string()?)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
-        let len: usize = try!(serde::Deserialize::deserialize(&mut *self));
-        try!(self.read_bytes(len as u64));
+        let len: usize = serde::Deserialize::deserialize(&mut *self)?;
+        self.read_bytes(len as u64)?;
         self.reader.forward_read_bytes(len, visitor)
     }
 
@@ -200,7 +198,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        visitor.visit_byte_buf(try!(self.read_vec()))
+        visitor.visit_byte_buf(self.read_vec()?)
     }
 
     fn deserialize_enum<V>(
@@ -224,9 +222,9 @@ where
             where
                 V: serde::de::DeserializeSeed<'de>,
             {
-                let idx: u32 = try!(serde::de::Deserialize::deserialize(&mut *self));
+                let idx: u32 = serde::de::Deserialize::deserialize(&mut *self)?;
                 let val: Result<_> = seed.deserialize(idx.into_deserializer());
-                Ok((try!(val), self))
+                Ok((val?, self))
             }
         }
 
@@ -253,10 +251,10 @@ where
             {
                 if self.len > 0 {
                     self.len -= 1;
-                    let value = try!(serde::de::DeserializeSeed::deserialize(
+                    let value = serde::de::DeserializeSeed::deserialize(
                         seed,
                         &mut *self.deserializer,
-                    ));
+                    )?;
                     Ok(Some(value))
                 } else {
                     Ok(None)
@@ -278,7 +276,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let value: u8 = try!(serde::de::Deserialize::deserialize(&mut *self));
+        let value: u8 = serde::de::Deserialize::deserialize(&mut *self)?;
         match value {
             0 => visitor.visit_none(),
             1 => visitor.visit_some(&mut *self),
@@ -290,7 +288,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let len = try!(serde::Deserialize::deserialize(&mut *self));
+        let len = serde::Deserialize::deserialize(&mut *self)?;
 
         self.deserialize_tuple(len, visitor)
     }
@@ -315,10 +313,10 @@ where
             {
                 if self.len > 0 {
                     self.len -= 1;
-                    let key = try!(serde::de::DeserializeSeed::deserialize(
+                    let key = serde::de::DeserializeSeed::deserialize(
                         seed,
                         &mut *self.deserializer,
-                    ));
+                    )?;
                     Ok(Some(key))
                 } else {
                     Ok(None)
@@ -329,10 +327,10 @@ where
             where
                 V: serde::de::DeserializeSeed<'de>,
             {
-                let value = try!(serde::de::DeserializeSeed::deserialize(
+                let value = serde::de::DeserializeSeed::deserialize(
                     seed,
                     &mut *self.deserializer,
-                ));
+                )?;
                 Ok(value)
             }
 
@@ -341,7 +339,7 @@ where
             }
         }
 
-        let len = try!(serde::Deserialize::deserialize(&mut *self));
+        let len = serde::Deserialize::deserialize(&mut *self)?;
 
         visitor.visit_map(Access {
             deserializer: self,
