@@ -179,8 +179,7 @@ where
             Err(e) => return Err(::ErrorKind::InvalidUtf8Encoding(e).into()),
         };
 
-        let r = visitor.visit_str(string);
-        r
+        visitor.visit_str(string)
     }
 
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
@@ -193,7 +192,6 @@ where
         V: serde::de::Visitor<'a>,
     {
         self.fill_buffer(length)?;
-        let r = visitor.visit_bytes(&self.temp_buffer[..]);
-        r
+        visitor.visit_bytes(&self.temp_buffer[..])
     }
 }
