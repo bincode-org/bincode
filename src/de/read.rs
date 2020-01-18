@@ -6,16 +6,21 @@ use std::{io, slice};
 ///
 /// It is highly recommended to use bincode with `io::Read` or `&[u8]` before
 /// implementing a custom `BincodeRead`.
+///
+/// The forward_read_* methods are necessary because some byte sources want
+/// to pass a long-lived borrow to the visitor and others want to pass a
+/// transient slice.
 pub trait BincodeRead<'storage>: io::Read {
-    /// Forwards reading `length` bytes of a string on to the serde reader.
+    /// Check that the next `length` bytes are a valid string and pass
+    /// it on to the serde reader.
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
 
-    /// Return the first `length` bytes of the internal byte buffer.
+    /// Transfer ownership of the next `length` bytes to the caller.
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>>;
 
-    /// Forwards reading `length` bytes on to the serde reader.
+    /// Pass a slice of the next `length` bytes on to the serde reader.
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
