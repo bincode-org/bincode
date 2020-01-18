@@ -46,6 +46,17 @@ impl<'storage> SliceReader<'storage> {
     pub fn new(bytes: &'storage [u8]) -> SliceReader<'storage> {
         SliceReader { slice: bytes }
     }
+
+    #[inline(always)]
+    fn get_byte_slice(&mut self, length: usize) -> Result<&'storage [u8]> {
+        if length > self.slice.len() {
+            return Err(SliceReader::unexpected_eof());
+        }
+
+        let s = &self.slice[..length];
+        self.slice = &self.slice[length..];
+        Ok(s)
+    }
 }
 
 impl<R> IoReader<R> {
@@ -97,28 +108,16 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         V: serde::de::Visitor<'storage>,
     {
         use ErrorKind;
-        if length > self.slice.len() {
-            return Err(SliceReader::unexpected_eof());
-        }
-
-        let string = match ::std::str::from_utf8(&self.slice[..length]) {
+        let string = match ::std::str::from_utf8(self.get_byte_slice(length)?) {
             Ok(s) => s,
             Err(e) => return Err(ErrorKind::InvalidUtf8Encoding(e).into()),
         };
-        let r = visitor.visit_borrowed_str(string);
-        self.slice = &self.slice[length..];
-        r
+        visitor.visit_borrowed_str(string)
     }
 
     #[inline(always)]
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
-        if length > self.slice.len() {
-            return Err(SliceReader::unexpected_eof());
-        }
-
-        let r = &self.slice[..length];
-        self.slice = &self.slice[length..];
-        Ok(r.to_vec())
+        self.get_byte_slice(length).map(|x| x.to_vec())
     }
 
     #[inline(always)]
@@ -126,13 +125,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
     where
         V: serde::de::Visitor<'storage>,
     {
-        if length > self.slice.len() {
-            return Err(SliceReader::unexpected_eof());
-        }
-
-        let r = visitor.visit_borrowed_bytes(&self.slice[..length]);
-        self.slice = &self.slice[length..];
-        r
+        visitor.visit_borrowed_bytes(self.get_byte_slice(length)?)
     }
 }
 
