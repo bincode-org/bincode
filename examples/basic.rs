@@ -13,15 +13,16 @@ struct Entity {
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct World(Vec<Entity>);
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>>{
     let world = World(vec![Entity { x: 0.0, y: 4.0 }, Entity { x: 10.0, y: 20.5 }]);
 
-    let encoded: Vec<u8> = serialize(&world).unwrap();
+    let encoded: Vec<u8> = serialize(&world)?;
 
     // 8 bytes for the length of the vector (usize), 4 bytes per float.
     assert_eq!(encoded.len(), 8 + 4 * 4);
 
-    let decoded: World = deserialize(&encoded[..]).unwrap();
+    let decoded: World = deserialize(&encoded[..])?;
 
     assert_eq!(world, decoded);
+    Ok(())
 }
