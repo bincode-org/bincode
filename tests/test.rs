@@ -334,12 +334,10 @@ fn test_serialized_size_bounded() {
     assert!(config().limit(7).serialized_size(&0u64).is_err());
     assert!(config().limit(7).serialized_size(&"").is_err());
     assert!(config().limit(8 + 0).serialized_size(&"a").is_err());
-    assert!(
-        config()
-            .limit(8 + 3 * 4 - 1)
-            .serialized_size(&vec![0u32, 1u32, 2u32])
-            .is_err()
-    );
+    assert!(config()
+        .limit(8 + 3 * 4 - 1)
+        .serialized_size(&vec![0u32, 1u32, 2u32])
+        .is_err());
 }
 
 #[test]
@@ -423,7 +421,8 @@ fn test_oom_protection() {
         .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
-        }).unwrap();
+        })
+        .unwrap();
     let y: Result<Vec<u8>> = config()
         .limit(10)
         .deserialize_from(&mut Cursor::new(&x[..]));
@@ -581,7 +580,8 @@ fn test_zero_copy_parse_deserialize_into() {
                 slice: &encoded[..],
             },
             &mut target,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(target, f);
     }
 }
