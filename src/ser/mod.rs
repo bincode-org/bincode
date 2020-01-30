@@ -224,10 +224,6 @@ pub(crate) struct SizeChecker<O: Options> {
 }
 
 impl<O: Options> SizeChecker<O> {
-    pub fn new(options: O) -> SizeChecker<O> {
-        SizeChecker { options: options }
-    }
-
     fn add_raw(&mut self, size: u64) -> Result<()> {
         self.options.limit().add(size)
     }
