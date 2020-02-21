@@ -5,7 +5,10 @@ rust:
     - beta
     - nightly
 
-script: cargo test
+script:
+  - cargo test
+  - cargo package
+  - cd target/package/bincode-* && cargo test
 
 matrix:
   include:
