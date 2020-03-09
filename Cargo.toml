@@ -1,6 +1,6 @@
 [package]
 name = "bincode"
-version = "1.2.1" # remember to update html_root_url
+version = "2.0.0" # remember to update html_root_url
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "David Tolnay <dtolnay@gmail.com>", "Daniel Griffen"]
 exclude = ["logo.png", "examples/*", ".gitignore", ".travis.yml"]
 
