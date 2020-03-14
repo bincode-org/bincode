@@ -18,10 +18,7 @@ use bincode::{
 };
 use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
-#[cfg(not(feature = "varint"))]
 const LEN_SIZE: u64 = 8;
-#[cfg(feature = "varint")]
-const LEN_SIZE: u64 = 1;
 
 fn the_same<V>(element: V)
 where
@@ -245,10 +242,7 @@ fn deserializing_errors() {
         _ => panic!(),
     }
 
-    #[cfg(not(feature = "varint"))]
     let invalid_str = vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF];
-    #[cfg(feature = "varint")]
-    let invalid_str = vec![1, 0xFF];
 
     match *deserialize::<String>(&invalid_str[..]).unwrap_err() {
         ErrorKind::InvalidUtf8Encoding(_) => {}
@@ -262,10 +256,7 @@ fn deserializing_errors() {
         Two,
     };
 
-    #[cfg(not(feature = "varint"))]
     let invalid_enum = vec![0, 0, 0, 5];
-    #[cfg(feature = "varint")]
-    let invalid_enum = vec![5];
 
     match *deserialize::<Test>(&invalid_enum[..]).unwrap_err() {
         // Error message comes from serde
@@ -843,7 +834,6 @@ fn test_big_endian_deserialize_from_seed() {
     assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
 }
 
-#[cfg(feature = "varint")]
 #[test]
 fn test_varint_length_prefixes() {
     let a = vec![0u8; 127]; // 2 ** 7 - 1
@@ -851,13 +841,8 @@ fn test_varint_length_prefixes() {
     let c = vec![0u8; 16383]; // 2 ** 14 - 1
     let d = vec![0u8; 16384]; // 2 ** 14
 
-    assert_eq!(serialized_size(&a[..]).unwrap(), 1 + 127); // 2 ** 7 - 1
-    assert_eq!(serialized_size(&b[..]).unwrap(), 2 + 128); // 2 ** 7
-    assert_eq!(serialized_size(&c[..]).unwrap(), 2 + 16383); // 2 ** 14 - 1
-    assert_eq!(serialized_size(&d[..]).unwrap(), 3 + 16384); // 2 ** 14
-
-    the_same(a);
-    the_same(b);
-    the_same(c);
-    the_same(d);
+    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&a[..]).unwrap(), 1 + 127); // 2 ** 7 - 1
+    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&b[..]).unwrap(), 2 + 128); // 2 ** 7
+    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&c[..]).unwrap(), 2 + 16383); // 2 ** 14 - 1
+    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&d[..]).unwrap(), 3 + 16384); // 2 ** 14
 }

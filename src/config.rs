@@ -41,7 +41,8 @@ impl Default for DefaultOptions {
 impl Options for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
-
+    type Length = FixedLength;
+    
     #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
         &mut self.0
@@ -90,6 +91,16 @@ pub trait OptionsExt: Options + Sized {
     /// Sets the endianness to the the machine-native endianness
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
+    }
+
+    /// Sets the length encoding to varint
+    fn with_varint_length(self) -> WithOtherLength<Self, VarintLength> {
+        WithOtherLength::new(self)
+    }
+
+    /// Sets the length encoding to be fixed
+    fn with_fixed_length(self) -> WithOtherLength<Self, FixedLength> {
+        WithOtherLength::new(self)
     }
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
@@ -253,6 +264,125 @@ impl BincodeByteOrder for NativeEndian {
     type Endian = byteorder::NativeEndian;
 }
 
+/// Fixed-size length encoding. (u32 for enum discriminants, u64 for sequence lengths)
+#[derive(Copy, Clone)]
+pub struct FixedLength;
+
+/// Variable-size length encoding.
+#[derive(Copy, Clone)]
+pub struct VarintLength;
+
+impl VarintLength {
+    fn varint_size(mut n: usize) -> u64 {
+        let mut bytes = 1;
+
+        while n > 127 {
+            n >>= 7;
+            bytes += 1;
+        }
+
+        bytes
+    }
+
+    fn serialize_varint<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, mut n: usize) -> Result<()> {
+        use serde::Serialize;
+
+        while n > 127 {
+            (128 | n as u8).serialize(&mut *ser)?;
+            n >>= 7;
+        }
+
+        (n as u8).serialize(ser)
+    }
+
+    fn deserialize_varint<'de, R: BincodeRead<'de>, O: Options>(de: &mut ::de::Deserializer<R, O>) -> Result<usize> {
+        use std::mem::size_of;
+
+        let mut n = 0;
+        let mut shift = 0;
+        let mut byte: u8 = serde::Deserialize::deserialize(&mut *de)?;
+
+        // Only allow reading size_of + 1 bytes to avoid overflows on bitshifts
+        for _ in 0..(size_of::<usize>()) {
+            if byte < 128 {
+                break;
+            }
+
+            n |= ((byte & 127) as usize) << shift;
+            shift += 7;
+            byte = serde::Deserialize::deserialize(&mut *de)?;
+        }
+
+        Ok(n | ((byte as usize) << shift))
+    }
+}
+
+impl LengthEncoding for FixedLength {
+    #[inline(always)]
+    fn length_size(len: usize) -> u64 {
+        use std::mem::size_of_val;
+        size_of_val(&len) as u64
+    }
+
+    #[inline(always)]
+    fn discriminant_size(idx: u32) -> u64 {
+        use std::mem::size_of_val;
+        size_of_val(&idx) as u64
+    }
+
+    #[inline(always)]
+    fn serialize_discriminant<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, idx: u32) -> Result<()> {
+        use serde::Serialize;
+
+        idx.serialize(ser)
+    }
+
+    #[inline(always)]
+    fn serialize_len<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, len: usize) -> Result<()> {
+        use serde::Serialize;
+
+        (len as u64).serialize(ser)
+    }
+
+    fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(de: &mut ::de::Deserializer<R, O>) -> Result<u32> {
+        serde::Deserialize::deserialize(de)
+    }
+
+    fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(de: &mut ::de::Deserializer<R, O>) -> Result<usize> {
+        serde::Deserialize::deserialize(de)
+    }
+}
+
+impl LengthEncoding for VarintLength {
+    #[inline(always)]
+    fn length_size(len: usize) -> u64 {
+        VarintLength::varint_size(len)
+    }
+
+    #[inline(always)]
+    fn discriminant_size(idx: u32) -> u64 {
+        VarintLength::varint_size(idx as usize)
+    }
+
+    #[inline(always)]
+    fn serialize_discriminant<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, idx: u32) -> Result<()> {
+        VarintLength::serialize_varint(ser, idx as usize)
+    }
+
+    #[inline(always)]
+    fn serialize_len<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, len: usize) -> Result<()> {
+        VarintLength::serialize_varint(ser, len)
+    }
+
+    fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(de: &mut ::de::Deserializer<R, O>) -> Result<u32> {
+        VarintLength::deserialize_varint(de).map(|n| n as u32)
+    }
+
+    fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(de: &mut ::de::Deserializer<R, O>) -> Result<usize> {
+        VarintLength::deserialize_varint(de)
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 enum LimitOption {
     Unlimited,
@@ -303,6 +433,12 @@ pub struct WithOtherEndian<O: Options, E: BincodeByteOrder> {
     _endian: PhantomData<E>,
 }
 
+/// A configuration struct with a user-specified length encoding
+pub struct WithOtherLength<O: Options, L: LengthEncoding> {
+    options: O,
+    _length: PhantomData<L>,
+}
+
 impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
     #[inline(always)]
     pub(crate) fn new(options: O, limit: L) -> WithOtherLimit<O, L> {
@@ -323,9 +459,20 @@ impl<O: Options, E: BincodeByteOrder> WithOtherEndian<O, E> {
     }
 }
 
+impl<O: Options, L: LengthEncoding> WithOtherLength<O, L> {
+    #[inline(always)]
+    pub(crate) fn new(options: O) -> WithOtherLength<O, L> {
+        WithOtherLength {
+            options: options,
+            _length: PhantomData,
+        }
+    }
+}
+
 impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
+    type Length = O::Length;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
@@ -336,9 +483,20 @@ impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E
 impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     type Limit = L;
     type Endian = O::Endian;
+    type Length = O::Length;
 
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
+    }
+}
+
+impl<O: Options, L: LengthEncoding + 'static> Options for WithOtherLength<O, L> {
+    type Limit = O::Limit;
+    type Endian = O::Endian;
+    type Length = L;
+
+    fn limit(&mut self) -> &mut O::Limit {
+        self.options.limit()
     }
 }
 
@@ -534,13 +692,15 @@ mod internal {
     pub trait Options {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
-
+        type Length: LengthEncoding + 'static;
+        
         fn limit(&mut self) -> &mut Self::Limit;
     }
 
     impl<'a, O: Options> Options for &'a mut O {
         type Limit = O::Limit;
         type Endian = O::Endian;
+        type Length = O::Length;
 
         #[inline(always)]
         fn limit(&mut self) -> &mut Self::Limit {
@@ -559,5 +719,25 @@ mod internal {
 
     pub trait BincodeByteOrder {
         type Endian: ByteOrder + 'static;
+    }
+
+    pub trait LengthEncoding {
+        /// Gets the size (in bytes) that a length would be serialized to.
+        fn length_size(len: usize) -> u64;
+    
+        /// Gets the size (in bytes) that a discriminant would be serialized to.
+        fn discriminant_size(idx: u32) -> u64;
+    
+        /// Serializes an enum discriminant.
+        fn serialize_discriminant<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, idx: u32) -> Result<()>;
+        
+        /// Serializes a sequence length.
+        fn serialize_len<W: Write, O: Options>(ser: &mut ::ser::Serializer<W, O>, len: usize) -> Result<()>;
+    
+        /// Deserializes an enum discriminant.
+        fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(ser: &mut ::de::Deserializer<R, O>) -> Result<u32>;
+    
+        /// Deserializes a sequence length.
+        fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(ser: &mut ::de::Deserializer<R, O>) -> Result<usize>;
     }
 }
