@@ -134,20 +134,13 @@ where
     R: io::Read,
 {
     fn fill_buffer(&mut self, length: usize) -> Result<()> {
-        // We first reserve the space needed in our buffer.
+        // Reserve and fill extra space if needed
         let current_length = self.temp_buffer.len();
         if length > current_length {
             self.temp_buffer.reserve_exact(length - current_length);
             self.temp_buffer.resize(length, 0);
         }
 
-        // Then create a slice with the length as our desired length. This is
-        // safe as long as we only write (no reads) to this buffer, because
-        // `reserve_exact` above has allocated this space.
-
-        // This method is assumed to properly handle slices which include
-        // uninitialized bytes (as ours does). See discussion at the link below.
-        // https://github.com/servo/bincode/issues/260
         self.reader.read_exact(&mut self.temp_buffer)?;
 
         Ok(())
