@@ -1,6 +1,7 @@
 use error::Result;
 use serde;
 use std::{io, slice};
+use std::ptr;
 
 /// An optional Read trait for advanced Bincode usage.
 ///
@@ -30,7 +31,9 @@ pub trait BincodeRead<'storage>: io::Read {
 /// NOT A PART OF THE STABLE PUBLIC API
 #[doc(hidden)]
 pub struct SliceReader<'storage> {
-    slice: &'storage [u8],
+    buf: *const u8,
+    length: usize,
+    lt: std::marker::PhantomData<&'storage u8>
 }
 
 /// A BincodeRead implementation for io::Readers
@@ -44,18 +47,23 @@ pub struct IoReader<R> {
 impl<'storage> SliceReader<'storage> {
     /// Constructs a slice reader
     pub fn new(bytes: &'storage [u8]) -> SliceReader<'storage> {
-        SliceReader { slice: bytes }
+        unsafe {
+            let length = bytes.len();
+            let buf = bytes.as_ptr();
+            SliceReader { buf, length, lt: std::marker::PhantomData }
+        }
     }
 
     #[inline(always)]
     fn get_byte_slice(&mut self, length: usize) -> Result<&'storage [u8]> {
-        if length > self.slice.len() {
-            return Err(SliceReader::unexpected_eof());
+        unsafe {
+            if length > self.length {
+                return Err(SliceReader::unexpected_eof());
+            }
+            let s = std::slice::from_raw_parts(self.buf, length);
+            self.buf = self.buf.offset(length as isize);
+            Ok(s)
         }
-
-        let s = &self.slice[..length];
-        self.slice = &self.slice[length..];
-        Ok(s)
     }
 }
 
@@ -72,11 +80,19 @@ impl<R> IoReader<R> {
 impl<'storage> io::Read for SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
-        (&mut self.slice).read(out)
+        unsafe {
+            if out.len() > self.length {
+                panic!();
+            }
+            ptr::copy_nonoverlapping(self.buf, out.as_mut_ptr(), out.len());
+            self.buf = self.buf.add(out.len());
+        }
+        Ok(out.len())
     }
+
     #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
-        (&mut self.slice).read_exact(out)
+        self.read(out).map(|_|())
     }
 }
 
