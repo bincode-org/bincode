@@ -52,10 +52,9 @@ impl<'storage> SliceReader<'storage> {
         if length > self.slice.len() {
             return Err(SliceReader::unexpected_eof());
         }
-
-        let s = &self.slice[..length];
-        self.slice = &self.slice[length..];
-        Ok(s)
+        let (read_slice, remaining) = self.slice.split_at(length);
+        self.slice = remaining;
+        Ok(read_slice)
     }
 }
 
@@ -75,8 +74,9 @@ impl<'storage> io::Read for SliceReader<'storage> {
         if out.len() > self.slice.len() {
             return Err(io::ErrorKind::UnexpectedEof.into());
         }
-        out.copy_from_slice(&self.slice[..out.len()]);
-        self.slice = &self.slice[out.len()..];
+        let (read_slice, remaining) = self.slice.split_at(out.len());
+        out.copy_from_slice(read_slice);
+        self.slice = remaining;
         
         Ok(out.len())
     }
