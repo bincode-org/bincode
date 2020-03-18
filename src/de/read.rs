@@ -52,10 +52,9 @@ impl<'storage> SliceReader<'storage> {
         if length > self.slice.len() {
             return Err(SliceReader::unexpected_eof());
         }
-
-        let s = &self.slice[..length];
-        self.slice = &self.slice[length..];
-        Ok(s)
+        let (read_slice, remaining) = self.slice.split_at(length);
+        self.slice = remaining;
+        Ok(read_slice)
     }
 }
 
@@ -72,11 +71,19 @@ impl<R> IoReader<R> {
 impl<'storage> io::Read for SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
-        (&mut self.slice).read(out)
+        if out.len() > self.slice.len() {
+            return Err(io::ErrorKind::UnexpectedEof.into());
+        }
+        let (read_slice, remaining) = self.slice.split_at(out.len());
+        out.copy_from_slice(read_slice);
+        self.slice = remaining;
+        
+        Ok(out.len())
     }
+
     #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
-        (&mut self.slice).read_exact(out)
+        self.read(out).map(|_|())
     }
 }
 
