@@ -10,32 +10,39 @@ use {DeserializerAcceptor, SerializerAcceptor};
 use self::EndianOption::*;
 use self::LimitOption::*;
 
-struct DefaultOptions(Infinite);
+///
+pub struct DefaultOptions(Infinite);
 
-pub(crate) trait Options {
+pub trait Options {
     type Limit: SizeLimit + 'static;
     type Endian: ByteOrder + 'static;
 
     fn limit(&mut self) -> &mut Self::Limit;
 }
 
-pub(crate) trait OptionsExt: Options + Sized {
+///
+pub trait OptionsExt: Options + Sized {
+    ///
     fn with_no_limit(self) -> WithOtherLimit<Self, Infinite> {
         WithOtherLimit::new(self, Infinite)
     }
 
+    ///
     fn with_limit(self, limit: u64) -> WithOtherLimit<Self, Bounded> {
         WithOtherLimit::new(self, Bounded(limit))
     }
 
+    ///
     fn with_little_endian(self) -> WithOtherEndian<Self, LittleEndian> {
         WithOtherEndian::new(self)
     }
 
+    ///
     fn with_big_endian(self) -> WithOtherEndian<Self, BigEndian> {
         WithOtherEndian::new(self)
     }
 
+    ///
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
     }
@@ -54,7 +61,8 @@ impl<'a, O: Options> Options for &'a mut O {
 impl<T: Options> OptionsExt for T {}
 
 impl DefaultOptions {
-    fn new() -> DefaultOptions {
+    ///
+    pub fn new() -> DefaultOptions {
         DefaultOptions(Infinite)
     }
 }
@@ -101,12 +109,12 @@ pub struct Config {
     endian: EndianOption,
 }
 
-pub(crate) struct WithOtherLimit<O: Options, L: SizeLimit> {
+pub struct WithOtherLimit<O: Options, L: SizeLimit> {
     _options: O,
     pub(crate) new_limit: L,
 }
 
-pub(crate) struct WithOtherEndian<O: Options, E: ByteOrder> {
+pub struct WithOtherEndian<O: Options, E: ByteOrder> {
     options: O,
     _endian: PhantomData<E>,
 }

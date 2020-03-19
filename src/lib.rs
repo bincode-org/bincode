@@ -39,9 +39,11 @@ mod error;
 mod internal;
 mod ser;
 
-pub use config::Config;
+pub use config::{Config, DefaultOptions, OptionsExt};
 pub use de::read::{BincodeRead, IoReader, SliceReader};
 pub use error::{Error, ErrorKind, Result};
+pub use de::Deserializer;
+pub use ser::Serializer;
 
 /// An object that implements this trait can be passed a
 /// serde::Deserializer without knowing its concrete type.

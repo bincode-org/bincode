@@ -24,14 +24,14 @@ pub mod read;
 /// serde::Deserialize::deserialize(&mut deserializer);
 /// let bytes_read = d.bytes_read();
 /// ```
-pub(crate) struct Deserializer<R, O: Options> {
+pub struct Deserializer<R, O: Options> {
     reader: R,
     options: O,
 }
 
 impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     /// Creates a new Deserializer with a given `Read`er and a size_limit.
-    pub(crate) fn new(r: R, options: O) -> Deserializer<R, O> {
+    pub fn new(r: R, options: O) -> Deserializer<R, O> {
         Deserializer { reader: r, options }
     }
 
