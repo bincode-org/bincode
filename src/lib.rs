@@ -39,7 +39,8 @@ mod error;
 mod internal;
 mod ser;
 
-pub use config::{Config, DefaultOptions, OptionsExt};
+pub use config::{Config, DefaultOptions, OptionsExt, WithOtherLimit, WithOtherEndian};
+pub use internal::{Bounded, Infinite};
 pub use de::read::{BincodeRead, IoReader, SliceReader};
 pub use error::{Error, ErrorKind, Result};
 pub use de::Deserializer;

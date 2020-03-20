@@ -111,7 +111,7 @@ where
     T: serde::de::DeserializeSeed<'a>,
     O: Options,
 {
-    let mut deserializer = ::de::Deserializer::<_, O>::new(reader, options);
+    let mut deserializer = ::de::Deserializer::<_, O>::with_bincode_read(reader, options);
     seed.deserialize(&mut deserializer)
 }
 
@@ -121,7 +121,7 @@ where
     T: serde::de::Deserialize<'a>,
     O: Options,
 {
-    let mut deserializer = ::de::Deserializer::<_, _>::new(reader, options);
+    let mut deserializer = ::de::Deserializer::<_, _>::with_bincode_read(reader, options);
     serde::Deserialize::deserialize_in_place(&mut deserializer, place)
 }
 

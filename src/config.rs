@@ -109,11 +109,13 @@ pub struct Config {
     endian: EndianOption,
 }
 
+///
 pub struct WithOtherLimit<O: Options, L: SizeLimit> {
     _options: O,
     pub(crate) new_limit: L,
 }
 
+///
 pub struct WithOtherEndian<O: Options, E: ByteOrder> {
     options: O,
     _endian: PhantomData<E>,
@@ -351,7 +353,7 @@ impl Config {
         R: BincodeRead<'a>,
     {
         config_map!(self, opts => {
-            let mut deserializer = ::de::Deserializer::new(reader, opts);
+            let mut deserializer = ::de::Deserializer::with_bincode_read(reader, opts);
             acceptor.accept(&mut deserializer)
         })
     }

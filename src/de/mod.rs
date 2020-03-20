@@ -1,7 +1,7 @@
 use config::Options;
 use std::io::Read;
 
-use self::read::BincodeRead;
+use self::read::{BincodeRead, IoReader, SliceReader};
 use byteorder::ReadBytesExt;
 use internal::SizeLimit;
 use serde;
@@ -31,8 +31,24 @@ pub struct Deserializer<R, O: Options> {
 
 impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     /// Creates a new Deserializer with a given `Read`er and a size_limit.
-    pub fn new(r: R, options: O) -> Deserializer<R, O> {
-        Deserializer { reader: r, options }
+    pub fn new<IR: Read>(r: IR, options: O) -> Deserializer<IoReader<IR>, O> {
+        Deserializer { reader: IoReader::new(r), options }
+    }
+    
+    ///
+    pub fn from_slice(slice: &'de [u8], options: O) -> Deserializer<SliceReader<'de>, O> {
+        Deserializer {
+            reader: SliceReader::new(slice),
+            options: options,
+        }
+    }
+
+    ///
+    pub fn with_bincode_read(r: R, options: O) -> Deserializer<R, O> {
+        Deserializer {
+            reader: r,
+            options: options,
+        }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
