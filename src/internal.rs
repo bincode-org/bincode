@@ -2,7 +2,7 @@ use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 
-use config::{Options, OptionsExt, SizeLimit};
+use config::{Options, OptionsExt, SizeLimit, Infinite};
 use de::read::BincodeRead;
 use {ErrorKind, Result};
 

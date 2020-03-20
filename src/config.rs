@@ -1,6 +1,6 @@
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
-use error::Result;
+use error::{Result, ErrorKind};
 use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
