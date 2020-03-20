@@ -60,11 +60,15 @@ pub trait OptionsExt: Options + Sized {
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
-    fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>>;
+    fn serialize<S: ?Sized + serde::Serialize>(&self, t: &S) -> Result<Vec<u8>> {
+        ::internal::serialize(t, self.clone())
+    }
 
     /// Returns the size that an object would be if serialized using Bincode with this configuration
     #[inline(always)]
-    fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64>;
+    fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
+        ::internal::serialized_size(t, self.clone())
+    }
 
     /// Serializes an object directly into a `Writer` using this configuration
     ///
@@ -75,11 +79,15 @@ pub trait OptionsExt: Options + Sized {
         &self,
         w: W,
         t: &T,
-    ) -> Result<()>;
+    ) -> Result<()> {
+        ::internal::serialize_into(w, t, self.clone())
+    }
 
     /// Deserializes a slice of bytes into an instance of `T` using this configuration
     #[inline(always)]
-    fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T>;
+    fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
+        ::internal::deserialize(bytes, self.clone())
+    }
 
     /// Deserializes a slice of bytes with state `seed` using this configuration.
     #[inline(always)]
@@ -87,7 +95,9 @@ pub trait OptionsExt: Options + Sized {
         &self,
         seed: T,
         bytes: &'a [u8],
-    ) -> Result<T::Value>;
+    ) -> Result<T::Value> {
+        ::internal::deserialize_seed(seed, bytes, self.clone())
+    }
 
     /// Deserializes an object directly from a `Read`er using this configuration
     ///
@@ -96,7 +106,9 @@ pub trait OptionsExt: Options + Sized {
     fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(
         &self,
         reader: R,
-    ) -> Result<T>;
+    ) -> Result<T> {
+        ::internal::deserialize_from(reader, self.clone())
+    }
 
     /// Deserializes an object directly from a `Read`er with state `seed` using this configuration
     ///
@@ -106,7 +118,9 @@ pub trait OptionsExt: Options + Sized {
         &self,
         seed: T,
         reader: R,
-    ) -> Result<T::Value>;
+    ) -> Result<T::Value> {
+        ::internal::deserialize_from_seed(seed, reader, self.clone())
+    }
 
     /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
     /// It is highly recommended to use `deserialize_from` unless you need to implement
@@ -117,7 +131,9 @@ pub trait OptionsExt: Options + Sized {
     fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(
         &self,
         reader: R,
-    ) -> Result<T>;
+    ) -> Result<T> {
+        ::internal::deserialize_from_custom(reader, self.clone())
+    }
 
     /// Deserializes an object from a custom `BincodeRead`er with state `seed` using the default
     /// configuration. It is highly recommended to use `deserialize_from` unless you need to
@@ -133,81 +149,12 @@ pub trait OptionsExt: Options + Sized {
         &self,
         seed: T,
         reader: R,
-    ) -> Result<T::Value>;
-}
-
-impl<O: Options + Clone> OptionsExt for O {
-    #[inline(always)]
-    fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
-        ::internal::serialize(t, self.clone())
-    }
-
-    #[inline(always)]
-    fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
-        ::internal::serialized_size(t, self.clone())
-    }
-
-    #[inline(always)]
-    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(
-        &self,
-        w: W,
-        t: &T,
-    ) -> Result<()> {
-        ::internal::serialize_into(w, t, self.clone())
-    }
-
-    #[inline(always)]
-    fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
-        ::internal::deserialize(bytes, self.clone())
-    }
-
-    #[inline(always)]
-    fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(
-        &self,
-        seed: T,
-        bytes: &'a [u8],
-    ) -> Result<T::Value> {
-        ::internal::deserialize_seed(seed, bytes, self.clone())
-    }
-
-    #[inline(always)]
-    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(
-        &self,
-        reader: R,
-    ) -> Result<T> {
-        ::internal::deserialize_from(reader, self.clone())
-    }
-
-    #[inline(always)]
-    fn deserialize_from_seed<'a, R: Read, T: serde::de::DeserializeSeed<'a>>(
-        &self,
-        seed: T,
-        reader: R,
-    ) -> Result<T::Value> {
-        ::internal::deserialize_from_seed(seed, reader, self.clone())
-    }
-
-    #[inline(always)]
-    fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(
-        &self,
-        reader: R,
-    ) -> Result<T> {
-        ::internal::deserialize_from_custom(reader, self.clone())
-    }
-
-    #[inline(always)]
-    fn deserialize_from_custom_seed<
-        'a,
-        R: BincodeRead<'a>,
-        T: serde::de::DeserializeSeed<'a>,
-    >(
-        &self,
-        seed: T,
-        reader: R,
     ) -> Result<T::Value> {
         ::internal::deserialize_from_custom_seed(seed, reader, self.clone())
     }
 }
+
+impl<T: Options> OptionsExt for T {}
 
 impl DefaultOptions {
     ///
@@ -576,20 +523,10 @@ mod internal {
     use super::*;
     use byteorder::ByteOrder;
 
-    pub trait Options {
+    pub trait Options: Clone {
         type Limit: SizeLimit + 'static;
         type Endian: ByteOrder + 'static;
     
         fn limit(&mut self) -> &mut Self::Limit;
-    }
-
-    impl<'a, O: Options> Options for &'a mut O {
-        type Limit = O::Limit;
-        type Endian = O::Endian;
-    
-        #[inline(always)]
-        fn limit(&mut self) -> &mut Self::Limit {
-            (*self).limit()
-        }
     }
 }

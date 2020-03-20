@@ -21,7 +21,7 @@ where
     if options.limit().limit().is_some() {
         // "compute" the size for the side-effect
         // of returning Err if the bound was reached.
-        serialized_size(value, &mut options)?;
+        serialized_size(value, options.clone())?;
     }
 
     let mut serializer = ::ser::Serializer::<_, O>::new(writer, options);
@@ -31,10 +31,10 @@ where
 pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
-    O: Options + Clone,
+    O: Options,
 {
     let mut writer = {
-        let actual_size = serialized_size(value, &mut options)?;
+        let actual_size = serialized_size(value, options.clone())?;
         Vec::with_capacity(actual_size as usize)
     };
 
