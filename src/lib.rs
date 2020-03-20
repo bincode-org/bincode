@@ -33,15 +33,17 @@ extern crate byteorder;
 #[macro_use]
 extern crate serde;
 
-mod config;
-mod de;
+/// Configuration settings for bincode.
+pub mod config;
+/// Deserialize bincode data to a Rust data structure.
+pub mod de;
+
 mod error;
 mod internal;
 mod ser;
 
-pub use config::{Config, DefaultOptions, OptionsExt, WithOtherLimit, WithOtherEndian};
-pub use internal::{Bounded, Infinite};
-pub use de::read::{BincodeRead, IoReader, SliceReader};
+pub use config::{Config, DefaultOptions, OptionsExt};
+pub use de::read::BincodeRead;
 pub use error::{Error, ErrorKind, Result};
 pub use de::Deserializer;
 pub use ser::Serializer;

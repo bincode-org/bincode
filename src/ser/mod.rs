@@ -5,7 +5,7 @@ use serde;
 
 use byteorder::WriteBytesExt;
 
-use super::internal::SizeLimit;
+use super::config::SizeLimit;
 use super::{Error, ErrorKind, Result};
 use config::Options;
 

@@ -1,4 +1,3 @@
-use super::internal::{Bounded, Infinite, SizeLimit};
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
 use error::Result;
@@ -7,54 +6,55 @@ use std::io::{Read, Write};
 use std::marker::PhantomData;
 use {DeserializerAcceptor, SerializerAcceptor};
 
+pub(crate) use self::internal::*;
+
 use self::EndianOption::*;
 use self::LimitOption::*;
 
 ///
 pub struct DefaultOptions(Infinite);
 
-pub trait Options {
-    type Limit: SizeLimit + 'static;
-    type Endian: ByteOrder + 'static;
-
-    fn limit(&mut self) -> &mut Self::Limit;
-}
-
+/// A configuration builder trait whose options Bincode will use
+/// while serializing and deserializing.
 ///
+/// ### Options
+/// Endianness: The endianness with which multi-byte integers will be read/written.  *default: little endian*
+/// Limit: The maximum number of bytes that will be read/written in a bincode serialize/deserialize. *default: unlimited*
+///
+/// ### Byte Limit Details
+/// The purpose of byte-limiting is to prevent Denial-Of-Service attacks whereby malicious attackers get bincode
+/// deserialization to crash your process by allocating too much memory or keeping a connection open for too long.
+///
+/// When a byte limit is set, bincode will return `Err` on any deserialization that goes over the limit, or any
+/// serialization that goes over the limit.
+/// Sets the byte limit to be unlimited.
+/// This is the default.
 pub trait OptionsExt: Options + Sized {
-    ///
+    /// Sets the byte limit to be unlimited.
+    /// This is the default.
     fn with_no_limit(self) -> WithOtherLimit<Self, Infinite> {
         WithOtherLimit::new(self, Infinite)
     }
 
-    ///
+    /// Sets the byte limit to `limit`.
     fn with_limit(self, limit: u64) -> WithOtherLimit<Self, Bounded> {
         WithOtherLimit::new(self, Bounded(limit))
     }
 
-    ///
+    /// Sets the endianness to little-endian
+    /// This is the default.
     fn with_little_endian(self) -> WithOtherEndian<Self, LittleEndian> {
         WithOtherEndian::new(self)
     }
 
-    ///
+    /// Sets the endianness to big-endian
     fn with_big_endian(self) -> WithOtherEndian<Self, BigEndian> {
         WithOtherEndian::new(self)
     }
 
-    ///
+    /// Sets the endianness to the the machine-native endianness
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
-    }
-}
-
-impl<'a, O: Options> Options for &'a mut O {
-    type Limit = O::Limit;
-    type Endian = O::Endian;
-
-    #[inline(always)]
-    fn limit(&mut self) -> &mut Self::Limit {
-        (*self).limit()
     }
 }
 
@@ -74,6 +74,54 @@ impl Options for DefaultOptions {
     #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
         &mut self.0
+    }
+}
+
+/// A trait for stopping serialization and deserialization when a certain limit has been reached.
+pub trait SizeLimit: Clone {
+    /// Tells the SizeLimit that a certain number of bytes has been
+    /// read or written.  Returns Err if the limit has been exceeded.
+    fn add(&mut self, n: u64) -> Result<()>;
+    /// Returns the hard limit (if one exists)
+    fn limit(&self) -> Option<u64>;
+}
+
+/// A SizeLimit that restricts serialized or deserialized messages from
+/// exceeding a certain byte length.
+#[derive(Copy, Clone)]
+pub struct Bounded(pub u64);
+
+/// A SizeLimit without a limit!
+/// Use this if you don't care about the size of encoded or decoded messages.
+#[derive(Copy, Clone)]
+pub struct Infinite;
+
+impl SizeLimit for Bounded {
+    #[inline(always)]
+    fn add(&mut self, n: u64) -> Result<()> {
+        if self.0 >= n {
+            self.0 -= n;
+            Ok(())
+        } else {
+            Err(Box::new(ErrorKind::SizeLimit))
+        }
+    }
+
+    #[inline(always)]
+    fn limit(&self) -> Option<u64> {
+        Some(self.0)
+    }
+}
+
+impl SizeLimit for Infinite {
+    #[inline(always)]
+    fn add(&mut self, _: u64) -> Result<()> {
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn limit(&self) -> Option<u64> {
+        None
     }
 }
 
@@ -370,5 +418,27 @@ impl Config {
             let mut serializer = ::ser::Serializer::new(writer, opts);
             acceptor.accept(&mut serializer)
         })
+    }
+}
+
+mod internal {
+    use super::*;
+    use byteorder::ByteOrder;
+
+    pub trait Options {
+        type Limit: SizeLimit + 'static;
+        type Endian: ByteOrder + 'static;
+    
+        fn limit(&mut self) -> &mut Self::Limit;
+    }
+
+    impl<'a, O: Options> Options for &'a mut O {
+        type Limit = O::Limit;
+        type Endian = O::Endian;
+    
+        #[inline(always)]
+        fn limit(&mut self) -> &mut Self::Limit {
+            (*self).limit()
+        }
     }
 }
