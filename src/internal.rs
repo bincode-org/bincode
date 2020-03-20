@@ -31,7 +31,7 @@ where
 pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
-    O: Options,
+    O: Options + Clone,
 {
     let mut writer = {
         let actual_size = serialized_size(value, &mut options)?;

@@ -12,6 +12,7 @@ use self::EndianOption::*;
 use self::LimitOption::*;
 
 ///
+#[derive(Copy, Clone)]
 pub struct DefaultOptions(Infinite);
 
 /// A configuration builder trait whose options Bincode will use
@@ -56,9 +57,157 @@ pub trait OptionsExt: Options + Sized {
     fn with_native_endian(self) -> WithOtherEndian<Self, NativeEndian> {
         WithOtherEndian::new(self)
     }
+
+    /// Serializes a serializable object into a `Vec` of bytes using this configuration
+    #[inline(always)]
+    fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>>;
+
+    /// Returns the size that an object would be if serialized using Bincode with this configuration
+    #[inline(always)]
+    fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64>;
+
+    /// Serializes an object directly into a `Writer` using this configuration
+    ///
+    /// If the serialization would take more bytes than allowed by the size limit, an error
+    /// is returned and *no bytes* will be written into the `Writer`
+    #[inline(always)]
+    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(
+        &self,
+        w: W,
+        t: &T,
+    ) -> Result<()>;
+
+    /// Deserializes a slice of bytes into an instance of `T` using this configuration
+    #[inline(always)]
+    fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T>;
+
+    /// Deserializes a slice of bytes with state `seed` using this configuration.
+    #[inline(always)]
+    fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(
+        &self,
+        seed: T,
+        bytes: &'a [u8],
+    ) -> Result<T::Value>;
+
+    /// Deserializes an object directly from a `Read`er using this configuration
+    ///
+    /// If this returns an `Error`, `reader` may be in an invalid state.
+    #[inline(always)]
+    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(
+        &self,
+        reader: R,
+    ) -> Result<T>;
+
+    /// Deserializes an object directly from a `Read`er with state `seed` using this configuration
+    ///
+    /// If this returns an `Error`, `reader` may be in an invalid state.
+    #[inline(always)]
+    fn deserialize_from_seed<'a, R: Read, T: serde::de::DeserializeSeed<'a>>(
+        &self,
+        seed: T,
+        reader: R,
+    ) -> Result<T::Value>;
+
+    /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
+    /// It is highly recommended to use `deserialize_from` unless you need to implement
+    /// `BincodeRead` for performance reasons.
+    ///
+    /// If this returns an `Error`, `reader` may be in an invalid state.
+    #[inline(always)]
+    fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(
+        &self,
+        reader: R,
+    ) -> Result<T>;
+
+    /// Deserializes an object from a custom `BincodeRead`er with state `seed` using the default
+    /// configuration. It is highly recommended to use `deserialize_from` unless you need to
+    /// implement `BincodeRead` for performance reasons.
+    ///
+    /// If this returns an `Error`, `reader` may be in an invalid state.
+    #[inline(always)]
+    fn deserialize_from_custom_seed<
+        'a,
+        R: BincodeRead<'a>,
+        T: serde::de::DeserializeSeed<'a>,
+    >(
+        &self,
+        seed: T,
+        reader: R,
+    ) -> Result<T::Value>;
 }
 
-impl<T: Options> OptionsExt for T {}
+impl<O: Options + Clone> OptionsExt for O {
+    #[inline(always)]
+    fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
+        ::internal::serialize(t, self.clone())
+    }
+
+    #[inline(always)]
+    fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
+        ::internal::serialized_size(t, self.clone())
+    }
+
+    #[inline(always)]
+    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(
+        &self,
+        w: W,
+        t: &T,
+    ) -> Result<()> {
+        ::internal::serialize_into(w, t, self.clone())
+    }
+
+    #[inline(always)]
+    fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
+        ::internal::deserialize(bytes, self.clone())
+    }
+
+    #[inline(always)]
+    fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(
+        &self,
+        seed: T,
+        bytes: &'a [u8],
+    ) -> Result<T::Value> {
+        ::internal::deserialize_seed(seed, bytes, self.clone())
+    }
+
+    #[inline(always)]
+    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(
+        &self,
+        reader: R,
+    ) -> Result<T> {
+        ::internal::deserialize_from(reader, self.clone())
+    }
+
+    #[inline(always)]
+    fn deserialize_from_seed<'a, R: Read, T: serde::de::DeserializeSeed<'a>>(
+        &self,
+        seed: T,
+        reader: R,
+    ) -> Result<T::Value> {
+        ::internal::deserialize_from_seed(seed, reader, self.clone())
+    }
+
+    #[inline(always)]
+    fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(
+        &self,
+        reader: R,
+    ) -> Result<T> {
+        ::internal::deserialize_from_custom(reader, self.clone())
+    }
+
+    #[inline(always)]
+    fn deserialize_from_custom_seed<
+        'a,
+        R: BincodeRead<'a>,
+        T: serde::de::DeserializeSeed<'a>,
+    >(
+        &self,
+        seed: T,
+        reader: R,
+    ) -> Result<T::Value> {
+        ::internal::deserialize_from_custom_seed(seed, reader, self.clone())
+    }
+}
 
 impl DefaultOptions {
     ///
@@ -158,12 +307,14 @@ pub struct Config {
 }
 
 ///
+#[derive(Clone, Copy)]
 pub struct WithOtherLimit<O: Options, L: SizeLimit> {
     _options: O,
     pub(crate) new_limit: L,
 }
 
 ///
+#[derive(Clone, Copy)]
 pub struct WithOtherEndian<O: Options, E: ByteOrder> {
     options: O,
     _endian: PhantomData<E>,
