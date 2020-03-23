@@ -77,13 +77,13 @@ impl<'storage> io::Read for SliceReader<'storage> {
         let (read_slice, remaining) = self.slice.split_at(out.len());
         out.copy_from_slice(read_slice);
         self.slice = remaining;
-        
+
         Ok(out.len())
     }
 
     #[inline(always)]
     fn read_exact(&mut self, out: &mut [u8]) -> io::Result<()> {
-        self.read(out).map(|_|())
+        self.read(out).map(|_| ())
     }
 }
 
@@ -101,10 +101,10 @@ impl<R: io::Read> io::Read for IoReader<R> {
 impl<'storage> SliceReader<'storage> {
     #[inline(always)]
     fn unexpected_eof() -> Box<::ErrorKind> {
-        return Box::new(::ErrorKind::Io(io::Error::new(
+        Box::new(::ErrorKind::Io(io::Error::new(
             io::ErrorKind::UnexpectedEof,
             "",
-        )));
+        )))
     }
 }
 
