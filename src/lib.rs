@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![allow(unknown_lints, bare_trait_objects, deprecated)]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
