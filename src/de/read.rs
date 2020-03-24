@@ -1,6 +1,6 @@
 use error::Result;
 use serde;
-use std::{io, slice};
+use std::io;
 
 /// An optional Read trait for advanced Bincode usage.
 ///
