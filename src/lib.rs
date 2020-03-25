@@ -56,7 +56,7 @@ pub use ser::Serializer;
 /// |------------|------------|
 /// | Unlimited  | Little     |
 #[inline(always)]
-#[deprecated(since="1.3.0", note="please use `DefaultOptions::new()` instead")]
+#[deprecated(since = "1.3.0", note = "please use `DefaultOptions::new()` instead")]
 pub fn config() -> Config {
     Config::new()
 }
