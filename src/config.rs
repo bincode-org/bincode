@@ -1,10 +1,9 @@
 use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
-use error::{Result, ErrorKind};
+use error::{ErrorKind, Result};
 use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
-use {DeserializerAcceptor, SerializerAcceptor};
 
 pub(crate) use self::internal::*;
 
@@ -80,11 +79,7 @@ pub trait OptionsExt: Options + Sized {
     /// If the serialization would take more bytes than allowed by the size limit, an error
     /// is returned and *no bytes* will be written into the `Writer`
     #[inline(always)]
-    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(
-        &self,
-        w: W,
-        t: &T,
-    ) -> Result<()> {
+    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(&self, w: W, t: &T) -> Result<()> {
         ::internal::serialize_into(w, t, self.clone())
     }
 
@@ -108,10 +103,7 @@ pub trait OptionsExt: Options + Sized {
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
-    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(
-        &self,
-        reader: R,
-    ) -> Result<T> {
+    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
         ::internal::deserialize_from(reader, self.clone())
     }
 
@@ -146,11 +138,7 @@ pub trait OptionsExt: Options + Sized {
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
-    fn deserialize_from_custom_seed<
-        'a,
-        R: BincodeRead<'a>,
-        T: serde::de::DeserializeSeed<'a>,
-    >(
+    fn deserialize_from_custom_seed<'a, R: BincodeRead<'a>, T: serde::de::DeserializeSeed<'a>>(
         &self,
         seed: T,
         reader: R,
@@ -174,6 +162,12 @@ impl DefaultOptions {
     }
 }
 
+impl Default for DefaultOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Options for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
@@ -182,15 +176,6 @@ impl Options for DefaultOptions {
     fn limit(&mut self) -> &mut Infinite {
         &mut self.0
     }
-}
-
-/// A trait for stopping serialization and deserialization when a certain limit has been reached.
-pub trait SizeLimit: Clone {
-    /// Tells the SizeLimit that a certain number of bytes has been
-    /// read or written.  Returns Err if the limit has been exceeded.
-    fn add(&mut self, n: u64) -> Result<()>;
-    /// Returns the hard limit (if one exists)
-    fn limit(&self) -> Option<u64>;
 }
 
 /// A SizeLimit that restricts serialized or deserialized messages from
@@ -259,6 +244,10 @@ enum EndianOption {
 /// When a byte limit is set, bincode will return `Err` on any deserialization that goes over the limit, or any
 /// serialization that goes over the limit.
 #[derive(Clone, Debug)]
+#[deprecated(
+    since = "1.3.0",
+    note = "please use the `DefaultOptions`/`OptionsExt` system instead"
+)]
 pub struct Config {
     limit: LimitOption,
     endian: EndianOption,
@@ -500,34 +489,6 @@ impl Config {
     ) -> Result<T::Value> {
         config_map!(self, opts => ::internal::deserialize_from_custom_seed(seed, reader, opts))
     }
-
-    /// Executes the acceptor with a serde::Deserializer instance.
-    /// NOT A PART OF THE STABLE PUBLIC API
-    #[doc(hidden)]
-    pub fn with_deserializer<'a, A, R>(&self, reader: R, acceptor: A) -> A::Output
-    where
-        A: DeserializerAcceptor<'a>,
-        R: BincodeRead<'a>,
-    {
-        config_map!(self, opts => {
-            let mut deserializer = ::de::Deserializer::with_bincode_read(reader, opts);
-            acceptor.accept(&mut deserializer)
-        })
-    }
-
-    /// Executes the acceptor with a serde::Serializer instance.
-    /// NOT A PART OF THE STABLE PUBLIC API
-    #[doc(hidden)]
-    pub fn with_serializer<A, W>(&self, writer: W, acceptor: A) -> A::Output
-    where
-        A: SerializerAcceptor,
-        W: Write,
-    {
-        config_map!(self, opts => {
-            let mut serializer = ::ser::Serializer::new(writer, opts);
-            acceptor.accept(&mut serializer)
-        })
-    }
 }
 
 mod internal {
@@ -537,7 +498,16 @@ mod internal {
     pub trait Options: Clone {
         type Limit: SizeLimit + 'static;
         type Endian: ByteOrder + 'static;
-    
+
         fn limit(&mut self) -> &mut Self::Limit;
+    }
+
+    /// A trait for stopping serialization and deserialization when a certain limit has been reached.
+    pub trait SizeLimit: Clone {
+        /// Tells the SizeLimit that a certain number of bytes has been
+        /// read or written.  Returns Err if the limit has been exceeded.
+        fn add(&mut self, n: u64) -> Result<()>;
+        /// Returns the hard limit (if one exists)
+        fn limit(&self) -> Option<u64>;
     }
 }

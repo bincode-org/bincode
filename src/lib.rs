@@ -44,37 +44,9 @@ mod ser;
 
 pub use config::{Config, DefaultOptions, OptionsExt};
 pub use de::read::BincodeRead;
-pub use error::{Error, ErrorKind, Result};
 pub use de::Deserializer;
+pub use error::{Error, ErrorKind, Result};
 pub use ser::Serializer;
-
-/// An object that implements this trait can be passed a
-/// serde::Deserializer without knowing its concrete type.
-///
-/// This trait should be used only for `with_deserializer` functions.
-#[doc(hidden)]
-pub trait DeserializerAcceptor<'a> {
-    /// The return type for the accept method
-    type Output;
-    /// Accept a serde::Deserializer and do whatever you want with it.
-    fn accept<T>(self, T) -> Self::Output
-    where
-        T: serde::Deserializer<'a, Error = Error>;
-}
-
-/// An object that implements this trait can be passed a
-/// serde::Serializer without knowing its concrete type.
-///
-/// This trait should be used only for `with_serializer` functions.
-#[doc(hidden)]
-pub trait SerializerAcceptor {
-    /// The return type for the accept method
-    type Output;
-    /// Accept a serde::Serializer and do whatever you want with it.
-    fn accept<T>(self, T) -> Self::Output
-    where
-        T: serde::Serializer<Ok = (), Error = Error>;
-}
 
 /// Get a default configuration object.
 ///
@@ -84,6 +56,7 @@ pub trait SerializerAcceptor {
 /// |------------|------------|
 /// | Unlimited  | Little     |
 #[inline(always)]
+#[deprecated(since="1.3.0", note="please use `DefaultOptions::new()` instead")]
 pub fn config() -> Config {
     Config::new()
 }
@@ -158,26 +131,4 @@ where
     T: serde::Serialize,
 {
     config().serialized_size(value)
-}
-
-/// Executes the acceptor with a serde::Deserializer instance.
-/// NOT A PART OF THE STABLE PUBLIC API
-#[doc(hidden)]
-pub fn with_deserializer<'a, A, R>(reader: R, acceptor: A) -> A::Output
-where
-    A: DeserializerAcceptor<'a>,
-    R: BincodeRead<'a>,
-{
-    config().with_deserializer(reader, acceptor)
-}
-
-/// Executes the acceptor with a serde::Serializer instance.
-/// NOT A PART OF THE STABLE PUBLIC API
-#[doc(hidden)]
-pub fn with_serializer<A, W>(writer: W, acceptor: A) -> A::Output
-where
-    A: SerializerAcceptor,
-    W: std::io::Write,
-{
-    config().with_serializer(writer, acceptor)
 }

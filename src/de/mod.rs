@@ -32,24 +32,24 @@ pub struct Deserializer<R, O: Options> {
 
 impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     /// Creates a new Deserializer with a given `Read`er and options.
-    pub fn new<IR: Read>(r: IR, options: O) -> Deserializer<IoReader<IR>, O> {
-        Deserializer { reader: IoReader::new(r), options }
+    pub fn with_reader<IR: Read>(r: IR, options: O) -> Deserializer<IoReader<IR>, O> {
+        Deserializer {
+            reader: IoReader::new(r),
+            options,
+        }
     }
-    
+
     /// Creates a new Deserializer that will read from the given slice.
     pub fn from_slice(slice: &'de [u8], options: O) -> Deserializer<SliceReader<'de>, O> {
         Deserializer {
             reader: SliceReader::new(slice),
-            options: options,
+            options,
         }
     }
 
     /// Creates a new Deserializer with the given `BincodeRead`er
     pub fn with_bincode_read(r: R, options: O) -> Deserializer<R, O> {
-        Deserializer {
-            reader: r,
-            options: options,
-        }
+        Deserializer { reader: r, options }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {

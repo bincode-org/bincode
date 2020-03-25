@@ -2,9 +2,9 @@ use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 
-use config::{Options, OptionsExt, SizeLimit, Infinite};
+use config::{Infinite, Options, OptionsExt, SizeLimit};
 use de::read::BincodeRead;
-use {ErrorKind, Result};
+use Result;
 
 #[derive(Clone)]
 struct CountSize<L: SizeLimit> {
@@ -28,7 +28,7 @@ where
     serde::Serialize::serialize(value, &mut serializer)
 }
 
-pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
+pub(crate) fn serialize<T: ?Sized, O>(value: &T, options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
     O: Options,
