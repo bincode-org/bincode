@@ -11,7 +11,12 @@ pub(crate) use self::internal::*;
 use self::EndianOption::*;
 use self::LimitOption::*;
 
+/// The default options for bincode serialization/deserialization.
+/// Implements OptionsExt to allow building configuration object for non-default settings.
 ///
+/// ### Defaults
+/// By default bincode will use little-endian encoding for mult-byte integers, and will not
+/// limit the number of serialized/deserialized bytes.
 #[derive(Copy, Clone)]
 pub struct DefaultOptions(Infinite);
 
@@ -157,7 +162,13 @@ pub trait OptionsExt: Options + Sized {
 impl<T: Options> OptionsExt for T {}
 
 impl DefaultOptions {
+    /// Get a default configuration object.
     ///
+    /// ### Default Configuration:
+    ///
+    /// | Byte limit | Endianness |
+    /// |------------|------------|
+    /// | Unlimited  | Little     |
     pub fn new() -> DefaultOptions {
         DefaultOptions(Infinite)
     }
@@ -253,14 +264,14 @@ pub struct Config {
     endian: EndianOption,
 }
 
-///
+/// A configuration struct with a user-specified byte limit
 #[derive(Clone, Copy)]
 pub struct WithOtherLimit<O: Options, L: SizeLimit> {
     _options: O,
     pub(crate) new_limit: L,
 }
 
-///
+/// A configuration struct with a user-specified endian order
 #[derive(Clone, Copy)]
 pub struct WithOtherEndian<O: Options, E: ByteOrder> {
     options: O,
