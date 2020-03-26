@@ -1,4 +1,4 @@
-use config::Options;
+use config::{BincodeByteOrder, Options};
 use std::io::Read;
 
 use self::read::{BincodeRead, IoReader, SliceReader};
@@ -80,7 +80,7 @@ macro_rules! impl_nums {
             where V: serde::de::Visitor<'de>,
         {
             self.read_type::<$ty>()?;
-            let value = self.reader.$reader_method::<O::Endian>()?;
+            let value = self.reader.$reader_method::<<<O as Options>::Endian as BincodeByteOrder>::Endian>()?;
             visitor.$visitor_method(value)
         }
     }

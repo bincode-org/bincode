@@ -1,4 +1,3 @@
-use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
 use de::read::BincodeRead;
 use error::{ErrorKind, Result};
 use serde;
@@ -228,6 +227,30 @@ impl SizeLimit for Infinite {
     }
 }
 
+/// Little-endian byte ordering.
+#[derive(Copy, Clone)]
+pub struct LittleEndian;
+
+/// Big-endian byte ordering.
+#[derive(Copy, Clone)]
+pub struct BigEndian;
+
+/// The native byte ordering of the current system.
+#[derive(Copy, Clone)]
+pub struct NativeEndian;
+
+impl BincodeByteOrder for LittleEndian {
+    type Endian = byteorder::LittleEndian;
+}
+
+impl BincodeByteOrder for BigEndian {
+    type Endian = byteorder::BigEndian;
+}
+
+impl BincodeByteOrder for NativeEndian {
+    type Endian = byteorder::NativeEndian;
+}
+
 #[derive(Clone, Copy, Debug)]
 enum LimitOption {
     Unlimited,
@@ -273,7 +296,7 @@ pub struct WithOtherLimit<O: Options, L: SizeLimit> {
 
 /// A configuration struct with a user-specified endian order
 #[derive(Clone, Copy)]
-pub struct WithOtherEndian<O: Options, E: ByteOrder> {
+pub struct WithOtherEndian<O: Options, E: BincodeByteOrder> {
     options: O,
     _endian: PhantomData<E>,
 }
@@ -288,7 +311,7 @@ impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
     }
 }
 
-impl<O: Options, E: ByteOrder> WithOtherEndian<O, E> {
+impl<O: Options, E: BincodeByteOrder> WithOtherEndian<O, E> {
     #[inline(always)]
     pub(crate) fn new(options: O) -> WithOtherEndian<O, E> {
         WithOtherEndian {
@@ -298,7 +321,7 @@ impl<O: Options, E: ByteOrder> WithOtherEndian<O, E> {
     }
 }
 
-impl<O: Options, E: ByteOrder + 'static> Options for WithOtherEndian<O, E> {
+impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
 
@@ -508,7 +531,7 @@ mod internal {
 
     pub trait Options: Clone {
         type Limit: SizeLimit + 'static;
-        type Endian: ByteOrder + 'static;
+        type Endian: BincodeByteOrder + 'static;
 
         fn limit(&mut self) -> &mut Self::Limit;
     }
@@ -520,5 +543,9 @@ mod internal {
         fn add(&mut self, n: u64) -> Result<()>;
         /// Returns the hard limit (if one exists)
         fn limit(&self) -> Option<u64>;
+    }
+
+    pub trait BincodeByteOrder: Clone {
+        type Endian: ByteOrder + 'static;
     }
 }
