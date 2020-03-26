@@ -1,3 +1,4 @@
+use byteorder;
 use de::read::BincodeRead;
 use error::{ErrorKind, Result};
 use serde;
