@@ -70,7 +70,7 @@ where
     W: std::io::Write,
     T: serde::Serialize,
 {
-    config().serialize_into(writer, value)
+    DefaultOptions::new().serialize_into(writer, value)
 }
 
 /// Serializes a serializable object into a `Vec` of bytes using the default configuration.
@@ -78,7 +78,7 @@ pub fn serialize<T: ?Sized>(value: &T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
-    config().serialize(value)
+    DefaultOptions::new().serialize(value)
 }
 
 /// Deserializes an object directly from a `Read`er using the default configuration.
@@ -89,7 +89,7 @@ where
     R: std::io::Read,
     T: serde::de::DeserializeOwned,
 {
-    config().deserialize_from(reader)
+    DefaultOptions::new().deserialize_from(reader)
 }
 
 /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
@@ -102,7 +102,7 @@ where
     R: de::read::BincodeRead<'a>,
     T: serde::de::DeserializeOwned,
 {
-    config().deserialize_from_custom(reader)
+    DefaultOptions::new().deserialize_from_custom(reader)
 }
 
 /// Only use this if you know what you're doing.
@@ -114,7 +114,7 @@ where
     T: serde::de::Deserialize<'a>,
     R: BincodeRead<'a>,
 {
-    config().deserialize_in_place(reader, place)
+    DefaultOptions::new().deserialize_in_place(reader, place)
 }
 
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
@@ -122,7 +122,7 @@ pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
 {
-    config().deserialize(bytes)
+    DefaultOptions::new().deserialize(bytes)
 }
 
 /// Returns the size that an object would be if serialized using Bincode with the default configuration.
@@ -130,5 +130,5 @@ pub fn serialized_size<T: ?Sized>(value: &T) -> Result<u64>
 where
     T: serde::Serialize,
 {
-    config().serialized_size(value)
+    DefaultOptions::new().serialized_size(value)
 }

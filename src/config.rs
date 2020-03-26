@@ -89,6 +89,17 @@ pub trait OptionsExt: Options + Sized {
         ::internal::deserialize(bytes, self.clone())
     }
 
+    /// TODO: document
+    #[doc(hidden)]
+    #[inline(always)]
+    fn deserialize_in_place<'a, R, T>(&self, reader: R, place: &mut T) -> Result<()>
+    where
+        R: BincodeRead<'a>,
+        T: serde::de::Deserialize<'a>,
+    {
+        ::internal::deserialize_in_place(reader, self.clone(), place)
+    }
+
     /// Deserializes a slice of bytes with state `seed` using this configuration.
     #[inline(always)]
     fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(
