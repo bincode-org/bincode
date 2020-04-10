@@ -804,13 +804,25 @@ fn test_big_endian_deserialize_from_seed() {
 
 #[test]
 fn test_varint_length_prefixes() {
-    let a = vec![0u8; 127]; // 2 ** 7 - 1
-    let b = vec![0u8; 128]; // 2 ** 7
-    let c = vec![0u8; 16383]; // 2 ** 14 - 1
-    let d = vec![0u8; 16384]; // 2 ** 14
+    let a = vec![(); 127]; // should be a single byte
+    let b = vec![(); 250]; // also should be a single byte
+    let c = vec![(); 251];
+    let d = vec![(); u16::max_value() as usize + 1];
 
-    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&a[..]).unwrap(), 1 + 127); // 2 ** 7 - 1
-    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&b[..]).unwrap(), 2 + 128); // 2 ** 7
-    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&c[..]).unwrap(), 2 + 16383); // 2 ** 14 - 1
-    assert_eq!(DefaultOptions::new().with_varint_length().serialized_size(&d[..]).unwrap(), 3 + 16384); // 2 ** 14
+    assert_eq!(
+        DefaultOptions::new().with_varint_length().serialized_size(&a[..]).unwrap(),
+        1
+    ); // 2 ** 7 - 1
+    assert_eq!(
+        DefaultOptions::new().with_varint_length().serialized_size(&b[..]).unwrap(),
+        1
+    ); // 250
+    assert_eq!(
+        DefaultOptions::new().with_varint_length().serialized_size(&c[..]).unwrap(),
+        (1 + std::mem::size_of::<u16>()) as u64
+    ); // 251
+    assert_eq!(
+        DefaultOptions::new().with_varint_length().serialized_size(&d[..]).unwrap(),
+        (1 + std::mem::size_of::<u32>()) as u64
+    ); // 2 ** 16 + 1
 }
