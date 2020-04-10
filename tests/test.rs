@@ -422,38 +422,6 @@ fn test_serialized_size_bounded() {
         .is_err());
 }
 
-#[cfg(feature = "varint")]
-#[test]
-fn test_serialized_size_bounded() {
-    // JUST RIGHT
-    assert!(config().limit(1).serialized_size(&0u8).unwrap() == 1);
-    assert!(config().limit(2).serialized_size(&0u16).unwrap() == 2);
-    assert!(config().limit(4).serialized_size(&0u32).unwrap() == 4);
-    assert!(config().limit(8).serialized_size(&0u64).unwrap() == 8);
-    assert!(config().limit(1).serialized_size(&"").unwrap() == 1);
-    assert!(config().limit(1 + 1).serialized_size(&"a").unwrap() == 1 + 1);
-    assert!(
-        config()
-            .limit(1 + 3 * 4)
-            .serialized_size(&vec![0u32, 1u32, 2u32])
-            .unwrap()
-            == 1 + 3 * 4
-    );
-    // Below
-    assert!(config().limit(0).serialized_size(&0u8).is_err());
-    assert!(config().limit(1).serialized_size(&0u16).is_err());
-    assert!(config().limit(3).serialized_size(&0u32).is_err());
-    assert!(config().limit(7).serialized_size(&0u64).is_err());
-    assert!(config().limit(0).serialized_size(&"").is_err());
-    assert!(config().limit(1 + 0).serialized_size(&"a").is_err());
-    assert!(
-        config()
-            .limit(1 + 3 * 4 - 1)
-            .serialized_size(&vec![0u32, 1u32, 2u32])
-            .is_err()
-    );
-}
-
 #[test]
 fn encode_box() {
     the_same(Box::new(5));

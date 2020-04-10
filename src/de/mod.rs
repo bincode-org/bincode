@@ -77,13 +77,14 @@ macro_rules! impl_nums {
     ($ty:ty, $dser_method:ident, $visitor_method:ident, $reader_method:ident) => {
         #[inline]
         fn $dser_method<V>(self, visitor: V) -> Result<V::Value>
-            where V: serde::de::Visitor<'de>,
+        where
+            V: serde::de::Visitor<'de>,
         {
             self.read_type::<$ty>()?;
             let value = self.reader.$reader_method::<<O::Endian as BincodeByteOrder>::Endian>()?;
             visitor.$visitor_method(value)
         }
-    }
+    };
 }
 
 impl<'de, 'a, R, O> serde::Deserializer<'de> for &'a mut Deserializer<R, O>
