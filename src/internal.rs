@@ -40,10 +40,7 @@ pub(crate) fn serialized_size<T: ?Sized, O: Options>(value: &T, options: O) -> R
 where
     T: serde::Serialize,
 {
-    let mut size_counter = ::ser::SizeChecker {
-        options,
-        total: 0,
-    };
+    let mut size_counter = ::ser::SizeChecker { options, total: 0 };
 
     let result = value.serialize(&mut size_counter);
     result.map(|_| size_counter.total)
