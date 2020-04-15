@@ -19,11 +19,41 @@ use self::LimitOption::*;
 #[derive(Copy, Clone)]
 pub struct DefaultOptions(Infinite);
 
+impl DefaultOptions {
+    /// Get a default configuration object.
+    ///
+    /// ### Default Configuration:
+    ///
+    /// | Byte limit | Endianness |
+    /// |------------|------------|
+    /// | Unlimited  | Little     |
+    pub fn new() -> DefaultOptions {
+        DefaultOptions(Infinite)
+    }
+}
+
+impl Default for DefaultOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Options for DefaultOptions {
+    type Limit = Infinite;
+    type Endian = LittleEndian;
+
+    #[inline(always)]
+    fn limit(&mut self) -> &mut Infinite {
+        &mut self.0
+    }
+}
+
 /// A configuration builder trait whose options Bincode will use
 /// while serializing and deserializing.
 ///
 /// ### Options
 /// Endianness: The endianness with which multi-byte integers will be read/written.  *default: little endian*
+/// 
 /// Limit: The maximum number of bytes that will be read/written in a bincode serialize/deserialize. *default: unlimited*
 ///
 /// ### Byte Limit Details
@@ -64,14 +94,14 @@ pub trait OptionsExt: Options + Sized {
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
-    fn serialize<S: ?Sized + serde::Serialize>(&self, t: &S) -> Result<Vec<u8>> {
-        ::internal::serialize(t, self.clone())
+    fn serialize<S: ?Sized + serde::Serialize>(self, t: &S) -> Result<Vec<u8>> {
+        ::internal::serialize(t, self)
     }
 
     /// Returns the size that an object would be if serialized using Bincode with this configuration
     #[inline(always)]
-    fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
-        ::internal::serialized_size(t, self.clone())
+    fn serialized_size<T: ?Sized + serde::Serialize>(self, t: &T) -> Result<u64> {
+        ::internal::serialized_size(t, self)
     }
 
     /// Serializes an object directly into a `Writer` using this configuration
@@ -79,43 +109,43 @@ pub trait OptionsExt: Options + Sized {
     /// If the serialization would take more bytes than allowed by the size limit, an error
     /// is returned and *no bytes* will be written into the `Writer`
     #[inline(always)]
-    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(&self, w: W, t: &T) -> Result<()> {
-        ::internal::serialize_into(w, t, self.clone())
+    fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(self, w: W, t: &T) -> Result<()> {
+        ::internal::serialize_into(w, t, self)
     }
 
     /// Deserializes a slice of bytes into an instance of `T` using this configuration
     #[inline(always)]
-    fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
-        ::internal::deserialize(bytes, self.clone())
+    fn deserialize<'a, T: serde::Deserialize<'a>>(self, bytes: &'a [u8]) -> Result<T> {
+        ::internal::deserialize(bytes, self)
     }
 
     /// TODO: document
     #[doc(hidden)]
     #[inline(always)]
-    fn deserialize_in_place<'a, R, T>(&self, reader: R, place: &mut T) -> Result<()>
+    fn deserialize_in_place<'a, R, T>(self, reader: R, place: &mut T) -> Result<()>
     where
         R: BincodeRead<'a>,
         T: serde::de::Deserialize<'a>,
     {
-        ::internal::deserialize_in_place(reader, self.clone(), place)
+        ::internal::deserialize_in_place(reader, self, place)
     }
 
     /// Deserializes a slice of bytes with state `seed` using this configuration.
     #[inline(always)]
     fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(
-        &self,
+        self,
         seed: T,
         bytes: &'a [u8],
     ) -> Result<T::Value> {
-        ::internal::deserialize_seed(seed, bytes, self.clone())
+        ::internal::deserialize_seed(seed, bytes, self)
     }
 
     /// Deserializes an object directly from a `Read`er using this configuration
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
-    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(&self, reader: R) -> Result<T> {
-        ::internal::deserialize_from(reader, self.clone())
+    fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(self, reader: R) -> Result<T> {
+        ::internal::deserialize_from(reader, self)
     }
 
     /// Deserializes an object directly from a `Read`er with state `seed` using this configuration
@@ -123,11 +153,11 @@ pub trait OptionsExt: Options + Sized {
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     fn deserialize_from_seed<'a, R: Read, T: serde::de::DeserializeSeed<'a>>(
-        &self,
+        self,
         seed: T,
         reader: R,
     ) -> Result<T::Value> {
-        ::internal::deserialize_from_seed(seed, reader, self.clone())
+        ::internal::deserialize_from_seed(seed, reader, self)
     }
 
     /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
@@ -137,10 +167,10 @@ pub trait OptionsExt: Options + Sized {
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     fn deserialize_from_custom<'a, R: BincodeRead<'a>, T: serde::de::DeserializeOwned>(
-        &self,
+        self,
         reader: R,
     ) -> Result<T> {
-        ::internal::deserialize_from_custom(reader, self.clone())
+        ::internal::deserialize_from_custom(reader, self)
     }
 
     /// Deserializes an object from a custom `BincodeRead`er with state `seed` using the default
@@ -150,44 +180,15 @@ pub trait OptionsExt: Options + Sized {
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     fn deserialize_from_custom_seed<'a, R: BincodeRead<'a>, T: serde::de::DeserializeSeed<'a>>(
-        &self,
+        self,
         seed: T,
         reader: R,
     ) -> Result<T::Value> {
-        ::internal::deserialize_from_custom_seed(seed, reader, self.clone())
+        ::internal::deserialize_from_custom_seed(seed, reader, self)
     }
 }
 
 impl<T: Options> OptionsExt for T {}
-
-impl DefaultOptions {
-    /// Get a default configuration object.
-    ///
-    /// ### Default Configuration:
-    ///
-    /// | Byte limit | Endianness |
-    /// |------------|------------|
-    /// | Unlimited  | Little     |
-    pub fn new() -> DefaultOptions {
-        DefaultOptions(Infinite)
-    }
-}
-
-impl Default for DefaultOptions {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Options for DefaultOptions {
-    type Limit = Infinite;
-    type Endian = LittleEndian;
-
-    #[inline(always)]
-    fn limit(&mut self) -> &mut Infinite {
-        &mut self.0
-    }
-}
 
 /// A SizeLimit that restricts serialized or deserialized messages from
 /// exceeding a certain byte length.
@@ -530,15 +531,24 @@ mod internal {
     use super::*;
     use byteorder::ByteOrder;
 
-    pub trait Options: Clone {
+    pub trait Options {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
 
         fn limit(&mut self) -> &mut Self::Limit;
     }
 
+    impl<T: Options> Options for &mut T {
+        type Limit = T::Limit;
+        type Endian = T::Endian;
+
+        fn limit(&mut self) -> &mut Self::Limit {
+            (*self).limit()
+        }
+    } 
+
     /// A trait for stopping serialization and deserialization when a certain limit has been reached.
-    pub trait SizeLimit: Clone {
+    pub trait SizeLimit {
         /// Tells the SizeLimit that a certain number of bytes has been
         /// read or written.  Returns Err if the limit has been exceeded.
         fn add(&mut self, n: u64) -> Result<()>;
@@ -546,7 +556,7 @@ mod internal {
         fn limit(&self) -> Option<u64>;
     }
 
-    pub trait BincodeByteOrder: Clone {
+    pub trait BincodeByteOrder {
         type Endian: ByteOrder + 'static;
     }
 }

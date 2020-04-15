@@ -6,12 +6,6 @@ use config::{Infinite, Options, OptionsExt, SizeLimit};
 use de::read::BincodeRead;
 use Result;
 
-#[derive(Clone)]
-struct CountSize<L: SizeLimit> {
-    total: u64,
-    other_limit: L,
-}
-
 pub(crate) fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T, mut options: O) -> Result<()>
 where
     W: Write,
@@ -21,20 +15,20 @@ where
     if options.limit().limit().is_some() {
         // "compute" the size for the side-effect
         // of returning Err if the bound was reached.
-        serialized_size(value, options.clone())?;
+        serialized_size(value, &mut options)?;
     }
 
     let mut serializer = ::ser::Serializer::<_, O>::new(writer, options);
     serde::Serialize::serialize(value, &mut serializer)
 }
 
-pub(crate) fn serialize<T: ?Sized, O>(value: &T, options: O) -> Result<Vec<u8>>
+pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
     O: Options,
 {
     let mut writer = {
-        let actual_size = serialized_size(value, options.clone())?;
+        let actual_size = serialized_size(value, &mut options)?;
         Vec::with_capacity(actual_size as usize)
     };
 
@@ -42,35 +36,17 @@ where
     Ok(writer)
 }
 
-impl<L: SizeLimit> SizeLimit for CountSize<L> {
-    fn add(&mut self, c: u64) -> Result<()> {
-        self.other_limit.add(c)?;
-        self.total += c;
-        Ok(())
-    }
-
-    fn limit(&self) -> Option<u64> {
-        unreachable!();
-    }
-}
-
-pub(crate) fn serialized_size<T: ?Sized, O: Options>(value: &T, mut options: O) -> Result<u64>
+pub(crate) fn serialized_size<T: ?Sized, O: Options>(value: &T, options: O) -> Result<u64>
 where
     T: serde::Serialize,
 {
-    let old_limiter = options.limit().clone();
     let mut size_counter = ::ser::SizeChecker {
-        options: ::config::WithOtherLimit::new(
-            options,
-            CountSize {
-                total: 0,
-                other_limit: old_limiter,
-            },
-        ),
+        options: options,
+        total: 0,
     };
 
     let result = value.serialize(&mut size_counter);
-    result.map(|_| size_counter.options.new_limit.total)
+    result.map(|_| size_counter.total)
 }
 
 pub(crate) fn deserialize_from<R, T, O>(reader: R, options: O) -> Result<T>

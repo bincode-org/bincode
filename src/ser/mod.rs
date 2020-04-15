@@ -237,11 +237,15 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
 
 pub(crate) struct SizeChecker<O: Options> {
     pub options: O,
+    pub total: u64,
 }
 
 impl<O: Options> SizeChecker<O> {
     fn add_raw(&mut self, size: u64) -> Result<()> {
-        self.options.limit().add(size)
+        self.options.limit().add(size)?;
+        self.total += size;
+
+        Ok(())
     }
 
     fn add_value<T>(&mut self, t: T) -> Result<()> {
