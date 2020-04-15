@@ -53,7 +53,7 @@ impl Options for DefaultOptions {
 ///
 /// ### Options
 /// Endianness: The endianness with which multi-byte integers will be read/written.  *default: little endian*
-/// 
+///
 /// Limit: The maximum number of bytes that will be read/written in a bincode serialize/deserialize. *default: unlimited*
 ///
 /// ### Byte Limit Details
@@ -545,7 +545,7 @@ mod internal {
         fn limit(&mut self) -> &mut Self::Limit {
             (*self).limit()
         }
-    } 
+    }
 
     /// A trait for stopping serialization and deserialization when a certain limit has been reached.
     pub trait SizeLimit {

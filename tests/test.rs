@@ -33,8 +33,14 @@ where
     }
 
     {
-        let encoded = DefaultOptions::new().with_big_endian().serialize(&element).unwrap();
-        let decoded = DefaultOptions::new().with_big_endian().deserialize(&encoded[..]).unwrap();
+        let encoded = DefaultOptions::new()
+            .with_big_endian()
+            .serialize(&element)
+            .unwrap();
+        let decoded = DefaultOptions::new()
+            .with_big_endian()
+            .deserialize(&encoded[..])
+            .unwrap();
         let decoded_reader = DefaultOptions::new()
             .with_big_endian()
             .deserialize_from(&mut &encoded[..])
@@ -259,11 +265,15 @@ fn deserializing_errors() {
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> = DefaultOptions::new().with_limit(3).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<u32> = DefaultOptions::new()
+        .with_limit(3)
+        .deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_err());
 
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> = DefaultOptions::new().with_limit(4).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<u32> = DefaultOptions::new()
+        .with_limit(4)
+        .deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
 }
 
@@ -283,18 +293,29 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char> = DefaultOptions::new().with_limit(1).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<char> = DefaultOptions::new()
+        .with_limit(1)
+        .deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
 
 #[test]
 fn too_big_serialize() {
-    assert!(DefaultOptions::new().with_limit(3).serialize(&0u32).is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(3)
+        .serialize(&0u32)
+        .is_err());
     assert!(DefaultOptions::new().with_limit(4).serialize(&0u32).is_ok());
 
-    assert!(DefaultOptions::new().with_limit(8 + 4).serialize(&"abcde").is_err());
-    assert!(DefaultOptions::new().with_limit(8 + 5).serialize(&"abcde").is_ok());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 4)
+        .serialize(&"abcde")
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 5)
+        .serialize(&"abcde")
+        .is_ok());
 }
 
 #[test]
@@ -314,12 +335,48 @@ fn test_serialized_size() {
 #[test]
 fn test_serialized_size_bounded() {
     // JUST RIGHT
-    assert!(DefaultOptions::new().with_limit(1).serialized_size(&0u8).unwrap() == 1);
-    assert!(DefaultOptions::new().with_limit(2).serialized_size(&0u16).unwrap() == 2);
-    assert!(DefaultOptions::new().with_limit(4).serialized_size(&0u32).unwrap() == 4);
-    assert!(DefaultOptions::new().with_limit(8).serialized_size(&0u64).unwrap() == 8);
-    assert!(DefaultOptions::new().with_limit(8).serialized_size(&"").unwrap() == 8);
-    assert!(DefaultOptions::new().with_limit(8 + 1).serialized_size(&"a").unwrap() == 8 + 1);
+    assert!(
+        DefaultOptions::new()
+            .with_limit(1)
+            .serialized_size(&0u8)
+            .unwrap()
+            == 1
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(2)
+            .serialized_size(&0u16)
+            .unwrap()
+            == 2
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(4)
+            .serialized_size(&0u32)
+            .unwrap()
+            == 4
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8)
+            .serialized_size(&0u64)
+            .unwrap()
+            == 8
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8)
+            .serialized_size(&"")
+            .unwrap()
+            == 8
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8 + 1)
+            .serialized_size(&"a")
+            .unwrap()
+            == 8 + 1
+    );
     assert!(
         DefaultOptions::new()
             .with_limit(8 + 3 * 4)
@@ -328,12 +385,30 @@ fn test_serialized_size_bounded() {
             == 8 + 3 * 4
     );
     // Below
-    assert!(DefaultOptions::new().with_limit(0).serialized_size(&0u8).is_err());
-    assert!(DefaultOptions::new().with_limit(1).serialized_size(&0u16).is_err());
-    assert!(DefaultOptions::new().with_limit(3).serialized_size(&0u32).is_err());
-    assert!(DefaultOptions::new().with_limit(7).serialized_size(&0u64).is_err());
-    assert!(DefaultOptions::new().with_limit(7).serialized_size(&"").is_err());
-    assert!(DefaultOptions::new().with_limit(8 + 0).serialized_size(&"a").is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(0)
+        .serialized_size(&0u8)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(1)
+        .serialized_size(&0u16)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(3)
+        .serialized_size(&0u32)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(7)
+        .serialized_size(&0u64)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(7)
+        .serialized_size(&"")
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 0)
+        .serialized_size(&"a")
+        .is_err());
     assert!(DefaultOptions::new()
         .with_limit(8 + 3 * 4 - 1)
         .serialized_size(&vec![0u32, 1u32, 2u32])
@@ -458,7 +533,10 @@ fn serde_bytes() {
 fn endian_difference() {
     let x = 10u64;
     let little = serialize(&x).unwrap();
-    let big = DefaultOptions::new().with_big_endian().serialize(&x).unwrap();
+    let big = DefaultOptions::new()
+        .with_big_endian()
+        .serialize(&x)
+        .unwrap();
     assert_ne!(little, big);
 }
 

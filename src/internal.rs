@@ -41,7 +41,7 @@ where
     T: serde::Serialize,
 {
     let mut size_counter = ::ser::SizeChecker {
-        options: options,
+        options,
         total: 0,
     };
 
