@@ -538,10 +538,11 @@ mod internal {
         fn limit(&mut self) -> &mut Self::Limit;
     }
 
-    impl<T: Options> Options for &mut T {
-        type Limit = T::Limit;
-        type Endian = T::Endian;
+    impl<'a, O: Options> Options for &'a mut O {
+        type Limit = O::Limit;
+        type Endian = O::Endian;
 
+        #[inline(always)]
         fn limit(&mut self) -> &mut Self::Limit {
             (*self).limit()
         }
