@@ -13,8 +13,8 @@ use std::fmt::{self, Debug};
 use std::result::Result as StdResult;
 
 use bincode::{
-    config, deserialize, deserialize_from, deserialize_in_place, serialize, serialized_size,
-    ErrorKind, Result,
+    deserialize, deserialize_from, deserialize_in_place, serialize, serialized_size,
+    DefaultOptions, ErrorKind, OptionsExt, Result,
 };
 use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
@@ -33,10 +33,16 @@ where
     }
 
     {
-        let encoded = config().big_endian().serialize(&element).unwrap();
-        let decoded = config().big_endian().deserialize(&encoded[..]).unwrap();
-        let decoded_reader = config()
-            .big_endian()
+        let encoded = DefaultOptions::new()
+            .with_big_endian()
+            .serialize(&element)
+            .unwrap();
+        let decoded = DefaultOptions::new()
+            .with_big_endian()
+            .deserialize(&encoded[..])
+            .unwrap();
+        let decoded_reader = DefaultOptions::new()
+            .with_big_endian()
             .deserialize_from(&mut &encoded[..])
             .unwrap();
 
@@ -259,11 +265,15 @@ fn deserializing_errors() {
 #[test]
 fn too_big_deserialize() {
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> = config().limit(3).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<u32> = DefaultOptions::new()
+        .with_limit(3)
+        .deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_err());
 
     let serialized = vec![0, 0, 0, 3];
-    let deserialized: Result<u32> = config().limit(4).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<u32> = DefaultOptions::new()
+        .with_limit(4)
+        .deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
 }
 
@@ -271,8 +281,8 @@ fn too_big_deserialize() {
 fn char_serialization() {
     let chars = "Aa\0☺♪";
     for c in chars.chars() {
-        let encoded = config()
-            .limit(4)
+        let encoded = DefaultOptions::new()
+            .with_limit(4)
             .serialize(&c)
             .expect("serializing char failed");
         let decoded: char = deserialize(&encoded).expect("deserializing failed");
@@ -283,18 +293,29 @@ fn char_serialization() {
 #[test]
 fn too_big_char_deserialize() {
     let serialized = vec![0x41];
-    let deserialized: Result<char> = config().limit(1).deserialize_from(&mut &serialized[..]);
+    let deserialized: Result<char> = DefaultOptions::new()
+        .with_limit(1)
+        .deserialize_from(&mut &serialized[..]);
     assert!(deserialized.is_ok());
     assert_eq!(deserialized.unwrap(), 'A');
 }
 
 #[test]
 fn too_big_serialize() {
-    assert!(config().limit(3).serialize(&0u32).is_err());
-    assert!(config().limit(4).serialize(&0u32).is_ok());
+    assert!(DefaultOptions::new()
+        .with_limit(3)
+        .serialize(&0u32)
+        .is_err());
+    assert!(DefaultOptions::new().with_limit(4).serialize(&0u32).is_ok());
 
-    assert!(config().limit(8 + 4).serialize(&"abcde").is_err());
-    assert!(config().limit(8 + 5).serialize(&"abcde").is_ok());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 4)
+        .serialize(&"abcde")
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 5)
+        .serialize(&"abcde")
+        .is_ok());
 }
 
 #[test]
@@ -314,28 +335,82 @@ fn test_serialized_size() {
 #[test]
 fn test_serialized_size_bounded() {
     // JUST RIGHT
-    assert!(config().limit(1).serialized_size(&0u8).unwrap() == 1);
-    assert!(config().limit(2).serialized_size(&0u16).unwrap() == 2);
-    assert!(config().limit(4).serialized_size(&0u32).unwrap() == 4);
-    assert!(config().limit(8).serialized_size(&0u64).unwrap() == 8);
-    assert!(config().limit(8).serialized_size(&"").unwrap() == 8);
-    assert!(config().limit(8 + 1).serialized_size(&"a").unwrap() == 8 + 1);
     assert!(
-        config()
-            .limit(8 + 3 * 4)
+        DefaultOptions::new()
+            .with_limit(1)
+            .serialized_size(&0u8)
+            .unwrap()
+            == 1
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(2)
+            .serialized_size(&0u16)
+            .unwrap()
+            == 2
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(4)
+            .serialized_size(&0u32)
+            .unwrap()
+            == 4
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8)
+            .serialized_size(&0u64)
+            .unwrap()
+            == 8
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8)
+            .serialized_size(&"")
+            .unwrap()
+            == 8
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8 + 1)
+            .serialized_size(&"a")
+            .unwrap()
+            == 8 + 1
+    );
+    assert!(
+        DefaultOptions::new()
+            .with_limit(8 + 3 * 4)
             .serialized_size(&vec![0u32, 1u32, 2u32])
             .unwrap()
             == 8 + 3 * 4
     );
     // Below
-    assert!(config().limit(0).serialized_size(&0u8).is_err());
-    assert!(config().limit(1).serialized_size(&0u16).is_err());
-    assert!(config().limit(3).serialized_size(&0u32).is_err());
-    assert!(config().limit(7).serialized_size(&0u64).is_err());
-    assert!(config().limit(7).serialized_size(&"").is_err());
-    assert!(config().limit(8 + 0).serialized_size(&"a").is_err());
-    assert!(config()
-        .limit(8 + 3 * 4 - 1)
+    assert!(DefaultOptions::new()
+        .with_limit(0)
+        .serialized_size(&0u8)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(1)
+        .serialized_size(&0u16)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(3)
+        .serialized_size(&0u32)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(7)
+        .serialized_size(&0u64)
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(7)
+        .serialized_size(&"")
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 0)
+        .serialized_size(&"a")
+        .is_err());
+    assert!(DefaultOptions::new()
+        .with_limit(8 + 3 * 4 - 1)
         .serialized_size(&vec![0u32, 1u32, 2u32])
         .is_err());
 }
@@ -416,15 +491,15 @@ fn test_oom_protection() {
         len: u64,
         byte: u8,
     }
-    let x = config()
-        .limit(10)
+    let x = DefaultOptions::new()
+        .with_limit(10)
         .serialize(&FakeVec {
             len: 0xffffffffffffffffu64,
             byte: 1,
         })
         .unwrap();
-    let y: Result<Vec<u8>> = config()
-        .limit(10)
+    let y: Result<Vec<u8>> = DefaultOptions::new()
+        .with_limit(10)
         .deserialize_from(&mut Cursor::new(&x[..]));
     assert!(y.is_err());
 }
@@ -458,7 +533,10 @@ fn serde_bytes() {
 fn endian_difference() {
     let x = 10u64;
     let little = serialize(&x).unwrap();
-    let big = config().big_endian().serialize(&x).unwrap();
+    let big = DefaultOptions::new()
+        .with_big_endian()
+        .serialize(&x)
+        .unwrap();
     assert_ne!(little, big);
 }
 
@@ -647,7 +725,7 @@ where
 
 #[test]
 fn test_default_deserialize_seed() {
-    let config = config();
+    let config = DefaultOptions::new();
 
     let data: Vec<_> = (10..100).collect();
     let bytes = config.serialize(&data).expect("Config::serialize failed");
@@ -665,8 +743,7 @@ fn test_default_deserialize_seed() {
 
 #[test]
 fn test_big_endian_deserialize_seed() {
-    let mut config = config();
-    config.big_endian();
+    let config = DefaultOptions::new().with_big_endian();
 
     let data: Vec<_> = (10..100).collect();
     let bytes = config.serialize(&data).expect("Config::serialize failed");
@@ -684,7 +761,7 @@ fn test_big_endian_deserialize_seed() {
 
 #[test]
 fn test_default_deserialize_from_seed() {
-    let config = config();
+    let config = DefaultOptions::new();
 
     let data: Vec<_> = (10..100).collect();
     let bytes = config.serialize(&data).expect("Config::serialize failed");
@@ -702,8 +779,7 @@ fn test_default_deserialize_from_seed() {
 
 #[test]
 fn test_big_endian_deserialize_from_seed() {
-    let mut config = config();
-    config.big_endian();
+    let config = DefaultOptions::new().with_big_endian();
 
     let data: Vec<_> = (10..100).collect();
     let bytes = config.serialize(&data).expect("Config::serialize failed");

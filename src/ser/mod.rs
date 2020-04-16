@@ -5,9 +5,9 @@ use serde;
 
 use byteorder::WriteBytesExt;
 
-use super::internal::SizeLimit;
+use super::config::SizeLimit;
 use super::{Error, ErrorKind, Result};
-use config::Options;
+use config::{BincodeByteOrder, Options};
 
 /// An Serializer that encodes values directly into a Writer.
 ///
@@ -16,7 +16,7 @@ use config::Options;
 ///
 /// This struct should not be used often.
 /// For most cases, prefer the `encode_into` function.
-pub(crate) struct Serializer<W, O: Options> {
+pub struct Serializer<W, O: Options> {
     writer: W,
     _options: O,
 }
@@ -61,15 +61,21 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_u16(self, v: u16) -> Result<()> {
-        self.writer.write_u16::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_u16::<<O::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_u32(self, v: u32) -> Result<()> {
-        self.writer.write_u32::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_u32::<<O::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_u64(self, v: u64) -> Result<()> {
-        self.writer.write_u64::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_u64::<<O::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_i8(self, v: i8) -> Result<()> {
@@ -77,33 +83,43 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_i16(self, v: i16) -> Result<()> {
-        self.writer.write_i16::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_i16::<<O::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_i32(self, v: i32) -> Result<()> {
-        self.writer.write_i32::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_i32::<<O::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_i64(self, v: i64) -> Result<()> {
-        self.writer.write_i64::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_i64::<<O::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     serde_if_integer128! {
         fn serialize_u128(self, v: u128) -> Result<()> {
-            self.writer.write_u128::<O::Endian>(v).map_err(Into::into)
+            self.writer.write_u128::<<O::Endian as BincodeByteOrder>::Endian>(v).map_err(Into::into)
         }
 
         fn serialize_i128(self, v: i128) -> Result<()> {
-            self.writer.write_i128::<O::Endian>(v).map_err(Into::into)
+            self.writer.write_i128::<<O::Endian as BincodeByteOrder>::Endian>(v).map_err(Into::into)
         }
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
-        self.writer.write_f32::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_f32::<<<O as Options>::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_f64(self, v: f64) -> Result<()> {
-        self.writer.write_f64::<O::Endian>(v).map_err(Into::into)
+        self.writer
+            .write_f64::<<<O as Options>::Endian as BincodeByteOrder>::Endian>(v)
+            .map_err(Into::into)
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
@@ -221,11 +237,15 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
 
 pub(crate) struct SizeChecker<O: Options> {
     pub options: O,
+    pub total: u64,
 }
 
 impl<O: Options> SizeChecker<O> {
     fn add_raw(&mut self, size: u64) -> Result<()> {
-        self.options.limit().add(size)
+        self.options.limit().add(size)?;
+        self.total += size;
+
+        Ok(())
     }
 
     fn add_value<T>(&mut self, t: T) -> Result<()> {
@@ -418,7 +438,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 }
 
-pub(crate) struct Compound<'a, W: 'a, O: Options + 'a> {
+pub struct Compound<'a, W: 'a, O: Options + 'a> {
     ser: &'a mut Serializer<W, O>,
 }
 

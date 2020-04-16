@@ -1,14 +1,15 @@
-use config::Options;
+use config::{BincodeByteOrder, Options};
 use std::io::Read;
 
-use self::read::BincodeRead;
+use self::read::{BincodeRead, IoReader, SliceReader};
 use byteorder::ReadBytesExt;
-use internal::SizeLimit;
+use config::SizeLimit;
 use serde;
 use serde::de::Error as DeError;
 use serde::de::IntoDeserializer;
 use {Error, ErrorKind, Result};
 
+/// Specialized ways to read data into bincode.
 pub mod read;
 
 /// A Deserializer that reads bytes from a buffer.
@@ -24,14 +25,30 @@ pub mod read;
 /// serde::Deserialize::deserialize(&mut deserializer);
 /// let bytes_read = d.bytes_read();
 /// ```
-pub(crate) struct Deserializer<R, O: Options> {
+pub struct Deserializer<R, O: Options> {
     reader: R,
     options: O,
 }
 
 impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
-    /// Creates a new Deserializer with a given `Read`er and a size_limit.
-    pub(crate) fn new(r: R, options: O) -> Deserializer<R, O> {
+    /// Creates a new Deserializer with a given `Read`er and options.
+    pub fn with_reader<IR: Read>(r: IR, options: O) -> Deserializer<IoReader<IR>, O> {
+        Deserializer {
+            reader: IoReader::new(r),
+            options,
+        }
+    }
+
+    /// Creates a new Deserializer that will read from the given slice.
+    pub fn from_slice(slice: &'de [u8], options: O) -> Deserializer<SliceReader<'de>, O> {
+        Deserializer {
+            reader: SliceReader::new(slice),
+            options,
+        }
+    }
+
+    /// Creates a new Deserializer with the given `BincodeRead`er
+    pub fn with_bincode_read(r: R, options: O) -> Deserializer<R, O> {
         Deserializer { reader: r, options }
     }
 
@@ -63,7 +80,7 @@ macro_rules! impl_nums {
             where V: serde::de::Visitor<'de>,
         {
             self.read_type::<$ty>()?;
-            let value = self.reader.$reader_method::<O::Endian>()?;
+            let value = self.reader.$reader_method::<<O::Endian as BincodeByteOrder>::Endian>()?;
             visitor.$visitor_method(value)
         }
     }

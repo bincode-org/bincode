@@ -33,43 +33,20 @@ extern crate byteorder;
 #[macro_use]
 extern crate serde;
 
-mod config;
-mod de;
+/// Configuration settings for bincode.
+pub mod config;
+/// Deserialize bincode data to a Rust data structure.
+pub mod de;
+
 mod error;
 mod internal;
 mod ser;
 
-pub use config::Config;
-pub use de::read::{BincodeRead, IoReader, SliceReader};
+pub use config::{Config, DefaultOptions, OptionsExt};
+pub use de::read::BincodeRead;
+pub use de::Deserializer;
 pub use error::{Error, ErrorKind, Result};
-
-/// An object that implements this trait can be passed a
-/// serde::Deserializer without knowing its concrete type.
-///
-/// This trait should be used only for `with_deserializer` functions.
-#[doc(hidden)]
-pub trait DeserializerAcceptor<'a> {
-    /// The return type for the accept method
-    type Output;
-    /// Accept a serde::Deserializer and do whatever you want with it.
-    fn accept<T>(self, T) -> Self::Output
-    where
-        T: serde::Deserializer<'a, Error = Error>;
-}
-
-/// An object that implements this trait can be passed a
-/// serde::Serializer without knowing its concrete type.
-///
-/// This trait should be used only for `with_serializer` functions.
-#[doc(hidden)]
-pub trait SerializerAcceptor {
-    /// The return type for the accept method
-    type Output;
-    /// Accept a serde::Serializer and do whatever you want with it.
-    fn accept<T>(self, T) -> Self::Output
-    where
-        T: serde::Serializer<Ok = (), Error = Error>;
-}
+pub use ser::Serializer;
 
 /// Get a default configuration object.
 ///
@@ -79,6 +56,7 @@ pub trait SerializerAcceptor {
 /// |------------|------------|
 /// | Unlimited  | Little     |
 #[inline(always)]
+#[deprecated(since = "1.3.0", note = "please use `DefaultOptions::new()` instead")]
 pub fn config() -> Config {
     Config::new()
 }
@@ -92,7 +70,7 @@ where
     W: std::io::Write,
     T: serde::Serialize,
 {
-    config().serialize_into(writer, value)
+    DefaultOptions::new().serialize_into(writer, value)
 }
 
 /// Serializes a serializable object into a `Vec` of bytes using the default configuration.
@@ -100,7 +78,7 @@ pub fn serialize<T: ?Sized>(value: &T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
-    config().serialize(value)
+    DefaultOptions::new().serialize(value)
 }
 
 /// Deserializes an object directly from a `Read`er using the default configuration.
@@ -111,7 +89,7 @@ where
     R: std::io::Read,
     T: serde::de::DeserializeOwned,
 {
-    config().deserialize_from(reader)
+    DefaultOptions::new().deserialize_from(reader)
 }
 
 /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
@@ -124,7 +102,7 @@ where
     R: de::read::BincodeRead<'a>,
     T: serde::de::DeserializeOwned,
 {
-    config().deserialize_from_custom(reader)
+    DefaultOptions::new().deserialize_from_custom(reader)
 }
 
 /// Only use this if you know what you're doing.
@@ -136,7 +114,7 @@ where
     T: serde::de::Deserialize<'a>,
     R: BincodeRead<'a>,
 {
-    config().deserialize_in_place(reader, place)
+    DefaultOptions::new().deserialize_in_place(reader, place)
 }
 
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
@@ -144,7 +122,7 @@ pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
 {
-    config().deserialize(bytes)
+    DefaultOptions::new().deserialize(bytes)
 }
 
 /// Returns the size that an object would be if serialized using Bincode with the default configuration.
@@ -152,27 +130,5 @@ pub fn serialized_size<T: ?Sized>(value: &T) -> Result<u64>
 where
     T: serde::Serialize,
 {
-    config().serialized_size(value)
-}
-
-/// Executes the acceptor with a serde::Deserializer instance.
-/// NOT A PART OF THE STABLE PUBLIC API
-#[doc(hidden)]
-pub fn with_deserializer<'a, A, R>(reader: R, acceptor: A) -> A::Output
-where
-    A: DeserializerAcceptor<'a>,
-    R: BincodeRead<'a>,
-{
-    config().with_deserializer(reader, acceptor)
-}
-
-/// Executes the acceptor with a serde::Serializer instance.
-/// NOT A PART OF THE STABLE PUBLIC API
-#[doc(hidden)]
-pub fn with_serializer<A, W>(writer: W, acceptor: A) -> A::Output
-where
-    A: SerializerAcceptor,
-    W: std::io::Write,
-{
-    config().with_serializer(writer, acceptor)
+    DefaultOptions::new().serialized_size(value)
 }
