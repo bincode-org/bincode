@@ -317,7 +317,7 @@ impl VarintLength {
     ) -> Result<u64> {
         use serde::Deserialize;
 
-        const EXTENSION_POINT_ERR: &'static str = r#"
+        const EXTENSION_POINT_ERR: &str = r#"
         Bytes 254 and 255 are treated as extension points; they should not be encoding anything.
         Do you have a mismatched bincode version?
         "#;
@@ -517,7 +517,7 @@ impl<O: Options, L: LengthEncoding> WithOtherLength<O, L> {
     #[inline(always)]
     pub(crate) fn new(options: O) -> WithOtherLength<O, L> {
         WithOtherLength {
-            options: options,
+            options,
             _length: PhantomData,
         }
     }
