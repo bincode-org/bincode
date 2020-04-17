@@ -3,7 +3,7 @@ use std::io::Read;
 
 use self::read::{BincodeRead, IoReader, SliceReader};
 use byteorder::ReadBytesExt;
-use config::{SizeLimit, LengthEncoding};
+use config::{LengthEncoding, SizeLimit};
 use serde;
 use serde::de::Error as DeError;
 use serde::de::IntoDeserializer;

@@ -810,19 +810,31 @@ fn test_varint_length_prefixes() {
     let d = vec![(); u16::max_value() as usize + 1];
 
     assert_eq!(
-        DefaultOptions::new().with_varint_length().serialized_size(&a[..]).unwrap(),
+        DefaultOptions::new()
+            .with_varint_length()
+            .serialized_size(&a[..])
+            .unwrap(),
         1
     ); // 2 ** 7 - 1
     assert_eq!(
-        DefaultOptions::new().with_varint_length().serialized_size(&b[..]).unwrap(),
+        DefaultOptions::new()
+            .with_varint_length()
+            .serialized_size(&b[..])
+            .unwrap(),
         1
     ); // 250
     assert_eq!(
-        DefaultOptions::new().with_varint_length().serialized_size(&c[..]).unwrap(),
+        DefaultOptions::new()
+            .with_varint_length()
+            .serialized_size(&c[..])
+            .unwrap(),
         (1 + std::mem::size_of::<u16>()) as u64
     ); // 251
     assert_eq!(
-        DefaultOptions::new().with_varint_length().serialized_size(&d[..]).unwrap(),
+        DefaultOptions::new()
+            .with_varint_length()
+            .serialized_size(&d[..])
+            .unwrap(),
         (1 + std::mem::size_of::<u32>()) as u64
     ); // 2 ** 16 + 1
 }

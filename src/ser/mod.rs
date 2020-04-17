@@ -5,7 +5,7 @@ use serde;
 
 use byteorder::WriteBytesExt;
 
-use super::config::{SizeLimit, LengthEncoding};
+use super::config::{LengthEncoding, SizeLimit};
 use super::{Error, ErrorKind, Result};
 use config::{BincodeByteOrder, Options};
 
