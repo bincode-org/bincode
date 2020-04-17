@@ -4,6 +4,7 @@ use error::{ErrorKind, Result};
 use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
+use std::mem::size_of;
 
 pub(crate) use self::internal::*;
 
@@ -272,21 +273,21 @@ pub struct FixedLength;
 #[derive(Copy, Clone)]
 pub struct VarintLength;
 
-impl VarintLength {
-    const SINGLE_BYTE_MAX: u8 = 250;
-    const U16_BYTE: u8 = 251;
-    const U32_BYTE: u8 = 252;
-    const U64_BYTE: u8 = 253;
+const SINGLE_BYTE_MAX: u8 = 250;
+const U16_BYTE: u8 = 251;
+const U32_BYTE: u8 = 252;
+const U64_BYTE: u8 = 253;
 
+impl VarintLength {
     fn varint_size(n: u64) -> u64 {
-        if n <= Self::SINGLE_BYTE_MAX as u64 {
+        if n <= SINGLE_BYTE_MAX as u64 {
             1
         } else if n <= u16::max_value() as u64 {
-            (1 + std::mem::size_of::<u16>()) as u64
+            (1 + size_of::<u16>()) as u64
         } else if n <= u32::max_value() as u64 {
-            (1 + std::mem::size_of::<u32>()) as u64
+            (1 + size_of::<u32>()) as u64
         } else {
-            (1 + std::mem::size_of::<u64>()) as u64
+            (1 + size_of::<u64>()) as u64
         }
     }
 
@@ -298,16 +299,16 @@ impl VarintLength {
 
         // note: the silly `&mut *`s are a reborrow technique;
         // they mean we don't get use-after-move errors
-        if n <= Self::SINGLE_BYTE_MAX as u64 {
+        if n <= SINGLE_BYTE_MAX as u64 {
             (n as u8).serialize(ser)
         } else if n <= u16::max_value() as u64 {
-            Self::U16_BYTE.serialize(&mut *ser)?;
+            U16_BYTE.serialize(&mut *ser)?;
             (n as u16).serialize(ser)
         } else if n <= u32::max_value() as u64 {
-            Self::U32_BYTE.serialize(&mut *ser)?;
+            U32_BYTE.serialize(&mut *ser)?;
             (n as u32).serialize(ser)
         } else {
-            Self::U64_BYTE.serialize(&mut *ser)?;
+            U64_BYTE.serialize(&mut *ser)?;
             (n as u64).serialize(ser)
         }
     }
@@ -324,10 +325,10 @@ impl VarintLength {
 
         #[allow(ellipsis_inclusive_range_patterns)]
         match u8::deserialize(&mut *de)? {
-            byte @ 0...Self::SINGLE_BYTE_MAX => Ok(byte as u64),
-            Self::U16_BYTE => Ok(u16::deserialize(&mut *de)? as u64),
-            Self::U32_BYTE => Ok(u32::deserialize(&mut *de)? as u64),
-            Self::U64_BYTE => Ok(u64::deserialize(&mut *de)?),
+            byte @ 0...SINGLE_BYTE_MAX => Ok(byte as u64),
+            U16_BYTE => Ok(u16::deserialize(&mut *de)? as u64),
+            U32_BYTE => Ok(u32::deserialize(&mut *de)? as u64),
+            U64_BYTE => Ok(u64::deserialize(&mut *de)?),
             _ => Err(Box::new(ErrorKind::Custom(EXTENSION_POINT_ERR.to_string()))), // extension point
         }
     }
