@@ -811,28 +811,28 @@ fn test_varint_length_prefixes() {
 
     assert_eq!(
         DefaultOptions::new()
-            .with_varint_length()
+            .with_varint_encoding()
             .serialized_size(&a[..])
             .unwrap(),
         1
     ); // 2 ** 7 - 1
     assert_eq!(
         DefaultOptions::new()
-            .with_varint_length()
+            .with_varint_encoding()
             .serialized_size(&b[..])
             .unwrap(),
         1
     ); // 250
     assert_eq!(
         DefaultOptions::new()
-            .with_varint_length()
+            .with_varint_encoding()
             .serialized_size(&c[..])
             .unwrap(),
         (1 + std::mem::size_of::<u16>()) as u64
     ); // 251
     assert_eq!(
         DefaultOptions::new()
-            .with_varint_length()
+            .with_varint_encoding()
             .serialized_size(&d[..])
             .unwrap(),
         (1 + std::mem::size_of::<u32>()) as u64

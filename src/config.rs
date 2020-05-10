@@ -42,7 +42,7 @@ impl Default for DefaultOptions {
 impl Options for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
-    type Length = FixedLength;
+    type Int = FixInt;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
@@ -95,13 +95,13 @@ pub trait OptionsExt: Options + Sized {
     }
 
     /// Sets the length encoding to varint
-    fn with_varint_length(self) -> WithOtherLength<Self, VarintLength> {
-        WithOtherLength::new(self)
+    fn with_varint_encoding(self) -> WithOtherIntEncoding<Self, VarInt> {
+        WithOtherIntEncoding::new(self)
     }
 
     /// Sets the length encoding to be fixed
-    fn with_fixed_length(self) -> WithOtherLength<Self, FixedLength> {
-        WithOtherLength::new(self)
+    fn with_fixint_encoding(self) -> WithOtherIntEncoding<Self, FixInt> {
+        WithOtherIntEncoding::new(self)
     }
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
@@ -265,20 +265,42 @@ impl BincodeByteOrder for NativeEndian {
     type Endian = byteorder::NativeEndian;
 }
 
-/// Fixed-size length encoding. (u32 for enum discriminants, u64 for sequence lengths)
+/// Fixed-size integer encoding.
+///
+/// * Fixed size integers are encoded directly
+/// * Enum discriminants are encoded as u32
+/// * Lengths and usize are encoded as u64
 #[derive(Copy, Clone)]
-pub struct FixedLength;
+pub struct FixInt;
 
-/// Variable-size length encoding.
+/// Variable-size integer encoding (excepting u8).
+///
+/// Encoding an integer v of any non-[ui]8 integer type works as follows:
+///
+/// 1. Take `u >= 0` such that `u == v mod 2**bits(v)` (i.e., convert to unsigned)
+/// 2. If `u < 251`, encode it as a single byte with that value.
+/// 3. If `251 <= u < 2**16`, encode it as a literal byte 251, followed by a u16 with value `u`.
+/// 4. If `2**16 <= u < 2**32`, encode it as a literal byte 252, followed by a u32 with value `u`.
+/// 5. If `2**32 <= u < 2**64`, encode it as a literal byte 253, followed by a u64 with value `u`.
+/// 5. [TODO] If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a
+///   u128 with value `u`.
+///
+/// Note that u256 and the like are unsupported by this format; if and when they are added to the
+/// language, they may be supported via the extension point given by the 255 byte.
 #[derive(Copy, Clone)]
-pub struct VarintLength;
+pub struct VarInt;
 
 const SINGLE_BYTE_MAX: u8 = 250;
 const U16_BYTE: u8 = 251;
 const U32_BYTE: u8 = 252;
 const U64_BYTE: u8 = 253;
+const U128_BYTE: u8 = 254;
+const DESERIALIZE_EXTENSION_POINT_ERR: &str = r#"
+Byte 255 is treated as an extension point; it should not be encoding anything.
+Do you have a mismatched bincode version?
+"#;
 
-impl VarintLength {
+impl VarInt {
     fn varint_size(n: u64) -> u64 {
         if n <= SINGLE_BYTE_MAX as u64 {
             1
@@ -295,56 +317,142 @@ impl VarintLength {
         ser: &mut ::ser::Serializer<W, O>,
         n: u64,
     ) -> Result<()> {
-        use serde::Serialize;
-
-        // note: the silly `&mut *`s are a reborrow technique;
-        // they mean we don't get use-after-move errors
         if n <= SINGLE_BYTE_MAX as u64 {
-            (n as u8).serialize(ser)
+            ser.serialize_byte(n as u8)
         } else if n <= u16::max_value() as u64 {
-            U16_BYTE.serialize(&mut *ser)?;
-            (n as u16).serialize(ser)
+            ser.serialize_byte(U16_BYTE)?;
+            ser.serialize_literal_u16(n as u16)
         } else if n <= u32::max_value() as u64 {
-            U32_BYTE.serialize(&mut *ser)?;
-            (n as u32).serialize(ser)
+            ser.serialize_byte(U32_BYTE)?;
+            ser.serialize_literal_u32(n as u32)
         } else {
-            U64_BYTE.serialize(&mut *ser)?;
-            (n as u64).serialize(ser)
+            ser.serialize_byte(U64_BYTE)?;
+            ser.serialize_literal_u64(n as u64)
         }
     }
 
     fn deserialize_varint<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut ::de::Deserializer<R, O>,
     ) -> Result<u64> {
-        use serde::Deserialize;
-
-        const EXTENSION_POINT_ERR: &str = r#"
-        Bytes 254 and 255 are treated as extension points; they should not be encoding anything.
-        Do you have a mismatched bincode version?
-        "#;
-
         #[allow(ellipsis_inclusive_range_patterns)]
-        match u8::deserialize(&mut *de)? {
+        match de.deserialize_byte()? {
             byte @ 0...SINGLE_BYTE_MAX => Ok(byte as u64),
-            U16_BYTE => Ok(u16::deserialize(&mut *de)? as u64),
-            U32_BYTE => Ok(u32::deserialize(&mut *de)? as u64),
-            U64_BYTE => Ok(u64::deserialize(&mut *de)?),
-            _ => Err(Box::new(ErrorKind::Custom(EXTENSION_POINT_ERR.to_string()))), // extension point
+            U16_BYTE => Ok(de.deserialize_literal_u16()? as u64),
+            U32_BYTE => Ok(de.deserialize_literal_u32()? as u64),
+            U64_BYTE => de.deserialize_literal_u64(),
+            U128_BYTE => Err(Box::new(ErrorKind::Custom(
+                "Invalid value (u128 range): you may have a version disagreement?".to_string(),
+            ))),
+            _ => Err(Box::new(ErrorKind::Custom(
+                DESERIALIZE_EXTENSION_POINT_ERR.to_string(),
+            ))),
+        }
+    }
+
+    serde_if_integer128! {
+        fn varint128_size(n: u128) -> u64 {
+            if n <= SINGLE_BYTE_MAX as u128 {
+                1
+            } else if n <= u16::max_value() as u128 {
+                (1 + size_of::<u16>()) as u64
+            } else if n <= u32::max_value() as u128 {
+                (1 + size_of::<u32>()) as u64
+            } else if n <= u64::max_value() as u128 {
+                (1 + size_of::<u64>()) as u64
+            } else {
+                (1 + size_of::<u128>()) as u64
+            }
+        }
+
+        fn serialize_varint128<W: Write, O: Options>(
+            ser: &mut ::ser::Serializer<W, O>,
+            n: u128,
+        ) -> Result<()> {
+            if n <= SINGLE_BYTE_MAX as u128 {
+                ser.serialize_byte(n as u8)
+            } else if n <= u16::max_value() as u128 {
+                ser.serialize_byte(U16_BYTE)?;
+                ser.serialize_literal_u16(n as u16)
+            } else if n <= u32::max_value() as u128 {
+                ser.serialize_byte(U32_BYTE)?;
+                ser.serialize_literal_u32(n as u32)
+            } else if n <= u64::max_value() as u128 {
+                ser.serialize_byte(U64_BYTE)?;
+                ser.serialize_literal_u64(n as u64)
+            } else {
+                ser.serialize_byte(U128_BYTE)?;
+                ser.serialize_literal_u128(n)
+            }
+        }
+
+        fn deserialize_varint128<'de, R: BincodeRead<'de>, O: Options>(
+            de: &mut ::de::Deserializer<R, O>,
+        ) -> Result<u128> {
+            #[allow(ellipsis_inclusive_range_patterns)]
+            match de.deserialize_byte()? {
+                byte @ 0...SINGLE_BYTE_MAX => Ok(byte as u128),
+                U16_BYTE => Ok(de.deserialize_literal_u16()? as u128),
+                U32_BYTE => Ok(de.deserialize_literal_u32()? as u128),
+                U64_BYTE => Ok(de.deserialize_literal_u64()? as u128),
+                U128_BYTE => de.deserialize_literal_u128(),
+                _ => Err(Box::new(ErrorKind::Custom(DESERIALIZE_EXTENSION_POINT_ERR.to_string()))),
+            }
         }
     }
 }
 
-impl LengthEncoding for FixedLength {
-    #[inline(always)]
-    fn length_size(len: usize) -> u64 {
-        use std::mem::size_of_val;
-        size_of_val(&len) as u64
+fn cast_u64_to_usize(n: u64) -> Result<usize> {
+    if n <= usize::max_value() as u64 {
+        Ok(n as usize)
+    } else {
+        Err(Box::new(ErrorKind::Custom(format!(
+            "Invalid size {}: sizes must fit in a usize (0 to {})",
+            n,
+            usize::max_value()
+        ))))
     }
+}
+fn cast_u64_to_u32(n: u64) -> Result<u32> {
+    if n <= u32::max_value() as u64 {
+        Ok(n as u32)
+    } else {
+        Err(Box::new(ErrorKind::Custom(format!(
+            "Invalid u32 {}: you may have a version disagreement?",
+            n,
+        ))))
+    }
+}
+fn cast_u64_to_u16(n: u64) -> Result<u16> {
+    if n <= u16::max_value() as u64 {
+        Ok(n as u16)
+    } else {
+        Err(Box::new(ErrorKind::Custom(format!(
+            "Invalid u16 {}: you may have a version disagreement?",
+            n,
+        ))))
+    }
+}
 
+impl IntEncoding for FixInt {
     #[inline(always)]
-    fn discriminant_size(idx: u32) -> u64 {
-        use std::mem::size_of_val;
-        size_of_val(&idx) as u64
+    fn u16_size(_: u16) -> u64 {
+        size_of::<u16>() as u64
+    }
+    #[inline(always)]
+    fn u32_size(_: u32) -> u64 {
+        size_of::<u32>() as u64
+    }
+    #[inline(always)]
+    fn u64_size(_: u64) -> u64 {
+        size_of::<u64>() as u64
+    }
+    #[inline(always)]
+    fn discriminant_size(_: u32) -> u64 {
+        size_of::<u32>() as u64
+    }
+    #[inline(always)]
+    fn len_size(_: usize) -> u64 {
+        size_of::<u64>() as u64
     }
 
     #[inline(always)]
@@ -352,9 +460,7 @@ impl LengthEncoding for FixedLength {
         ser: &mut ::ser::Serializer<W, O>,
         idx: u32,
     ) -> Result<()> {
-        use serde::Serialize;
-
-        idx.serialize(ser)
+        ser.serialize_literal_u32(idx)
     }
 
     #[inline(always)]
@@ -362,33 +468,90 @@ impl LengthEncoding for FixedLength {
         ser: &mut ::ser::Serializer<W, O>,
         len: usize,
     ) -> Result<()> {
-        use serde::Serialize;
+        ser.serialize_literal_u64(len as u64)
+    }
 
-        (len as u64).serialize(ser)
+    fn serialize_u16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u16,
+    ) -> Result<()> {
+        ser.serialize_literal_u16(val)
+    }
+    fn serialize_u32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u32,
+    ) -> Result<()> {
+        ser.serialize_literal_u32(val)
+    }
+    fn serialize_u64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u64,
+    ) -> Result<()> {
+        ser.serialize_literal_u64(val)
     }
 
     fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut ::de::Deserializer<R, O>,
     ) -> Result<u32> {
-        serde::Deserialize::deserialize(de)
+        de.deserialize_literal_u32()
     }
 
     fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut ::de::Deserializer<R, O>,
     ) -> Result<usize> {
-        serde::Deserialize::deserialize(de)
+        de.deserialize_literal_u64().and_then(cast_u64_to_usize)
+    }
+    fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
+        de: &mut crate::Deserializer<R, O>,
+    ) -> Result<u16> {
+        de.deserialize_literal_u16()
+    }
+    fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
+        de: &mut crate::Deserializer<R, O>,
+    ) -> Result<u32> {
+        de.deserialize_literal_u32()
+    }
+    fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
+        de: &mut crate::Deserializer<R, O>,
+    ) -> Result<u64> {
+        de.deserialize_literal_u64()
+    }
+
+    serde_if_integer128! {
+        fn u128_size(_: u128) -> u64{
+            size_of::<u128>() as u64
+        }
+        fn serialize_u128<W: Write, O: Options>(
+            ser: &mut crate::Serializer<W, O>,
+            val: u128,
+        ) -> Result<()> {
+            ser.serialize_literal_u128(val)
+        }
+        fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
+            de: &mut crate::Deserializer<R, O>,
+        ) -> Result<u128> {
+            de.deserialize_literal_u128()
+        }
     }
 }
 
-impl LengthEncoding for VarintLength {
-    #[inline(always)]
-    fn length_size(len: usize) -> u64 {
-        VarintLength::varint_size(len as u64)
-    }
-
+impl IntEncoding for VarInt {
     #[inline(always)]
     fn discriminant_size(idx: u32) -> u64 {
-        VarintLength::varint_size(idx as u64)
+        VarInt::varint_size(idx as u64)
+    }
+    #[inline(always)]
+    fn len_size(len: usize) -> u64 {
+        VarInt::varint_size(len as u64)
+    }
+    fn u16_size(n: u16) -> u64 {
+        VarInt::varint_size(n as u64)
+    }
+    fn u32_size(n: u32) -> u64 {
+        VarInt::varint_size(n as u64)
+    }
+    fn u64_size(n: u64) -> u64 {
+        VarInt::varint_size(n as u64)
     }
 
     #[inline(always)]
@@ -396,7 +559,7 @@ impl LengthEncoding for VarintLength {
         ser: &mut ::ser::Serializer<W, O>,
         idx: u32,
     ) -> Result<()> {
-        VarintLength::serialize_varint(ser, idx as u64)
+        VarInt::serialize_varint(ser, idx as u64)
     }
 
     #[inline(always)]
@@ -404,36 +567,78 @@ impl LengthEncoding for VarintLength {
         ser: &mut ::ser::Serializer<W, O>,
         len: usize,
     ) -> Result<()> {
-        VarintLength::serialize_varint(ser, len as u64)
+        VarInt::serialize_varint(ser, len as u64)
+    }
+    #[inline(always)]
+    fn serialize_u16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u16,
+    ) -> Result<()> {
+        VarInt::serialize_varint(ser, val as u64)
+    }
+    #[inline(always)]
+    fn serialize_u32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u32,
+    ) -> Result<()> {
+        VarInt::serialize_varint(ser, val as u64)
+    }
+    #[inline(always)]
+    fn serialize_u64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u64,
+    ) -> Result<()> {
+        VarInt::serialize_varint(ser, val as u64)
     }
 
+    #[inline(always)]
     fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut ::de::Deserializer<R, O>,
     ) -> Result<u32> {
-        let value = VarintLength::deserialize_varint(de)?;
-        if value <= u32::max_value() as u64 {
-            Ok(value as u32)
-        } else {
-            Err(Box::new(ErrorKind::Custom(format!(
-                "Invalid tag {}: tags must be a 32-bit integer (0 to {})",
-                value,
-                u32::max_value()
-            ))))
-        }
+        VarInt::deserialize_varint(de).and_then(cast_u64_to_u32)
     }
 
+    #[inline(always)]
     fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut ::de::Deserializer<R, O>,
     ) -> Result<usize> {
-        let value = VarintLength::deserialize_varint(de)?;
-        if value <= usize::max_value() as u64 {
-            Ok(value as usize)
-        } else {
-            Err(Box::new(ErrorKind::Custom(format!(
-                "Invalid size {}: sizes must fit in a usize (0 to {})",
-                value,
-                usize::max_value()
-            ))))
+        VarInt::deserialize_varint(de).and_then(cast_u64_to_usize)
+    }
+    #[inline(always)]
+    fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
+        de: &mut crate::Deserializer<R, O>,
+    ) -> Result<u16> {
+        VarInt::deserialize_varint(de).and_then(cast_u64_to_u16)
+    }
+    #[inline(always)]
+    fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
+        de: &mut crate::Deserializer<R, O>,
+    ) -> Result<u32> {
+        VarInt::deserialize_varint(de).and_then(cast_u64_to_u32)
+    }
+    #[inline(always)]
+    fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
+        de: &mut crate::Deserializer<R, O>,
+    ) -> Result<u64> {
+        VarInt::deserialize_varint(de)
+    }
+
+    serde_if_integer128! {
+        fn u128_size(n: u128) -> u64 {
+            VarInt::varint128_size(n)
+        }
+        #[inline(always)]
+        fn serialize_u128<W: Write, O: Options>(
+            ser: &mut crate::Serializer<W, O>,
+            val: u128,
+        ) -> Result<()> {
+            VarInt::serialize_varint128(ser, val)
+        }
+        #[inline(always)]
+        fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
+            de: &mut crate::Deserializer<R, O>,
+        ) -> Result<u128> {
+            VarInt::deserialize_varint128(de)
         }
     }
 }
@@ -489,9 +694,9 @@ pub struct WithOtherEndian<O: Options, E: BincodeByteOrder> {
 }
 
 /// A configuration struct with a user-specified length encoding
-pub struct WithOtherLength<O: Options, L: LengthEncoding> {
+pub struct WithOtherIntEncoding<O: Options, I: IntEncoding> {
     options: O,
-    _length: PhantomData<L>,
+    _length: PhantomData<I>,
 }
 
 impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
@@ -514,10 +719,10 @@ impl<O: Options, E: BincodeByteOrder> WithOtherEndian<O, E> {
     }
 }
 
-impl<O: Options, L: LengthEncoding> WithOtherLength<O, L> {
+impl<O: Options, I: IntEncoding> WithOtherIntEncoding<O, I> {
     #[inline(always)]
-    pub(crate) fn new(options: O) -> WithOtherLength<O, L> {
-        WithOtherLength {
+    pub(crate) fn new(options: O) -> WithOtherIntEncoding<O, I> {
+        WithOtherIntEncoding {
             options,
             _length: PhantomData,
         }
@@ -527,7 +732,7 @@ impl<O: Options, L: LengthEncoding> WithOtherLength<O, L> {
 impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
-    type Length = O::Length;
+    type Int = O::Int;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
@@ -538,17 +743,17 @@ impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E
 impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     type Limit = L;
     type Endian = O::Endian;
-    type Length = O::Length;
+    type Int = O::Int;
 
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
     }
 }
 
-impl<O: Options, L: LengthEncoding + 'static> Options for WithOtherLength<O, L> {
+impl<O: Options, I: IntEncoding + 'static> Options for WithOtherIntEncoding<O, I> {
     type Limit = O::Limit;
     type Endian = O::Endian;
-    type Length = L;
+    type Int = I;
 
     fn limit(&mut self) -> &mut O::Limit {
         self.options.limit()
@@ -747,7 +952,7 @@ mod internal {
     pub trait Options {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
-        type Length: LengthEncoding + 'static;
+        type Int: IntEncoding + 'static;
 
         fn limit(&mut self) -> &mut Self::Limit;
     }
@@ -755,7 +960,7 @@ mod internal {
     impl<'a, O: Options> Options for &'a mut O {
         type Limit = O::Limit;
         type Endian = O::Endian;
-        type Length = O::Length;
+        type Int = O::Int;
 
         #[inline(always)]
         fn limit(&mut self) -> &mut Self::Limit {
@@ -776,12 +981,17 @@ mod internal {
         type Endian: ByteOrder + 'static;
     }
 
-    pub trait LengthEncoding {
-        /// Gets the size (in bytes) that a length would be serialized to.
-        fn length_size(len: usize) -> u64;
-
-        /// Gets the size (in bytes) that a discriminant would be serialized to.
-        fn discriminant_size(idx: u32) -> u64;
+    pub trait IntEncoding {
+        /// Gets the size (in bytes) that a value would be serialized to.
+        fn discriminant_size(d: u32) -> u64;
+        /// Gets the size (in bytes) that a value would be serialized to.
+        fn len_size(len: usize) -> u64;
+        /// Gets the size (in bytes) that a value would be serialized to.
+        fn u16_size(n: u16) -> u64;
+        /// Gets the size (in bytes) that a value would be serialized to.
+        fn u32_size(n: u32) -> u64;
+        /// Gets the size (in bytes) that a value would be serialized to.
+        fn u64_size(n: u64) -> u64;
 
         /// Serializes an enum discriminant.
         fn serialize_discriminant<W: Write, O: Options>(
@@ -795,14 +1005,52 @@ mod internal {
             len: usize,
         ) -> Result<()>;
 
+        fn serialize_u16<W: Write, O: Options>(
+            ser: &mut ::ser::Serializer<W, O>,
+            val: u16,
+        ) -> Result<()>;
+
+        fn serialize_u32<W: Write, O: Options>(
+            ser: &mut ::ser::Serializer<W, O>,
+            val: u32,
+        ) -> Result<()>;
+
+        fn serialize_u64<W: Write, O: Options>(
+            ser: &mut ::ser::Serializer<W, O>,
+            val: u64,
+        ) -> Result<()>;
+
         /// Deserializes an enum discriminant.
         fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(
-            ser: &mut ::de::Deserializer<R, O>,
+            de: &mut ::de::Deserializer<R, O>,
         ) -> Result<u32>;
 
         /// Deserializes a sequence length.
         fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
-            ser: &mut ::de::Deserializer<R, O>,
+            de: &mut ::de::Deserializer<R, O>,
         ) -> Result<usize>;
+
+        fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
+            de: &mut ::de::Deserializer<R, O>,
+        ) -> Result<u16>;
+
+        fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
+            de: &mut ::de::Deserializer<R, O>,
+        ) -> Result<u32>;
+
+        fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
+            de: &mut ::de::Deserializer<R, O>,
+        ) -> Result<u64>;
+
+        serde_if_integer128! {
+            fn u128_size(v: u128) -> u64;
+            fn serialize_u128<W: Write, O: Options>(
+                ser: &mut crate::Serializer<W, O>,
+                val: u128,
+            ) -> Result<()>;
+            fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
+                de: &mut crate::Deserializer<R, O>,
+            ) -> Result<u128>;
+        }
     }
 }
