@@ -282,7 +282,7 @@ pub struct FixInt;
 /// 3. If `251 <= u < 2**16`, encode it as a literal byte 251, followed by a u16 with value `u`.
 /// 4. If `2**16 <= u < 2**32`, encode it as a literal byte 252, followed by a u32 with value `u`.
 /// 5. If `2**32 <= u < 2**64`, encode it as a literal byte 253, followed by a u64 with value `u`.
-/// 5. [TODO] If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a
+/// 5. If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a
 ///   u128 with value `u`.
 ///
 /// Note that u256 and the like are unsupported by this format; if and when they are added to the
