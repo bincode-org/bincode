@@ -191,7 +191,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        O::Int::serialize_discriminant(self, variant_index)?;
+        O::Int::serialize_u32(self, variant_index)?;
         Ok(Compound { ser: self })
     }
 
@@ -212,7 +212,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        O::Int::serialize_discriminant(self, variant_index)?;
+        O::Int::serialize_u32(self, variant_index)?;
         Ok(Compound { ser: self })
     }
 
@@ -233,7 +233,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     where
         T: serde::ser::Serialize,
     {
-        O::Int::serialize_discriminant(self, variant_index)?;
+        O::Int::serialize_u32(self, variant_index)?;
         value.serialize(self)
     }
 
@@ -243,7 +243,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
-        O::Int::serialize_discriminant(self, variant_index)
+        O::Int::serialize_u32(self, variant_index)
     }
 
     fn is_human_readable(&self) -> bool {
@@ -265,12 +265,12 @@ impl<O: Options> SizeChecker<O> {
     }
 
     fn add_discriminant(&mut self, idx: u32) -> Result<()> {
-        let bytes = <O::Int>::discriminant_size(idx);
+        let bytes = O::Int::u32_size(idx);
         self.add_raw(bytes)
     }
 
     fn add_len(&mut self, len: usize) -> Result<()> {
-        let bytes = <O::Int>::len_size(len);
+        let bytes = O::Int::len_size(len);
         self.add_raw(bytes)
     }
 }
@@ -400,7 +400,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        self.add_raw(O::Int::discriminant_size(variant_index))?;
+        self.add_raw(O::Int::u32_size(variant_index))?;
         Ok(SizeCompound { ser: self })
     }
 

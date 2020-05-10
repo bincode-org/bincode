@@ -446,43 +446,22 @@ impl IntEncoding for FixInt {
     fn u64_size(_: u64) -> u64 {
         size_of::<u64>() as u64
     }
-    #[inline(always)]
-    fn discriminant_size(_: u32) -> u64 {
-        size_of::<u32>() as u64
-    }
-    #[inline(always)]
-    fn len_size(_: usize) -> u64 {
-        size_of::<u64>() as u64
-    }
 
     #[inline(always)]
-    fn serialize_discriminant<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
-        idx: u32,
-    ) -> Result<()> {
-        ser.serialize_literal_u32(idx)
-    }
-
-    #[inline(always)]
-    fn serialize_len<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
-        len: usize,
-    ) -> Result<()> {
-        ser.serialize_literal_u64(len as u64)
-    }
-
     fn serialize_u16<W: Write, O: Options>(
         ser: &mut crate::Serializer<W, O>,
         val: u16,
     ) -> Result<()> {
         ser.serialize_literal_u16(val)
     }
+    #[inline(always)]
     fn serialize_u32<W: Write, O: Options>(
         ser: &mut crate::Serializer<W, O>,
         val: u32,
     ) -> Result<()> {
         ser.serialize_literal_u32(val)
     }
+    #[inline(always)]
     fn serialize_u64<W: Write, O: Options>(
         ser: &mut crate::Serializer<W, O>,
         val: u64,
@@ -490,27 +469,19 @@ impl IntEncoding for FixInt {
         ser.serialize_literal_u64(val)
     }
 
-    fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
-    ) -> Result<u32> {
-        de.deserialize_literal_u32()
-    }
-
-    fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
-    ) -> Result<usize> {
-        de.deserialize_literal_u64().and_then(cast_u64_to_usize)
-    }
+    #[inline(always)]
     fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
     ) -> Result<u16> {
         de.deserialize_literal_u16()
     }
+    #[inline(always)]
     fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
     ) -> Result<u32> {
         de.deserialize_literal_u32()
     }
+    #[inline(always)]
     fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
     ) -> Result<u64> {
@@ -518,15 +489,18 @@ impl IntEncoding for FixInt {
     }
 
     serde_if_integer128! {
+    #[inline(always)]
         fn u128_size(_: u128) -> u64{
             size_of::<u128>() as u64
         }
+    #[inline(always)]
         fn serialize_u128<W: Write, O: Options>(
             ser: &mut crate::Serializer<W, O>,
             val: u128,
         ) -> Result<()> {
             ser.serialize_literal_u128(val)
         }
+    #[inline(always)]
         fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
             de: &mut crate::Deserializer<R, O>,
         ) -> Result<u128> {
@@ -537,38 +511,18 @@ impl IntEncoding for FixInt {
 
 impl IntEncoding for VarInt {
     #[inline(always)]
-    fn discriminant_size(idx: u32) -> u64 {
-        VarInt::varint_size(idx as u64)
-    }
-    #[inline(always)]
-    fn len_size(len: usize) -> u64 {
-        VarInt::varint_size(len as u64)
-    }
     fn u16_size(n: u16) -> u64 {
         VarInt::varint_size(n as u64)
     }
+    #[inline(always)]
     fn u32_size(n: u32) -> u64 {
         VarInt::varint_size(n as u64)
     }
+    #[inline(always)]
     fn u64_size(n: u64) -> u64 {
         VarInt::varint_size(n as u64)
     }
 
-    #[inline(always)]
-    fn serialize_discriminant<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
-        idx: u32,
-    ) -> Result<()> {
-        VarInt::serialize_varint(ser, idx as u64)
-    }
-
-    #[inline(always)]
-    fn serialize_len<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
-        len: usize,
-    ) -> Result<()> {
-        VarInt::serialize_varint(ser, len as u64)
-    }
     #[inline(always)]
     fn serialize_u16<W: Write, O: Options>(
         ser: &mut crate::Serializer<W, O>,
@@ -591,19 +545,6 @@ impl IntEncoding for VarInt {
         VarInt::serialize_varint(ser, val as u64)
     }
 
-    #[inline(always)]
-    fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
-    ) -> Result<u32> {
-        VarInt::deserialize_varint(de).and_then(cast_u64_to_u32)
-    }
-
-    #[inline(always)]
-    fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
-    ) -> Result<usize> {
-        VarInt::deserialize_varint(de).and_then(cast_u64_to_usize)
-    }
     #[inline(always)]
     fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
@@ -624,6 +565,7 @@ impl IntEncoding for VarInt {
     }
 
     serde_if_integer128! {
+        #[inline(always)]
         fn u128_size(n: u128) -> u64 {
             VarInt::varint128_size(n)
         }
@@ -983,27 +925,24 @@ mod internal {
 
     pub trait IntEncoding {
         /// Gets the size (in bytes) that a value would be serialized to.
-        fn discriminant_size(d: u32) -> u64;
-        /// Gets the size (in bytes) that a value would be serialized to.
-        fn len_size(len: usize) -> u64;
-        /// Gets the size (in bytes) that a value would be serialized to.
         fn u16_size(n: u16) -> u64;
         /// Gets the size (in bytes) that a value would be serialized to.
         fn u32_size(n: u32) -> u64;
         /// Gets the size (in bytes) that a value would be serialized to.
         fn u64_size(n: u64) -> u64;
-
-        /// Serializes an enum discriminant.
-        fn serialize_discriminant<W: Write, O: Options>(
-            ser: &mut ::ser::Serializer<W, O>,
-            idx: u32,
-        ) -> Result<()>;
+        #[inline(always)]
+        fn len_size(len: usize) -> u64 {
+            Self::u64_size(len as u64)
+        }
 
         /// Serializes a sequence length.
+        #[inline(always)]
         fn serialize_len<W: Write, O: Options>(
             ser: &mut ::ser::Serializer<W, O>,
             len: usize,
-        ) -> Result<()>;
+        ) -> Result<()> {
+            Self::serialize_u64(ser, len as u64)
+        }
 
         fn serialize_u16<W: Write, O: Options>(
             ser: &mut ::ser::Serializer<W, O>,
@@ -1020,15 +959,13 @@ mod internal {
             val: u64,
         ) -> Result<()>;
 
-        /// Deserializes an enum discriminant.
-        fn deserialize_discriminant<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::de::Deserializer<R, O>,
-        ) -> Result<u32>;
-
         /// Deserializes a sequence length.
+        #[inline(always)]
         fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
             de: &mut ::de::Deserializer<R, O>,
-        ) -> Result<usize>;
+        ) -> Result<usize> {
+            Self::deserialize_u64(de).and_then(cast_u64_to_usize)
+        }
 
         fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
             de: &mut ::de::Deserializer<R, O>,

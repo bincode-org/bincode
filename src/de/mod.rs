@@ -287,7 +287,7 @@ where
             where
                 V: serde::de::DeserializeSeed<'de>,
             {
-                let idx: u32 = <O::Int>::deserialize_discriminant(self)?;
+                let idx: u32 = O::Int::deserialize_u32(self)?;
                 let val: Result<_> = seed.deserialize(idx.into_deserializer());
                 Ok((val?, self))
             }
