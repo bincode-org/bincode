@@ -8,6 +8,7 @@ use byteorder::WriteBytesExt;
 use super::config::{IntEncoding, SizeLimit};
 use super::{Error, ErrorKind, Result};
 use config::{BincodeByteOrder, Options};
+use std::mem::size_of;
 
 /// An Serializer that encodes values directly into a Writer.
 ///
@@ -28,7 +29,7 @@ macro_rules! impl_serialize_literal {
                 .$write::<<O::Endian as BincodeByteOrder>::Endian>(v)
                 .map_err(Into::into)
         }
-    }
+    };
 }
 
 impl<W: Write, O: Options> Serializer<W, O> {
@@ -58,7 +59,7 @@ macro_rules! impl_serialize_int {
         fn $ser_method(self, v: $ty) -> Result<()> {
             O::IntEncoding::$ser_int(self, v as $unsigned_ty)
         }
-    }
+    };
 }
 
 impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
@@ -320,11 +321,11 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 
     fn serialize_f32(self, _: f32) -> Result<()> {
-        self.add_raw(std::mem::size_of::<f32>() as u64)
+        self.add_raw(size_of::<f32>() as u64)
     }
 
     fn serialize_f64(self, _: f64) -> Result<()> {
-        self.add_raw(std::mem::size_of::<f64>() as u64)
+        self.add_raw(size_of::<f64>() as u64)
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
