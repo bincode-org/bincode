@@ -97,7 +97,7 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 
     fn read_vec(&mut self) -> Result<Vec<u8>> {
-        let len = <O::Int>::deserialize_len(self)?;
+        let len = O::IntEncoding::deserialize_len(self)?;
         self.read_bytes(len as u64)?;
         self.reader.get_byte_buffer(len)
     }
@@ -108,14 +108,14 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 }
 
-macro_rules! impl_nums {
-    ($name:ident : $options:ty => $visitor_method:ident ($dser_method:ident as $ty:ty)) => {
+macro_rules! impl_deserialize_int {
+    ($name:ident = $visitor_method:ident ($dser_method:ident as $ty:ty)) => {
         #[inline]
         fn $name<V>(self, visitor: V) -> Result<V::Value>
         where
             V: serde::de::Visitor<'de>,
         {
-            visitor.$visitor_method(O::Int::$dser_method(self)? as $ty)
+            visitor.$visitor_method(O::IntEncoding::$dser_method(self)? as $ty)
         }
     };
 }
@@ -146,12 +146,12 @@ where
         }
     }
 
-    impl_nums!(deserialize_u16: O => visit_u16(deserialize_u16 as u16));
-    impl_nums!(deserialize_u32: O => visit_u32(deserialize_u32 as u32));
-    impl_nums!(deserialize_u64: O => visit_u64(deserialize_u64 as u64));
-    impl_nums!(deserialize_i16: O => visit_i16(deserialize_u16 as i16));
-    impl_nums!(deserialize_i32: O => visit_i32(deserialize_u32 as i32));
-    impl_nums!(deserialize_i64: O => visit_i64(deserialize_u64 as i64));
+    impl_deserialize_int!(deserialize_u16 = visit_u16(deserialize_u16 as u16));
+    impl_deserialize_int!(deserialize_u32 = visit_u32(deserialize_u32 as u32));
+    impl_deserialize_int!(deserialize_u64 = visit_u64(deserialize_u64 as u64));
+    impl_deserialize_int!(deserialize_i16 = visit_i16(deserialize_u16 as i16));
+    impl_deserialize_int!(deserialize_i32 = visit_i32(deserialize_u32 as i32));
+    impl_deserialize_int!(deserialize_i64 = visit_i64(deserialize_u64 as i64));
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
@@ -176,8 +176,8 @@ where
     }
 
     serde_if_integer128! {
-        impl_nums!(deserialize_u128: O => visit_u128(deserialize_u128 as u128));
-        impl_nums!(deserialize_i128: O => visit_i128(deserialize_u128 as i128));
+        impl_deserialize_int!(deserialize_u128 = visit_u128(deserialize_u128 as u128));
+        impl_deserialize_int!(deserialize_i128 = visit_i128(deserialize_u128 as i128));
     }
 
     #[inline]
@@ -238,7 +238,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let len = <O::Int>::deserialize_len(self)?;
+        let len = O::IntEncoding::deserialize_len(self)?;
         self.read_bytes(len as u64)?;
         self.reader.forward_read_str(len, visitor)
     }
@@ -254,7 +254,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let len = <O::Int>::deserialize_len(self)?;
+        let len = O::IntEncoding::deserialize_len(self)?;
         self.read_bytes(len as u64)?;
         self.reader.forward_read_bytes(len, visitor)
     }
@@ -287,7 +287,7 @@ where
             where
                 V: serde::de::DeserializeSeed<'de>,
             {
-                let idx: u32 = O::Int::deserialize_u32(self)?;
+                let idx: u32 = O::IntEncoding::deserialize_u32(self)?;
                 let val: Result<_> = seed.deserialize(idx.into_deserializer());
                 Ok((val?, self))
             }
@@ -351,7 +351,7 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        let len = <O::Int>::deserialize_len(self)?;
+        let len = O::IntEncoding::deserialize_len(self)?;
 
         self.deserialize_tuple(len, visitor)
     }
@@ -397,7 +397,7 @@ where
             }
         }
 
-        let len = <O::Int>::deserialize_len(self)?;
+        let len = O::IntEncoding::deserialize_len(self)?;
 
         visitor.visit_map(Access {
             deserializer: self,

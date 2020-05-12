@@ -42,7 +42,7 @@ impl Default for DefaultOptions {
 impl Options for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
-    type Int = FixInt;
+    type IntEncoding = FixintEncoding;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
@@ -95,12 +95,12 @@ pub trait OptionsExt: Options + Sized {
     }
 
     /// Sets the length encoding to varint
-    fn with_varint_encoding(self) -> WithOtherIntEncoding<Self, VarInt> {
+    fn with_varint_encoding(self) -> WithOtherIntEncoding<Self, VarintEncoding> {
         WithOtherIntEncoding::new(self)
     }
 
     /// Sets the length encoding to be fixed
-    fn with_fixint_encoding(self) -> WithOtherIntEncoding<Self, FixInt> {
+    fn with_fixint_encoding(self) -> WithOtherIntEncoding<Self, FixintEncoding> {
         WithOtherIntEncoding::new(self)
     }
 
@@ -271,7 +271,7 @@ impl BincodeByteOrder for NativeEndian {
 /// * Enum discriminants are encoded as u32
 /// * Lengths and usize are encoded as u64
 #[derive(Copy, Clone)]
-pub struct FixInt;
+pub struct FixintEncoding;
 
 /// Variable-size integer encoding (excepting u8).
 ///
@@ -288,7 +288,7 @@ pub struct FixInt;
 /// Note that u256 and the like are unsupported by this format; if and when they are added to the
 /// language, they may be supported via the extension point given by the 255 byte.
 #[derive(Copy, Clone)]
-pub struct VarInt;
+pub struct VarintEncoding;
 
 const SINGLE_BYTE_MAX: u8 = 250;
 const U16_BYTE: u8 = 251;
@@ -300,7 +300,7 @@ Byte 255 is treated as an extension point; it should not be encoding anything.
 Do you have a mismatched bincode version?
 "#;
 
-impl VarInt {
+impl VarintEncoding {
     fn varint_size(n: u64) -> u64 {
         if n <= SINGLE_BYTE_MAX as u64 {
             1
@@ -433,7 +433,7 @@ fn cast_u64_to_u16(n: u64) -> Result<u16> {
     }
 }
 
-impl IntEncoding for FixInt {
+impl IntEncoding for FixintEncoding {
     #[inline(always)]
     fn u16_size(_: u16) -> u64 {
         size_of::<u16>() as u64
@@ -509,18 +509,18 @@ impl IntEncoding for FixInt {
     }
 }
 
-impl IntEncoding for VarInt {
+impl IntEncoding for VarintEncoding {
     #[inline(always)]
     fn u16_size(n: u16) -> u64 {
-        VarInt::varint_size(n as u64)
+        Self::varint_size(n as u64)
     }
     #[inline(always)]
     fn u32_size(n: u32) -> u64 {
-        VarInt::varint_size(n as u64)
+        Self::varint_size(n as u64)
     }
     #[inline(always)]
     fn u64_size(n: u64) -> u64 {
-        VarInt::varint_size(n as u64)
+        Self::varint_size(n as u64)
     }
 
     #[inline(always)]
@@ -528,59 +528,59 @@ impl IntEncoding for VarInt {
         ser: &mut crate::Serializer<W, O>,
         val: u16,
     ) -> Result<()> {
-        VarInt::serialize_varint(ser, val as u64)
+        Self::serialize_varint(ser, val as u64)
     }
     #[inline(always)]
     fn serialize_u32<W: Write, O: Options>(
         ser: &mut crate::Serializer<W, O>,
         val: u32,
     ) -> Result<()> {
-        VarInt::serialize_varint(ser, val as u64)
+        Self::serialize_varint(ser, val as u64)
     }
     #[inline(always)]
     fn serialize_u64<W: Write, O: Options>(
         ser: &mut crate::Serializer<W, O>,
         val: u64,
     ) -> Result<()> {
-        VarInt::serialize_varint(ser, val as u64)
+        Self::serialize_varint(ser, val)
     }
 
     #[inline(always)]
     fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
     ) -> Result<u16> {
-        VarInt::deserialize_varint(de).and_then(cast_u64_to_u16)
+        Self::deserialize_varint(de).and_then(cast_u64_to_u16)
     }
     #[inline(always)]
     fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
     ) -> Result<u32> {
-        VarInt::deserialize_varint(de).and_then(cast_u64_to_u32)
+        Self::deserialize_varint(de).and_then(cast_u64_to_u32)
     }
     #[inline(always)]
     fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::Deserializer<R, O>,
     ) -> Result<u64> {
-        VarInt::deserialize_varint(de)
+        Self::deserialize_varint(de)
     }
 
     serde_if_integer128! {
         #[inline(always)]
         fn u128_size(n: u128) -> u64 {
-            VarInt::varint128_size(n)
+            Self::varint128_size(n)
         }
         #[inline(always)]
         fn serialize_u128<W: Write, O: Options>(
             ser: &mut crate::Serializer<W, O>,
             val: u128,
         ) -> Result<()> {
-            VarInt::serialize_varint128(ser, val)
+            Self::serialize_varint128(ser, val)
         }
         #[inline(always)]
         fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
             de: &mut crate::Deserializer<R, O>,
         ) -> Result<u128> {
-            VarInt::deserialize_varint128(de)
+            Self::deserialize_varint128(de)
         }
     }
 }
@@ -674,7 +674,7 @@ impl<O: Options, I: IntEncoding> WithOtherIntEncoding<O, I> {
 impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
-    type Int = O::Int;
+    type IntEncoding = O::IntEncoding;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
@@ -685,7 +685,7 @@ impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E
 impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     type Limit = L;
     type Endian = O::Endian;
-    type Int = O::Int;
+    type IntEncoding = O::IntEncoding;
 
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
@@ -695,7 +695,7 @@ impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
 impl<O: Options, I: IntEncoding + 'static> Options for WithOtherIntEncoding<O, I> {
     type Limit = O::Limit;
     type Endian = O::Endian;
-    type Int = I;
+    type IntEncoding = I;
 
     fn limit(&mut self) -> &mut O::Limit {
         self.options.limit()
@@ -894,7 +894,7 @@ mod internal {
     pub trait Options {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
-        type Int: IntEncoding + 'static;
+        type IntEncoding: IntEncoding + 'static;
 
         fn limit(&mut self) -> &mut Self::Limit;
     }
@@ -902,7 +902,7 @@ mod internal {
     impl<'a, O: Options> Options for &'a mut O {
         type Limit = O::Limit;
         type Endian = O::Endian;
-        type Int = O::Int;
+        type IntEncoding = O::IntEncoding;
 
         #[inline(always)]
         fn limit(&mut self) -> &mut Self::Limit {
