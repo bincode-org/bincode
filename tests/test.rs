@@ -20,39 +20,47 @@ use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
 const LEN_SIZE: u64 = 8;
 
-fn the_same<V>(element: V)
+fn the_same_impl<V, O>(element: V, options: &mut O)
 where
     V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
+    O: OptionsExt,
 {
-    let size = serialized_size(&element).unwrap();
+    let size = options.serialized_size(&element).unwrap();
 
     {
-        let encoded = serialize(&element).unwrap();
-        let decoded = deserialize(&encoded[..]).unwrap();
-
-        assert_eq!(element, decoded);
-        assert_eq!(size, encoded.len() as u64);
-    }
-
-    {
-        let encoded = DefaultOptions::new()
-            .with_big_endian()
-            .serialize(&element)
-            .unwrap();
-        let decoded = DefaultOptions::new()
-            .with_big_endian()
-            .deserialize(&encoded[..])
-            .unwrap();
-        let decoded_reader = DefaultOptions::new()
-            .with_big_endian()
-            .deserialize_from(&mut &encoded[..])
-            .unwrap();
+        let encoded = options.serialize(&element).unwrap();
+        let decoded: V = options.deserialize(&encoded[..]).unwrap();
+        let decoded_reader = options.deserialize_from(&mut &encoded[..]).unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(element, decoded_reader);
         assert_eq!(size, encoded.len() as u64);
     }
 }
+
+fn the_same<V>(element: V)
+where
+    V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + Clone + 'static,
+{
+    // add a new macro which calls the previous when you add a new option set
+    macro_rules! all_endians {
+        ($element:expr, $options:expr) => {
+            the_same_impl($element.clone(), &mut $options.with_native_endian());
+            the_same_impl($element.clone(), &mut $options.with_big_endian());
+            the_same_impl($element.clone(), &mut $options.with_little_endian());
+        };
+    }
+
+    macro_rules! all_integer_encodings {
+        ($element:expr, $options:expr) => {
+            all_endians!($element, $options.with_fixint_encoding());
+            all_endians!($element, $options.with_varint_encoding());
+        };
+    }
+
+    all_integer_encodings!(element, DefaultOptions::new());
+}
+
 #[test]
 fn test_numbers() {
     // unsigned positive
@@ -111,7 +119,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct Easy {
         x: isize,
         s: String,
@@ -126,13 +134,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct Easy {
         x: isize,
         s: String,
         y: usize,
     }
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct Nest {
         f: Easy,
         b: usize,
@@ -156,7 +164,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_newtype() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct NewtypeStr(usize);
 
     the_same(NewtypeStr(5));
@@ -164,7 +172,7 @@ fn test_struct_newtype() {
 
 #[test]
 fn test_struct_tuple() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct TubStr(usize, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
@@ -179,7 +187,7 @@ fn test_option() {
 
 #[test]
 fn test_enum() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     enum TestEnum {
         NoArg,
         OneArg(usize),

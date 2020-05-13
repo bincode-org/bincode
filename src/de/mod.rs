@@ -30,6 +30,18 @@ pub struct Deserializer<R, O: Options> {
     options: O,
 }
 
+macro_rules! impl_deserialize_literal {
+    ($name:ident : $ty:ty = $read:ident()) => {
+        #[inline]
+        pub(crate) fn $name(&mut self) -> Result<$ty> {
+            self.read_literal_type::<$ty>()?;
+            self.reader
+                .$read::<<O::Endian as BincodeByteOrder>::Endian>()
+                .map_err(Into::into)
+        }
+    };
+}
+
 impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     /// Creates a new Deserializer with a given `Read`er and options.
     pub fn with_reader<IR: Read>(r: IR, options: O) -> Deserializer<IoReader<IR>, O> {
@@ -57,34 +69,12 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
         self.reader.read_u8().map_err(Into::into)
     }
 
-    pub(crate) fn deserialize_literal_u16(&mut self) -> Result<u16> {
-        self.read_literal_type::<u16>()?;
-        self.reader
-            .read_u16::<<O::Endian as BincodeByteOrder>::Endian>()
-            .map_err(Into::into)
-    }
-
-    pub(crate) fn deserialize_literal_u32(&mut self) -> Result<u32> {
-        self.read_literal_type::<u32>()?;
-        self.reader
-            .read_u32::<<O::Endian as BincodeByteOrder>::Endian>()
-            .map_err(Into::into)
-    }
-
-    pub(crate) fn deserialize_literal_u64(&mut self) -> Result<u64> {
-        self.read_literal_type::<u64>()?;
-        self.reader
-            .read_u64::<<O::Endian as BincodeByteOrder>::Endian>()
-            .map_err(Into::into)
-    }
+    impl_deserialize_literal! { deserialize_literal_u16 : u16 = read_u16() }
+    impl_deserialize_literal! { deserialize_literal_u32 : u32 = read_u32() }
+    impl_deserialize_literal! { deserialize_literal_u64 : u64 = read_u64() }
 
     serde_if_integer128! {
-        pub(crate) fn deserialize_literal_u128(&mut self) -> Result<u128> {
-            self.read_literal_type::<u128>()?;
-            self.reader
-                .read_u128::<<O::Endian as BincodeByteOrder>::Endian>()
-                .map_err(Into::into)
-        }
+        impl_deserialize_literal! { deserialize_literal_u128 : u128 = read_u128() }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
@@ -109,13 +99,13 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
 }
 
 macro_rules! impl_deserialize_int {
-    ($name:ident = $visitor_method:ident ($dser_method:ident as $ty:ty)) => {
+    ($name:ident = $visitor_method:ident ($dser_method:ident)) => {
         #[inline]
         fn $name<V>(self, visitor: V) -> Result<V::Value>
         where
             V: serde::de::Visitor<'de>,
         {
-            visitor.$visitor_method(O::IntEncoding::$dser_method(self)? as $ty)
+            visitor.$visitor_method(O::IntEncoding::$dser_method(self)?)
         }
     };
 }
@@ -146,12 +136,12 @@ where
         }
     }
 
-    impl_deserialize_int!(deserialize_u16 = visit_u16(deserialize_u16 as u16));
-    impl_deserialize_int!(deserialize_u32 = visit_u32(deserialize_u32 as u32));
-    impl_deserialize_int!(deserialize_u64 = visit_u64(deserialize_u64 as u64));
-    impl_deserialize_int!(deserialize_i16 = visit_i16(deserialize_u16 as i16));
-    impl_deserialize_int!(deserialize_i32 = visit_i32(deserialize_u32 as i32));
-    impl_deserialize_int!(deserialize_i64 = visit_i64(deserialize_u64 as i64));
+    impl_deserialize_int!(deserialize_u16 = visit_u16(deserialize_u16));
+    impl_deserialize_int!(deserialize_u32 = visit_u32(deserialize_u32));
+    impl_deserialize_int!(deserialize_u64 = visit_u64(deserialize_u64));
+    impl_deserialize_int!(deserialize_i16 = visit_i16(deserialize_i16));
+    impl_deserialize_int!(deserialize_i32 = visit_i32(deserialize_i32));
+    impl_deserialize_int!(deserialize_i64 = visit_i64(deserialize_i64));
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
@@ -176,8 +166,8 @@ where
     }
 
     serde_if_integer128! {
-        impl_deserialize_int!(deserialize_u128 = visit_u128(deserialize_u128 as u128));
-        impl_deserialize_int!(deserialize_i128 = visit_i128(deserialize_u128 as i128));
+        impl_deserialize_int!(deserialize_u128 = visit_u128(deserialize_u128));
+        impl_deserialize_int!(deserialize_i128 = visit_i128(deserialize_i128));
     }
 
     #[inline]
