@@ -12,10 +12,9 @@ use self::EndianOption::*;
 use self::LimitOption::*;
 
 /// The default options for bincode serialization/deserialization.
-/// Implements OptionsExt to allow building configuration object for non-default settings.
 ///
 /// ### Defaults
-/// By default bincode will use little-endian encoding for mult-byte integers, and will not
+/// By default bincode will use little-endian encoding for multi-byte integers, and will not
 /// limit the number of serialized/deserialized bytes.
 #[derive(Copy, Clone)]
 pub struct DefaultOptions(Infinite);
@@ -39,7 +38,7 @@ impl Default for DefaultOptions {
     }
 }
 
-impl Options for DefaultOptions {
+impl InternalOptions for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
     type IntEncoding = FixintEncoding;
@@ -66,7 +65,7 @@ impl Options for DefaultOptions {
 /// serialization that goes over the limit.
 /// Sets the byte limit to be unlimited.
 /// This is the default.
-pub trait OptionsExt: Options + Sized {
+pub trait Options: InternalOptions + Sized {
     /// Sets the byte limit to be unlimited.
     /// This is the default.
     fn with_no_limit(self) -> WithOtherLimit<Self, Infinite> {
@@ -200,7 +199,7 @@ pub trait OptionsExt: Options + Sized {
     }
 }
 
-impl<T: Options> OptionsExt for T {}
+impl<T: InternalOptions> Options for T {}
 
 /// A SizeLimit that restricts serialized or deserialized messages from
 /// exceeding a certain byte length.
@@ -878,7 +877,7 @@ impl<O: Options, I: IntEncoding> WithOtherIntEncoding<O, I> {
     }
 }
 
-impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E> {
+impl<O: Options, E: BincodeByteOrder + 'static> InternalOptions for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
     type IntEncoding = O::IntEncoding;
@@ -889,7 +888,7 @@ impl<O: Options, E: BincodeByteOrder + 'static> Options for WithOtherEndian<O, E
     }
 }
 
-impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
+impl<O: Options, L: SizeLimit + 'static> InternalOptions for WithOtherLimit<O, L> {
     type Limit = L;
     type Endian = O::Endian;
     type IntEncoding = O::IntEncoding;
@@ -899,7 +898,7 @@ impl<O: Options, L: SizeLimit + 'static> Options for WithOtherLimit<O, L> {
     }
 }
 
-impl<O: Options, I: IntEncoding + 'static> Options for WithOtherIntEncoding<O, I> {
+impl<O: Options, I: IntEncoding + 'static> InternalOptions for WithOtherIntEncoding<O, I> {
     type Limit = O::Limit;
     type Endian = O::Endian;
     type IntEncoding = I;
@@ -1098,7 +1097,7 @@ mod internal {
     use super::*;
     use byteorder::ByteOrder;
 
-    pub trait Options {
+    pub trait InternalOptions {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
         type IntEncoding: IntEncoding + 'static;
@@ -1106,7 +1105,7 @@ mod internal {
         fn limit(&mut self) -> &mut Self::Limit;
     }
 
-    impl<'a, O: Options> Options for &'a mut O {
+    impl<'a, O: InternalOptions> InternalOptions for &'a mut O {
         type Limit = O::Limit;
         type Endian = O::Endian;
         type IntEncoding = O::IntEncoding;

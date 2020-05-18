@@ -14,7 +14,7 @@ use std::result::Result as StdResult;
 
 use bincode::{
     deserialize, deserialize_from, deserialize_in_place, serialize, serialized_size,
-    DefaultOptions, ErrorKind, OptionsExt, Result,
+    DefaultOptions, ErrorKind, Options, Result,
 };
 use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
@@ -23,7 +23,7 @@ const LEN_SIZE: u64 = 8;
 fn the_same_impl<V, O>(element: V, options: &mut O)
 where
     V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
-    O: OptionsExt,
+    O: Options,
 {
     let size = options.serialized_size(&element).unwrap();
 

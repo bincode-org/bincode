@@ -2,7 +2,7 @@ use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 
-use config::{Infinite, Options, OptionsExt, SizeLimit};
+use config::{Infinite, InternalOptions, Options, SizeLimit};
 use de::read::BincodeRead;
 use Result;
 
@@ -10,7 +10,7 @@ pub(crate) fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T, mut options:
 where
     W: Write,
     T: serde::Serialize,
-    O: Options,
+    O: InternalOptions,
 {
     if options.limit().limit().is_some() {
         // "compute" the size for the side-effect
@@ -25,7 +25,7 @@ where
 pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
-    O: Options,
+    O: InternalOptions,
 {
     let mut writer = {
         let actual_size = serialized_size(value, &mut options)?;
@@ -36,7 +36,7 @@ where
     Ok(writer)
 }
 
-pub(crate) fn serialized_size<T: ?Sized, O: Options>(value: &T, options: O) -> Result<u64>
+pub(crate) fn serialized_size<T: ?Sized, O: InternalOptions>(value: &T, options: O) -> Result<u64>
 where
     T: serde::Serialize,
 {
@@ -50,7 +50,7 @@ pub(crate) fn deserialize_from<R, T, O>(reader: R, options: O) -> Result<T>
 where
     R: Read,
     T: serde::de::DeserializeOwned,
-    O: Options,
+    O: InternalOptions,
 {
     deserialize_from_seed(PhantomData, reader, options)
 }
@@ -59,7 +59,7 @@ pub(crate) fn deserialize_from_seed<'a, R, T, O>(seed: T, reader: R, options: O)
 where
     R: Read,
     T: serde::de::DeserializeSeed<'a>,
-    O: Options,
+    O: InternalOptions,
 {
     let reader = ::de::read::IoReader::new(reader);
     deserialize_from_custom_seed(seed, reader, options)
@@ -69,7 +69,7 @@ pub(crate) fn deserialize_from_custom<'a, R, T, O>(reader: R, options: O) -> Res
 where
     R: BincodeRead<'a>,
     T: serde::de::DeserializeOwned,
-    O: Options,
+    O: InternalOptions,
 {
     deserialize_from_custom_seed(PhantomData, reader, options)
 }
@@ -82,7 +82,7 @@ pub(crate) fn deserialize_from_custom_seed<'a, R, T, O>(
 where
     R: BincodeRead<'a>,
     T: serde::de::DeserializeSeed<'a>,
-    O: Options,
+    O: InternalOptions,
 {
     let mut deserializer = ::de::Deserializer::<_, O>::with_bincode_read(reader, options);
     seed.deserialize(&mut deserializer)
@@ -92,7 +92,7 @@ pub(crate) fn deserialize_in_place<'a, R, T, O>(reader: R, options: O, place: &m
 where
     R: BincodeRead<'a>,
     T: serde::de::Deserialize<'a>,
-    O: Options,
+    O: InternalOptions,
 {
     let mut deserializer = ::de::Deserializer::<_, _>::with_bincode_read(reader, options);
     serde::Deserialize::deserialize_in_place(&mut deserializer, place)
@@ -101,7 +101,7 @@ where
 pub(crate) fn deserialize<'a, T, O>(bytes: &'a [u8], options: O) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
-    O: Options,
+    O: InternalOptions,
 {
     deserialize_seed(PhantomData, bytes, options)
 }
@@ -109,7 +109,7 @@ where
 pub(crate) fn deserialize_seed<'a, T, O>(seed: T, bytes: &'a [u8], options: O) -> Result<T::Value>
 where
     T: serde::de::DeserializeSeed<'a>,
-    O: Options,
+    O: InternalOptions,
 {
     let reader = ::de::read::SliceReader::new(bytes);
     let options = ::config::WithOtherLimit::new(options, Infinite);
