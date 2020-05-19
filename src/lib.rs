@@ -56,9 +56,21 @@ pub use ser::Serializer;
 /// |------------|------------|
 /// | Unlimited  | Little     |
 #[inline(always)]
-#[deprecated(since = "1.3.0", note = "please use `DefaultOptions::new()` instead")]
+#[deprecated(since = "1.3.0", note = "please use `options()` instead")]
 pub fn config() -> Config {
     Config::new()
+}
+
+/// Get a default configuration object.
+///
+/// ### Default Configuration:
+///
+/// | Byte limit | Endianness | Int Encoding |
+/// |------------|------------|--------------|
+/// | Unlimited  | Little     | Varint       |
+#[inline(always)]
+pub fn options() -> DefaultOptions {
+    DefaultOptions::new()
 }
 
 /// Serializes an object directly into a `Writer` using the default configuration.
@@ -70,7 +82,9 @@ where
     W: std::io::Write,
     T: serde::Serialize,
 {
-    DefaultOptions::new().serialize_into(writer, value)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .serialize_into(writer, value)
 }
 
 /// Serializes a serializable object into a `Vec` of bytes using the default configuration.
@@ -78,7 +92,9 @@ pub fn serialize<T: ?Sized>(value: &T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
-    DefaultOptions::new().serialize(value)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .serialize(value)
 }
 
 /// Deserializes an object directly from a `Read`er using the default configuration.
@@ -89,7 +105,9 @@ where
     R: std::io::Read,
     T: serde::de::DeserializeOwned,
 {
-    DefaultOptions::new().deserialize_from(reader)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .deserialize_from(reader)
 }
 
 /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
@@ -102,7 +120,9 @@ where
     R: de::read::BincodeRead<'a>,
     T: serde::de::DeserializeOwned,
 {
-    DefaultOptions::new().deserialize_from_custom(reader)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .deserialize_from_custom(reader)
 }
 
 /// Only use this if you know what you're doing.
@@ -114,7 +134,9 @@ where
     T: serde::de::Deserialize<'a>,
     R: BincodeRead<'a>,
 {
-    DefaultOptions::new().deserialize_in_place(reader, place)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .deserialize_in_place(reader, place)
 }
 
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
@@ -122,7 +144,9 @@ pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,
 {
-    DefaultOptions::new().deserialize(bytes)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .deserialize(bytes)
 }
 
 /// Returns the size that an object would be if serialized using Bincode with the default configuration.
@@ -130,5 +154,7 @@ pub fn serialized_size<T: ?Sized>(value: &T) -> Result<u64>
 where
     T: serde::Serialize,
 {
-    DefaultOptions::new().serialized_size(value)
+    DefaultOptions::new()
+        .with_fixint_encoding()
+        .serialized_size(value)
 }
