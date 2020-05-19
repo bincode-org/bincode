@@ -42,7 +42,7 @@ mod error;
 mod internal;
 mod ser;
 
-pub use config::{Config, DefaultOptions, OptionsExt};
+pub use config::{Config, DefaultOptions, Options};
 pub use de::read::BincodeRead;
 pub use de::Deserializer;
 pub use error::{Error, ErrorKind, Result};

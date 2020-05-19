@@ -5,9 +5,10 @@ use serde;
 
 use byteorder::WriteBytesExt;
 
-use super::config::SizeLimit;
+use super::config::{IntEncoding, SizeLimit};
 use super::{Error, ErrorKind, Result};
 use config::{BincodeByteOrder, Options};
+use std::mem::size_of;
 
 /// An Serializer that encodes values directly into a Writer.
 ///
@@ -21,6 +22,16 @@ pub struct Serializer<W, O: Options> {
     _options: O,
 }
 
+macro_rules! impl_serialize_literal {
+    ($ser_method:ident($ty:ty) = $write:ident()) => {
+        pub(crate) fn $ser_method(&mut self, v: $ty) -> Result<()> {
+            self.writer
+                .$write::<<O::Endian as BincodeByteOrder>::Endian>(v)
+                .map_err(Into::into)
+        }
+    };
+}
+
 impl<W: Write, O: Options> Serializer<W, O> {
     /// Creates a new Serializer with the given `Write`r.
     pub fn new(w: W, options: O) -> Serializer<W, O> {
@@ -29,6 +40,26 @@ impl<W: Write, O: Options> Serializer<W, O> {
             _options: options,
         }
     }
+
+    pub(crate) fn serialize_byte(&mut self, v: u8) -> Result<()> {
+        self.writer.write_u8(v).map_err(Into::into)
+    }
+
+    impl_serialize_literal! {serialize_literal_u16(u16) = write_u16()}
+    impl_serialize_literal! {serialize_literal_u32(u32) = write_u32()}
+    impl_serialize_literal! {serialize_literal_u64(u64) = write_u64()}
+
+    serde_if_integer128! {
+        impl_serialize_literal!{serialize_literal_u128(u128) = write_u128()}
+    }
+}
+
+macro_rules! impl_serialize_int {
+    ($ser_method:ident($ty:ty) = $ser_int:ident()) => {
+        fn $ser_method(self, v: $ty) -> Result<()> {
+            O::IntEncoding::$ser_int(self, v)
+        }
+    };
 }
 
 impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
@@ -51,79 +82,44 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_bool(self, v: bool) -> Result<()> {
-        self.writer
-            .write_u8(if v { 1 } else { 0 })
-            .map_err(Into::into)
+        self.serialize_byte(v as u8)
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
-        self.writer.write_u8(v).map_err(Into::into)
+        self.serialize_byte(v)
     }
 
-    fn serialize_u16(self, v: u16) -> Result<()> {
-        self.writer
-            .write_u16::<<O::Endian as BincodeByteOrder>::Endian>(v)
-            .map_err(Into::into)
-    }
-
-    fn serialize_u32(self, v: u32) -> Result<()> {
-        self.writer
-            .write_u32::<<O::Endian as BincodeByteOrder>::Endian>(v)
-            .map_err(Into::into)
-    }
-
-    fn serialize_u64(self, v: u64) -> Result<()> {
-        self.writer
-            .write_u64::<<O::Endian as BincodeByteOrder>::Endian>(v)
-            .map_err(Into::into)
-    }
+    impl_serialize_int! {serialize_u16(u16) = serialize_u16()}
+    impl_serialize_int! {serialize_u32(u32) = serialize_u32()}
+    impl_serialize_int! {serialize_u64(u64) = serialize_u64()}
 
     fn serialize_i8(self, v: i8) -> Result<()> {
-        self.writer.write_i8(v).map_err(Into::into)
+        self.serialize_byte(v as u8)
     }
 
-    fn serialize_i16(self, v: i16) -> Result<()> {
-        self.writer
-            .write_i16::<<O::Endian as BincodeByteOrder>::Endian>(v)
-            .map_err(Into::into)
-    }
-
-    fn serialize_i32(self, v: i32) -> Result<()> {
-        self.writer
-            .write_i32::<<O::Endian as BincodeByteOrder>::Endian>(v)
-            .map_err(Into::into)
-    }
-
-    fn serialize_i64(self, v: i64) -> Result<()> {
-        self.writer
-            .write_i64::<<O::Endian as BincodeByteOrder>::Endian>(v)
-            .map_err(Into::into)
-    }
+    impl_serialize_int! {serialize_i16(i16) = serialize_i16()}
+    impl_serialize_int! {serialize_i32(i32) = serialize_i32()}
+    impl_serialize_int! {serialize_i64(i64) = serialize_i64()}
 
     serde_if_integer128! {
-        fn serialize_u128(self, v: u128) -> Result<()> {
-            self.writer.write_u128::<<O::Endian as BincodeByteOrder>::Endian>(v).map_err(Into::into)
-        }
-
-        fn serialize_i128(self, v: i128) -> Result<()> {
-            self.writer.write_i128::<<O::Endian as BincodeByteOrder>::Endian>(v).map_err(Into::into)
-        }
+        impl_serialize_int!{serialize_u128(u128) = serialize_u128()}
+        impl_serialize_int!{serialize_i128(i128) = serialize_i128()}
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
         self.writer
-            .write_f32::<<<O as Options>::Endian as BincodeByteOrder>::Endian>(v)
+            .write_f32::<<O::Endian as BincodeByteOrder>::Endian>(v)
             .map_err(Into::into)
     }
 
     fn serialize_f64(self, v: f64) -> Result<()> {
         self.writer
-            .write_f64::<<<O as Options>::Endian as BincodeByteOrder>::Endian>(v)
+            .write_f64::<<O::Endian as BincodeByteOrder>::Endian>(v)
             .map_err(Into::into)
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
-        self.serialize_u64(v.len() as u64)?;
+        O::IntEncoding::serialize_len(self, v.len())?;
         self.writer.write_all(v.as_bytes()).map_err(Into::into)
     }
 
@@ -134,7 +130,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
-        self.serialize_u64(v.len() as u64)?;
+        O::IntEncoding::serialize_len(self, v.len())?;
         self.writer.write_all(v).map_err(Into::into)
     }
 
@@ -152,7 +148,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
         let len = len.ok_or(ErrorKind::SequenceMustHaveLength)?;
-        self.serialize_u64(len as u64)?;
+        O::IntEncoding::serialize_len(self, len)?;
         Ok(Compound { ser: self })
     }
 
@@ -175,13 +171,13 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        self.serialize_u32(variant_index)?;
+        O::IntEncoding::serialize_u32(self, variant_index)?;
         Ok(Compound { ser: self })
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         let len = len.ok_or(ErrorKind::SequenceMustHaveLength)?;
-        self.serialize_u64(len as u64)?;
+        O::IntEncoding::serialize_len(self, len)?;
         Ok(Compound { ser: self })
     }
 
@@ -196,7 +192,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        self.serialize_u32(variant_index)?;
+        O::IntEncoding::serialize_u32(self, variant_index)?;
         Ok(Compound { ser: self })
     }
 
@@ -217,7 +213,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     where
         T: serde::ser::Serialize,
     {
-        self.serialize_u32(variant_index)?;
+        O::IntEncoding::serialize_u32(self, variant_index)?;
         value.serialize(self)
     }
 
@@ -227,7 +223,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
-        self.serialize_u32(variant_index)
+        O::IntEncoding::serialize_u32(self, variant_index)
     }
 
     fn is_human_readable(&self) -> bool {
@@ -248,10 +244,23 @@ impl<O: Options> SizeChecker<O> {
         Ok(())
     }
 
-    fn add_value<T>(&mut self, t: T) -> Result<()> {
-        use std::mem::size_of_val;
-        self.add_raw(size_of_val(&t) as u64)
+    fn add_discriminant(&mut self, idx: u32) -> Result<()> {
+        let bytes = O::IntEncoding::u32_size(idx);
+        self.add_raw(bytes)
     }
+
+    fn add_len(&mut self, len: usize) -> Result<()> {
+        let bytes = O::IntEncoding::len_size(len);
+        self.add_raw(bytes)
+    }
+}
+
+macro_rules! impl_size_int {
+    ($ser_method:ident($ty:ty) = $size_method:ident()) => {
+        fn $ser_method(self, v: $ty) -> Result<()> {
+            self.add_raw(O::IntEncoding::$size_method(v))
+        }
+    };
 }
 
 impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
@@ -274,61 +283,38 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 
     fn serialize_bool(self, _: bool) -> Result<()> {
-        self.add_value(0 as u8)
+        self.add_raw(1)
     }
 
-    fn serialize_u8(self, v: u8) -> Result<()> {
-        self.add_value(v)
+    fn serialize_u8(self, _: u8) -> Result<()> {
+        self.add_raw(1)
+    }
+    fn serialize_i8(self, _: i8) -> Result<()> {
+        self.add_raw(1)
     }
 
-    fn serialize_u16(self, v: u16) -> Result<()> {
-        self.add_value(v)
-    }
-
-    fn serialize_u32(self, v: u32) -> Result<()> {
-        self.add_value(v)
-    }
-
-    fn serialize_u64(self, v: u64) -> Result<()> {
-        self.add_value(v)
-    }
-
-    fn serialize_i8(self, v: i8) -> Result<()> {
-        self.add_value(v)
-    }
-
-    fn serialize_i16(self, v: i16) -> Result<()> {
-        self.add_value(v)
-    }
-
-    fn serialize_i32(self, v: i32) -> Result<()> {
-        self.add_value(v)
-    }
-
-    fn serialize_i64(self, v: i64) -> Result<()> {
-        self.add_value(v)
-    }
+    impl_size_int! {serialize_u16(u16) = u16_size()}
+    impl_size_int! {serialize_u32(u32) = u32_size()}
+    impl_size_int! {serialize_u64(u64) = u64_size()}
+    impl_size_int! {serialize_i16(i16) = i16_size()}
+    impl_size_int! {serialize_i32(i32) = i32_size()}
+    impl_size_int! {serialize_i64(i64) = i64_size()}
 
     serde_if_integer128! {
-        fn serialize_u128(self, v: u128) -> Result<()> {
-            self.add_value(v)
-        }
-
-        fn serialize_i128(self, v: i128) -> Result<()> {
-            self.add_value(v)
-        }
+        impl_size_int!{serialize_u128(u128) = u128_size()}
+        impl_size_int!{serialize_i128(i128) = i128_size()}
     }
 
-    fn serialize_f32(self, v: f32) -> Result<()> {
-        self.add_value(v)
+    fn serialize_f32(self, _: f32) -> Result<()> {
+        self.add_raw(size_of::<f32>() as u64)
     }
 
-    fn serialize_f64(self, v: f64) -> Result<()> {
-        self.add_value(v)
+    fn serialize_f64(self, _: f64) -> Result<()> {
+        self.add_raw(size_of::<f64>() as u64)
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
-        self.add_value(0 as u64)?;
+        self.add_len(v.len())?;
         self.add_raw(v.len() as u64)
     }
 
@@ -337,26 +323,26 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
-        self.add_value(0 as u64)?;
+        self.add_len(v.len())?;
         self.add_raw(v.len() as u64)
     }
 
     fn serialize_none(self) -> Result<()> {
-        self.add_value(0 as u8)
+        self.add_raw(1)
     }
 
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<()>
     where
         T: serde::Serialize,
     {
-        self.add_value(1 as u8)?;
+        self.add_raw(1)?;
         v.serialize(self)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
         let len = len.ok_or(ErrorKind::SequenceMustHaveLength)?;
 
-        self.serialize_u64(len as u64)?;
+        self.add_len(len)?;
         Ok(SizeCompound { ser: self })
     }
 
@@ -379,14 +365,14 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant> {
-        self.add_value(variant_index)?;
+        self.add_raw(O::IntEncoding::u32_size(variant_index))?;
         Ok(SizeCompound { ser: self })
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
         let len = len.ok_or(ErrorKind::SequenceMustHaveLength)?;
 
-        self.serialize_u64(len as u64)?;
+        self.add_len(len)?;
         Ok(SizeCompound { ser: self })
     }
 
@@ -401,7 +387,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
-        self.add_value(variant_index)?;
+        self.add_discriminant(variant_index)?;
         Ok(SizeCompound { ser: self })
     }
 
@@ -419,7 +405,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
-        self.add_value(variant_index)
+        self.add_discriminant(variant_index)
     }
 
     fn serialize_newtype_variant<V: serde::Serialize + ?Sized>(
@@ -429,7 +415,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
         _variant: &'static str,
         value: &V,
     ) -> Result<()> {
-        self.add_value(variant_index)?;
+        self.add_discriminant(variant_index)?;
         value.serialize(self)
     }
 

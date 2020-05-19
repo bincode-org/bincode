@@ -14,43 +14,53 @@ use std::result::Result as StdResult;
 
 use bincode::{
     deserialize, deserialize_from, deserialize_in_place, serialize, serialized_size,
-    DefaultOptions, ErrorKind, OptionsExt, Result,
+    DefaultOptions, ErrorKind, Options, Result,
 };
 use serde::de::{Deserialize, DeserializeSeed, Deserializer, SeqAccess, Visitor};
 
-fn the_same<V>(element: V)
+const LEN_SIZE: u64 = 8;
+
+fn the_same_impl<V, O>(element: V, options: &mut O)
 where
     V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + 'static,
+    O: Options,
 {
-    let size = serialized_size(&element).unwrap();
+    let size = options.serialized_size(&element).unwrap();
 
     {
-        let encoded = serialize(&element).unwrap();
-        let decoded = deserialize(&encoded[..]).unwrap();
-
-        assert_eq!(element, decoded);
-        assert_eq!(size, encoded.len() as u64);
-    }
-
-    {
-        let encoded = DefaultOptions::new()
-            .with_big_endian()
-            .serialize(&element)
-            .unwrap();
-        let decoded = DefaultOptions::new()
-            .with_big_endian()
-            .deserialize(&encoded[..])
-            .unwrap();
-        let decoded_reader = DefaultOptions::new()
-            .with_big_endian()
-            .deserialize_from(&mut &encoded[..])
-            .unwrap();
+        let encoded = options.serialize(&element).unwrap();
+        let decoded: V = options.deserialize(&encoded[..]).unwrap();
+        let decoded_reader = options.deserialize_from(&mut &encoded[..]).unwrap();
 
         assert_eq!(element, decoded);
         assert_eq!(element, decoded_reader);
         assert_eq!(size, encoded.len() as u64);
     }
 }
+
+fn the_same<V>(element: V)
+where
+    V: serde::Serialize + serde::de::DeserializeOwned + PartialEq + Debug + Clone + 'static,
+{
+    // add a new macro which calls the previous when you add a new option set
+    macro_rules! all_endians {
+        ($element:expr, $options:expr) => {
+            the_same_impl($element.clone(), &mut $options.with_native_endian());
+            the_same_impl($element.clone(), &mut $options.with_big_endian());
+            the_same_impl($element.clone(), &mut $options.with_little_endian());
+        };
+    }
+
+    macro_rules! all_integer_encodings {
+        ($element:expr, $options:expr) => {
+            all_endians!($element, $options.with_fixint_encoding());
+            all_endians!($element, $options.with_varint_encoding());
+        };
+    }
+
+    all_integer_encodings!(element, DefaultOptions::new());
+}
+
 #[test]
 fn test_numbers() {
     // unsigned positive
@@ -109,7 +119,7 @@ fn test_tuple() {
 
 #[test]
 fn test_basic_struct() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct Easy {
         x: isize,
         s: String,
@@ -124,13 +134,13 @@ fn test_basic_struct() {
 
 #[test]
 fn test_nested_struct() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct Easy {
         x: isize,
         s: String,
         y: usize,
     }
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct Nest {
         f: Easy,
         b: usize,
@@ -154,7 +164,7 @@ fn test_nested_struct() {
 
 #[test]
 fn test_struct_newtype() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct NewtypeStr(usize);
 
     the_same(NewtypeStr(5));
@@ -162,7 +172,7 @@ fn test_struct_newtype() {
 
 #[test]
 fn test_struct_tuple() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     struct TubStr(usize, String, f32);
 
     the_same(TubStr(5, "hello".to_string(), 3.2));
@@ -177,7 +187,7 @@ fn test_option() {
 
 #[test]
 fn test_enum() {
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
     enum TestEnum {
         NoArg,
         OneArg(usize),
@@ -239,7 +249,10 @@ fn deserializing_errors() {
         ErrorKind::InvalidBoolEncoding(0xA) => {}
         _ => panic!(),
     }
-    match *deserialize::<String>(&vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF][..]).unwrap_err() {
+
+    let invalid_str = vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF];
+
+    match *deserialize::<String>(&invalid_str[..]).unwrap_err() {
         ErrorKind::InvalidUtf8Encoding(_) => {}
         _ => panic!(),
     }
@@ -251,7 +264,9 @@ fn deserializing_errors() {
         Two,
     };
 
-    match *deserialize::<Test>(&vec![0, 0, 0, 5][..]).unwrap_err() {
+    let invalid_enum = vec![0, 0, 0, 5];
+
+    match *deserialize::<Test>(&invalid_enum[..]).unwrap_err() {
         // Error message comes from serde
         ErrorKind::Custom(_) => {}
         _ => panic!(),
@@ -309,11 +324,11 @@ fn too_big_serialize() {
     assert!(DefaultOptions::new().with_limit(4).serialize(&0u32).is_ok());
 
     assert!(DefaultOptions::new()
-        .with_limit(8 + 4)
+        .with_limit(LEN_SIZE + 4)
         .serialize(&"abcde")
         .is_err());
     assert!(DefaultOptions::new()
-        .with_limit(8 + 5)
+        .with_limit(LEN_SIZE + 5)
         .serialize(&"abcde")
         .is_ok());
 }
@@ -326,10 +341,10 @@ fn test_serialized_size() {
     assert!(serialized_size(&0u64).unwrap() == 8);
 
     // length isize stored as u64
-    assert!(serialized_size(&"").unwrap() == 8);
-    assert!(serialized_size(&"a").unwrap() == 8 + 1);
+    assert!(serialized_size(&"").unwrap() == LEN_SIZE);
+    assert!(serialized_size(&"a").unwrap() == LEN_SIZE + 1);
 
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == 8 + 3 * (4));
+    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == LEN_SIZE + 3 * (4));
 }
 
 #[test]
@@ -368,21 +383,21 @@ fn test_serialized_size_bounded() {
             .with_limit(8)
             .serialized_size(&"")
             .unwrap()
-            == 8
+            == LEN_SIZE
     );
     assert!(
         DefaultOptions::new()
             .with_limit(8 + 1)
             .serialized_size(&"a")
             .unwrap()
-            == 8 + 1
+            == LEN_SIZE + 1
     );
     assert!(
         DefaultOptions::new()
-            .with_limit(8 + 3 * 4)
+            .with_limit(LEN_SIZE + 3 * 4)
             .serialized_size(&vec![0u32, 1u32, 2u32])
             .unwrap()
-            == 8 + 3 * 4
+            == LEN_SIZE + 3 * 4
     );
     // Below
     assert!(DefaultOptions::new()
@@ -793,4 +808,41 @@ fn test_big_endian_deserialize_from_seed() {
     }
 
     assert_eq!(seed_data, (0..100).collect::<Vec<_>>());
+}
+
+#[test]
+fn test_varint_length_prefixes() {
+    let a = vec![(); 127]; // should be a single byte
+    let b = vec![(); 250]; // also should be a single byte
+    let c = vec![(); 251];
+    let d = vec![(); u16::max_value() as usize + 1];
+
+    assert_eq!(
+        DefaultOptions::new()
+            .with_varint_encoding()
+            .serialized_size(&a[..])
+            .unwrap(),
+        1
+    ); // 2 ** 7 - 1
+    assert_eq!(
+        DefaultOptions::new()
+            .with_varint_encoding()
+            .serialized_size(&b[..])
+            .unwrap(),
+        1
+    ); // 250
+    assert_eq!(
+        DefaultOptions::new()
+            .with_varint_encoding()
+            .serialized_size(&c[..])
+            .unwrap(),
+        (1 + std::mem::size_of::<u16>()) as u64
+    ); // 251
+    assert_eq!(
+        DefaultOptions::new()
+            .with_varint_encoding()
+            .serialized_size(&d[..])
+            .unwrap(),
+        (1 + std::mem::size_of::<u32>()) as u64
+    ); // 2 ** 16 + 1
 }
