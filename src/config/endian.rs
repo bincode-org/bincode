@@ -1,4 +1,4 @@
-use byteorder::ByteOrder;
+use byteorder::{self, ByteOrder};
 
 pub trait BincodeByteOrder {
     type Endian: ByteOrder + 'static;

@@ -2,6 +2,7 @@ use std::io::{Read, Write};
 
 use self::EndianOption::*;
 use self::LimitOption::*;
+use serde;
 use super::{DefaultOptions, Options};
 use de::read::BincodeRead;
 use error::Result;
