@@ -56,9 +56,21 @@ pub use ser::Serializer;
 /// |------------|------------|
 /// | Unlimited  | Little     |
 #[inline(always)]
-#[deprecated(since = "1.3.0", note = "please use `DefaultOptions::new()` instead")]
+#[deprecated(since = "1.3.0", note = "please use `options()` instead")]
 pub fn config() -> Config {
     Config::new()
+}
+
+/// Get a default configuration object.
+///
+/// ### Default Configuration:
+///
+/// | Byte limit | Endianness | Int Encoding |
+/// |------------|------------|--------------|
+/// | Unlimited  | Little     | Varint       |
+#[inline(always)]
+pub fn options() -> DefaultOptions {
+    DefaultOptions::new()
 }
 
 /// Serializes an object directly into a `Writer` using the default configuration.
