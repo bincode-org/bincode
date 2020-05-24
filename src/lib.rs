@@ -94,6 +94,7 @@ where
 {
     DefaultOptions::new()
         .with_fixint_encoding()
+        .allow_trailing_bytes()
         .serialize(value)
 }
 
@@ -107,6 +108,7 @@ where
 {
     DefaultOptions::new()
         .with_fixint_encoding()
+        .allow_trailing_bytes()
         .deserialize_from(reader)
 }
 
@@ -122,6 +124,7 @@ where
 {
     DefaultOptions::new()
         .with_fixint_encoding()
+        .allow_trailing_bytes()
         .deserialize_from_custom(reader)
 }
 
@@ -136,6 +139,7 @@ where
 {
     DefaultOptions::new()
         .with_fixint_encoding()
+        .allow_trailing_bytes()
         .deserialize_in_place(reader, place)
 }
 
@@ -146,6 +150,7 @@ where
 {
     DefaultOptions::new()
         .with_fixint_encoding()
+        .allow_trailing_bytes()
         .deserialize(bytes)
 }
 
@@ -156,5 +161,6 @@ where
 {
     DefaultOptions::new()
         .with_fixint_encoding()
+        .allow_trailing_bytes()
         .serialized_size(value)
 }

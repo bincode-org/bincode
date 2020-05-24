@@ -49,6 +49,7 @@ macro_rules! config_map {
             (Unlimited, Little) => {
                 let $opts = DefaultOptions::new()
                     .with_fixint_encoding()
+                    .allow_trailing_bytes()
                     .with_no_limit()
                     .with_little_endian();
                 $call
@@ -56,6 +57,7 @@ macro_rules! config_map {
             (Unlimited, Big) => {
                 let $opts = DefaultOptions::new()
                     .with_fixint_encoding()
+                    .allow_trailing_bytes()
                     .with_no_limit()
                     .with_big_endian();
                 $call
@@ -63,6 +65,7 @@ macro_rules! config_map {
             (Unlimited, Native) => {
                 let $opts = DefaultOptions::new()
                     .with_fixint_encoding()
+                    .allow_trailing_bytes()
                     .with_no_limit()
                     .with_native_endian();
                 $call
@@ -71,6 +74,7 @@ macro_rules! config_map {
             (Limited(l), Little) => {
                 let $opts = DefaultOptions::new()
                     .with_fixint_encoding()
+                    .allow_trailing_bytes()
                     .with_limit(l)
                     .with_little_endian();
                 $call
@@ -78,6 +82,7 @@ macro_rules! config_map {
             (Limited(l), Big) => {
                 let $opts = DefaultOptions::new()
                     .with_fixint_encoding()
+                    .allow_trailing_bytes()
                     .with_limit(l)
                     .with_big_endian();
                 $call
@@ -85,6 +90,7 @@ macro_rules! config_map {
             (Limited(l), Native) => {
                 let $opts = DefaultOptions::new()
                     .with_fixint_encoding()
+                    .allow_trailing_bytes()
                     .with_limit(l)
                     .with_native_endian();
                 $call

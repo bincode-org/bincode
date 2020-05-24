@@ -8,16 +8,19 @@ pub(crate) use self::endian::BincodeByteOrder;
 pub(crate) use self::int::IntEncoding;
 pub(crate) use self::internal::*;
 pub(crate) use self::limit::SizeLimit;
+pub(crate) use self::trailing::TrailingBytes;
 
 pub use self::endian::{BigEndian, LittleEndian, NativeEndian};
 pub use self::int::{FixintEncoding, VarintEncoding};
 pub use self::legacy::*;
 pub use self::limit::{Bounded, Infinite};
+pub use self::trailing::{AllowTrailing, RejectTrailing};
 
 mod endian;
 mod int;
 mod legacy;
 mod limit;
+mod trailing;
 
 /// The default options for bincode serialization/deserialization.
 ///
@@ -50,6 +53,7 @@ impl InternalOptions for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
     type IntEncoding = VarintEncoding;
+    type Trailing = RejectTrailing;
 
     #[inline(always)]
     fn limit(&mut self) -> &mut Infinite {
@@ -109,6 +113,16 @@ pub trait Options: InternalOptions + Sized {
     /// Sets the length encoding to be fixed
     fn with_fixint_encoding(self) -> WithOtherIntEncoding<Self, FixintEncoding> {
         WithOtherIntEncoding::new(self)
+    }
+
+    /// Sets the deserializer to reject trailing bytes
+    fn reject_trailing_bytes(self) -> WithOtherTrailing<Self, RejectTrailing> {
+        WithOtherTrailing::new(self)
+    }
+
+    /// Sets the deserializer to allow trailing bytes
+    fn allow_trailing_bytes(self) -> WithOtherTrailing<Self, AllowTrailing> {
+        WithOtherTrailing::new(self)
     }
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
@@ -229,6 +243,12 @@ pub struct WithOtherIntEncoding<O: Options, I: IntEncoding> {
     _length: PhantomData<I>,
 }
 
+/// A configuration struct with a user-specified trailing bytes behavior.
+pub struct WithOtherTrailing<O: Options, T: TrailingBytes> {
+    options: O,
+    _trailing: PhantomData<T>,
+}
+
 impl<O: Options, L: SizeLimit> WithOtherLimit<O, L> {
     #[inline(always)]
     pub(crate) fn new(options: O, limit: L) -> WithOtherLimit<O, L> {
@@ -259,11 +279,21 @@ impl<O: Options, I: IntEncoding> WithOtherIntEncoding<O, I> {
     }
 }
 
+impl<O: Options, T: TrailingBytes> WithOtherTrailing<O, T> {
+    #[inline(always)]
+    pub(crate) fn new(options: O) -> WithOtherTrailing<O, T> {
+        WithOtherTrailing {
+            options,
+            _trailing: PhantomData,
+        }
+    }
+}
+
 impl<O: Options, E: BincodeByteOrder + 'static> InternalOptions for WithOtherEndian<O, E> {
     type Limit = O::Limit;
     type Endian = E;
     type IntEncoding = O::IntEncoding;
-
+    type Trailing = O::Trailing;
     #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
         self.options.limit()
@@ -274,7 +304,7 @@ impl<O: Options, L: SizeLimit + 'static> InternalOptions for WithOtherLimit<O, L
     type Limit = L;
     type Endian = O::Endian;
     type IntEncoding = O::IntEncoding;
-
+    type Trailing = O::Trailing;
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
     }
@@ -284,6 +314,18 @@ impl<O: Options, I: IntEncoding + 'static> InternalOptions for WithOtherIntEncod
     type Limit = O::Limit;
     type Endian = O::Endian;
     type IntEncoding = I;
+    type Trailing = O::Trailing;
+
+    fn limit(&mut self) -> &mut O::Limit {
+        self.options.limit()
+    }
+}
+
+impl<O: Options, T: TrailingBytes + 'static> InternalOptions for WithOtherTrailing<O, T> {
+    type Limit = O::Limit;
+    type Endian = O::Endian;
+    type IntEncoding = O::IntEncoding;
+    type Trailing = T;
 
     fn limit(&mut self) -> &mut O::Limit {
         self.options.limit()
@@ -297,6 +339,7 @@ mod internal {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
         type IntEncoding: IntEncoding + 'static;
+        type Trailing: TrailingBytes + 'static;
 
         fn limit(&mut self) -> &mut Self::Limit;
     }
@@ -305,6 +348,7 @@ mod internal {
         type Limit = O::Limit;
         type Endian = O::Endian;
         type IntEncoding = O::IntEncoding;
+        type Trailing = O::Trailing;
 
         #[inline(always)]
         fn limit(&mut self) -> &mut Self::Limit {

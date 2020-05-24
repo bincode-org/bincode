@@ -68,7 +68,7 @@ impl<R> IoReader<R> {
     }
 }
 
-impl<'a, 'storage> io::Read for &'a mut SliceReader<'storage> {
+impl<'storage> io::Read for SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
         if out.len() > self.slice.len() {
@@ -108,7 +108,7 @@ impl<'storage> SliceReader<'storage> {
     }
 }
 
-impl<'a, 'storage> BincodeRead<'storage> for &'a mut SliceReader<'storage> {
+impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
     #[inline(always)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
