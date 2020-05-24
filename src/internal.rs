@@ -116,9 +116,9 @@ where
     let reader = ::de::read::SliceReader::new(bytes);
     let mut deserializer = ::de::Deserializer::with_bincode_read(reader, options);
     let val = seed.deserialize(&mut deserializer)?;
-    
+
     match O::Trailing::check_end(&deserializer.reader) {
         Ok(_) => Ok(val),
-        Err(err) => Err(err)
+        Err(err) => Err(err),
     }
 }

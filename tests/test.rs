@@ -279,9 +279,12 @@ fn deserializing_errors() {
 
 #[test]
 fn trailing_bytes() {
-    match DefaultOptions::new().deserialize::<char>(b"1x").map_err(|e| *e) {
-        Err(ErrorKind::Custom(_)) => {},
-        other => panic!("Expecting TrailingBytes, got {:?}", other)
+    match DefaultOptions::new()
+        .deserialize::<char>(b"1x")
+        .map_err(|e| *e)
+    {
+        Err(ErrorKind::Custom(_)) => {}
+        other => panic!("Expecting TrailingBytes, got {:?}", other),
     }
 }
 

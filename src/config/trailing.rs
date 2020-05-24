@@ -1,5 +1,5 @@
-use ::de::read::SliceReader;
-use {Result, ErrorKind};
+use de::read::SliceReader;
+use {ErrorKind, Result};
 
 /// A trait for erroring deserialization if not all bytes were read.
 pub trait TrailingBytes {
@@ -29,7 +29,9 @@ impl TrailingBytes for RejectTrailing {
         if reader.is_finished() {
             Ok(())
         } else {
-            Err(Box::new(ErrorKind::Custom("Slice had bytes remaining after deserialization".to_string())))
+            Err(Box::new(ErrorKind::Custom(
+                "Slice had bytes remaining after deserialization".to_string(),
+            )))
         }
     }
 }
