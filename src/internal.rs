@@ -2,7 +2,7 @@ use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 
-use config::{Infinite, InternalOptions, Options, SizeLimit};
+use config::{Infinite, InternalOptions, Options, SizeLimit, TrailingBytes};
 use de::read::BincodeRead;
 use Result;
 
@@ -111,7 +111,14 @@ where
     T: serde::de::DeserializeSeed<'a>,
     O: InternalOptions,
 {
-    let reader = ::de::read::SliceReader::new(bytes);
     let options = ::config::WithOtherLimit::new(options, Infinite);
-    deserialize_from_custom_seed(seed, reader, options)
+
+    let reader = ::de::read::SliceReader::new(bytes);
+    let mut deserializer = ::de::Deserializer::with_bincode_read(reader, options);
+    let val = seed.deserialize(&mut deserializer)?;
+
+    match O::Trailing::check_end(&deserializer.reader) {
+        Ok(_) => Ok(val),
+        Err(err) => Err(err),
+    }
 }

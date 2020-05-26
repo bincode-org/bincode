@@ -52,6 +52,10 @@ impl<'storage> SliceReader<'storage> {
         self.slice = remaining;
         Ok(read_slice)
     }
+
+    pub(crate) fn is_finished(&self) -> bool {
+        self.slice.is_empty()
+    }
 }
 
 impl<R> IoReader<R> {
