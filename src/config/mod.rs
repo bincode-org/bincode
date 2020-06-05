@@ -35,9 +35,9 @@ impl DefaultOptions {
     ///
     /// ### Default Configuration:
     ///
-    /// | Byte limit | Endianness | Int Encoding |
-    /// |------------|------------|--------------|
-    /// | Unlimited  | Little     | Varint       |
+    /// | Byte limit | Endianness | Int Encoding | Trailing Behavior |
+    /// |------------|------------|--------------|-------------------|
+    /// | Unlimited  | Little     | Varint       | Reject            |
     pub fn new() -> DefaultOptions {
         DefaultOptions(Infinite)
     }
@@ -68,6 +68,10 @@ impl InternalOptions for DefaultOptions {
 /// Endianness: The endianness with which multi-byte integers will be read/written.  *default: little endian*
 ///
 /// Limit: The maximum number of bytes that will be read/written in a bincode serialize/deserialize. *default: unlimited*
+///
+/// Int Encoding: The encoding used for numbers, enum discriminants, and lengths. *default: varint*
+///
+/// Trailing Behavior: The behavior when there are trailing bytes left over in a slice after deserialization. *default: reject*
 ///
 /// ### Byte Limit Details
 /// The purpose of byte-limiting is to prevent Denial-Of-Service attacks whereby malicious attackers get bincode

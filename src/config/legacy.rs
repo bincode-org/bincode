@@ -23,7 +23,7 @@ use serde;
 #[derive(Clone, Debug)]
 #[deprecated(
     since = "1.3.0",
-    note = "please use the `DefaultOptions`/`OptionsExt` system instead"
+    note = "please use the `DefaultOptions`/`Options` system instead"
 )]
 pub struct Config {
     limit: LimitOption,
