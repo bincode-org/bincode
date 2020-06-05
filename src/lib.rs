@@ -65,9 +65,9 @@ pub fn config() -> Config {
 ///
 /// ### Default Configuration:
 ///
-/// | Byte limit | Endianness | Int Encoding |
-/// |------------|------------|--------------|
-/// | Unlimited  | Little     | Varint       |
+/// | Byte limit | Endianness | Int Encoding | Trailing Behavior |
+/// |------------|------------|--------------|-------------------|
+/// | Unlimited  | Little     | Varint       | Reject            |
 #[inline(always)]
 pub fn options() -> DefaultOptions {
     DefaultOptions::new()
