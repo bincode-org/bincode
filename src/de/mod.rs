@@ -42,23 +42,27 @@ macro_rules! impl_deserialize_literal {
     };
 }
 
-impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
+impl<'de, IR: Read, O: Options> Deserializer<IoReader<IR>, O> {
     /// Creates a new Deserializer with a given `Read`er and options.
-    pub fn with_reader<IR: Read>(r: IR, options: O) -> Deserializer<IoReader<IR>, O> {
+    pub fn with_reader(r: IR, options: O) -> Self {
         Deserializer {
             reader: IoReader::new(r),
             options,
         }
     }
+}
 
+impl<'de, O: Options> Deserializer<SliceReader<'de>, O> {
     /// Creates a new Deserializer that will read from the given slice.
-    pub fn from_slice(slice: &'de [u8], options: O) -> Deserializer<SliceReader<'de>, O> {
+    pub fn from_slice(slice: &'de [u8], options: O) -> Self {
         Deserializer {
             reader: SliceReader::new(slice),
             options,
         }
     }
+}
 
+impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     /// Creates a new Deserializer with the given `BincodeRead`er
     pub fn with_bincode_read(r: R, options: O) -> Deserializer<R, O> {
         Deserializer { reader: r, options }
