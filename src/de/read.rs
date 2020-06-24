@@ -180,3 +180,23 @@ where
         visitor.visit_bytes(&self.temp_buffer[..])
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::IoReader;
+
+    #[test]
+    fn test_fill_buffer() {
+        let buffer = vec![0u8; 64];
+        let mut reader = IoReader::new(buffer.as_slice());
+
+        reader.fill_buffer(20).unwrap();
+        assert_eq!(20, reader.temp_buffer.len());
+
+        reader.fill_buffer(30).unwrap();
+        assert_eq!(30, reader.temp_buffer.len());
+
+        reader.fill_buffer(5).unwrap();
+        assert_eq!(5, reader.temp_buffer.len());
+    }
+}
