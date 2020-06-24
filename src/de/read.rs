@@ -141,12 +141,7 @@ where
     R: io::Read,
 {
     fn fill_buffer(&mut self, length: usize) -> Result<()> {
-        // Reserve and fill extra space if needed
-        let current_length = self.temp_buffer.len();
-        if length > current_length {
-            self.temp_buffer.reserve_exact(length - current_length);
-            self.temp_buffer.resize(length, 0);
-        }
+        self.temp_buffer.resize(length, 0);
 
         self.reader.read_exact(&mut self.temp_buffer)?;
 
