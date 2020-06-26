@@ -1,12 +1,13 @@
-use std::error::Error as StdError;
-use std::io;
-use std::str::Utf8Error;
-use std::{error, fmt};
-
+use crate::imports::fmt;
+use crate::imports::str::Utf8Error;
+use crate::imports::{io, Box};
 use serde;
 
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::imports::String;
+
 /// The result of a serialization or deserialization operation.
-pub type Result<T> = ::std::result::Result<T, Error>;
+pub type Result<T> = crate::imports::result::Result<T, Error>;
 
 /// An error that can be produced during (de)serializing.
 pub type Error = Box<ErrorKind>;
@@ -35,10 +36,51 @@ pub enum ErrorKind {
     SizeLimit,
     /// Bincode can not encode sequences of unknown length (like iterators).
     SequenceMustHaveLength,
-    /// A custom error message from Serde.
+
+    /// Tried to cast from type `from_type` to `to_type`, but the cast failed. Often this means that the types in the data is different than the type you're trying to deserialze into.
+    ///
+    /// For example, bincode might try to convert an `u64` to an `u16`, but the value of the `u64` does not fit in the `u16`.
+    InvalidCast {
+        from_type: &'static str,
+        to_type: &'static str,
+    },
+
+    /// A custom error message
+    #[cfg(any(feature = "std", feature = "alloc"))]
     Custom(String),
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
+    Custom(&'static str),
 }
 
+impl crate::imports::StdError for ErrorKind {}
+
+#[cfg(not(feature = "std"))]
+impl serde::de::StdError for ErrorKind {}
+
+impl ErrorKind {
+    fn description(&self) -> &str {
+        match *self {
+            #[cfg(feature = "std")]
+            ErrorKind::Io(ref err) => std::error::Error::description(err),
+            #[cfg(not(feature = "std"))]
+            ErrorKind::Io(ref err) => err.description(),
+            ErrorKind::InvalidUtf8Encoding(_) => "string is not valid utf8",
+            ErrorKind::InvalidBoolEncoding(_) => "invalid u8 while decoding bool",
+            ErrorKind::InvalidCharEncoding => "char is not valid",
+            ErrorKind::InvalidTagEncoding(_) => "tag for enum is not valid",
+            ErrorKind::SequenceMustHaveLength => {
+                "Bincode can only encode sequences and maps that have a knowable size ahead of time"
+            }
+            ErrorKind::DeserializeAnyNotSupported => {
+                "Bincode doesn't support serde::Deserializer::deserialize_any"
+            }
+            ErrorKind::SizeLimit => "the size limit has been reached",
+            ErrorKind::InvalidCast { .. } => "Encountered an invalid cast",
+            ErrorKind::Custom(ref msg) => msg,
+        }
+    }
+}
+/*
 impl StdError for ErrorKind {
     fn description(&self) -> &str {
         match *self {
@@ -72,6 +114,7 @@ impl StdError for ErrorKind {
         }
     }
 }
+*/
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
@@ -97,19 +140,36 @@ impl fmt::Display for ErrorKind {
                 fmt,
                 "Bincode does not support the serde::Deserializer::deserialize_any method"
             ),
+            ErrorKind::InvalidCast { from_type, to_type } => write!(
+                fmt,
+                "Could not cast from {:?} to {:?} because the value would overflow",
+                from_type, to_type
+            ),
             ErrorKind::Custom(ref s) => s.fmt(fmt),
         }
     }
 }
 
 impl serde::de::Error for Error {
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn custom<T: fmt::Display>(desc: T) -> Error {
-        ErrorKind::Custom(desc.to_string()).into()
+        ErrorKind::Custom(crate::imports::ToString::to_string(&desc)).into()
+    }
+
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
+    fn custom<T: fmt::Display>(desc: T) -> Error {
+        panic!("{}", desc)
     }
 }
 
 impl serde::ser::Error for Error {
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        ErrorKind::Custom(msg.to_string()).into()
+        ErrorKind::Custom(crate::imports::ToString::to_string(&msg)).into()
+    }
+
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
+    fn custom<T: fmt::Display>(desc: T) -> Error {
+        panic!("{}", desc)
     }
 }

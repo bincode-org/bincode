@@ -1,3 +1,4 @@
+use crate::imports::box_new;
 use de::read::SliceReader;
 use {ErrorKind, Result};
 
@@ -29,8 +30,8 @@ impl TrailingBytes for RejectTrailing {
         if reader.is_finished() {
             Ok(())
         } else {
-            Err(Box::new(ErrorKind::Custom(
-                "Slice had bytes remaining after deserialization".to_string(),
+            Err(box_new(ErrorKind::Custom(
+                "Slice had bytes remaining after deserialization".into(),
             )))
         }
     }

@@ -59,6 +59,52 @@
         }
       ]
     },
+    "check_features": {
+      "name": "Check features",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "feature": [
+            "std",
+            "alloc",
+            "i128"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "stable",
+            "override": true
+          },
+          "name": "Install Rust stable"
+        },
+        {
+          "uses": "actions-rs/cargo@v1",
+          "with": {
+            "command": "check",
+            "args": "--default-features false --features ${{ matrix.feature }}"
+          },
+          "name": "Run `cargo check`"
+        },
+        {
+          "uses": "actions-rs/cargo@v1",
+          "with": {
+            "command": "check",
+            "args": "--examples"
+          },
+          "name": "Check examples",
+          "if": "matrix.rust != '1.18.0'"
+        }
+      ]
+    },
     "test": {
       "name": "Test",
       "runs-on": "ubuntu-latest",

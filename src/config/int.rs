@@ -1,5 +1,6 @@
-use std::io::Write;
-use std::mem::size_of;
+use crate::imports::box_new;
+use crate::imports::io::Write;
+use crate::imports::mem::size_of;
 
 use super::Options;
 use de::read::BincodeRead;
@@ -247,12 +248,12 @@ impl VarintEncoding {
             U16_BYTE => Ok(de.deserialize_literal_u16()? as u64),
             U32_BYTE => Ok(de.deserialize_literal_u32()? as u64),
             U64_BYTE => de.deserialize_literal_u64(),
-            U128_BYTE => Err(Box::new(ErrorKind::Custom(
+            U128_BYTE => Err(box_new(ErrorKind::Custom(
                 "Invalid value (u128 range): you may have a version or configuration disagreement?"
-                    .to_string(),
+                    .into(),
             ))),
-            _ => Err(Box::new(ErrorKind::Custom(
-                DESERIALIZE_EXTENSION_POINT_ERR.to_string(),
+            _ => Err(box_new(ErrorKind::Custom(
+                DESERIALIZE_EXTENSION_POINT_ERR.into(),
             ))),
         }
     }
@@ -321,7 +322,7 @@ impl VarintEncoding {
                 U32_BYTE => Ok(de.deserialize_literal_u32()? as u128),
                 U64_BYTE => Ok(de.deserialize_literal_u64()? as u128),
                 U128_BYTE => de.deserialize_literal_u128(),
-                _ => Err(Box::new(ErrorKind::Custom(DESERIALIZE_EXTENSION_POINT_ERR.to_string()))),
+                _ => Err(box_new(ErrorKind::Custom(DESERIALIZE_EXTENSION_POINT_ERR.into()))),
             }
         }
     }
@@ -594,31 +595,30 @@ fn cast_u64_to_usize(n: u64) -> Result<usize> {
     if n <= usize::max_value() as u64 {
         Ok(n as usize)
     } else {
-        Err(Box::new(ErrorKind::Custom(format!(
-            "Invalid size {}: sizes must fit in a usize (0 to {})",
-            n,
-            usize::max_value()
-        ))))
+        Err(box_new(ErrorKind::InvalidCast {
+            from_type: "u64",
+            to_type: "usize",
+        }))
     }
 }
 fn cast_u64_to_u32(n: u64) -> Result<u32> {
     if n <= u32::max_value() as u64 {
         Ok(n as u32)
     } else {
-        Err(Box::new(ErrorKind::Custom(format!(
-            "Invalid u32 {}: you may have a version disagreement?",
-            n,
-        ))))
+        Err(box_new(ErrorKind::InvalidCast {
+            from_type: "u64",
+            to_type: "u32",
+        }))
     }
 }
 fn cast_u64_to_u16(n: u64) -> Result<u16> {
     if n <= u16::max_value() as u64 {
         Ok(n as u16)
     } else {
-        Err(Box::new(ErrorKind::Custom(format!(
-            "Invalid u16 {}: you may have a version disagreement?",
-            n,
-        ))))
+        Err(box_new(ErrorKind::InvalidCast {
+            from_type: "u64",
+            to_type: "u16",
+        }))
     }
 }
 
@@ -626,10 +626,10 @@ fn cast_i64_to_i32(n: i64) -> Result<i32> {
     if n <= i32::max_value() as i64 && n >= i32::min_value() as i64 {
         Ok(n as i32)
     } else {
-        Err(Box::new(ErrorKind::Custom(format!(
-            "Invalid i32 {}: you may have a version disagreement?",
-            n,
-        ))))
+        Err(box_new(ErrorKind::InvalidCast {
+            from_type: "i16",
+            to_type: "i32",
+        }))
     }
 }
 
@@ -637,10 +637,10 @@ fn cast_i64_to_i16(n: i64) -> Result<i16> {
     if n <= i16::max_value() as i64 && n >= i16::min_value() as i64 {
         Ok(n as i16)
     } else {
-        Err(Box::new(ErrorKind::Custom(format!(
-            "Invalid i16 {}: you may have a version disagreement?",
-            n,
-        ))))
+        Err(box_new(ErrorKind::InvalidCast {
+            from_type: "i64",
+            to_type: "i16",
+        }))
     }
 }
 

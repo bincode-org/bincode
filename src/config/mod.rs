@@ -1,8 +1,13 @@
+use crate::imports::io::Write;
+use crate::imports::marker::PhantomData;
 use de::read::BincodeRead;
 use error::Result;
 use serde;
-use std::io::{Read, Write};
-use std::marker::PhantomData;
+
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::imports::io::Read;
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::imports::Vec;
 
 pub(crate) use self::endian::BincodeByteOrder;
 pub(crate) use self::int::IntEncoding;
@@ -131,6 +136,7 @@ pub trait Options: InternalOptions + Sized {
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn serialize<S: ?Sized + serde::Serialize>(self, t: &S) -> Result<Vec<u8>> {
         ::internal::serialize(t, self)
     }
@@ -181,6 +187,7 @@ pub trait Options: InternalOptions + Sized {
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(self, reader: R) -> Result<T> {
         ::internal::deserialize_from(reader, self)
     }
@@ -189,6 +196,7 @@ pub trait Options: InternalOptions + Sized {
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     fn deserialize_from_seed<'a, R: Read, T: serde::de::DeserializeSeed<'a>>(
         self,
         seed: T,

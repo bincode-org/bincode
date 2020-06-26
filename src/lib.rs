@@ -28,6 +28,10 @@
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+extern crate alloc;
 
 extern crate byteorder;
 #[macro_use]
@@ -39,6 +43,7 @@ pub mod config;
 pub mod de;
 
 mod error;
+mod imports;
 mod internal;
 mod ser;
 
@@ -79,7 +84,7 @@ pub fn options() -> DefaultOptions {
 /// is returned and *no bytes* will be written into the `Writer`.
 pub fn serialize_into<W, T: ?Sized>(writer: W, value: &T) -> Result<()>
 where
-    W: std::io::Write,
+    W: ::imports::io::Write,
     T: serde::Serialize,
 {
     DefaultOptions::new()
@@ -87,8 +92,11 @@ where
         .serialize_into(writer, value)
 }
 
+#[cfg(any(feature = "std", feature = "alloc"))]
 /// Serializes a serializable object into a `Vec` of bytes using the default configuration.
-pub fn serialize<T: ?Sized>(value: &T) -> Result<Vec<u8>>
+///
+/// This function is not available without either the `std` or `alloc` feature, which are enabled by default.
+pub fn serialize<T: ?Sized>(value: &T) -> Result<::imports::Vec<u8>>
 where
     T: serde::Serialize,
 {
@@ -101,9 +109,10 @@ where
 /// Deserializes an object directly from a `Read`er using the default configuration.
 ///
 /// If this returns an `Error`, `reader` may be in an invalid state.
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub fn deserialize_from<R, T>(reader: R) -> Result<T>
 where
-    R: std::io::Read,
+    R: ::imports::io::Read,
     T: serde::de::DeserializeOwned,
 {
     DefaultOptions::new()

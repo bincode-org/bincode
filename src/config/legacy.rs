@@ -1,11 +1,15 @@
-use std::io::{Read, Write};
-
 use self::EndianOption::*;
 use self::LimitOption::*;
 use super::{DefaultOptions, Options};
+use crate::imports::io::Write;
 use de::read::BincodeRead;
 use error::Result;
 use serde;
+
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::imports::io::Read;
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::imports::Vec;
 
 /// A configuration builder whose options Bincode will use
 /// while serializing and deserializing.
@@ -147,6 +151,7 @@ impl Config {
 
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     pub fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
         config_map!(self, opts => ::internal::serialize(t, opts))
     }
@@ -201,6 +206,7 @@ impl Config {
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     pub fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(
         &self,
         reader: R,
@@ -212,6 +218,7 @@ impl Config {
     ///
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     pub fn deserialize_from_seed<'a, R: Read, T: serde::de::DeserializeSeed<'a>>(
         &self,
         seed: T,

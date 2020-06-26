@@ -1,3 +1,4 @@
+use crate::imports::box_new;
 use error::{ErrorKind, Result};
 
 /// A trait for stopping serialization and deserialization when a certain limit has been reached.
@@ -26,7 +27,7 @@ impl SizeLimit for Bounded {
             self.0 -= n;
             Ok(())
         } else {
-            Err(Box::new(ErrorKind::SizeLimit))
+            Err(box_new(ErrorKind::SizeLimit))
         }
     }
 

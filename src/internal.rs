@@ -1,10 +1,12 @@
-use serde;
-use std::io::{Read, Write};
-use std::marker::PhantomData;
-
+use crate::imports::io::{Read, Write};
+use crate::imports::marker::PhantomData;
 use config::{Infinite, InternalOptions, Options, SizeLimit, TrailingBytes};
 use de::read::BincodeRead;
+use serde;
 use Result;
+
+#[cfg(any(feature = "std", feature = "alloc"))]
+use crate::imports::Vec;
 
 pub(crate) fn serialize_into<W, T: ?Sized, O>(writer: W, value: &T, mut options: O) -> Result<()>
 where
@@ -22,6 +24,7 @@ where
     serde::Serialize::serialize(value, &mut serializer)
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) fn serialize<T: ?Sized, O>(value: &T, mut options: O) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
@@ -46,6 +49,7 @@ where
     result.map(|_| size_counter.total)
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) fn deserialize_from<R, T, O>(reader: R, options: O) -> Result<T>
 where
     R: Read,
@@ -55,6 +59,7 @@ where
     deserialize_from_seed(PhantomData, reader, options)
 }
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) fn deserialize_from_seed<'a, R, T, O>(seed: T, reader: R, options: O) -> Result<T::Value>
 where
     R: Read,

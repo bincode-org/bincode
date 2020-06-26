@@ -1,8 +1,8 @@
-use config::{BincodeByteOrder, Options};
-use std::io::Read;
-
 use self::read::{BincodeRead, IoReader, SliceReader};
-use byteorder::ReadBytesExt;
+use crate::imports::io::Read;
+use crate::imports::mem::size_of;
+use crate::imports::{str, String, Vec};
+use config::{BincodeByteOrder, Options};
 use config::{IntEncoding, SizeLimit};
 use serde;
 use serde::de::Error as DeError;
@@ -86,16 +86,17 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 
     fn read_literal_type<T>(&mut self) -> Result<()> {
-        use std::mem::size_of;
         self.read_bytes(size_of::<T>() as u64)
     }
 
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn read_vec(&mut self) -> Result<Vec<u8>> {
         let len = O::IntEncoding::deserialize_len(self)?;
         self.read_bytes(len as u64)?;
         self.reader.get_byte_buffer(len)
     }
 
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn read_string(&mut self) -> Result<String> {
         let vec = self.read_vec()?;
         String::from_utf8(vec).map_err(|e| ErrorKind::InvalidUtf8Encoding(e.utf8_error()).into())
@@ -126,7 +127,9 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        Err(Box::new(ErrorKind::DeserializeAnyNotSupported))
+        Err(crate::imports::box_new(
+            ErrorKind::DeserializeAnyNotSupported,
+        ))
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -201,8 +204,6 @@ where
     where
         V: serde::de::Visitor<'de>,
     {
-        use std::str;
-
         let error = || ErrorKind::InvalidCharEncoding.into();
 
         let mut buf = [0u8; 4];
@@ -237,11 +238,19 @@ where
         self.reader.forward_read_str(len, visitor)
     }
 
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
         visitor.visit_string(self.read_string()?)
+    }
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        self.deserialize_str(visitor)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
@@ -253,11 +262,19 @@ where
         self.reader.forward_read_bytes(len, visitor)
     }
 
+    #[cfg(any(feature = "std", feature = "alloc"))]
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'de>,
     {
         visitor.visit_byte_buf(self.read_vec()?)
+    }
+    #[cfg(not(any(feature = "std", feature = "alloc")))]
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'de>,
+    {
+        unimplemented!()
     }
 
     fn deserialize_enum<V>(
