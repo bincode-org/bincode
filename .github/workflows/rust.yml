@@ -90,7 +90,7 @@
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "check",
-            "args": "--default-features false --features ${{ matrix.feature }}"
+            "args": "--no-default-features --features ${{ matrix.feature }}"
           },
           "name": "Run `cargo check`"
         },
