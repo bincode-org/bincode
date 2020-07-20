@@ -242,12 +242,14 @@ pub struct WithOtherEndian<O: Options, E: BincodeByteOrder> {
 }
 
 /// A configuration struct with a user-specified length encoding
+#[derive(Clone, Copy)]
 pub struct WithOtherIntEncoding<O: Options, I: IntEncoding> {
     options: O,
     _length: PhantomData<I>,
 }
 
 /// A configuration struct with a user-specified trailing bytes behavior.
+#[derive(Clone, Copy)]
 pub struct WithOtherTrailing<O: Options, T: TrailingBytes> {
     options: O,
     _trailing: PhantomData<T>,
