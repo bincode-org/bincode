@@ -90,19 +90,19 @@ metadata like struct field names in the output format and writes long streams of
 binary data without needing any potentially size-increasing encoding.
 
 As a result, Bincode is suitable for storing data. Be aware that it does not
-implement any sort of data versioning scheme oder file headers, as these
+implement any sort of data versioning scheme or file headers, as these
 features are outside the scope of this crate.
 
 ### Is Bincode suitable for untrusted inputs?
 
 Bincode attempts to protect against hostile data. There is a maximum size
-configuration availble (`bincode::config::Bounded`), but not enabled in the
+configuration available (`bincode::config::Bounded`), but not enabled in the
 default configuration. Enabling it causes pre-allocation size to be limited to
 prevent against memory exhaustion attacks.
 
 Deserializing any incoming data will not cause undefined behavior or memory
 issues, assuming that the deserialization code for the struct is safe itself.
 
-Bincode can be used for untrusted inputs in the sense that it will not create an
+Bincode can be used for untrusted inputs in the sense that it will not create a
 security issues in your application, provided the configuration is changed to enable a
 maximum size limit. Malicious inputs will fail upon deserialization.
