@@ -85,9 +85,9 @@ impl<'storage> SliceReader<'storage> {
     }
 
     #[inline(always)]
-    fn get_byte_slice(&mut self, length: usize) -> Result<&'storage [u8]> {
+    fn get_byte_slice(&mut self, length: usize) -> io::Result<&'storage [u8]> {
         if length > self.slice.len() {
-            return Err(SliceReader::unexpected_eof());
+            return Err(io::Error::from(io::ErrorKind::UnexpectedEof));
         }
         let (read_slice, remaining) = self.slice.split_at(length);
         self.slice = remaining;
@@ -112,13 +112,8 @@ impl<R> IoReader<R> {
 impl<'storage> io::Read for SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
-        if out.len() > self.slice.len() {
-            return Err(io::ErrorKind::UnexpectedEof.into());
-        }
-        let (read_slice, remaining) = self.slice.split_at(out.len());
+        let read_slice = self.get_byte_slice(out.len())?;
         out.copy_from_slice(read_slice);
-        self.slice = remaining;
-
         Ok(out.len())
     }
 
@@ -139,16 +134,6 @@ impl<R: io::Read> io::Read for IoReader<R> {
     }
 }
 
-impl<'storage> SliceReader<'storage> {
-    #[inline(always)]
-    fn unexpected_eof() -> Box<::ErrorKind> {
-        Box::new(::ErrorKind::Io(io::Error::new(
-            io::ErrorKind::UnexpectedEof,
-            "",
-        )))
-    }
-}
-
 impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
     #[inline(always)]
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
@@ -165,7 +150,9 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
 
     #[inline(always)]
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
-        self.get_byte_slice(length).map(|x| x.to_vec())
+        self.get_byte_slice(length)
+            .map(|x| x.to_vec())
+            .map_err(Error::from)
     }
 
     #[inline(always)]
