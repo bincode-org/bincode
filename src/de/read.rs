@@ -1,6 +1,40 @@
-use error::Result;
+use error::{Error, Result};
 use serde;
 use std::io;
+
+struct ReadExactCompatVisitor<'a>(&'a mut [u8]);
+
+impl<'a, 'de> serde::de::Visitor<'de> for ReadExactCompatVisitor<'a> {
+    type Value = ();
+
+    fn visit_bytes<E>(self, v: &[u8]) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        self.0.copy_from_slice(v);
+        Ok(())
+    }
+
+    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        self.0.copy_from_slice(v);
+        Ok(())
+    }
+
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        self.0.copy_from_slice(&v);
+        Ok(())
+    }
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a byte slice")
+    }
+}
 
 /// An optional Read trait for advanced Bincode usage.
 ///
@@ -10,7 +44,7 @@ use std::io;
 /// The forward_read_* methods are necessary because some byte sources want
 /// to pass a long-lived borrow to the visitor and others want to pass a
 /// transient slice.
-pub trait BincodeRead<'storage>: io::Read {
+pub trait BincodeRead<'storage> {
     /// Check that the next `length` bytes are a valid string and pass
     /// it on to the serde reader.
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
@@ -24,6 +58,13 @@ pub trait BincodeRead<'storage>: io::Read {
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
+
+    /// Read exact bytes into `out`.
+    fn read_exact(&mut self, out: &mut [u8]) -> Result<()> {
+        let length = out.len();
+        let visitor = ReadExactCompatVisitor(out);
+        self.forward_read_bytes(length, visitor)
+    }
 }
 
 /// A BincodeRead implementation for byte slices
@@ -178,6 +219,10 @@ where
     {
         self.fill_buffer(length)?;
         visitor.visit_bytes(&self.temp_buffer[..])
+    }
+
+    fn read_exact(&mut self, out: &mut [u8]) -> Result<()> {
+        self.reader.read_exact(out).map_err(Error::from)
     }
 }
 
