@@ -1,13 +1,13 @@
 use error::{Error, Result};
 use serde;
-use std::io;
+use std::{fmt, io, result};
 
 struct ReadExactCompatVisitor<'a>(&'a mut [u8]);
 
 impl<'a, 'de> serde::de::Visitor<'de> for ReadExactCompatVisitor<'a> {
     type Value = ();
 
-    fn visit_bytes<E>(self, v: &[u8]) -> std::result::Result<Self::Value, E>
+    fn visit_bytes<E>(self, v: &[u8]) -> result::Result<Self::Value, E>
     where
         E: serde::de::Error,
     {
@@ -15,7 +15,7 @@ impl<'a, 'de> serde::de::Visitor<'de> for ReadExactCompatVisitor<'a> {
         Ok(())
     }
 
-    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> std::result::Result<Self::Value, E>
+    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> result::Result<Self::Value, E>
     where
         E: serde::de::Error,
     {
@@ -23,7 +23,7 @@ impl<'a, 'de> serde::de::Visitor<'de> for ReadExactCompatVisitor<'a> {
         Ok(())
     }
 
-    fn visit_byte_buf<E>(self, v: Vec<u8>) -> std::result::Result<Self::Value, E>
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> result::Result<Self::Value, E>
     where
         E: serde::de::Error,
     {
@@ -31,7 +31,7 @@ impl<'a, 'de> serde::de::Visitor<'de> for ReadExactCompatVisitor<'a> {
         Ok(())
     }
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str("a byte slice")
     }
 }

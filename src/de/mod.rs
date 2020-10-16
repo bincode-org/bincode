@@ -30,18 +30,18 @@ pub struct Deserializer<R, O: Options> {
 }
 
 macro_rules! impl_deserialize_literal {
-    ($name:ident : $ty:ty = $read:ident) => {
+    ($name:ident : $ty:ty : $bytes:tt = $read:ident) => {
         #[inline]
         pub(crate) fn $name(&mut self) -> Result<$ty> {
             self.read_literal_type::<$ty>()?;
-            let mut buf = [0; std::mem::size_of::<$ty>()];
+            let mut buf = [0; $bytes];
             self.reader.read_exact(&mut buf)?;
             Ok(<<O::Endian as BincodeByteOrder>::Endian>::$read(&buf))
         }
     };
 }
 
-impl<'de, IR: std::io::Read, O: Options> Deserializer<IoReader<IR>, O> {
+impl<'de, IR: ::std::io::Read, O: Options> Deserializer<IoReader<IR>, O> {
     /// Creates a new Deserializer with a given `Read`er and options.
     pub fn with_reader(r: IR, options: O) -> Self {
         Deserializer {
@@ -69,17 +69,17 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
 
     pub(crate) fn deserialize_byte(&mut self) -> Result<u8> {
         self.read_literal_type::<u8>()?;
-        let mut buf = [0; std::mem::size_of::<u8>()];
+        let mut buf = [0; 1];
         self.reader.read_exact(&mut buf)?;
         Ok(buf[0])
     }
 
-    impl_deserialize_literal! { deserialize_literal_u16 : u16 = read_u16 }
-    impl_deserialize_literal! { deserialize_literal_u32 : u32 = read_u32 }
-    impl_deserialize_literal! { deserialize_literal_u64 : u64 = read_u64 }
+    impl_deserialize_literal! { deserialize_literal_u16 : u16 : 2 = read_u16 }
+    impl_deserialize_literal! { deserialize_literal_u32 : u32 : 4 = read_u32 }
+    impl_deserialize_literal! { deserialize_literal_u64 : u64 : 8 = read_u64 }
 
     serde_if_integer128! {
-        impl_deserialize_literal! { deserialize_literal_u128 : u128 = read_u128 }
+        impl_deserialize_literal! { deserialize_literal_u128 : u128 : 16 = read_u128 }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {
@@ -87,8 +87,7 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     }
 
     fn read_literal_type<T>(&mut self) -> Result<()> {
-        use std::mem::size_of;
-        self.read_bytes(size_of::<T>() as u64)
+        self.read_bytes(::std::mem::size_of::<T>() as u64)
     }
 
     fn read_vec(&mut self) -> Result<Vec<u8>> {
@@ -153,7 +152,7 @@ where
         V: serde::de::Visitor<'de>,
     {
         self.read_literal_type::<f32>()?;
-        let mut buf = [0; std::mem::size_of::<f32>()];
+        let mut buf = [0; 4];
         self.reader.read_exact(&mut buf)?;
         let value = <<O::Endian as BincodeByteOrder>::Endian>::read_f32(&buf);
         visitor.visit_f32(value)
@@ -164,7 +163,7 @@ where
         V: serde::de::Visitor<'de>,
     {
         self.read_literal_type::<f64>()?;
-        let mut buf = [0; std::mem::size_of::<f64>()];
+        let mut buf = [0; 8];
         self.reader.read_exact(&mut buf)?;
         let value = <<O::Endian as BincodeByteOrder>::Endian>::read_f64(&buf);
         visitor.visit_f64(value)
