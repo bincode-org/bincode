@@ -1,5 +1,7 @@
 use std::io::Write;
 
+use crate::ser::SizeChecker;
+
 use super::IntEncoding;
 use super::Options;
 use error::Result;
@@ -10,6 +12,8 @@ pub trait StrEncoding {
         ser: &mut ::ser::Serializer<W, O>,
         v: &str,
     ) -> Result<()>;
+
+    fn get_len<O: Options>(s: &str) -> u64;
 }
 
 /// Encode strings the same way as vectors,
@@ -27,6 +31,10 @@ impl StrEncoding for LenStrEncoding {
     ) -> Result<()> {
         ser.serialize_bytes(v.as_bytes()).map_err(Into::into)
     }
+
+    fn get_len<O: Options>(s: &str) -> u64 {
+        O::IntEncoding::len_size(s.len()) + s.len() as u64
+    }
 }
 
 impl StrEncoding for NullTerminatedStrEncoding {
@@ -37,5 +45,9 @@ impl StrEncoding for NullTerminatedStrEncoding {
         ser.serialize_raw(v.as_bytes())
             .and_then(|_| ser.serialize_byte(0x0))
             .map_err(Into::into)
+    }
+
+    fn get_len<O: Options>(s: &str) -> u64 {
+        s.len() as u64 + "\0".len() as u64
     }
 }

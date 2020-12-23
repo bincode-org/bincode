@@ -315,8 +315,7 @@ impl<'a, O: Options> serde::Serializer for &'a mut SizeChecker<O> {
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
-        self.add_len(v.len())?;
-        self.add_raw(v.len() as u64)
+        self.add_raw(O::StrEncoding::get_len::<O>(v))
     }
 
     fn serialize_char(self, c: char) -> Result<()> {
