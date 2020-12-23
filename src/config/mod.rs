@@ -36,16 +36,19 @@ pub(crate) use self::endian::BincodeByteOrder;
 pub(crate) use self::int::IntEncoding;
 pub(crate) use self::internal::*;
 pub(crate) use self::limit::SizeLimit;
+pub(crate) use self::str::StrEncoding;
 pub(crate) use self::trailing::TrailingBytes;
 
 pub use self::endian::{BigEndian, LittleEndian, NativeEndian};
 pub use self::int::{FixintEncoding, VarintEncoding};
 pub use self::limit::{Bounded, Infinite};
+pub use self::str::{LenStrEncoding, NullTerminatedStrEncoding};
 pub use self::trailing::{AllowTrailing, RejectTrailing};
 
 mod endian;
 mod int;
 mod limit;
+mod str;
 mod trailing;
 
 /// The default options for bincode serialization/deserialization.
@@ -96,6 +99,7 @@ impl InternalOptions for DefaultOptions {
     type Limit = Infinite;
     type Endian = LittleEndian;
     type IntEncoding = VarintEncoding;
+    type StrEncoding = LenStrEncoding;
     type Trailing = RejectTrailing;
 
     #[inline(always)]
@@ -158,6 +162,18 @@ pub trait Options: InternalOptions + Sized {
     /// Sets the length encoding to be fixed
     fn with_fixint_encoding(self) -> WithOtherIntEncoding<Self, FixintEncoding> {
         WithOtherIntEncoding::new(self)
+    }
+
+    /// Sets the string encoding to use the length followed by the data
+    fn with_len_str_encoding(self) -> WithOtherStrEncoding<Self, LenStrEncoding> {
+        WithOtherStrEncoding::new(self)
+    }
+
+    /// Sets the string encoding to use the data followed by a null byte
+    fn with_null_terminated_str_encoding(
+        self,
+    ) -> WithOtherStrEncoding<Self, NullTerminatedStrEncoding> {
+        WithOtherStrEncoding::new(self)
     }
 
     /// Sets the deserializer to reject trailing bytes
@@ -289,6 +305,13 @@ pub struct WithOtherIntEncoding<O: Options, I: IntEncoding> {
     _length: PhantomData<I>,
 }
 
+/// A configuration struct with a user-specified str encoding
+#[derive(Clone, Copy)]
+pub struct WithOtherStrEncoding<O: Options, I: StrEncoding> {
+    options: O,
+    _str: PhantomData<I>,
+}
+
 /// A configuration struct with a user-specified trailing bytes behavior.
 #[derive(Clone, Copy)]
 pub struct WithOtherTrailing<O: Options, T: TrailingBytes> {
@@ -326,6 +349,16 @@ impl<O: Options, I: IntEncoding> WithOtherIntEncoding<O, I> {
     }
 }
 
+impl<O: Options, I: StrEncoding> WithOtherStrEncoding<O, I> {
+    #[inline(always)]
+    pub(crate) fn new(options: O) -> WithOtherStrEncoding<O, I> {
+        WithOtherStrEncoding {
+            options,
+            _str: PhantomData,
+        }
+    }
+}
+
 impl<O: Options, T: TrailingBytes> WithOtherTrailing<O, T> {
     #[inline(always)]
     pub(crate) fn new(options: O) -> WithOtherTrailing<O, T> {
@@ -340,6 +373,7 @@ impl<O: Options, E: BincodeByteOrder + 'static> InternalOptions for WithOtherEnd
     type Limit = O::Limit;
     type Endian = E;
     type IntEncoding = O::IntEncoding;
+    type StrEncoding = O::StrEncoding;
     type Trailing = O::Trailing;
     #[inline(always)]
     fn limit(&mut self) -> &mut O::Limit {
@@ -351,6 +385,7 @@ impl<O: Options, L: SizeLimit + 'static> InternalOptions for WithOtherLimit<O, L
     type Limit = L;
     type Endian = O::Endian;
     type IntEncoding = O::IntEncoding;
+    type StrEncoding = O::StrEncoding;
     type Trailing = O::Trailing;
     fn limit(&mut self) -> &mut L {
         &mut self.new_limit
@@ -361,6 +396,19 @@ impl<O: Options, I: IntEncoding + 'static> InternalOptions for WithOtherIntEncod
     type Limit = O::Limit;
     type Endian = O::Endian;
     type IntEncoding = I;
+    type StrEncoding = O::StrEncoding;
+    type Trailing = O::Trailing;
+
+    fn limit(&mut self) -> &mut O::Limit {
+        self.options.limit()
+    }
+}
+
+impl<O: Options, I: StrEncoding + 'static> InternalOptions for WithOtherStrEncoding<O, I> {
+    type Limit = O::Limit;
+    type Endian = O::Endian;
+    type IntEncoding = O::IntEncoding;
+    type StrEncoding = I;
     type Trailing = O::Trailing;
 
     fn limit(&mut self) -> &mut O::Limit {
@@ -372,6 +420,7 @@ impl<O: Options, T: TrailingBytes + 'static> InternalOptions for WithOtherTraili
     type Limit = O::Limit;
     type Endian = O::Endian;
     type IntEncoding = O::IntEncoding;
+    type StrEncoding = O::StrEncoding;
     type Trailing = T;
 
     fn limit(&mut self) -> &mut O::Limit {
@@ -386,6 +435,7 @@ mod internal {
         type Limit: SizeLimit + 'static;
         type Endian: BincodeByteOrder + 'static;
         type IntEncoding: IntEncoding + 'static;
+        type StrEncoding: StrEncoding + 'static;
         type Trailing: TrailingBytes + 'static;
 
         fn limit(&mut self) -> &mut Self::Limit;
@@ -395,6 +445,7 @@ mod internal {
         type Limit = O::Limit;
         type Endian = O::Endian;
         type IntEncoding = O::IntEncoding;
+        type StrEncoding = O::StrEncoding;
         type Trailing = O::Trailing;
 
         #[inline(always)]

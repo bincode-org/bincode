@@ -3,7 +3,7 @@ use std::u32;
 
 use byteorder::WriteBytesExt;
 
-use super::config::{IntEncoding, SizeLimit};
+use super::config::{IntEncoding, SizeLimit, StrEncoding};
 use super::{Error, ErrorKind, Result};
 use crate::config::{BincodeByteOrder, Options};
 use std::mem::size_of;
@@ -37,6 +37,10 @@ impl<W: Write, O: Options> Serializer<W, O> {
             writer: w,
             _options: options,
         }
+    }
+
+    pub(crate) fn serialize_raw(&mut self, v: &[u8]) -> Result<()> {
+        self.writer.write_all(v).map_err(Into::into)
     }
 
     pub(crate) fn serialize_byte(&mut self, v: u8) -> Result<()> {
@@ -117,8 +121,7 @@ impl<'a, W: Write, O: Options> serde::Serializer for &'a mut Serializer<W, O> {
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {
-        O::IntEncoding::serialize_len(self, v.len())?;
-        self.writer.write_all(v.as_bytes()).map_err(Into::into)
+        O::StrEncoding::serialize_str(self, v)
     }
 
     fn serialize_char(self, c: char) -> Result<()> {
