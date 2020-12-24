@@ -34,8 +34,7 @@ macro_rules! impl_deserialize_literal {
         #[inline]
         pub(crate) fn $name(&mut self) -> Result<$ty> {
             self.read_literal_type::<$ty>()?;
-            self.reader
-                .$read::<<O::Endian as BincodeByteOrder>::Endian>()
+            <R as BincodeRead>::$read::<<O::Endian as BincodeByteOrder>::Endian>(&mut self.reader)
                 .map_err(Into::into)
         }
     };
@@ -69,15 +68,15 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
 
     pub(crate) fn deserialize_byte(&mut self) -> Result<u8> {
         self.read_literal_type::<u8>()?;
-        self.reader.read_u8().map_err(Into::into)
+        self.reader.bincode_read_u8().map_err(Into::into)
     }
 
-    impl_deserialize_literal! { deserialize_literal_u16 : u16 = read_u16() }
-    impl_deserialize_literal! { deserialize_literal_u32 : u32 = read_u32() }
-    impl_deserialize_literal! { deserialize_literal_u64 : u64 = read_u64() }
+    impl_deserialize_literal! { deserialize_literal_u16 : u16 = bincode_read_u16() }
+    impl_deserialize_literal! { deserialize_literal_u32 : u32 = bincode_read_u32() }
+    impl_deserialize_literal! { deserialize_literal_u64 : u64 = bincode_read_u64() }
 
     serde_if_integer128! {
-        impl_deserialize_literal! { deserialize_literal_u128 : u128 = read_u128() }
+        impl_deserialize_literal! { deserialize_literal_u128 : u128 = bincode_read_u128() }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {

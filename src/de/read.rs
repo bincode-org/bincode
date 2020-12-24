@@ -23,6 +23,79 @@ pub trait BincodeRead<'storage>: io::Read {
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
+
+    /// Read a single byte
+    fn bincode_read_u8(&mut self) -> Result<u8> {
+        <Self as ::byteorder::ReadBytesExt>::read_u8(self).map_err(Into::into)
+    }
+
+    /// Read a u16
+    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
+        <Self as ::byteorder::ReadBytesExt>::read_u16::<O>(self).map_err(Into::into)
+    }
+
+    /// Read a u32
+    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
+        <Self as ::byteorder::ReadBytesExt>::read_u32::<O>(self).map_err(Into::into)
+    }
+
+    /// Read a u64
+    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
+        <Self as ::byteorder::ReadBytesExt>::read_u64::<O>(self).map_err(Into::into)
+    }
+
+    serde_if_integer128! {
+        /// Read a u128
+        fn bincode_read_u128<O: ::byteorder::ByteOrder>(&mut self) -> Result<u128> {
+            <Self as ::byteorder::ReadBytesExt>::read_u128::<O>(self).map_err(Into::into)
+        }
+    }
+}
+
+impl<'a, 'storage, T> BincodeRead<'storage> for &'a mut T
+where
+    T: BincodeRead<'storage>,
+{
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'storage>,
+    {
+        (*self).forward_read_str(length, visitor)
+    }
+
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        (*self).get_byte_buffer(length)
+    }
+
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'storage>,
+    {
+        (*self).forward_read_bytes(length, visitor)
+    }
+
+    #[inline]
+    fn bincode_read_u8(&mut self) -> Result<u8> {
+        (*self).bincode_read_u8()
+    }
+
+    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
+        (*self).bincode_read_u16::<O>()
+    }
+
+    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
+        (*self).bincode_read_u32::<O>()
+    }
+
+    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
+        (*self).bincode_read_u64::<O>()
+    }
+
+    serde_if_integer128! {
+        fn bincode_read_u128<O: ::byteorder::ByteOrder>(&mut self) -> Result<u128> {
+            (*self).bincode_read_u128::<O>()
+        }
+    }
 }
 
 /// A BincodeRead implementation for byte slices
@@ -133,6 +206,47 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         V: serde::de::Visitor<'storage>,
     {
         visitor.visit_borrowed_bytes(self.get_byte_slice(length)?)
+    }
+
+    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
+        if self.slice.len() < 8 {
+            Err(Self::unexpected_eof())
+        } else {
+            let (this, remaining) = self.slice.split_at(8);
+            self.slice = remaining;
+            Ok(O::read_u64(this))
+        }
+    }
+
+    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
+        if self.slice.len() < 4 {
+            Err(Self::unexpected_eof())
+        } else {
+            let (this, remaining) = self.slice.split_at(4);
+            self.slice = remaining;
+            Ok(O::read_u32(this))
+        }
+    }
+
+    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
+        if self.slice.len() < 2 {
+            Err(Self::unexpected_eof())
+        } else {
+            let (this, remaining) = self.slice.split_at(2);
+            self.slice = remaining;
+            Ok(O::read_u16(this))
+        }
+    }
+
+    #[inline]
+    fn bincode_read_u8(&mut self) -> Result<u8> {
+        if self.slice.is_empty() {
+            Err(Self::unexpected_eof())
+        } else {
+            let v = self.slice[0];
+            self.slice = &self.slice[1..];
+            Ok(v)
+        }
     }
 }
 
