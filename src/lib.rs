@@ -67,7 +67,7 @@ pub fn config() -> Config {
 /// module. See the
 /// [config](config/index.html#options-struct-vs-bincode-functions)
 /// module for more details
-/// 
+///
 /// ### Default Configuration:
 ///
 /// | Byte limit | Endianness | Int Encoding | Trailing Behavior |
