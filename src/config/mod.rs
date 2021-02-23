@@ -125,8 +125,6 @@ impl InternalOptions for DefaultOptions {
 ///
 /// When a byte limit is set, bincode will return `Err` on any deserialization that goes over the limit, or any
 /// serialization that goes over the limit.
-/// Sets the byte limit to be unlimited.
-/// This is the default.
 pub trait Options: InternalOptions + Sized {
     /// Sets the byte limit to be unlimited.
     /// This is the default.
