@@ -3,8 +3,8 @@ use std::io::{Read, Write};
 use self::EndianOption::*;
 use self::LimitOption::*;
 use super::{DefaultOptions, Options};
-use de::read::BincodeRead;
-use error::Result;
+use crate::de::read::BincodeRead;
+use crate::error::Result;
 use serde;
 
 /// A configuration builder whose options Bincode will use
@@ -148,13 +148,13 @@ impl Config {
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
     pub fn serialize<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<Vec<u8>> {
-        config_map!(self, opts => ::internal::serialize(t, opts))
+        config_map!(self, opts => crate::internal::serialize(t, opts))
     }
 
     /// Returns the size that an object would be if serialized using Bincode with this configuration
     #[inline(always)]
     pub fn serialized_size<T: ?Sized + serde::Serialize>(&self, t: &T) -> Result<u64> {
-        config_map!(self, opts => ::internal::serialized_size(t, opts))
+        config_map!(self, opts => crate::internal::serialized_size(t, opts))
     }
 
     /// Serializes an object directly into a `Writer` using this configuration
@@ -167,13 +167,13 @@ impl Config {
         w: W,
         t: &T,
     ) -> Result<()> {
-        config_map!(self, opts => ::internal::serialize_into(w, t, opts))
+        config_map!(self, opts => crate::internal::serialize_into(w, t, opts))
     }
 
     /// Deserializes a slice of bytes into an instance of `T` using this configuration
     #[inline(always)]
     pub fn deserialize<'a, T: serde::Deserialize<'a>>(&self, bytes: &'a [u8]) -> Result<T> {
-        config_map!(self, opts => ::internal::deserialize(bytes, opts))
+        config_map!(self, opts => crate::internal::deserialize(bytes, opts))
     }
 
     /// TODO: document
@@ -184,7 +184,7 @@ impl Config {
         R: BincodeRead<'a>,
         T: serde::de::Deserialize<'a>,
     {
-        config_map!(self, opts => ::internal::deserialize_in_place(reader, opts, place))
+        config_map!(self, opts => crate::internal::deserialize_in_place(reader, opts, place))
     }
 
     /// Deserializes a slice of bytes with state `seed` using this configuration.
@@ -194,7 +194,7 @@ impl Config {
         seed: T,
         bytes: &'a [u8],
     ) -> Result<T::Value> {
-        config_map!(self, opts => ::internal::deserialize_seed(seed, bytes, opts))
+        config_map!(self, opts => crate::internal::deserialize_seed(seed, bytes, opts))
     }
 
     /// Deserializes an object directly from a `Read`er using this configuration
@@ -205,7 +205,7 @@ impl Config {
         &self,
         reader: R,
     ) -> Result<T> {
-        config_map!(self, opts => ::internal::deserialize_from(reader, opts))
+        config_map!(self, opts => crate::internal::deserialize_from(reader, opts))
     }
 
     /// Deserializes an object directly from a `Read`er with state `seed` using this configuration
@@ -217,7 +217,7 @@ impl Config {
         seed: T,
         reader: R,
     ) -> Result<T::Value> {
-        config_map!(self, opts => ::internal::deserialize_from_seed(seed, reader, opts))
+        config_map!(self, opts => crate::internal::deserialize_from_seed(seed, reader, opts))
     }
 
     /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
@@ -230,7 +230,7 @@ impl Config {
         &self,
         reader: R,
     ) -> Result<T> {
-        config_map!(self, opts => ::internal::deserialize_from_custom(reader, opts))
+        config_map!(self, opts => crate::internal::deserialize_from_custom(reader, opts))
     }
 
     /// Deserializes an object from a custom `BincodeRead`er with state `seed` using the default
@@ -248,6 +248,6 @@ impl Config {
         seed: T,
         reader: R,
     ) -> Result<T::Value> {
-        config_map!(self, opts => ::internal::deserialize_from_custom_seed(seed, reader, opts))
+        config_map!(self, opts => crate::internal::deserialize_from_custom_seed(seed, reader, opts))
     }
 }

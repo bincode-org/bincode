@@ -620,8 +620,8 @@ fn test_zero_copy_parse_deserialize_into() {
 
     impl<'storage> SliceReader<'storage> {
         #[inline(always)]
-        fn unexpected_eof() -> Box<::ErrorKind> {
-            return Box::new(::ErrorKind::Io(io::Error::new(
+        fn unexpected_eof() -> Box<crate::ErrorKind> {
+            return Box::new(crate::ErrorKind::Io(io::Error::new(
                 io::ErrorKind::UnexpectedEof,
                 "",
             )));
@@ -645,7 +645,7 @@ fn test_zero_copy_parse_deserialize_into() {
         where
             V: serde::de::Visitor<'storage>,
         {
-            use ErrorKind;
+            use crate::ErrorKind;
             if length > self.slice.len() {
                 return Err(SliceReader::unexpected_eof());
             }
