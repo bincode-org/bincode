@@ -355,8 +355,7 @@ fn too_big_serialize() {
 
 #[test]
 fn test_serialized_size() {
-    let opt = DefaultOptions::new()
-            .with_fixint_encoding();
+    let opt = DefaultOptions::new().with_fixint_encoding();
     assert!(opt.serialized_size(&0u8).unwrap() == 1);
     assert!(opt.serialized_size(&0u16).unwrap() == 2);
     assert!(opt.serialized_size(&0u32).unwrap() == 4);
