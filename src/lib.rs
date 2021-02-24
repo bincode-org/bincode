@@ -111,10 +111,7 @@ where
     T: serde::de::Deserialize<'a>,
     R: BincodeRead<'a>,
 {
-    DefaultOptions::new()
-        .with_fixint_encoding()
-        .allow_trailing_bytes()
-        .deserialize_in_place(reader, place)
+    DefaultOptions::new().deserialize_in_place(reader, place)
 }
 
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
