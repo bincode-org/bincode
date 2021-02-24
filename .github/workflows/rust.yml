@@ -25,7 +25,7 @@
             "stable",
             "beta",
             "nightly",
-            "1.18.0"
+            "1.41.0"
           ]
         }
       },
@@ -57,7 +57,7 @@
             "args": "--examples"
           },
           "name": "Check examples",
-          "if": "matrix.rust != '1.18.0'"
+          "if": "matrix.rust != '1.41.0'"
         }
       ]
     },
