@@ -1,9 +1,7 @@
 use std::error::Error as StdError;
+use std::fmt;
 use std::io;
 use std::str::Utf8Error;
-use std::{error, fmt};
-
-use serde;
 
 /// The result of a serialization or deserialization operation.
 pub type Result<T> = ::std::result::Result<T, Error>;
@@ -13,6 +11,7 @@ pub type Error = Box<ErrorKind>;
 
 /// The kind of error that can be produced during a serialization or deserialization.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum ErrorKind {
     /// If the error stems from the reader/writer that is being used
     /// during (de)serialization, that error will be stored and returned here.
@@ -40,25 +39,7 @@ pub enum ErrorKind {
 }
 
 impl StdError for ErrorKind {
-    fn description(&self) -> &str {
-        match *self {
-            ErrorKind::Io(ref err) => error::Error::description(err),
-            ErrorKind::InvalidUtf8Encoding(_) => "string is not valid utf8",
-            ErrorKind::InvalidBoolEncoding(_) => "invalid u8 while decoding bool",
-            ErrorKind::InvalidCharEncoding => "char is not valid",
-            ErrorKind::InvalidTagEncoding(_) => "tag for enum is not valid",
-            ErrorKind::SequenceMustHaveLength => {
-                "Bincode can only encode sequences and maps that have a knowable size ahead of time"
-            }
-            ErrorKind::DeserializeAnyNotSupported => {
-                "Bincode doesn't support serde::Deserializer::deserialize_any"
-            }
-            ErrorKind::SizeLimit => "the size limit has been reached",
-            ErrorKind::Custom(ref msg) => msg,
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match *self {
             ErrorKind::Io(ref err) => Some(err),
             ErrorKind::InvalidUtf8Encoding(_) => None,
@@ -83,16 +64,16 @@ impl fmt::Display for ErrorKind {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ErrorKind::Io(ref ioerr) => write!(fmt, "io error: {}", ioerr),
-            ErrorKind::InvalidUtf8Encoding(ref e) => write!(fmt, "{}: {}", self.description(), e),
+            ErrorKind::InvalidUtf8Encoding(ref e) => write!(fmt, "string is not valid utf8: {}", e),
             ErrorKind::InvalidBoolEncoding(b) => {
-                write!(fmt, "{}, expected 0 or 1, found {}", self.description(), b)
+                write!(fmt, "invalid u8 while decoding bool, expected 0 or 1, found {}", b)
             }
-            ErrorKind::InvalidCharEncoding => write!(fmt, "{}", self.description()),
+            ErrorKind::InvalidCharEncoding => write!(fmt, "char is not valid"),
             ErrorKind::InvalidTagEncoding(tag) => {
-                write!(fmt, "{}, found {}", self.description(), tag)
+                write!(fmt, "tag for enum is not valid, found {}", tag)
             }
-            ErrorKind::SequenceMustHaveLength => write!(fmt, "{}", self.description()),
-            ErrorKind::SizeLimit => write!(fmt, "{}", self.description()),
+            ErrorKind::SequenceMustHaveLength => write!(fmt, "Bincode can only encode sequences and maps that have a knowable size ahead of time"),
+            ErrorKind::SizeLimit => write!(fmt, "the size limit has been reached"),
             ErrorKind::DeserializeAnyNotSupported => write!(
                 fmt,
                 "Bincode does not support the serde::Deserializer::deserialize_any method"

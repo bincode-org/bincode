@@ -1,8 +1,6 @@
 use std::io::Write;
 use std::u32;
 
-use serde;
-
 use byteorder::WriteBytesExt;
 
 use super::config::{IntEncoding, SizeLimit};

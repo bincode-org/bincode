@@ -1,5 +1,4 @@
 use crate::error::Result;
-use serde;
 use std::io;
 
 /// An optional Read trait for advanced Bincode usage.

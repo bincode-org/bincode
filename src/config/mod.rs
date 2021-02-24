@@ -29,7 +29,6 @@
 
 use crate::de::read::BincodeRead;
 use crate::error::Result;
-use serde;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 
@@ -41,13 +40,11 @@ pub(crate) use self::trailing::TrailingBytes;
 
 pub use self::endian::{BigEndian, LittleEndian, NativeEndian};
 pub use self::int::{FixintEncoding, VarintEncoding};
-pub use self::legacy::*;
 pub use self::limit::{Bounded, Infinite};
 pub use self::trailing::{AllowTrailing, RejectTrailing};
 
 mod endian;
 mod int;
-mod legacy;
 mod limit;
 mod trailing;
 

@@ -355,28 +355,46 @@ impl IntEncoding for FixintEncoding {
     }
 
     #[inline(always)]
-    fn serialize_u16<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: u16) -> Result<()> {
+    fn serialize_u16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u16,
+    ) -> Result<()> {
         ser.serialize_literal_u16(val)
     }
     #[inline(always)]
-    fn serialize_u32<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: u32) -> Result<()> {
+    fn serialize_u32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u32,
+    ) -> Result<()> {
         ser.serialize_literal_u32(val)
     }
     #[inline(always)]
-    fn serialize_u64<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: u64) -> Result<()> {
+    fn serialize_u64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u64,
+    ) -> Result<()> {
         ser.serialize_literal_u64(val)
     }
 
     #[inline(always)]
-    fn serialize_i16<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: i16) -> Result<()> {
+    fn serialize_i16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i16,
+    ) -> Result<()> {
         ser.serialize_literal_u16(val as u16)
     }
     #[inline(always)]
-    fn serialize_i32<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: i32) -> Result<()> {
+    fn serialize_i32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i32,
+    ) -> Result<()> {
         ser.serialize_literal_u32(val as u32)
     }
     #[inline(always)]
-    fn serialize_i64<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: i64) -> Result<()> {
+    fn serialize_i64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i64,
+    ) -> Result<()> {
         ser.serialize_literal_u64(val as u64)
     }
 
@@ -485,28 +503,46 @@ impl IntEncoding for VarintEncoding {
     }
 
     #[inline(always)]
-    fn serialize_u16<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: u16) -> Result<()> {
+    fn serialize_u16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u16,
+    ) -> Result<()> {
         Self::serialize_varint(ser, val as u64)
     }
     #[inline(always)]
-    fn serialize_u32<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: u32) -> Result<()> {
+    fn serialize_u32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u32,
+    ) -> Result<()> {
         Self::serialize_varint(ser, val as u64)
     }
     #[inline(always)]
-    fn serialize_u64<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: u64) -> Result<()> {
+    fn serialize_u64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u64,
+    ) -> Result<()> {
         Self::serialize_varint(ser, val)
     }
 
     #[inline(always)]
-    fn serialize_i16<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: i16) -> Result<()> {
+    fn serialize_i16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i16,
+    ) -> Result<()> {
         Self::serialize_varint(ser, Self::zigzag_encode(val as i64))
     }
     #[inline(always)]
-    fn serialize_i32<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: i32) -> Result<()> {
+    fn serialize_i32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i32,
+    ) -> Result<()> {
         Self::serialize_varint(ser, Self::zigzag_encode(val as i64))
     }
     #[inline(always)]
-    fn serialize_i64<W: Write, O: Options>(ser: &mut crate::Serializer<W, O>, val: i64) -> Result<()> {
+    fn serialize_i64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i64,
+    ) -> Result<()> {
         Self::serialize_varint(ser, Self::zigzag_encode(val))
     }
 
