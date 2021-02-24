@@ -262,7 +262,7 @@ fn deserializing_errors() {
     enum Test {
         One,
         Two,
-    };
+    }
 
     let invalid_enum = vec![0, 0, 0, 5];
 
@@ -894,7 +894,7 @@ fn test_byte_vec_struct() {
         a: Vec<u8>,
         b: Vec<u8>,
         c: Vec<u8>,
-    };
+    }
 
     let byte_struct = ByteVecs {
         a: vec![2; 20],
