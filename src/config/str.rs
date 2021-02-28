@@ -50,7 +50,11 @@ impl StrEncoding for NullTerminatedStrEncoding {
         ser: &mut crate::Serializer<W, O>,
         v: &str,
     ) -> Result<()> {
-        ser.serialize_raw(v.as_bytes())
+        let bytes = v.as_bytes();
+        if bytes.iter().any(|&b| b == 0) {
+            panic!("Attempted to serialize string with null byte")
+        };
+        ser.serialize_raw(bytes)
             .and_then(|_| ser.serialize_byte(0x0))
             .map_err(Into::into)
     }
