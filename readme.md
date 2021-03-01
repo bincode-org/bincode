@@ -2,7 +2,7 @@
 
 <img align="right" src="./logo.png" />
 
-![CI](https://github.com/servo/bincode/workflows/CI/badge.svg)
+![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)
 [![](https://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![](https://img.shields.io/badge/bincode-rustc_1.18+-lightgray.svg)](https://blog.rust-lang.org/2017/06/08/Rust-1.18.html)
@@ -20,10 +20,10 @@ library.
 
 ## [API Documentation](https://docs.rs/bincode/)
 
-## Bincode in the wild
+## Bincode in the Wild
 
 * [google/tarpc](https://github.com/google/tarpc): Bincode is used to serialize and deserialize networked RPC messages.
-* [servo/webrender](https://github.com/servo/webrender): Bincode records webrender API calls for record/replay-style graphics debugging.
+* [servo/webrender](https://github.com/servo/webrender): Bincode records WebRender API calls for record/replay-style graphics debugging.
 * [servo/ipc-channel](https://github.com/servo/ipc-channel): IPC-Channel uses Bincode to send structs between processes using a channel-like API.
 
 ## Example

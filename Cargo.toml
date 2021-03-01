@@ -6,7 +6,7 @@ exclude = ["logo.png", "examples/*", ".gitignore", ".travis.yml"]
 
 publish =  true
 
-repository = "https://github.com/servo/bincode"
+repository = "https://github.com/bincode-org/bincode"
 documentation = "https://docs.rs/bincode"
 readme = "./readme.md"
 categories = ["encoding", "network-programming"]
@@ -29,6 +29,3 @@ serde_derive = "1.0.27"
 # and targets that support it. The feature will be removed if and when a new
 # major version is released.
 i128 = []
-
-[badges]
-travis-ci = { repository = "servo/bincode" }
