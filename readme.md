@@ -15,7 +15,7 @@ In addition to exposing two simple functions
 (one that encodes to `Vec<u8>`, and one that decodes from `&[u8]`),
 binary-encode exposes a Reader/Writer API that makes it work
 perfectly with other stream-based APIs such as Rust files, network streams,
-and the [flate2-rs](https://github.com/alexcrichton/flate2-rs) compression
+and the [flate2-rs](https://github.com/rust-lang/flate2-rs) compression
 library.
 
 ## [API Documentation](https://docs.rs/bincode/)
