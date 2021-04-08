@@ -5,7 +5,7 @@
 ![CI](https://github.com/servo/bincode/workflows/CI/badge.svg)
 [![](https://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![](https://img.shields.io/badge/bincode-rustc_1.18+-lightgray.svg)](https://blog.rust-lang.org/2017/06/08/Rust-1.18.html)
+[![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/06/18/Rust.1.44.1.html)
 
 A compact encoder / decoder pair that uses a binary zero-fluff encoding scheme.
 The size of the encoded object will be the same or smaller than the size that
@@ -109,4 +109,4 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
-Bincode 1.0 maintains support for rust 1.18.0. Any changes to this are considered a breaking change for semver purposes.
+Bincode 2.0 maintains support for rust 1.41.1. Any changes to this are considered a breaking change for semver purposes.

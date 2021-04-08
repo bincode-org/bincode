@@ -1,13 +1,12 @@
-use config::{BincodeByteOrder, Options};
+use crate::config::{BincodeByteOrder, Options};
 use std::io::Read;
 
 use self::read::{BincodeRead, IoReader, SliceReader};
+use crate::config::{IntEncoding, SizeLimit};
+use crate::{Error, ErrorKind, Result};
 use byteorder::ReadBytesExt;
-use config::{IntEncoding, SizeLimit};
-use serde;
 use serde::de::Error as DeError;
 use serde::de::IntoDeserializer;
-use {Error, ErrorKind, Result};
 
 /// Specialized ways to read data into bincode.
 pub mod read;

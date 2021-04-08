@@ -27,9 +27,8 @@
 //!     .allow_trailing_bytes();
 //! ```
 
-use de::read::BincodeRead;
-use error::Result;
-use serde;
+use crate::de::read::BincodeRead;
+use crate::error::Result;
 use std::io::{Read, Write};
 use std::marker::PhantomData;
 
@@ -41,13 +40,11 @@ pub(crate) use self::trailing::TrailingBytes;
 
 pub use self::endian::{BigEndian, LittleEndian, NativeEndian};
 pub use self::int::{FixintEncoding, VarintEncoding};
-pub use self::legacy::*;
 pub use self::limit::{Bounded, Infinite};
 pub use self::trailing::{AllowTrailing, RejectTrailing};
 
 mod endian;
 mod int;
-mod legacy;
 mod limit;
 mod trailing;
 
@@ -176,13 +173,13 @@ pub trait Options: InternalOptions + Sized {
     /// Serializes a serializable object into a `Vec` of bytes using this configuration
     #[inline(always)]
     fn serialize<S: ?Sized + serde::Serialize>(self, t: &S) -> Result<Vec<u8>> {
-        ::internal::serialize(t, self)
+        crate::internal::serialize(t, self)
     }
 
     /// Returns the size that an object would be if serialized using Bincode with this configuration
     #[inline(always)]
     fn serialized_size<T: ?Sized + serde::Serialize>(self, t: &T) -> Result<u64> {
-        ::internal::serialized_size(t, self)
+        crate::internal::serialized_size(t, self)
     }
 
     /// Serializes an object directly into a `Writer` using this configuration
@@ -191,13 +188,13 @@ pub trait Options: InternalOptions + Sized {
     /// is returned and *no bytes* will be written into the `Writer`
     #[inline(always)]
     fn serialize_into<W: Write, T: ?Sized + serde::Serialize>(self, w: W, t: &T) -> Result<()> {
-        ::internal::serialize_into(w, t, self)
+        crate::internal::serialize_into(w, t, self)
     }
 
     /// Deserializes a slice of bytes into an instance of `T` using this configuration
     #[inline(always)]
     fn deserialize<'a, T: serde::Deserialize<'a>>(self, bytes: &'a [u8]) -> Result<T> {
-        ::internal::deserialize(bytes, self)
+        crate::internal::deserialize(bytes, self)
     }
 
     /// TODO: document
@@ -208,7 +205,7 @@ pub trait Options: InternalOptions + Sized {
         R: BincodeRead<'a>,
         T: serde::de::Deserialize<'a>,
     {
-        ::internal::deserialize_in_place(reader, self, place)
+        crate::internal::deserialize_in_place(reader, self, place)
     }
 
     /// Deserializes a slice of bytes with state `seed` using this configuration.
@@ -218,7 +215,7 @@ pub trait Options: InternalOptions + Sized {
         seed: T,
         bytes: &'a [u8],
     ) -> Result<T::Value> {
-        ::internal::deserialize_seed(seed, bytes, self)
+        crate::internal::deserialize_seed(seed, bytes, self)
     }
 
     /// Deserializes an object directly from a `Read`er using this configuration
@@ -226,7 +223,7 @@ pub trait Options: InternalOptions + Sized {
     /// If this returns an `Error`, `reader` may be in an invalid state.
     #[inline(always)]
     fn deserialize_from<R: Read, T: serde::de::DeserializeOwned>(self, reader: R) -> Result<T> {
-        ::internal::deserialize_from(reader, self)
+        crate::internal::deserialize_from(reader, self)
     }
 
     /// Deserializes an object directly from a `Read`er with state `seed` using this configuration
@@ -238,7 +235,7 @@ pub trait Options: InternalOptions + Sized {
         seed: T,
         reader: R,
     ) -> Result<T::Value> {
-        ::internal::deserialize_from_seed(seed, reader, self)
+        crate::internal::deserialize_from_seed(seed, reader, self)
     }
 
     /// Deserializes an object from a custom `BincodeRead`er using the default configuration.
@@ -251,7 +248,7 @@ pub trait Options: InternalOptions + Sized {
         self,
         reader: R,
     ) -> Result<T> {
-        ::internal::deserialize_from_custom(reader, self)
+        crate::internal::deserialize_from_custom(reader, self)
     }
 
     /// Deserializes an object from a custom `BincodeRead`er with state `seed` using the default
@@ -265,7 +262,7 @@ pub trait Options: InternalOptions + Sized {
         seed: T,
         reader: R,
     ) -> Result<T::Value> {
-        ::internal::deserialize_from_custom_seed(seed, reader, self)
+        crate::internal::deserialize_from_custom_seed(seed, reader, self)
     }
 }
 
