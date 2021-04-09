@@ -1,5 +1,4 @@
-use error::Result;
-use serde;
+use crate::error::Result;
 use std::io;
 
 /// An optional Read trait for advanced Bincode usage.
@@ -100,8 +99,8 @@ impl<R: io::Read> io::Read for IoReader<R> {
 
 impl<'storage> SliceReader<'storage> {
     #[inline(always)]
-    fn unexpected_eof() -> Box<::ErrorKind> {
-        Box::new(::ErrorKind::Io(io::Error::new(
+    fn unexpected_eof() -> Box<crate::ErrorKind> {
+        Box::new(crate::ErrorKind::Io(io::Error::new(
             io::ErrorKind::UnexpectedEof,
             "",
         )))
@@ -114,7 +113,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
     where
         V: serde::de::Visitor<'storage>,
     {
-        use ErrorKind;
+        use crate::ErrorKind;
         let string = match ::std::str::from_utf8(self.get_byte_slice(length)?) {
             Ok(s) => s,
             Err(e) => return Err(ErrorKind::InvalidUtf8Encoding(e).into()),
@@ -161,7 +160,7 @@ where
 
         let string = match ::std::str::from_utf8(&self.temp_buffer[..]) {
             Ok(s) => s,
-            Err(e) => return Err(::ErrorKind::InvalidUtf8Encoding(e).into()),
+            Err(e) => return Err(crate::ErrorKind::InvalidUtf8Encoding(e).into()),
         };
 
         visitor.visit_str(string)

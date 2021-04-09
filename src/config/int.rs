@@ -2,8 +2,8 @@ use std::io::Write;
 use std::mem::size_of;
 
 use super::Options;
-use de::read::BincodeRead;
-use error::{ErrorKind, Result};
+use crate::de::read::BincodeRead;
+use crate::error::{ErrorKind, Result};
 
 pub trait IntEncoding {
     /// Gets the size (in bytes) that a value would be serialized to.
@@ -28,90 +28,90 @@ pub trait IntEncoding {
     /// Serializes a sequence length.
     #[inline(always)]
     fn serialize_len<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         len: usize,
     ) -> Result<()> {
         Self::serialize_u64(ser, len as u64)
     }
 
     fn serialize_u16<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         val: u16,
     ) -> Result<()>;
 
     fn serialize_u32<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         val: u32,
     ) -> Result<()>;
 
     fn serialize_u64<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         val: u64,
     ) -> Result<()>;
 
     fn serialize_i16<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         val: i16,
     ) -> Result<()>;
 
     fn serialize_i32<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         val: i32,
     ) -> Result<()>;
 
     fn serialize_i64<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         val: i64,
     ) -> Result<()>;
 
     /// Deserializes a sequence length.
     #[inline(always)]
     fn deserialize_len<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<usize> {
         Self::deserialize_u64(de).and_then(cast_u64_to_usize)
     }
 
     fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<u16>;
 
     fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<u32>;
 
     fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<u64>;
 
     fn deserialize_i16<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<i16>;
 
     fn deserialize_i32<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<i32>;
 
     fn deserialize_i64<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<i64>;
 
     serde_if_integer128! {
         fn u128_size(v: u128) -> u64;
         fn i128_size(v: i128) -> u64;
         fn serialize_u128<W: Write, O: Options>(
-            ser: &mut ::Serializer<W, O>,
+            ser: &mut crate::Serializer<W, O>,
             val: u128,
         ) -> Result<()>;
         fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::Deserializer<R, O>,
+            de: &mut crate::Deserializer<R, O>,
         ) -> Result<u128>;
         fn serialize_i128<W: Write, O: Options>(
-            ser: &mut ::Serializer<W, O>,
+            ser: &mut crate::Serializer<W, O>,
             val: i128,
         ) -> Result<()>;
         fn deserialize_i128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::Deserializer<R, O>,
+            de: &mut crate::Deserializer<R, O>,
         ) -> Result<i128>;
     }
 }
@@ -221,7 +221,7 @@ impl VarintEncoding {
     }
 
     fn serialize_varint<W: Write, O: Options>(
-        ser: &mut ::ser::Serializer<W, O>,
+        ser: &mut crate::ser::Serializer<W, O>,
         n: u64,
     ) -> Result<()> {
         if n <= SINGLE_BYTE_MAX as u64 {
@@ -239,7 +239,7 @@ impl VarintEncoding {
     }
 
     fn deserialize_varint<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::de::Deserializer<R, O>,
+        de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<u64> {
         #[allow(ellipsis_inclusive_range_patterns)]
         match de.deserialize_byte()? {
@@ -291,7 +291,7 @@ impl VarintEncoding {
         }
 
         fn serialize_varint128<W: Write, O: Options>(
-            ser: &mut ::ser::Serializer<W, O>,
+            ser: &mut crate::ser::Serializer<W, O>,
             n: u128,
         ) -> Result<()> {
             if n <= SINGLE_BYTE_MAX as u128 {
@@ -312,7 +312,7 @@ impl VarintEncoding {
         }
 
         fn deserialize_varint128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::de::Deserializer<R, O>,
+            de: &mut crate::de::Deserializer<R, O>,
         ) -> Result<u128> {
             #[allow(ellipsis_inclusive_range_patterns)]
             match de.deserialize_byte()? {
@@ -355,65 +355,83 @@ impl IntEncoding for FixintEncoding {
     }
 
     #[inline(always)]
-    fn serialize_u16<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: u16) -> Result<()> {
+    fn serialize_u16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u16,
+    ) -> Result<()> {
         ser.serialize_literal_u16(val)
     }
     #[inline(always)]
-    fn serialize_u32<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: u32) -> Result<()> {
+    fn serialize_u32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u32,
+    ) -> Result<()> {
         ser.serialize_literal_u32(val)
     }
     #[inline(always)]
-    fn serialize_u64<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: u64) -> Result<()> {
+    fn serialize_u64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u64,
+    ) -> Result<()> {
         ser.serialize_literal_u64(val)
     }
 
     #[inline(always)]
-    fn serialize_i16<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: i16) -> Result<()> {
+    fn serialize_i16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i16,
+    ) -> Result<()> {
         ser.serialize_literal_u16(val as u16)
     }
     #[inline(always)]
-    fn serialize_i32<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: i32) -> Result<()> {
+    fn serialize_i32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i32,
+    ) -> Result<()> {
         ser.serialize_literal_u32(val as u32)
     }
     #[inline(always)]
-    fn serialize_i64<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: i64) -> Result<()> {
+    fn serialize_i64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i64,
+    ) -> Result<()> {
         ser.serialize_literal_u64(val as u64)
     }
 
     #[inline(always)]
     fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<u16> {
         de.deserialize_literal_u16()
     }
     #[inline(always)]
     fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<u32> {
         de.deserialize_literal_u32()
     }
     #[inline(always)]
     fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<u64> {
         de.deserialize_literal_u64()
     }
 
     #[inline(always)]
     fn deserialize_i16<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<i16> {
         Ok(de.deserialize_literal_u16()? as i16)
     }
     #[inline(always)]
     fn deserialize_i32<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<i32> {
         Ok(de.deserialize_literal_u32()? as i32)
     }
     #[inline(always)]
     fn deserialize_i64<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<i64> {
         Ok(de.deserialize_literal_u64()? as i64)
     }
@@ -430,27 +448,27 @@ impl IntEncoding for FixintEncoding {
 
         #[inline(always)]
         fn serialize_u128<W: Write, O: Options>(
-            ser: &mut ::Serializer<W, O>,
+            ser: &mut crate::Serializer<W, O>,
             val: u128,
         ) -> Result<()> {
             ser.serialize_literal_u128(val)
         }
         #[inline(always)]
         fn serialize_i128<W: Write, O: Options>(
-            ser: &mut ::Serializer<W, O>,
+            ser: &mut crate::Serializer<W, O>,
             val: i128,
         ) -> Result<()> {
             ser.serialize_literal_u128(val as u128)
         }
         #[inline(always)]
         fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::Deserializer<R, O>,
+            de: &mut crate::Deserializer<R, O>,
         ) -> Result<u128> {
             de.deserialize_literal_u128()
         }
         #[inline(always)]
         fn deserialize_i128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::Deserializer<R, O>,
+            de: &mut crate::Deserializer<R, O>,
         ) -> Result<i128> {
             Ok(de.deserialize_literal_u128()? as i128)
         }
@@ -485,53 +503,71 @@ impl IntEncoding for VarintEncoding {
     }
 
     #[inline(always)]
-    fn serialize_u16<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: u16) -> Result<()> {
+    fn serialize_u16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u16,
+    ) -> Result<()> {
         Self::serialize_varint(ser, val as u64)
     }
     #[inline(always)]
-    fn serialize_u32<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: u32) -> Result<()> {
+    fn serialize_u32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u32,
+    ) -> Result<()> {
         Self::serialize_varint(ser, val as u64)
     }
     #[inline(always)]
-    fn serialize_u64<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: u64) -> Result<()> {
+    fn serialize_u64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: u64,
+    ) -> Result<()> {
         Self::serialize_varint(ser, val)
     }
 
     #[inline(always)]
-    fn serialize_i16<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: i16) -> Result<()> {
+    fn serialize_i16<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i16,
+    ) -> Result<()> {
         Self::serialize_varint(ser, Self::zigzag_encode(val as i64))
     }
     #[inline(always)]
-    fn serialize_i32<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: i32) -> Result<()> {
+    fn serialize_i32<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i32,
+    ) -> Result<()> {
         Self::serialize_varint(ser, Self::zigzag_encode(val as i64))
     }
     #[inline(always)]
-    fn serialize_i64<W: Write, O: Options>(ser: &mut ::Serializer<W, O>, val: i64) -> Result<()> {
+    fn serialize_i64<W: Write, O: Options>(
+        ser: &mut crate::Serializer<W, O>,
+        val: i64,
+    ) -> Result<()> {
         Self::serialize_varint(ser, Self::zigzag_encode(val))
     }
 
     #[inline(always)]
     fn deserialize_u16<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<u16> {
         Self::deserialize_varint(de).and_then(cast_u64_to_u16)
     }
     #[inline(always)]
     fn deserialize_u32<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<u32> {
         Self::deserialize_varint(de).and_then(cast_u64_to_u32)
     }
     #[inline(always)]
     fn deserialize_u64<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<u64> {
         Self::deserialize_varint(de)
     }
 
     #[inline(always)]
     fn deserialize_i16<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<i16> {
         Self::deserialize_varint(de)
             .map(Self::zigzag_decode)
@@ -539,7 +575,7 @@ impl IntEncoding for VarintEncoding {
     }
     #[inline(always)]
     fn deserialize_i32<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<i32> {
         Self::deserialize_varint(de)
             .map(Self::zigzag_decode)
@@ -547,7 +583,7 @@ impl IntEncoding for VarintEncoding {
     }
     #[inline(always)]
     fn deserialize_i64<'de, R: BincodeRead<'de>, O: Options>(
-        de: &mut ::Deserializer<R, O>,
+        de: &mut crate::Deserializer<R, O>,
     ) -> Result<i64> {
         Self::deserialize_varint(de).map(Self::zigzag_decode)
     }
@@ -563,27 +599,27 @@ impl IntEncoding for VarintEncoding {
         }
         #[inline(always)]
         fn serialize_u128<W: Write, O: Options>(
-            ser: &mut ::Serializer<W, O>,
+            ser: &mut crate::Serializer<W, O>,
             val: u128,
         ) -> Result<()> {
             Self::serialize_varint128(ser, val)
         }
         #[inline(always)]
         fn serialize_i128<W: Write, O: Options>(
-            ser: &mut ::Serializer<W, O>,
+            ser: &mut crate::Serializer<W, O>,
             val: i128,
         ) -> Result<()> {
             Self::serialize_varint128(ser, Self::zigzag128_encode(val))
         }
         #[inline(always)]
         fn deserialize_u128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::Deserializer<R, O>,
+            de: &mut crate::Deserializer<R, O>,
         ) -> Result<u128> {
             Self::deserialize_varint128(de)
         }
         #[inline(always)]
         fn deserialize_i128<'de, R: BincodeRead<'de>, O: Options>(
-            de: &mut ::Deserializer<R, O>,
+            de: &mut crate::Deserializer<R, O>,
         ) -> Result<i128> {
             Self::deserialize_varint128(de).map(Self::zigzag128_decode)
         }

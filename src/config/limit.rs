@@ -1,4 +1,4 @@
-use error::{ErrorKind, Result};
+use crate::error::{ErrorKind, Result};
 
 /// A trait for stopping serialization and deserialization when a certain limit has been reached.
 pub trait SizeLimit {

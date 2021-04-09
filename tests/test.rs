@@ -250,11 +250,11 @@ fn deserializing_errors() {
         _ => panic!(),
     }
 
-    let invalid_str = vec![1, 0, 0, 0, 0, 0, 0, 0, 0xFF];
+    let invalid_str = vec![1, 0xFF];
 
     match *deserialize::<String>(&invalid_str[..]).unwrap_err() {
         ErrorKind::InvalidUtf8Encoding(_) => {}
-        _ => panic!(),
+        e => panic!("{:?}", e),
     }
 
     // Out-of-bounds variant
@@ -262,7 +262,7 @@ fn deserializing_errors() {
     enum Test {
         One,
         Two,
-    };
+    }
 
     let invalid_enum = vec![0, 0, 0, 5];
 
@@ -355,16 +355,17 @@ fn too_big_serialize() {
 
 #[test]
 fn test_serialized_size() {
-    assert!(serialized_size(&0u8).unwrap() == 1);
-    assert!(serialized_size(&0u16).unwrap() == 2);
-    assert!(serialized_size(&0u32).unwrap() == 4);
-    assert!(serialized_size(&0u64).unwrap() == 8);
+    let opt = DefaultOptions::new().with_fixint_encoding();
+    assert!(opt.serialized_size(&0u8).unwrap() == 1);
+    assert!(opt.serialized_size(&0u16).unwrap() == 2);
+    assert!(opt.serialized_size(&0u32).unwrap() == 4);
+    assert!(opt.serialized_size(&0u64).unwrap() == 8);
 
     // length isize stored as u64
-    assert!(serialized_size(&"").unwrap() == LEN_SIZE);
-    assert!(serialized_size(&"a").unwrap() == LEN_SIZE + 1);
+    assert!(opt.serialized_size(&"").unwrap() == LEN_SIZE);
+    assert!(opt.serialized_size(&"a").unwrap() == LEN_SIZE + 1);
 
-    assert!(serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == LEN_SIZE + 3 * (4));
+    assert!(opt.serialized_size(&vec![0u32, 1u32, 2u32]).unwrap() == LEN_SIZE + 3 * (4));
 }
 
 #[test]
@@ -581,9 +582,13 @@ fn serde_bytes() {
 #[test]
 fn endian_difference() {
     let x = 10u64;
-    let little = serialize(&x).unwrap();
+    let little = DefaultOptions::new()
+        .with_fixint_encoding()
+        .serialize(&x)
+        .unwrap();
     let big = DefaultOptions::new()
         .with_big_endian()
+        .with_fixint_encoding()
         .serialize(&x)
         .unwrap();
     assert_ne!(little, big);
@@ -620,8 +625,8 @@ fn test_zero_copy_parse_deserialize_into() {
 
     impl<'storage> SliceReader<'storage> {
         #[inline(always)]
-        fn unexpected_eof() -> Box<::ErrorKind> {
-            return Box::new(::ErrorKind::Io(io::Error::new(
+        fn unexpected_eof() -> Box<crate::ErrorKind> {
+            return Box::new(crate::ErrorKind::Io(io::Error::new(
                 io::ErrorKind::UnexpectedEof,
                 "",
             )));
@@ -645,7 +650,7 @@ fn test_zero_copy_parse_deserialize_into() {
         where
             V: serde::de::Visitor<'storage>,
         {
-            use ErrorKind;
+            use crate::ErrorKind;
             if length > self.slice.len() {
                 return Err(SliceReader::unexpected_eof());
             }
@@ -888,7 +893,7 @@ fn test_byte_vec_struct() {
         a: Vec<u8>,
         b: Vec<u8>,
         c: Vec<u8>,
-    };
+    }
 
     let byte_struct = ByteVecs {
         a: vec![2; 20],
