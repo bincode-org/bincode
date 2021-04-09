@@ -6,7 +6,7 @@ exclude = ["logo.png", "examples/*", ".gitignore", ".travis.yml"]
 
 publish =  true
 
-repository = "https://github.com/servo/bincode"
+repository = "https://github.com/bincode-org/bincode"
 documentation = "https://docs.rs/bincode"
 readme = "./readme.md"
 categories = ["encoding", "network-programming"]
