@@ -1,5 +1,6 @@
 // Copyright (c) 2015 Andrew Gallant
 
+use std::io;
 use std::io::Result;
 use std::ptr::copy_nonoverlapping;
 
@@ -207,7 +208,7 @@ pub trait ByteOrder: Clone + Copy {
     }
 }
 
-pub trait ReadBytesExt: std::io::Read {
+pub trait ReadBytesExt: io::Read {
     #[inline]
     fn read_u8(&mut self) -> Result<u8> {
         let mut buf = [0; 1];
@@ -295,9 +296,9 @@ pub trait ReadBytesExt: std::io::Read {
     }
 }
 
-impl<R: std::io::Read + ?Sized> ReadBytesExt for R {}
+impl<R: io::Read + ?Sized> ReadBytesExt for R {}
 
-pub trait WriteBytesExt: std::io::Write {
+pub trait WriteBytesExt: io::Write {
     #[inline]
     fn write_u8(&mut self, n: u8) -> Result<()> {
         self.write_all(&[n])
@@ -381,4 +382,4 @@ pub trait WriteBytesExt: std::io::Write {
     }
 }
 
-impl<W: std::io::Write + ?Sized> WriteBytesExt for W {}
+impl<W: io::Write + ?Sized> WriteBytesExt for W {}
