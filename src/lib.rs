@@ -24,12 +24,11 @@
 //! Support for `i128` and `u128` is automatically enabled on Rust toolchains
 //! greater than or equal to `1.26.0` and disabled for targets which do not support it
 
-#![doc(html_root_url = "https://docs.rs/bincode/1.3.2")]
+#![doc(html_root_url = "https://docs.rs/bincode/1.3.3")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-extern crate byteorder;
 #[macro_use]
 extern crate serde;
 
@@ -37,6 +36,7 @@ pub mod config;
 /// Deserialize bincode data to a Rust data structure.
 pub mod de;
 
+mod byteorder;
 mod error;
 mod internal;
 mod ser;
