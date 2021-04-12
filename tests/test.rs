@@ -59,6 +59,15 @@ where
     }
 
     all_integer_encodings!(element, DefaultOptions::new());
+
+    macro_rules! all_string_terminations {
+        ($element:expr, $options:expr) => {
+            all_integer_encodings!($element, $options.with_len_str_encoding());
+            all_integer_encodings!($element, $options.with_null_terminated_str_encoding());
+        };
+    }
+
+    all_string_terminations!(element, DefaultOptions::new());
 }
 
 #[test]
