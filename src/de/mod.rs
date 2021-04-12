@@ -2,7 +2,7 @@ use crate::config::{BincodeByteOrder, Options};
 use std::io::Read;
 
 use self::read::{BincodeRead, IoReader, SliceReader};
-use crate::config::{IntEncoding, SizeLimit};
+use crate::config::{IntEncoding, SizeLimit, StrEncoding};
 use crate::{Error, ErrorKind, Result};
 use byteorder::ReadBytesExt;
 use serde::de::Error as DeError;
@@ -89,15 +89,14 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
         self.read_bytes(size_of::<T>() as u64)
     }
 
-    fn read_vec(&mut self) -> Result<Vec<u8>> {
+    pub(crate) fn read_vec(&mut self) -> Result<Vec<u8>> {
         let len = O::IntEncoding::deserialize_len(self)?;
         self.read_bytes(len as u64)?;
         self.reader.get_byte_buffer(len)
     }
 
     fn read_string(&mut self) -> Result<String> {
-        let vec = self.read_vec()?;
-        String::from_utf8(vec).map_err(|e| ErrorKind::InvalidUtf8Encoding(e.utf8_error()).into())
+        O::StrEncoding::deserialize_str(self)
     }
 }
 
