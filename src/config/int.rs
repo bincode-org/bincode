@@ -238,6 +238,7 @@ impl VarintEncoding {
         }
     }
 
+    #[inline]
     fn deserialize_varint<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<u64> {
@@ -637,6 +638,7 @@ fn cast_u64_to_usize(n: u64) -> Result<usize> {
         ))))
     }
 }
+#[inline]
 fn cast_u64_to_u32(n: u64) -> Result<u32> {
     if n <= u32::max_value() as u64 {
         Ok(n as u32)
@@ -647,6 +649,8 @@ fn cast_u64_to_u32(n: u64) -> Result<u32> {
         ))))
     }
 }
+
+#[inline]
 fn cast_u64_to_u16(n: u64) -> Result<u16> {
     if n <= u16::max_value() as u64 {
         Ok(n as u16)

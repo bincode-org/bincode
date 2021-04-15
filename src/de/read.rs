@@ -52,6 +52,7 @@ impl<'storage> SliceReader<'storage> {
         Ok(read_slice)
     }
 
+    #[inline]
     pub(crate) fn is_finished(&self) -> bool {
         self.slice.is_empty()
     }
