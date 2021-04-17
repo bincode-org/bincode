@@ -248,14 +248,26 @@ impl VarintEncoding {
             U16_BYTE => Ok(de.deserialize_literal_u16()? as u64),
             U32_BYTE => Ok(de.deserialize_literal_u32()? as u64),
             U64_BYTE => de.deserialize_literal_u64(),
-            U128_BYTE => Err(Box::new(ErrorKind::Custom(
-                "Invalid value (u128 range): you may have a version or configuration disagreement?"
-                    .to_string(),
-            ))),
-            _ => Err(Box::new(ErrorKind::Custom(
-                DESERIALIZE_EXTENSION_POINT_ERR.to_string(),
-            ))),
+            U128_BYTE => Self::u128_error(),
+            _ => Self::extension_point_error(),
         }
+    }
+
+    #[inline(never)]
+    #[cold]
+    fn u128_error() -> Result<u64> {
+        Err(Box::new(ErrorKind::Custom(
+            "Invalid value (u128 range): you may have a version or configuration disagreement?"
+                .to_string(),
+        )))
+    }
+
+    #[inline(never)]
+    #[cold]
+    fn extension_point_error() -> Result<u64> {
+        Err(Box::new(ErrorKind::Custom(
+            DESERIALIZE_EXTENSION_POINT_ERR.to_string(),
+        )))
     }
 
     serde_if_integer128! {
