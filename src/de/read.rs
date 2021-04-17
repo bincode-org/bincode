@@ -172,7 +172,8 @@ impl<R: io::Read> io::Read for IoReader<R> {
 }
 
 impl<'storage> SliceReader<'storage> {
-    #[inline(always)]
+    #[inline(never)]
+    #[cold]
     fn unexpected_eof() -> Box<crate::ErrorKind> {
         Box::new(crate::ErrorKind::Io(io::Error::new(
             io::ErrorKind::UnexpectedEof,
