@@ -79,7 +79,7 @@ fn bufreader_varint_u8(c: &mut Criterion) {
     c.bench_function("bufreader_varint_u8", |b| {
         b.iter(|| {
             let _: Vec<u8> = options
-                .deserialize_from(&mut std::io::BufReader::new(&bytes[..]))
+                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
                 .unwrap();
         })
     });
@@ -97,7 +97,7 @@ fn bufreader_varint_u16(c: &mut Criterion) {
     c.bench_function("bufreader_varint_u16", |b| {
         b.iter(|| {
             let _: Vec<u16> = options
-                .deserialize_from(&mut std::io::BufReader::new(&bytes[..]))
+                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
                 .unwrap();
         })
     });
@@ -115,7 +115,7 @@ fn bufreader_varint_u32(c: &mut Criterion) {
     c.bench_function("bufreader_varint_u32", |b| {
         b.iter(|| {
             let _: Vec<u32> = options
-                .deserialize_from(&mut std::io::BufReader::new(&bytes[..]))
+                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
                 .unwrap();
         })
     });
@@ -133,7 +133,7 @@ fn bufreader_varint_u64(c: &mut Criterion) {
     c.bench_function("bufreader_varint_u64", |b| {
         b.iter(|| {
             let _: Vec<u64> = options
-                .deserialize_from(&mut std::io::BufReader::new(&bytes[..]))
+                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
                 .unwrap();
         })
     });

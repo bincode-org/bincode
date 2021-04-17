@@ -296,6 +296,137 @@ where
     }
 }
 
+impl<'a, R> BincodeRead<'a> for std::io::BufReader<R>
+where
+    R: io::Read,
+{
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'a>,
+    {
+        let mut temp_buf = Vec::new();
+        let buf = if let Some(buf) = self.buffer().get(..length) {
+            buf
+        } else {
+            temp_buf.resize(length, 0);
+            <Self as std::io::Read>::read_exact(self, &mut temp_buf)?;
+            &temp_buf
+        };
+        let string = match ::std::str::from_utf8(&buf) {
+            Ok(s) => s,
+            Err(e) => return Err(crate::ErrorKind::InvalidUtf8Encoding(e).into()),
+        };
+
+        visitor.visit_str(string)
+    }
+
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'a>,
+    {
+        let mut temp_buf = Vec::new();
+        let buf = if let Some(buf) = self.buffer().get(..length) {
+            buf
+        } else {
+            temp_buf.resize(length, 0);
+            <Self as std::io::Read>::read_exact(self, &mut temp_buf)?;
+            &temp_buf
+        };
+
+        visitor.visit_bytes(buf)
+    }
+
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        let mut buf = vec![0; length];
+        <Self as std::io::Read>::read_exact(self, &mut buf)?;
+        Ok(buf)
+    }
+
+    fn bincode_read_u8(&mut self) -> Result<u8> {
+        if let Some(byte) = self.buffer().get(0) {
+            let byte = *byte;
+            <Self as std::io::BufRead>::consume(self, 1);
+            Ok(byte)
+        } else {
+            bincode_read_u8_cold(self)
+        }
+    }
+
+    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
+        if let Some(bytes) = self.buffer().get(..2) {
+            let v = O::read_u16(bytes);
+            <Self as std::io::BufRead>::consume(self, 2);
+            Ok(v)
+        } else {
+            bincode_read_u16_cold::<_, O>(self)
+        }
+    }
+
+    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
+        if let Some(bytes) = self.buffer().get(..4) {
+            let v = O::read_u32(bytes);
+            <Self as std::io::BufRead>::consume(self, 4);
+            Ok(v)
+        } else {
+            bincode_read_u32_cold::<_, O>(self)
+        }
+    }
+
+    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
+        if let Some(bytes) = self.buffer().get(..8) {
+            let v = O::read_u64(bytes);
+            <Self as std::io::BufRead>::consume(self, 8);
+            Ok(v)
+        } else {
+            bincode_read_u64_cold::<_, O>(self)
+        }
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn bincode_read_u8_cold<R>(reader: &mut std::io::BufReader<R>) -> Result<u8>
+where
+    R: io::Read,
+{
+    let mut buf = [0; 1];
+    <std::io::BufReader<R> as io::Read>::read_exact(reader, &mut buf)?;
+    Ok(buf[0])
+}
+
+#[inline(never)]
+#[cold]
+fn bincode_read_u16_cold<R, O: ::byteorder::ByteOrder>(
+    reader: &mut std::io::BufReader<R>,
+) -> Result<u16>
+where
+    R: io::Read,
+{
+    <std::io::BufReader<R> as ::byteorder::ReadBytesExt>::read_u16::<O>(reader).map_err(Into::into)
+}
+
+#[inline(never)]
+#[cold]
+fn bincode_read_u32_cold<R, O: ::byteorder::ByteOrder>(
+    reader: &mut std::io::BufReader<R>,
+) -> Result<u32>
+where
+    R: io::Read,
+{
+    <std::io::BufReader<R> as ::byteorder::ReadBytesExt>::read_u32::<O>(reader).map_err(Into::into)
+}
+
+#[inline(never)]
+#[cold]
+fn bincode_read_u64_cold<R, O: ::byteorder::ByteOrder>(
+    reader: &mut std::io::BufReader<R>,
+) -> Result<u64>
+where
+    R: io::Read,
+{
+    <std::io::BufReader<R> as ::byteorder::ReadBytesExt>::read_u64::<O>(reader).map_err(Into::into)
+}
+
 #[cfg(test)]
 mod test {
     use super::IoReader;
