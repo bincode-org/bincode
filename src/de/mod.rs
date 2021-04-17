@@ -66,6 +66,7 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
         Deserializer { reader: r, options }
     }
 
+    #[inline]
     pub(crate) fn deserialize_byte(&mut self) -> Result<u8> {
         self.read_literal_type::<u8>()?;
         self.reader.bincode_read_u8().map_err(Into::into)
