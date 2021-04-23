@@ -29,13 +29,32 @@ pub struct Deserializer<R, O: Options> {
     options: O,
 }
 
+#[inline(never)]
+#[cold]
+fn bincode_read_cold<R, const N: usize>(reader: &mut R) -> Result<[u8; N]>
+where
+    R: std::io::Read,
+{
+    let mut buf = [0u8; N];
+    reader.read_exact(&mut buf)?;
+    Ok(buf)
+}
+
 macro_rules! impl_deserialize_literal {
     ($name:ident : $ty:ty = $read:ident()) => {
         #[inline]
         pub(crate) fn $name(&mut self) -> Result<$ty> {
+            const SIZE: usize = core::mem::size_of::<$ty>();
+            let read = <<O::Endian as BincodeByteOrder>::Endian as byteorder::ByteOrder>::$read;
             self.read_literal_type::<$ty>()?;
-            <R as BincodeRead>::$read::<<O::Endian as BincodeByteOrder>::Endian>(&mut self.reader)
-                .map_err(Into::into)
+            if let Some(buf) = self.reader.peek_read(SIZE) {
+                let v = read(buf);
+                self.reader.consume(SIZE);
+                Ok(v)
+            } else {
+                let bytes = bincode_read_cold::<_, SIZE>(&mut self.reader)?;
+                Ok(read(&bytes))
+            }
         }
     };
 }
@@ -69,15 +88,21 @@ impl<'de, R: BincodeRead<'de>, O: Options> Deserializer<R, O> {
     #[inline]
     pub(crate) fn deserialize_byte(&mut self) -> Result<u8> {
         self.read_literal_type::<u8>()?;
-        self.reader.bincode_read_u8().map_err(Into::into)
+        if let Some(buf) = self.reader.peek_read(1) {
+            let byte = buf[0];
+            self.reader.consume(1);
+            Ok(byte)
+        } else {
+            self.reader.read_u8().map_err(Into::into)
+        }
     }
 
-    impl_deserialize_literal! { deserialize_literal_u16 : u16 = bincode_read_u16() }
-    impl_deserialize_literal! { deserialize_literal_u32 : u32 = bincode_read_u32() }
-    impl_deserialize_literal! { deserialize_literal_u64 : u64 = bincode_read_u64() }
+    impl_deserialize_literal! { deserialize_literal_u16 : u16 = read_u16() }
+    impl_deserialize_literal! { deserialize_literal_u32 : u32 = read_u32() }
+    impl_deserialize_literal! { deserialize_literal_u64 : u64 = read_u64() }
 
     serde_if_integer128! {
-        impl_deserialize_literal! { deserialize_literal_u128 : u128 = bincode_read_u128() }
+        impl_deserialize_literal! { deserialize_literal_u128 : u128 = read_u128() }
     }
 
     fn read_bytes(&mut self, count: u64) -> Result<()> {

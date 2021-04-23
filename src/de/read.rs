@@ -24,32 +24,17 @@ pub trait BincodeRead<'storage>: io::Read {
     where
         V: serde::de::Visitor<'storage>;
 
-    /// Read a single byte
-    fn bincode_read_u8(&mut self) -> Result<u8> {
-        <Self as ::byteorder::ReadBytesExt>::read_u8(self).map_err(Into::into)
+    /// If this reader wraps a buffer of any kind, this function lets callers access contents of
+    /// the buffer without passing data through a buffer first via the `std::io::Read` interface
+    #[inline]
+    fn peek_read(&self, _: usize) -> Option<&[u8]> {
+        None
     }
 
-    /// Read a u16
-    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
-        <Self as ::byteorder::ReadBytesExt>::read_u16::<O>(self).map_err(Into::into)
-    }
-
-    /// Read a u32
-    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
-        <Self as ::byteorder::ReadBytesExt>::read_u32::<O>(self).map_err(Into::into)
-    }
-
-    /// Read a u64
-    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
-        <Self as ::byteorder::ReadBytesExt>::read_u64::<O>(self).map_err(Into::into)
-    }
-
-    serde_if_integer128! {
-        /// Read a u128
-        fn bincode_read_u128<O: ::byteorder::ByteOrder>(&mut self) -> Result<u128> {
-            <Self as ::byteorder::ReadBytesExt>::read_u128::<O>(self).map_err(Into::into)
-        }
-    }
+    /// If an implementation of `peek_read` is provided, an implementation of this function
+    /// must be provided so that subsequent reads or peek-reads do not return the same bytes
+    #[inline]
+    fn consume(&mut self, _: usize) {}
 }
 
 impl<'a, 'storage, T> BincodeRead<'storage> for &'a mut T
@@ -75,26 +60,13 @@ where
     }
 
     #[inline]
-    fn bincode_read_u8(&mut self) -> Result<u8> {
-        (*self).bincode_read_u8()
+    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+        (**self).peek_read(n)
     }
 
-    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
-        (*self).bincode_read_u16::<O>()
-    }
-
-    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
-        (*self).bincode_read_u32::<O>()
-    }
-
-    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
-        (*self).bincode_read_u64::<O>()
-    }
-
-    serde_if_integer128! {
-        fn bincode_read_u128<O: ::byteorder::ByteOrder>(&mut self) -> Result<u128> {
-            (*self).bincode_read_u128::<O>()
-        }
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        (*self).consume(n)
     }
 }
 
@@ -197,11 +169,6 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 
     #[inline(always)]
-    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
-        self.get_byte_slice(length).map(|x| x.to_vec())
-    }
-
-    #[inline(always)]
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>,
@@ -209,45 +176,19 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
         visitor.visit_borrowed_bytes(self.get_byte_slice(length)?)
     }
 
-    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
-        if self.slice.len() < 8 {
-            Err(Self::unexpected_eof())
-        } else {
-            let (this, remaining) = self.slice.split_at(8);
-            self.slice = remaining;
-            Ok(O::read_u64(this))
-        }
-    }
-
-    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
-        if self.slice.len() < 4 {
-            Err(Self::unexpected_eof())
-        } else {
-            let (this, remaining) = self.slice.split_at(4);
-            self.slice = remaining;
-            Ok(O::read_u32(this))
-        }
-    }
-
-    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
-        if self.slice.len() < 2 {
-            Err(Self::unexpected_eof())
-        } else {
-            let (this, remaining) = self.slice.split_at(2);
-            self.slice = remaining;
-            Ok(O::read_u16(this))
-        }
+    #[inline(always)]
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        self.get_byte_slice(length).map(|x| x.to_vec())
     }
 
     #[inline]
-    fn bincode_read_u8(&mut self) -> Result<u8> {
-        if self.slice.is_empty() {
-            Err(Self::unexpected_eof())
-        } else {
-            let v = self.slice[0];
-            self.slice = &self.slice[1..];
-            Ok(v)
-        }
+    fn peek_read(&self, n: usize) -> Option<&'storage [u8]> {
+        self.slice.get(..n)
+    }
+
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        self.slice = &self.slice.get(n..).unwrap_or_default();
     }
 }
 
@@ -296,16 +237,18 @@ where
     }
 }
 
-impl<'a, R> BincodeRead<'a> for std::io::BufReader<R>
+impl<'storage, R> BincodeRead<'storage> for std::io::BufReader<R>
 where
     R: io::Read,
 {
     fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
-        V: serde::de::Visitor<'a>,
+        V: serde::de::Visitor<'storage>,
     {
+        let mut consume = false;
         let mut temp_buf = Vec::new();
-        let buf = if let Some(buf) = self.buffer().get(..length) {
+        let buf = if let Some(buf) = self.peek_read(length) {
+            consume = true;
             buf
         } else {
             temp_buf.resize(length, 0);
@@ -317,15 +260,21 @@ where
             Err(e) => return Err(crate::ErrorKind::InvalidUtf8Encoding(e).into()),
         };
 
-        visitor.visit_str(string)
+        let res = visitor.visit_str::<crate::Error>(string);
+        if consume {
+            self.consume(length);
+        }
+        res
     }
 
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
-        V: serde::de::Visitor<'a>,
+        V: serde::de::Visitor<'storage>,
     {
+        let mut consume = false;
         let mut temp_buf = Vec::new();
-        let buf = if let Some(buf) = self.buffer().get(..length) {
+        let buf = if let Some(buf) = self.peek_read(length) {
+            consume = true;
             buf
         } else {
             temp_buf.resize(length, 0);
@@ -333,7 +282,11 @@ where
             &temp_buf
         };
 
-        visitor.visit_bytes(buf)
+        let res = visitor.visit_bytes::<crate::Error>(buf);
+        if consume {
+            self.consume(length);
+        }
+        res
     }
 
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
@@ -342,89 +295,15 @@ where
         Ok(buf)
     }
 
-    fn bincode_read_u8(&mut self) -> Result<u8> {
-        if let Some(byte) = self.buffer().get(0) {
-            let byte = *byte;
-            <Self as std::io::BufRead>::consume(self, 1);
-            Ok(byte)
-        } else {
-            bincode_read_u8_cold(self)
-        }
+    #[inline]
+    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+        self.buffer().get(..n)
     }
 
-    fn bincode_read_u16<O: ::byteorder::ByteOrder>(&mut self) -> Result<u16> {
-        if let Some(bytes) = self.buffer().get(..2) {
-            let v = O::read_u16(bytes);
-            <Self as std::io::BufRead>::consume(self, 2);
-            Ok(v)
-        } else {
-            bincode_read_u16_cold::<_, O>(self)
-        }
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        <Self as io::BufRead>::consume(self, n);
     }
-
-    fn bincode_read_u32<O: ::byteorder::ByteOrder>(&mut self) -> Result<u32> {
-        if let Some(bytes) = self.buffer().get(..4) {
-            let v = O::read_u32(bytes);
-            <Self as std::io::BufRead>::consume(self, 4);
-            Ok(v)
-        } else {
-            bincode_read_u32_cold::<_, O>(self)
-        }
-    }
-
-    fn bincode_read_u64<O: ::byteorder::ByteOrder>(&mut self) -> Result<u64> {
-        if let Some(bytes) = self.buffer().get(..8) {
-            let v = O::read_u64(bytes);
-            <Self as std::io::BufRead>::consume(self, 8);
-            Ok(v)
-        } else {
-            bincode_read_u64_cold::<_, O>(self)
-        }
-    }
-}
-
-#[inline(never)]
-#[cold]
-fn bincode_read_u8_cold<R>(reader: &mut std::io::BufReader<R>) -> Result<u8>
-where
-    R: io::Read,
-{
-    let mut buf = [0; 1];
-    <std::io::BufReader<R> as io::Read>::read_exact(reader, &mut buf)?;
-    Ok(buf[0])
-}
-
-#[inline(never)]
-#[cold]
-fn bincode_read_u16_cold<R, O: ::byteorder::ByteOrder>(
-    reader: &mut std::io::BufReader<R>,
-) -> Result<u16>
-where
-    R: io::Read,
-{
-    <std::io::BufReader<R> as ::byteorder::ReadBytesExt>::read_u16::<O>(reader).map_err(Into::into)
-}
-
-#[inline(never)]
-#[cold]
-fn bincode_read_u32_cold<R, O: ::byteorder::ByteOrder>(
-    reader: &mut std::io::BufReader<R>,
-) -> Result<u32>
-where
-    R: io::Read,
-{
-    <std::io::BufReader<R> as ::byteorder::ReadBytesExt>::read_u32::<O>(reader).map_err(Into::into)
-}
-
-#[inline(never)]
-#[cold]
-fn bincode_read_u64_cold<R, O: ::byteorder::ByteOrder>(
-    reader: &mut std::io::BufReader<R>,
-) -> Result<u64>
-where
-    R: io::Read,
-{
-    <std::io::BufReader<R> as ::byteorder::ReadBytesExt>::read_u64::<O>(reader).map_err(Into::into)
 }
 
 #[cfg(test)]
