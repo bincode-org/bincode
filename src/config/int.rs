@@ -193,16 +193,19 @@ where
         U16_BYTE => Ok(reader.read_u16::<O>()? as u64),
         U32_BYTE => Ok(reader.read_u32::<O>()? as u64),
         U64_BYTE => Ok(reader.read_u64::<O>()? as u64),
-        U128_BYTE => custom_error(
-            "Invalid value (u128 range): you may have a version or configuration disagreement?",
-        ),
-        _ => custom_error(crate::config::int::DESERIALIZE_EXTENSION_POINT_ERR),
+        other => invalid_varint_discriminant(other),
     }
 }
 
 #[inline(never)]
 #[cold]
-fn custom_error(msg: &'static str) -> Result<u64> {
+fn invalid_varint_discriminant(discriminant: u8) -> Result<u64> {
+    let msg = match discriminant {
+        U128_BYTE => {
+            "Invalid value (u128 range): you may have a version or configuration disagreement?"
+        }
+        _ => DESERIALIZE_EXTENSION_POINT_ERR,
+    };
     Err(Box::new(crate::ErrorKind::Custom(msg.to_string())))
 }
 
@@ -279,10 +282,7 @@ impl VarintEncoding {
                 U16_BYTE => (read_u16(&bytes[..2]) as u64, 3),
                 U32_BYTE => (read_u32(&bytes[..4]) as u64, 5),
                 U64_BYTE => (read_u64(&bytes[..8]) as u64, 9),
-                U128_BYTE => return custom_error(
-                    "Invalid value (u128 range): you may have a version or configuration disagreement?",
-                ),
-                _ => return custom_error(crate::config::int::DESERIALIZE_EXTENSION_POINT_ERR),
+                other => return invalid_varint_discriminant(other),
             };
             de.reader.consume(used);
             Ok(out)
