@@ -150,12 +150,12 @@ pub trait Options: InternalOptions + Sized {
         WithOtherEndian::new(self)
     }
 
-    /// Sets the length encoding to varint
+    /// Sets the integer encoding to varint
     fn with_varint_encoding(self) -> WithOtherIntEncoding<Self, VarintEncoding> {
         WithOtherIntEncoding::new(self)
     }
 
-    /// Sets the length encoding to be fixed
+    /// Sets the integer encoding to be fixed
     fn with_fixint_encoding(self) -> WithOtherIntEncoding<Self, FixintEncoding> {
         WithOtherIntEncoding::new(self)
     }
