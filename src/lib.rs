@@ -18,18 +18,18 @@ extern crate std;
 pub mod config;
 pub mod de;
 pub mod error;
-pub mod ser;
+pub mod enc;
 
 pub(crate) mod int_encoding;
 
-pub fn encode_into_slice<E: ser::Encodeable>(val: E, dst: &mut [u8]) -> Result<(), error::Error> {
-    let writer = ser::SliceWriter::new(dst);
-    let mut encoder = ser::Encoder::<_, config::Default>::new(writer);
+pub fn encode_into_slice<E: enc::Encodeable>(val: E, dst: &mut [u8]) -> Result<(), error::Error> {
+    let writer = enc::write::SliceWriter::new(dst);
+    let mut encoder = enc::Encoder::<_, config::Default>::new(writer);
     val.encode(&mut encoder)
 }
 
 pub fn decode<D: de::Decodable>(src: &mut [u8]) -> Result<D, error::Error> {
-    let reader = de::SliceReader::new(src);
+    let reader = de::read::SliceReader::new(src);
     let mut decoder = de::Decoder::<_, config::Default>::new(reader);
     D::decode(&mut decoder)
 }

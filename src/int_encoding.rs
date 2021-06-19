@@ -1,4 +1,4 @@
-use crate::{error::Error, ser::Writer};
+use crate::{error::Error, enc::write::Writer};
 
 pub trait IntEncoding {
     fn encode_u32<W: Writer>(writer: &mut W, val: u32) -> Result<(), Error>;
