@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::mem::size_of;
 
-use super::Options;
+use super::{BincodeByteOrder, Options};
 use crate::de::read::BincodeRead;
 use crate::error::{ErrorKind, Result};
 
@@ -179,6 +179,36 @@ Byte 255 is treated as an extension point; it should not be encoding anything.
 Do you have a mismatched bincode version or configuration?
 "#;
 
+#[inline(never)]
+#[cold]
+fn deserialize_varint_cold<'a, O, R>(reader: &mut R) -> Result<u64>
+where
+    O: byteorder::ByteOrder,
+    R: BincodeRead<'a>,
+{
+    use byteorder::ReadBytesExt;
+    #[allow(ellipsis_inclusive_range_patterns)]
+    match reader.read_u8()? {
+        byte @ 0...crate::config::int::SINGLE_BYTE_MAX => Ok(byte as u64),
+        U16_BYTE => Ok(reader.read_u16::<O>()? as u64),
+        U32_BYTE => Ok(reader.read_u32::<O>()? as u64),
+        U64_BYTE => Ok(reader.read_u64::<O>()? as u64),
+        other => invalid_varint_discriminant(other),
+    }
+}
+
+#[inline(never)]
+#[cold]
+fn invalid_varint_discriminant(discriminant: u8) -> Result<u64> {
+    let msg = match discriminant {
+        U128_BYTE => {
+            "Invalid value (u128 range): you may have a version or configuration disagreement?"
+        }
+        _ => DESERIALIZE_EXTENSION_POINT_ERR,
+    };
+    Err(Box::new(crate::ErrorKind::Custom(msg.to_string())))
+}
+
 impl VarintEncoding {
     fn varint_size(n: u64) -> u64 {
         if n <= SINGLE_BYTE_MAX as u64 {
@@ -238,22 +268,26 @@ impl VarintEncoding {
         }
     }
 
+    #[inline]
     fn deserialize_varint<'de, R: BincodeRead<'de>, O: Options>(
         de: &mut crate::de::Deserializer<R, O>,
     ) -> Result<u64> {
-        #[allow(ellipsis_inclusive_range_patterns)]
-        match de.deserialize_byte()? {
-            byte @ 0...SINGLE_BYTE_MAX => Ok(byte as u64),
-            U16_BYTE => Ok(de.deserialize_literal_u16()? as u64),
-            U32_BYTE => Ok(de.deserialize_literal_u32()? as u64),
-            U64_BYTE => de.deserialize_literal_u64(),
-            U128_BYTE => Err(Box::new(ErrorKind::Custom(
-                "Invalid value (u128 range): you may have a version or configuration disagreement?"
-                    .to_string(),
-            ))),
-            _ => Err(Box::new(ErrorKind::Custom(
-                DESERIALIZE_EXTENSION_POINT_ERR.to_string(),
-            ))),
+        let read_u16 = <<O::Endian as BincodeByteOrder>::Endian as byteorder::ByteOrder>::read_u16;
+        let read_u32 = <<O::Endian as BincodeByteOrder>::Endian as byteorder::ByteOrder>::read_u32;
+        let read_u64 = <<O::Endian as BincodeByteOrder>::Endian as byteorder::ByteOrder>::read_u64;
+        if let Some(bytes) = de.reader.peek_read(9) {
+            let (discriminant, bytes) = bytes.split_at(1);
+            let (out, used) = match discriminant[0] {
+                byte @ 0..=crate::config::int::SINGLE_BYTE_MAX => (byte as u64, 1),
+                U16_BYTE => (read_u16(&bytes[..2]) as u64, 3),
+                U32_BYTE => (read_u32(&bytes[..4]) as u64, 5),
+                U64_BYTE => (read_u64(&bytes[..8]) as u64, 9),
+                other => return invalid_varint_discriminant(other),
+            };
+            de.reader.consume(used);
+            Ok(out)
+        } else {
+            deserialize_varint_cold::<<O::Endian as BincodeByteOrder>::Endian, R>(&mut de.reader)
         }
     }
 
@@ -637,6 +671,7 @@ fn cast_u64_to_usize(n: u64) -> Result<usize> {
         ))))
     }
 }
+#[inline]
 fn cast_u64_to_u32(n: u64) -> Result<u32> {
     if n <= u32::max_value() as u64 {
         Ok(n as u32)
@@ -647,6 +682,8 @@ fn cast_u64_to_u32(n: u64) -> Result<u32> {
         ))))
     }
 }
+
+#[inline]
 fn cast_u64_to_u16(n: u64) -> Result<u16> {
     if n <= u16::max_value() as u64 {
         Ok(n as u16)
