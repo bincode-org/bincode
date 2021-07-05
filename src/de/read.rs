@@ -23,6 +23,51 @@ pub trait BincodeRead<'storage>: io::Read {
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>;
+
+    /// If this reader wraps a buffer of any kind, this function lets callers access contents of
+    /// the buffer without passing data through a buffer first via the `std::io::Read` interface
+    #[inline]
+    fn peek_read(&self, _: usize) -> Option<&[u8]> {
+        None
+    }
+
+    /// If an implementation of `peek_read` is provided, an implementation of this function
+    /// must be provided so that subsequent reads or peek-reads do not return the same bytes
+    #[inline]
+    fn consume(&mut self, _: usize) {}
+}
+
+impl<'a, 'storage, T> BincodeRead<'storage> for &'a mut T
+where
+    T: BincodeRead<'storage>,
+{
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'storage>,
+    {
+        (*self).forward_read_str(length, visitor)
+    }
+
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        (*self).get_byte_buffer(length)
+    }
+
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'storage>,
+    {
+        (*self).forward_read_bytes(length, visitor)
+    }
+
+    #[inline]
+    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+        (**self).peek_read(n)
+    }
+
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        (*self).consume(n)
+    }
 }
 
 /// A BincodeRead implementation for byte slices
@@ -52,6 +97,7 @@ impl<'storage> SliceReader<'storage> {
         Ok(read_slice)
     }
 
+    #[inline]
     pub(crate) fn is_finished(&self) -> bool {
         self.slice.is_empty()
     }
@@ -98,7 +144,8 @@ impl<R: io::Read> io::Read for IoReader<R> {
 }
 
 impl<'storage> SliceReader<'storage> {
-    #[inline(always)]
+    #[inline(never)]
+    #[cold]
     fn unexpected_eof() -> Box<crate::ErrorKind> {
         Box::new(crate::ErrorKind::Io(io::Error::new(
             io::ErrorKind::UnexpectedEof,
@@ -122,16 +169,26 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
     }
 
     #[inline(always)]
-    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
-        self.get_byte_slice(length).map(|x| x.to_vec())
-    }
-
-    #[inline(always)]
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
     where
         V: serde::de::Visitor<'storage>,
     {
         visitor.visit_borrowed_bytes(self.get_byte_slice(length)?)
+    }
+
+    #[inline(always)]
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        self.get_byte_slice(length).map(|x| x.to_vec())
+    }
+
+    #[inline]
+    fn peek_read(&self, n: usize) -> Option<&'storage [u8]> {
+        self.slice.get(..n)
+    }
+
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        self.slice = &self.slice.get(n..).unwrap_or_default();
     }
 }
 
@@ -177,6 +234,75 @@ where
     {
         self.fill_buffer(length)?;
         visitor.visit_bytes(&self.temp_buffer[..])
+    }
+}
+
+impl<'storage, R> BincodeRead<'storage> for std::io::BufReader<R>
+where
+    R: io::Read,
+{
+    fn forward_read_str<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'storage>,
+    {
+        let mut consume = false;
+        let mut temp_buf = Vec::new();
+        let buf = if let Some(buf) = self.peek_read(length) {
+            consume = true;
+            buf
+        } else {
+            temp_buf.resize(length, 0);
+            <Self as std::io::Read>::read_exact(self, &mut temp_buf)?;
+            &temp_buf
+        };
+        let string = match ::std::str::from_utf8(&buf) {
+            Ok(s) => s,
+            Err(e) => return Err(crate::ErrorKind::InvalidUtf8Encoding(e).into()),
+        };
+
+        let res = visitor.visit_str::<crate::Error>(string);
+        if consume {
+            self.consume(length);
+        }
+        res
+    }
+
+    fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
+    where
+        V: serde::de::Visitor<'storage>,
+    {
+        let mut consume = false;
+        let mut temp_buf = Vec::new();
+        let buf = if let Some(buf) = self.peek_read(length) {
+            consume = true;
+            buf
+        } else {
+            temp_buf.resize(length, 0);
+            <Self as std::io::Read>::read_exact(self, &mut temp_buf)?;
+            &temp_buf
+        };
+
+        let res = visitor.visit_bytes::<crate::Error>(buf);
+        if consume {
+            self.consume(length);
+        }
+        res
+    }
+
+    fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
+        let mut buf = vec![0; length];
+        <Self as std::io::Read>::read_exact(self, &mut buf)?;
+        Ok(buf)
+    }
+
+    #[inline]
+    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+        self.buffer().get(..n)
+    }
+
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        <Self as io::BufRead>::consume(self, n);
     }
 }
 

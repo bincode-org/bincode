@@ -23,3 +23,13 @@ serde = "1.0.63"
 [dev-dependencies]
 serde_bytes = "0.11"
 serde_derive = "1.0.27"
+criterion = "0.3"
+rand = "0.8"
+
+[[bench]]
+name = "varint"
+harness = false
+
+[profile.bench]
+codegen-units = 1
+debug = 1
