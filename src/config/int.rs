@@ -147,7 +147,7 @@ pub struct FixintEncoding;
 /// fn zigzag(v: Signed) -> Unsigned {
 ///     match v {
 ///         0 => 0,
-///         v if v < 0 => |v| * 2 - 1
+///         v if v < 0 => |v| * 2 - 1,
 ///         v if v > 0 => v * 2
 ///     }
 /// }
@@ -155,7 +155,8 @@ pub struct FixintEncoding;
 ///
 /// And works such that:
 ///
-/// ```ignore
+/// ```no_run
+/// # let zigzag = |_| 0;
 /// assert_eq!(zigzag(0), 0);
 /// assert_eq!(zigzag(-1), 1);
 /// assert_eq!(zigzag(1), 2);

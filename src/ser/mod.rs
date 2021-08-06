@@ -15,6 +15,16 @@ use std::mem::size_of;
 ///
 /// This struct should not be used often.
 /// For most cases, prefer the `encode_into` function.
+///
+/// ```
+/// # use bincode::Serializer;
+/// # use serde::ser::Serialize;
+/// let mut output: Vec<u8> = vec!();
+/// let mut serializer = Serializer::new(&mut output, bincode::options());
+/// let value = 3u32;
+/// value.serialize(&mut serializer).unwrap();
+/// assert_eq!(output, [3]);
+/// ```
 pub struct Serializer<W, O: Options> {
     writer: W,
     _options: O,

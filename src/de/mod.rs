@@ -19,10 +19,12 @@ pub mod read;
 /// The ByteOrder that is chosen will impact the endianness that
 /// is used to read integers out of the reader.
 ///
-/// ```ignore
-/// let d = Deserializer::new(&mut some_reader, SizeLimit::new());
-/// serde::Deserialize::deserialize(&mut deserializer);
-/// let bytes_read = d.bytes_read();
+/// ```
+/// # use bincode::Deserializer;
+/// let input = [3];
+/// let mut deserializer = Deserializer::from_slice(&input, bincode::options());
+/// let value: u32 = serde::Deserialize::deserialize(&mut deserializer).unwrap();
+/// assert_eq!(value, 3);
 /// ```
 pub struct Deserializer<R, O: Options> {
     pub(crate) reader: R,
