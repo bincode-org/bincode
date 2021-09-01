@@ -2,8 +2,8 @@
 
 <img align="right" src="./logo.png" />
 
-![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)
-[![](https://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
+[![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)](https://github.com/bincode-org/bincode/actions)
+[![](https://img.shields.io/crates/v/bincode.svg)](https://crates.io/crates/bincode)
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/02/27/Rust-1.41.1.html)
 [![Matrix](https://img.shields.io/matrix/bincode:matrix.org?label=Matrix%20Chat)](https://matrix.to/#/#bincode:matrix.org)
