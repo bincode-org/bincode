@@ -208,6 +208,17 @@ pub trait Options: InternalOptions + Sized {
         crate::internal::deserialize_in_place(reader, self, place)
     }
 
+    /// TODO: document
+    #[doc(hidden)]
+    #[inline(always)]
+    fn deserialize_in_place_buffer<'a, T: serde::de::Deserialize<'a>>(
+        self,
+        bytes: &'a [u8],
+        place: &mut T
+    ) -> Result<()> {
+        crate::internal::deserialize_in_place_buffer(bytes, self, place)
+    }
+
     /// Deserializes a slice of bytes with state `seed` using this configuration.
     #[inline(always)]
     fn deserialize_seed<'a, T: serde::de::DeserializeSeed<'a>>(

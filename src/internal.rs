@@ -97,6 +97,16 @@ where
     serde::Deserialize::deserialize_in_place(&mut deserializer, place)
 }
 
+pub(crate) fn deserialize_in_place_buffer<'a, T, O>(bytes: &'a [u8], options: O, place: &mut T) -> Result<()>
+where
+    T: serde::de::Deserialize<'a>,
+    O: InternalOptions,
+{
+    let reader = crate::de::read::SliceReader::new(bytes);
+    let mut deserializer = crate::de::Deserializer::<_, _>::with_bincode_read(reader, options);
+    serde::Deserialize::deserialize_in_place(&mut deserializer, place)
+}
+
 pub(crate) fn deserialize<'a, T, O>(bytes: &'a [u8], options: O) -> Result<T>
 where
     T: serde::de::Deserialize<'a>,

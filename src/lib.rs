@@ -114,6 +114,17 @@ where
     DefaultOptions::new().deserialize_in_place(reader, place)
 }
 
+/// Only use this if you know what you're doing.
+///
+/// This is part of the public API.
+#[doc(hidden)]
+pub fn deserialize_in_place_buffer<'a, T>(bytes: &'a [u8], place: &mut T) -> Result<()>
+where
+    T: serde::de::Deserialize<'a>,
+{
+    DefaultOptions::new().deserialize_in_place_buffer(bytes, place)
+}
+
 /// Deserializes a slice of bytes into an instance of `T` using the default configuration.
 pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
