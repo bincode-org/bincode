@@ -101,3 +101,17 @@ assert_eq!(encoded.as_slice(), &[
 ```
 
 This also applies to e.g. `HashMap`, where each entry is a [tuple](#Basic%20types) of the key and value.
+
+# String and &str
+
+Both `String` and `&str` are treated as a `Vec<u8>`. See [Collections](#Collections) for more information.
+
+```rs
+let str = "Hello"; // Could also be `String::new(...)`
+
+let encoded = bincode::encode_to_vec_with_options(&list, Options::default().with_fixint_encoding()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    0, 0, 0, 0, 0, 0, 0, 5, // length of the string, 5 bytes
+    b'H', b'e', b'l', b'l', b'o'
+]);
+```
