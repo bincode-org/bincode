@@ -30,7 +30,7 @@ impl<'storage> SliceReader<'storage> {
 
 impl<'storage> Reader<'storage> for SliceReader<'storage> {
     #[inline(always)]
-    fn read<'a>(&'a mut self, bytes: &mut [u8]) -> Result<(), Error> {
+    fn read(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
         if bytes.len() > self.slice.len() {
             return Err(Error::UnexpectedEnd);
         }

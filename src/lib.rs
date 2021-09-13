@@ -17,15 +17,21 @@ extern crate std;
 
 pub mod config;
 pub mod de;
-pub mod error;
 pub mod enc;
+pub mod error;
+
+pub use bincode_derive::{Decodable, Encodable};
 
 pub(crate) mod int_encoding;
 
-pub fn encode_into_slice<E: enc::Encodeable>(val: E, dst: &mut [u8]) -> Result<(), error::Error> {
+pub fn encode_into_slice<E: enc::Encodeable>(
+    val: E,
+    dst: &mut [u8],
+) -> Result<usize, error::Error> {
     let writer = enc::write::SliceWriter::new(dst);
     let mut encoder = enc::Encoder::<_, config::Default>::new(writer);
-    val.encode(&mut encoder)
+    val.encode(&mut encoder)?;
+    Ok(encoder.into_writer().bytes_written())
 }
 
 pub fn decode<D: de::Decodable>(src: &mut [u8]) -> Result<D, error::Error> {

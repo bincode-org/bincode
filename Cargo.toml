@@ -16,3 +16,12 @@ license = "MIT"
 description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
 
 edition = "2018"
+
+[features]
+default = ["std"]
+std = []
+alloc = []
+
+[dependencies]
+bincode_derive = { path = "derive" }
+# serde = { version = "1.0.130", optional = true }

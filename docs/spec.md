@@ -1,6 +1,6 @@
 # Serialization specification
 
-*NOTE*: Serialization is done by `bincode_derive` by default. If you enable the `serde` flag, serialization is done by `serde-derive` instead. `serde-derive` has the same guarantees as `bincode_derive` for now.
+*NOTE*: Serialization is done by `bincode_derive` by default. If you enable the `serde` flag, serialization with `serde-derive` is supported as well. `serde-derive` has the same guarantees as `bincode_derive` for now.
 
 Related issue: https://github.com/serde-rs/serde/issues/1756#issuecomment-689682123
 
@@ -51,7 +51,7 @@ Enums are encoded with their variant first, followed by optionally the variant f
 Both named and unnamed fields are serialized with their values only, and therefor encode to the same value.
 
 ```rs
-#[derive(bincode::Serialize)]
+#[derive(bincode::Encodable)]
 pub enum SomeEnum {
     A,
     B(u32),

@@ -1,4 +1,4 @@
-use super::{Decode, Decodable};
+use super::{Decodable, Decode};
 use crate::error::Error;
 
 impl Decodable for u32 {

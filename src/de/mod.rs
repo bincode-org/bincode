@@ -9,8 +9,6 @@ use read::Reader;
 mod impls;
 pub mod read;
 
-
-
 pub trait Decodable: Sized {
     fn decode<D: Decode>(decoder: D) -> Result<Self, Error>;
 }
@@ -44,5 +42,3 @@ impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
         })
     }
 }
-
-
