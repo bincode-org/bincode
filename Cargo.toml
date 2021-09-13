@@ -1,6 +1,6 @@
 [package]
 name = "bincode"
-version = "2.0.0-dev" # remember to update html_root_url
+version = "2.0.0-dev" # remember to update html_root_url and bincode_derive
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "Zoey Riordan <zoey@dos.cafe>"]
 exclude = ["logo.png", "examples/*", ".gitignore", ".github/"]
 
@@ -23,5 +23,5 @@ std = []
 alloc = []
 
 [dependencies]
-bincode_derive = { path = "derive" }
+bincode_derive = { path = "derive", version = "2.0.0-dev" }
 # serde = { version = "1.0.130", optional = true }

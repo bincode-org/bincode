@@ -1,6 +1,6 @@
 [package]
 name = "bincode_derive"
-version = "0.1.0"
+version = "2.0.0-dev" # remember to update bincode
 edition = "2018"
 
 [lib]
