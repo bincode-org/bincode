@@ -110,4 +110,4 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
-Bincode 2.0 maintains support for Rust 1.41.1. Any changes to this are considered a breaking change for semver purposes.
+Bincode 1.0 maintains support for Rust 1.41.1. Any changes to this are considered a breaking change for semver purposes.
