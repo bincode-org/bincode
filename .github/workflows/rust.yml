@@ -4,7 +4,7 @@
     "push": {
       "branches": [
         "trunk",
-        "feature/deserde", # Temporary while we work on deserde
+        "feature/deserde*", # Temporary while we work on deserde
         "v*.x"
       ]
     },
@@ -134,46 +134,44 @@
           "name": "Run `cargo clippy`"
         }
       ]
+    },
+    "coverage": {
+      "name": "Code Coverage",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "nightly",
+            "override": true
+          },
+          "name": "Install Rust nightly"
+        },
+        {
+          "name": "Run cargo-tarpaulin",
+          "uses": "actions-rs/tarpaulin@v0.1",
+          "with": {
+            "version": "0.18.2"
+          }
+        },
+        {
+          "name": "Upload to codecov.io",
+          "uses": "codecov/codecov-action@v1"
+        },
+        {
+          "name": "Archive code coverage results",
+          "uses": "actions/upload-artifact@v1",
+          "with": {
+            "name": "code-coverage-report",
+            "path": "cobertura.xml"
+          }
+        }
+      ]
     }
-    # Tarpaulin seems to not work with bincode_derive
-    # "coverage": {
-    #   "name": "Code Coverage",
-    #   "runs-on": "ubuntu-latest",
-    #   "steps": [
-    #     {
-    #       "uses": "actions/checkout@v2",
-    #       "name": "Checkout"
-    #     },
-    #     {
-    #       "uses": "actions-rs/toolchain@v1",
-    #       "with": {
-    #         "profile": "minimal",
-    #         "toolchain": "nightly",
-    #         "override": true
-    #       },
-    #       "name": "Install Rust nightly"
-    #     },
-    #     {
-    #       "name": "Run cargo-tarpaulin",
-    #       "uses": "actions-rs/tarpaulin@v0.1",
-    #       "with": {
-    #         "version": "0.18.2",
-    #         "args": "--ignore-tests -- --test-threads 1"
-    #       }
-    #     },
-    #     {
-    #       "name": "Upload to codecov.io",
-    #       "uses": "codecov/codecov-action@v1"
-    #     },
-    #     {
-    #       "name": "Archive code coverage results",
-    #       "uses": "actions/upload-artifact@v1",
-    #       "with": {
-    #         "name": "code-coverage-report",
-    #         "path": "cobertura.xml"
-    #       }
-    #     }
-    #   ]
-    # }
   }
 }
