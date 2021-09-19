@@ -27,7 +27,7 @@ pub trait Encode {
 
     fn encode_f32(&mut self, val: f32) -> Result<(), Error>;
     fn encode_f64(&mut self, val: f64) -> Result<(), Error>;
-    fn encode_blob(&mut self, val: &[u8]) -> Result<(), Error>;
+    fn encode_slice(&mut self, val: &[u8]) -> Result<(), Error>;
 }
 
 pub struct Encoder<W: Writer, C: Config> {
@@ -105,7 +105,7 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         <C::IntEncoding as IntEncoding>::int_encode_f64(&mut self.writer, C::ENDIAN, val)
     }
 
-    fn encode_blob(&mut self, val: &[u8]) -> Result<(), Error> {
+    fn encode_slice(&mut self, val: &[u8]) -> Result<(), Error> {
         // TODO: Should this be swapped if we're big or little endian?
         self.writer.write(val)
     }

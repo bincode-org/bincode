@@ -87,7 +87,7 @@ impl Encodeable for f64 {
 
 impl Encodeable for &'_ [u8] {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), Error> {
-        encoder.encode_blob(*self)
+        encoder.encode_slice(*self)
     }
 }
 
@@ -139,7 +139,7 @@ where
     fn encode_f64(&mut self, val: f64) -> Result<(), Error> {
         T::encode_f64(self, val)
     }
-    fn encode_blob(&mut self, val: &[u8]) -> Result<(), Error> {
-        T::encode_blob(self, val)
+    fn encode_slice(&mut self, val: &[u8]) -> Result<(), Error> {
+        T::encode_slice(self, val)
     }
 }
