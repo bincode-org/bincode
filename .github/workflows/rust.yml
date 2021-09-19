@@ -25,8 +25,8 @@
           "rust": [
             "stable",
             "beta",
-            "nightly",
-            "1.41.0"
+            "nightly"
+            # "1.55.0" TODO: Pick latest stable version when we release 2.0
           ]
         }
       },
@@ -72,6 +72,7 @@
             "stable",
             "beta",
             "nightly"
+            # "1.55.0" TODO: Pick latest stable version when we release 2.0
           ]
         }
       },
