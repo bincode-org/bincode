@@ -1,7 +1,7 @@
-use crate::error::Error;
+use crate::error::EncodeError;
 
 pub trait Writer {
-    fn write(&mut self, bytes: &[u8]) -> Result<(), Error>;
+    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError>;
 }
 
 pub struct SliceWriter<'storage> {
@@ -23,10 +23,10 @@ impl<'storage> SliceWriter<'storage> {
 }
 
 impl<'storage> Writer for SliceWriter<'storage> {
-    fn write(&mut self, bytes: &[u8]) -> Result<(), Error> {
+    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         let remaining = &mut self.slice[self.idx..];
         if bytes.len() > remaining.len() {
-            return Err(Error::UnexpectedEnd);
+            return Err(EncodeError::UnexpectedEnd);
         }
         self.idx += bytes.len();
         let write_slice = &mut remaining[..bytes.len()];

@@ -1,7 +1,11 @@
 use super::{varint_encode_u128, varint_encode_u16, varint_encode_u32, varint_encode_u64};
-use crate::{config::Endian, enc::write::Writer, error::Error};
+use crate::{config::Endian, enc::write::Writer, error::EncodeError};
 
-pub fn varint_encode_i16<W: Writer>(writer: &mut W, endian: Endian, val: i16) -> Result<(), Error> {
+pub fn varint_encode_i16<W: Writer>(
+    writer: &mut W,
+    endian: Endian,
+    val: i16,
+) -> Result<(), EncodeError> {
     varint_encode_u16(
         writer,
         endian,
@@ -16,7 +20,11 @@ pub fn varint_encode_i16<W: Writer>(writer: &mut W, endian: Endian, val: i16) ->
     )
 }
 
-pub fn varint_encode_i32<W: Writer>(writer: &mut W, endian: Endian, val: i32) -> Result<(), Error> {
+pub fn varint_encode_i32<W: Writer>(
+    writer: &mut W,
+    endian: Endian,
+    val: i32,
+) -> Result<(), EncodeError> {
     varint_encode_u32(
         writer,
         endian,
@@ -31,7 +39,11 @@ pub fn varint_encode_i32<W: Writer>(writer: &mut W, endian: Endian, val: i32) ->
     )
 }
 
-pub fn varint_encode_i64<W: Writer>(writer: &mut W, endian: Endian, val: i64) -> Result<(), Error> {
+pub fn varint_encode_i64<W: Writer>(
+    writer: &mut W,
+    endian: Endian,
+    val: i64,
+) -> Result<(), EncodeError> {
     varint_encode_u64(
         writer,
         endian,
@@ -50,7 +62,7 @@ pub fn varint_encode_i128<W: Writer>(
     writer: &mut W,
     endian: Endian,
     val: i128,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     varint_encode_u128(
         writer,
         endian,
@@ -69,7 +81,7 @@ pub fn varint_encode_isize<W: Writer>(
     writer: &mut W,
     endian: Endian,
     val: isize,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     // isize is being encoded as a i64
     varint_encode_i64(writer, endian, val as i64)
 }

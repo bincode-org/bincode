@@ -1,8 +1,8 @@
-use crate::error::Error;
+use crate::error::DecodeError;
 
 pub trait Reader<'storage> {
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), Error>;
-    fn forward_read<F, R>(&mut self, length: usize, visitor: F) -> Result<R, Error>
+    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError>;
+    fn forward_read<F, R>(&mut self, length: usize, visitor: F) -> Result<R, DecodeError>
     where
         F: Fn(&'storage [u8]) -> R;
 }
@@ -18,9 +18,9 @@ impl<'storage> SliceReader<'storage> {
     }
 
     #[inline(always)]
-    fn get_byte_slice(&mut self, length: usize) -> Result<&'storage [u8], Error> {
+    fn get_byte_slice(&mut self, length: usize) -> Result<&'storage [u8], DecodeError> {
         if length > self.slice.len() {
-            return Err(Error::UnexpectedEnd);
+            return Err(DecodeError::UnexpectedEnd);
         }
         let (read_slice, remaining) = self.slice.split_at(length);
         self.slice = remaining;
@@ -30,9 +30,9 @@ impl<'storage> SliceReader<'storage> {
 
 impl<'storage> Reader<'storage> for SliceReader<'storage> {
     #[inline(always)]
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), Error> {
+    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         if bytes.len() > self.slice.len() {
-            return Err(Error::UnexpectedEnd);
+            return Err(DecodeError::UnexpectedEnd);
         }
         let (read_slice, remaining) = self.slice.split_at(bytes.len());
         bytes.copy_from_slice(read_slice);
@@ -42,7 +42,7 @@ impl<'storage> Reader<'storage> for SliceReader<'storage> {
     }
 
     #[inline(always)]
-    fn forward_read<F, R>(&mut self, length: usize, visitor: F) -> Result<R, Error>
+    fn forward_read<F, R>(&mut self, length: usize, visitor: F) -> Result<R, DecodeError>
     where
         F: Fn(&'storage [u8]) -> R,
     {

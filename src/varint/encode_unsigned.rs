@@ -1,7 +1,11 @@
 use super::{SINGLE_BYTE_MAX, U128_BYTE, U16_BYTE, U32_BYTE, U64_BYTE};
-use crate::{config::Endian, enc::write::Writer, error::Error};
+use crate::{config::Endian, enc::write::Writer, error::EncodeError};
 
-pub fn varint_encode_u16<W: Writer>(writer: &mut W, endian: Endian, val: u16) -> Result<(), Error> {
+pub fn varint_encode_u16<W: Writer>(
+    writer: &mut W,
+    endian: Endian,
+    val: u16,
+) -> Result<(), EncodeError> {
     if val <= SINGLE_BYTE_MAX as _ {
         writer.write(&[val as u8])
     } else {
@@ -13,7 +17,11 @@ pub fn varint_encode_u16<W: Writer>(writer: &mut W, endian: Endian, val: u16) ->
     }
 }
 
-pub fn varint_encode_u32<W: Writer>(writer: &mut W, endian: Endian, val: u32) -> Result<(), Error> {
+pub fn varint_encode_u32<W: Writer>(
+    writer: &mut W,
+    endian: Endian,
+    val: u32,
+) -> Result<(), EncodeError> {
     if val <= SINGLE_BYTE_MAX as _ {
         writer.write(&[val as u8])
     } else if val <= u16::MAX as _ {
@@ -31,7 +39,11 @@ pub fn varint_encode_u32<W: Writer>(writer: &mut W, endian: Endian, val: u32) ->
     }
 }
 
-pub fn varint_encode_u64<W: Writer>(writer: &mut W, endian: Endian, val: u64) -> Result<(), Error> {
+pub fn varint_encode_u64<W: Writer>(
+    writer: &mut W,
+    endian: Endian,
+    val: u64,
+) -> Result<(), EncodeError> {
     if val <= SINGLE_BYTE_MAX as _ {
         writer.write(&[val as u8])
     } else if val <= u16::MAX as _ {
@@ -59,7 +71,7 @@ pub fn varint_encode_u128<W: Writer>(
     writer: &mut W,
     endian: Endian,
     val: u128,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     if val <= SINGLE_BYTE_MAX as _ {
         writer.write(&[val as u8])
     } else if val <= u16::MAX as _ {
@@ -93,7 +105,7 @@ pub fn varint_encode_usize<W: Writer>(
     writer: &mut W,
     endian: Endian,
     val: usize,
-) -> Result<(), Error> {
+) -> Result<(), EncodeError> {
     // usize is being encoded as a u64
     varint_encode_u64(writer, endian, val as u64)
 }

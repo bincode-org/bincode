@@ -41,7 +41,7 @@ impl DeriveStruct {
 
         let result = quote! {
             impl bincode::enc::Encodeable for #name {
-                fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::Error> {
+                fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError> {
                     #(#fields)*
                     Ok(())
                 }

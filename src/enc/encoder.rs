@@ -2,7 +2,7 @@ use super::write::Writer;
 use super::Encode;
 use crate::{
     config::{Config, Endian, IntEncoding},
-    error::Error,
+    error::EncodeError,
 };
 use core::marker::PhantomData;
 
@@ -25,14 +25,14 @@ impl<W: Writer, C: Config> Encoder<W, C> {
 }
 
 impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
-    fn encode_u8(&mut self, val: u8) -> Result<(), Error> {
+    fn encode_u8(&mut self, val: u8) -> Result<(), EncodeError> {
         self.writer.write(&[val])
     }
 
-    fn encode_u16(&mut self, val: u16) -> Result<(), Error> {
+    fn encode_u16(&mut self, val: u16) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_u16(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_u16(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -41,10 +41,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_u32(&mut self, val: u32) -> Result<(), Error> {
+    fn encode_u32(&mut self, val: u32) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_u32(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_u32(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -53,10 +53,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_u64(&mut self, val: u64) -> Result<(), Error> {
+    fn encode_u64(&mut self, val: u64) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_u64(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_u64(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -65,10 +65,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_u128(&mut self, val: u128) -> Result<(), Error> {
+    fn encode_u128(&mut self, val: u128) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_u128(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_u128(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -77,10 +77,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_usize(&mut self, val: usize) -> Result<(), Error> {
+    fn encode_usize(&mut self, val: usize) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_usize(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_usize(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -89,14 +89,14 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_i8(&mut self, val: i8) -> Result<(), Error> {
+    fn encode_i8(&mut self, val: i8) -> Result<(), EncodeError> {
         self.writer.write(&[val as u8])
     }
 
-    fn encode_i16(&mut self, val: i16) -> Result<(), Error> {
+    fn encode_i16(&mut self, val: i16) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_i16(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_i16(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -105,10 +105,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_i32(&mut self, val: i32) -> Result<(), Error> {
+    fn encode_i32(&mut self, val: i32) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_i32(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_i32(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -117,10 +117,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_i64(&mut self, val: i64) -> Result<(), Error> {
+    fn encode_i64(&mut self, val: i64) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_i64(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_i64(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -129,10 +129,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_i128(&mut self, val: i128) -> Result<(), Error> {
+    fn encode_i128(&mut self, val: i128) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_i128(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_i128(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -141,10 +141,10 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_isize(&mut self, val: isize) -> Result<(), Error> {
+    fn encode_isize(&mut self, val: isize) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => {
-                crate::varint_encoding::varint_encode_isize(&mut self.writer, C::ENDIAN, val)
+                crate::varint::varint_encode_isize(&mut self.writer, C::ENDIAN, val)
             }
             IntEncoding::Fixed => match C::ENDIAN {
                 Endian::Big => self.writer.write(&val.to_be_bytes()),
@@ -153,7 +153,7 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_f32(&mut self, val: f32) -> Result<(), Error> {
+    fn encode_f32(&mut self, val: f32) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => unimplemented!(), // crate::int_encoding::varint_encode_f32(&mut self.writer, C::ENDIAN, val),
             IntEncoding::Fixed => match C::ENDIAN {
@@ -163,7 +163,7 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_f64(&mut self, val: f64) -> Result<(), Error> {
+    fn encode_f64(&mut self, val: f64) -> Result<(), EncodeError> {
         match C::INT_ENCODING {
             IntEncoding::Variable => unimplemented!(), // crate::int_encoding::varint_encode_f64(&mut self.writer, C::ENDIAN, val),
             IntEncoding::Fixed => match C::ENDIAN {
@@ -173,7 +173,7 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         }
     }
 
-    fn encode_slice(&mut self, val: &[u8]) -> Result<(), Error> {
+    fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError> {
         // TODO: Should this be swapped if we're big or little endian?
         self.writer.write(val)
     }

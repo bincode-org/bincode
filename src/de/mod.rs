@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::{
     config::{Config, Endian},
-    error::Error,
+    error::DecodeError,
 };
 use read::Reader;
 
@@ -10,11 +10,11 @@ mod impls;
 pub mod read;
 
 pub trait Decodable: Sized {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, Error>;
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError>;
 }
 
 pub trait Decode {
-    fn decode_u32(&mut self) -> Result<u32, Error>;
+    fn decode_u32(&mut self) -> Result<u32, DecodeError>;
 }
 
 pub struct Decoder<R, C: Config> {
@@ -32,7 +32,7 @@ impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
 }
 
 impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
-    fn decode_u32(&mut self) -> Result<u32, Error> {
+    fn decode_u32(&mut self) -> Result<u32, DecodeError> {
         let mut bytes = [0u8; 4];
 
         self.reader.read(bytes.as_mut())?;
