@@ -213,6 +213,38 @@ fn test_decode_u16() {
         let found = varint_decode_u16(&mut reader, Endian::Big).unwrap();
         assert_eq!(expected_be, found);
     }
+
+    let errors: &[(&[u8], DecodeError)] = &[
+        (
+            &[U32_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::U16,
+                found: IntegerType::U32,
+            },
+        ),
+        (
+            &[U64_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::U16,
+                found: IntegerType::U64,
+            },
+        ),
+        (
+            &[U128_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::U16,
+                found: IntegerType::U128,
+            },
+        ),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
+    ];
+
+    for (slice, expected) in errors {
+        let mut reader = crate::de::read::SliceReader::new(slice);
+        let found = varint_decode_u16(&mut reader, Endian::Little).unwrap_err();
+        assert_eq!(std::format!("{:?}", expected), std::format!("{:?}", found));
+    }
 }
 
 #[test]
@@ -231,6 +263,35 @@ fn test_decode_u32() {
         let mut reader = crate::de::read::SliceReader::new(slice);
         let found = varint_decode_u32(&mut reader, Endian::Big).unwrap();
         assert_eq!(expected_be, found);
+    }
+
+    let errors: &[(&[u8], DecodeError)] = &[
+        (
+            &[U64_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::U32,
+                found: IntegerType::U64,
+            },
+        ),
+        (
+            &[U128_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::U32,
+                found: IntegerType::U128,
+            },
+        ),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+    ];
+
+    for (slice, expected) in errors {
+        let mut reader = crate::de::read::SliceReader::new(slice);
+        let found = varint_decode_u32(&mut reader, Endian::Little).unwrap_err();
+        assert_eq!(std::format!("{:?}", expected), std::format!("{:?}", found));
     }
 }
 
@@ -255,6 +316,36 @@ fn test_decode_u64() {
         let mut reader = crate::de::read::SliceReader::new(slice);
         let found = varint_decode_u64(&mut reader, Endian::Big).unwrap();
         assert_eq!(expected_be, found);
+    }
+
+    let errors: &[(&[u8], DecodeError)] = &[
+        (
+            &[U128_BYTE],
+            DecodeError::InvalidIntegerType {
+                expected: IntegerType::U64,
+                found: IntegerType::U128,
+            },
+        ),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+    ];
+
+    for (slice, expected) in errors {
+        let mut reader = crate::de::read::SliceReader::new(slice);
+        let found = varint_decode_u64(&mut reader, Endian::Little).unwrap_err();
+        assert_eq!(std::format!("{:?}", expected), std::format!("{:?}", found));
     }
 }
 
@@ -284,5 +375,68 @@ fn test_decode_u128() {
         let mut reader = crate::de::read::SliceReader::new(slice);
         let found = varint_decode_u128(&mut reader, Endian::Big).unwrap();
         assert_eq!(expected_be, found);
+    }
+
+    let errors: &[(&[u8], DecodeError)] = &[
+        (&[U16_BYTE], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U32_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U64_BYTE, 0, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U128_BYTE, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd,
+        ),
+    ];
+
+    for (slice, expected) in errors {
+        let mut reader = crate::de::read::SliceReader::new(slice);
+        let found = varint_decode_u128(&mut reader, Endian::Little).unwrap_err();
+        std::dbg!(slice);
+        assert_eq!(std::format!("{:?}", expected), std::format!("{:?}", found));
     }
 }
