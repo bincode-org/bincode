@@ -14,6 +14,6 @@ fn test_encodable() {
     };
     let mut slice = [0u8; 1024];
     let bytes_written = bincode::encode_into_slice(start, &mut slice).unwrap();
-    assert_eq!(bytes_written, 9);
-    assert_eq!(&slice[..bytes_written], &[5, 0, 0, 0, 10, 0, 0, 0, 20]);
+    assert_eq!(bytes_written, 3);
+    assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
 }

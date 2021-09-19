@@ -22,7 +22,7 @@ pub mod error;
 
 pub use bincode_derive::{Decodable, Encodable};
 
-pub(crate) mod int_encoding;
+pub(crate) mod varint_encoding;
 
 pub fn encode_into_slice<E: enc::Encodeable>(
     val: E,

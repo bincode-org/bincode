@@ -4,6 +4,10 @@
 
 Related issue: https://github.com/serde-rs/serde/issues/1756#issuecomment-689682123
 
+## Endian
+
+By default `bincode` will serialize values in little endian encoding. This can be overwritten in the `Config`.
+
 ## Basic types
 
 Boolean types are encoded with 1 byte for each boolean type, with `0` being `false`, `1` being true. Whilst deserilizing every other value will throw an error.
@@ -23,16 +27,18 @@ assert_eq!(encoded.as_slice(), &[
 ```
 
 ## IntEncoding
-Bincode currently supports 2 different types of `IntEncoding`:
+Bincode currently supports 2 different types of `IntEncoding`. With the default config, `VarintEncoding` is selected.
 
 ### VarintEncoding
-Encoding an unsigned integer v (of any type excepting u8) works as follows:
+Encoding an unsigned integer v (of any type excepting u8/i8) works as follows:
 
 1. If `u < 251`, encode it as a single byte with that value.
 1. If `251 <= u < 2**16`, encode it as a literal byte 251, followed by a u16 with value `u`.
 1. If `2**16 <= u < 2**32`, encode it as a literal byte 252, followed by a u32 with value `u`.
 1. If `2**32 <= u < 2**64`, encode it as a literal byte 253, followed by a u64 with value `u`.
 1. If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a u128 with value `u`.
+
+`usize` is being encoded/decoded as a `u64` and `isize` is being encoded/decoded as a `i64`.
 
 See the documentation of [VarintEncoding](https://docs.rs/bincode/latest/bincode/config/struct.VarintEncoding.html) for more information.
 
