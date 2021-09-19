@@ -1,9 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{
-    config::{Config, Endian},
-    error::Error,
-};
+use crate::{config::Config, error::Error, int_encoding::IntEncoding};
 use write::Writer;
 
 mod impls;
@@ -12,25 +9,25 @@ pub mod write;
 pub trait Encodeable {
     fn encode<E: Encode>(&self, encoder: E) -> Result<(), Error>;
 }
+
 pub trait Encode {
     fn encode_u8(&mut self, val: u8) -> Result<(), Error>;
+    fn encode_u16(&mut self, val: u16) -> Result<(), Error>;
     fn encode_u32(&mut self, val: u32) -> Result<(), Error>;
-    fn encode_i32(&mut self, val: i32) -> Result<(), Error>;
-}
+    fn encode_u64(&mut self, val: u64) -> Result<(), Error>;
+    fn encode_u128(&mut self, val: u128) -> Result<(), Error>;
+    fn encode_usize(&mut self, val: usize) -> Result<(), Error>;
 
-impl<'a, T> Encode for &'a mut T
-where
-    T: Encode,
-{
-    fn encode_u8(&mut self, val: u8) -> Result<(), Error> {
-        T::encode_u8(self, val)
-    }
-    fn encode_u32(&mut self, val: u32) -> Result<(), Error> {
-        T::encode_u32(self, val)
-    }
-    fn encode_i32(&mut self, val: i32) -> Result<(), Error> {
-        T::encode_i32(self, val)
-    }
+    fn encode_i8(&mut self, val: i8) -> Result<(), Error>;
+    fn encode_i16(&mut self, val: i16) -> Result<(), Error>;
+    fn encode_i32(&mut self, val: i32) -> Result<(), Error>;
+    fn encode_i64(&mut self, val: i64) -> Result<(), Error>;
+    fn encode_i128(&mut self, val: i128) -> Result<(), Error>;
+    fn encode_isize(&mut self, val: isize) -> Result<(), Error>;
+
+    fn encode_f32(&mut self, val: f32) -> Result<(), Error>;
+    fn encode_f64(&mut self, val: f64) -> Result<(), Error>;
+    fn encode_blob(&mut self, val: &[u8]) -> Result<(), Error>;
 }
 
 pub struct Encoder<W: Writer, C: Config> {
@@ -56,21 +53,60 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
         self.writer.write(&[val])
     }
 
-    fn encode_u32(&mut self, val: u32) -> Result<(), Error> {
-        let bytes = match C::ENDIAN {
-            Endian::Little => val.to_le_bytes(),
-            Endian::Big => val.to_be_bytes(),
-        };
+    fn encode_u16(&mut self, val: u16) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_u16(&mut self.writer, C::ENDIAN, val)
+    }
 
-        self.writer.write(&bytes)
+    fn encode_u32(&mut self, val: u32) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_u32(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_u64(&mut self, val: u64) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_u64(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_u128(&mut self, val: u128) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_u128(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_usize(&mut self, val: usize) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_usize(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_i8(&mut self, val: i8) -> Result<(), Error> {
+        self.writer.write(&[val as u8])
+    }
+
+    fn encode_i16(&mut self, val: i16) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_i16(&mut self.writer, C::ENDIAN, val)
     }
 
     fn encode_i32(&mut self, val: i32) -> Result<(), Error> {
-        let bytes = match C::ENDIAN {
-            Endian::Little => val.to_le_bytes(),
-            Endian::Big => val.to_be_bytes(),
-        };
+        <C::IntEncoding as IntEncoding>::int_encode_i32(&mut self.writer, C::ENDIAN, val)
+    }
 
-        self.writer.write(&bytes)
+    fn encode_i64(&mut self, val: i64) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_i64(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_i128(&mut self, val: i128) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_i128(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_isize(&mut self, val: isize) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_isize(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_f32(&mut self, val: f32) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_f32(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_f64(&mut self, val: f64) -> Result<(), Error> {
+        <C::IntEncoding as IntEncoding>::int_encode_f64(&mut self.writer, C::ENDIAN, val)
+    }
+
+    fn encode_blob(&mut self, val: &[u8]) -> Result<(), Error> {
+        // TODO: Should this be swapped if we're big or little endian?
+        self.writer.write(val)
     }
 }
