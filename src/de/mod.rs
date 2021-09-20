@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::{
-    config::{Config, Endian},
+    config::{Config, Endian, IntEncoding},
     error::DecodeError,
 };
 use read::Reader;
@@ -33,12 +33,26 @@ impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
 
 impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
     fn decode_u32(&mut self) -> Result<u32, DecodeError> {
-        let mut bytes = [0u8; 4];
+        Ok(match C::INT_ENCODING {
+            IntEncoding::Variable => crate::varint::varint_decode_u32(&mut self.reader, C::ENDIAN)?,
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 4];
 
-        self.reader.read(bytes.as_mut())?;
-        Ok(match C::ENDIAN {
-            Endian::Little => u32::from_le_bytes(bytes),
-            Endian::Big => u32::from_be_bytes(bytes),
+                self.reader.read(bytes.as_mut())?;
+                match C::ENDIAN {
+                    Endian::Little => u32::from_le_bytes(bytes),
+                    Endian::Big => u32::from_be_bytes(bytes),
+                }
+            }
         })
+    }
+}
+
+impl<'a, T> Decode for &'a mut T
+where
+    T: Decode,
+{
+    fn decode_u32(&mut self) -> Result<u32, DecodeError> {
+        T::decode_u32(self)
     }
 }

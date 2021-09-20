@@ -63,6 +63,33 @@ impl DeriveStruct {
     }
 
     pub fn to_decodable(self) -> Result<TokenStream> {
-        unimplemented!()
+        let DeriveStruct {
+            name,
+            generics,
+            fields,
+        } = self;
+
+        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+        let fields = fields
+            .into_iter()
+            .map(|field| {
+                quote! {
+                    #field: bincode::de::Decodable::decode(&mut decoder)?,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let result = quote! {
+            impl #impl_generics bincode::de::Decodable for #name #ty_generics #where_clause {
+                fn decode<D: bincode::de::Decode>(mut decoder: D) -> Result<#name #ty_generics, bincode::error::DecodeError> {
+                    Ok(#name {
+                        #(#fields)*
+                    })
+                }
+
+            }
+        };
+        Ok(result.into())
     }
 }
