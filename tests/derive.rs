@@ -14,6 +14,9 @@ pub struct Test2<T: Decodable> {
     c: u32,
 }
 
+#[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
+pub struct TestTupleStruct(u32, u32, u32);
+
 #[test]
 fn test_encodable() {
     let start = Test {
@@ -36,5 +39,22 @@ fn test_decodable() {
     };
     let mut slice = [5, 10, 251, 0, 4];
     let result: Test2<u32> = bincode::decode(&mut slice).unwrap();
+    assert_eq!(result, start);
+}
+
+#[test]
+fn test_encodable_tuple() {
+    let start = TestTupleStruct(5, 10, 1024);
+    let mut slice = [0u8; 1024];
+    let bytes_written = bincode::encode_into_slice(start, &mut slice).unwrap();
+    assert_eq!(bytes_written, 5);
+    assert_eq!(&slice[..bytes_written], &[5, 10, 251, 0, 4]);
+}
+
+#[test]
+fn test_decodable_tuple() {
+    let start = TestTupleStruct(5, 10, 1024);
+    let mut slice = [5, 10, 251, 0, 4];
+    let result: TestTupleStruct = bincode::decode(&mut slice).unwrap();
     assert_eq!(result, start);
 }

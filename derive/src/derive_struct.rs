@@ -1,12 +1,13 @@
 use crate::Result;
 use proc_macro::TokenStream;
-use quote::{quote, quote_spanned};
-use syn::{spanned::Spanned, Generics, Ident};
+use proc_macro2::TokenStream as TokenStream2;
+use quote::{quote, quote_spanned, ToTokens};
+use syn::{spanned::Spanned, Generics, Ident, Index};
 
 pub struct DeriveStruct {
     name: Ident,
     generics: Generics,
-    fields: Vec<Ident>,
+    fields: Vec<TokenStream2>,
 }
 
 impl DeriveStruct {
@@ -15,13 +16,13 @@ impl DeriveStruct {
             syn::Fields::Named(fields) => fields
                 .named
                 .iter()
-                .map(|f| f.ident.clone().unwrap())
+                .map(|f| f.ident.clone().unwrap().to_token_stream())
                 .collect(),
             syn::Fields::Unnamed(fields) => fields
                 .unnamed
                 .iter()
                 .enumerate()
-                .map(|(i, field)| Ident::new(&i.to_string(), field.ty.span()))
+                .map(|(i, _)| Index::from(i).to_token_stream())
                 .collect(),
             syn::Fields::Unit => Vec::new(),
         };
