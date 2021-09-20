@@ -21,7 +21,8 @@ pub fn derive_encodable(input: TokenStream) -> TokenStream {
 fn derive_encodable_inner(input: DeriveInput) -> Result<TokenStream> {
     match input.data {
         syn::Data::Struct(struct_definition) => {
-            DeriveStruct::parse(input.ident, struct_definition).and_then(|str| str.to_encodable())
+            DeriveStruct::parse(input.ident, input.generics, struct_definition)
+                .and_then(|str| str.to_encodable())
         }
         syn::Data::Enum(enum_definition) => {
             DeriveEnum::parse(input.ident, enum_definition).and_then(|str| str.to_encodable())
@@ -39,7 +40,8 @@ pub fn derive_decodable(input: TokenStream) -> TokenStream {
 fn derive_decodable_inner(input: DeriveInput) -> Result<TokenStream> {
     match input.data {
         syn::Data::Struct(struct_definition) => {
-            DeriveStruct::parse(input.ident, struct_definition).and_then(|str| str.to_decodable())
+            DeriveStruct::parse(input.ident, input.generics, struct_definition)
+                .and_then(|str| str.to_decodable())
         }
         syn::Data::Enum(enum_definition) => {
             DeriveEnum::parse(input.ident, enum_definition).and_then(|str| str.to_decodable())

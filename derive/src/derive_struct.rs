@@ -1,15 +1,16 @@
 use crate::Result;
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{spanned::Spanned, Ident};
+use quote::{quote, quote_spanned};
+use syn::{spanned::Spanned, Generics, Ident};
 
 pub struct DeriveStruct {
     name: Ident,
+    generics: Generics,
     fields: Vec<Ident>,
 }
 
 impl DeriveStruct {
-    pub fn parse(name: Ident, str: syn::DataStruct) -> Result<Self> {
+    pub fn parse(name: Ident, generics: Generics, str: syn::DataStruct) -> Result<Self> {
         let fields = match str.fields {
             syn::Fields::Named(fields) => fields
                 .named
@@ -24,11 +25,21 @@ impl DeriveStruct {
                 .collect(),
             syn::Fields::Unit => Vec::new(),
         };
-        Ok(Self { name, fields })
+        Ok(Self {
+            name,
+            generics,
+            fields,
+        })
     }
 
     pub fn to_encodable(self) -> Result<TokenStream> {
-        let DeriveStruct { name, fields } = self;
+        let DeriveStruct {
+            name,
+            generics,
+            fields,
+        } = self;
+
+        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
         let fields = fields
             .into_iter()
@@ -40,7 +51,7 @@ impl DeriveStruct {
             .collect::<Vec<_>>();
 
         let result = quote! {
-            impl bincode::enc::Encodeable for #name {
+            impl #impl_generics bincode::enc::Encodeable for #name #ty_generics #where_clause {
                 fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError> {
                     #(#fields)*
                     Ok(())

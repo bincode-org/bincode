@@ -1,6 +1,8 @@
+use bincode::enc::Encodeable;
+
 #[derive(bincode::Encodable, PartialEq, Debug)]
-pub struct Test {
-    a: i32,
+pub struct Test<T: Encodeable> {
+    a: T,
     b: u32,
     c: u8,
 }
