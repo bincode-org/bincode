@@ -25,7 +25,8 @@ fn derive_encodable_inner(input: DeriveInput) -> Result<TokenStream> {
                 .and_then(|str| str.to_encodable())
         }
         syn::Data::Enum(enum_definition) => {
-            DeriveEnum::parse(input.ident, enum_definition).and_then(|str| str.to_encodable())
+            DeriveEnum::parse(input.ident, input.generics, enum_definition)
+                .and_then(|str| str.to_encodable())
         }
         syn::Data::Union(_) => Err(Error::UnionNotSupported),
     }
@@ -44,7 +45,8 @@ fn derive_decodable_inner(input: DeriveInput) -> Result<TokenStream> {
                 .and_then(|str| str.to_decodable())
         }
         syn::Data::Enum(enum_definition) => {
-            DeriveEnum::parse(input.ident, enum_definition).and_then(|str| str.to_decodable())
+            DeriveEnum::parse(input.ident, input.generics, enum_definition)
+                .and_then(|str| str.to_decodable())
         }
         syn::Data::Union(_) => Err(Error::UnionNotSupported),
     }

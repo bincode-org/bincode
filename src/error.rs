@@ -16,6 +16,11 @@ pub enum DecodeError {
         /// The type that was encoded in the data
         found: IntegerType,
     },
+    UnexpectedVariant {
+        min: u32,
+        max: u32,
+        found: u32,
+    },
 }
 
 #[non_exhaustive]
