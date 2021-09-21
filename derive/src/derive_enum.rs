@@ -3,7 +3,7 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use quote::ToTokens;
-use syn::{spanned::Spanned, Field, Fields, Generics, Ident, Index, Variant};
+use syn::{spanned::Spanned, Fields, Generics, Ident, Index, Variant};
 pub struct DeriveEnum {
     name: Ident,
     generics: Generics,
@@ -21,7 +21,7 @@ impl DeriveEnum {
         })
     }
 
-    pub fn to_encodable(self) -> Result<TokenStream> {
+    pub fn generate_encodable(self) -> Result<TokenStream> {
         let DeriveEnum {
             name,
             generics,
@@ -56,7 +56,7 @@ impl DeriveEnum {
         Ok(result.into())
     }
 
-    pub fn to_decodable(self) -> Result<TokenStream> {
+    pub fn generate_decodable(self) -> Result<TokenStream> {
         let DeriveEnum {
             name,
             generics,
@@ -145,7 +145,7 @@ fn fields_to_names(fields: &Fields) -> Vec<TokenStream2> {
 
 fn field_names_to_encodable(names: &[TokenStream2]) -> Vec<TokenStream2> {
     names
-        .into_iter()
+        .iter()
         .map(|field| {
             quote! {
                 bincode::enc::Encodeable::encode(#field, &mut encoder)?;
@@ -165,7 +165,7 @@ fn fields_to_constructable_names(fields: &Fields) -> Vec<TokenStream2> {
             .unnamed
             .iter()
             .enumerate()
-            .map(|(i, f)| Index::from(i).to_token_stream())
+            .map(|(i, _)| Index::from(i).to_token_stream())
             .collect(),
         syn::Fields::Unit => Vec::new(),
     }
@@ -173,7 +173,7 @@ fn fields_to_constructable_names(fields: &Fields) -> Vec<TokenStream2> {
 
 fn field_names_to_decodable(names: &[TokenStream2]) -> Vec<TokenStream2> {
     names
-        .into_iter()
+        .iter()
         .map(|field| {
             quote! {
                 #field: bincode::de::Decodable::decode(&mut decoder)?,

@@ -1,3 +1,8 @@
+[workspace]
+members = [
+    "derive"
+]
+
 [package]
 name = "bincode"
 version = "2.0.0-dev" # remember to update html_root_url and bincode_derive

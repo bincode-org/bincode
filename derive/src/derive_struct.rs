@@ -1,8 +1,8 @@
 use crate::Result;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, quote_spanned, ToTokens};
-use syn::{spanned::Spanned, Generics, Ident, Index};
+use quote::{quote, ToTokens};
+use syn::{Generics, Ident, Index};
 
 pub struct DeriveStruct {
     name: Ident,
@@ -33,7 +33,7 @@ impl DeriveStruct {
         })
     }
 
-    pub fn to_encodable(self) -> Result<TokenStream> {
+    pub fn generate_encodable(self) -> Result<TokenStream> {
         let DeriveStruct {
             name,
             generics,
@@ -63,7 +63,7 @@ impl DeriveStruct {
         Ok(result.into())
     }
 
-    pub fn to_decodable(self) -> Result<TokenStream> {
+    pub fn generate_decodable(self) -> Result<TokenStream> {
         let DeriveStruct {
             name,
             generics,

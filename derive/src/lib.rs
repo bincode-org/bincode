@@ -22,11 +22,11 @@ fn derive_encodable_inner(input: DeriveInput) -> Result<TokenStream> {
     match input.data {
         syn::Data::Struct(struct_definition) => {
             DeriveStruct::parse(input.ident, input.generics, struct_definition)
-                .and_then(|str| str.to_encodable())
+                .and_then(|str| str.generate_encodable())
         }
         syn::Data::Enum(enum_definition) => {
             DeriveEnum::parse(input.ident, input.generics, enum_definition)
-                .and_then(|str| str.to_encodable())
+                .and_then(|str| str.generate_encodable())
         }
         syn::Data::Union(_) => Err(Error::UnionNotSupported),
     }
@@ -42,11 +42,11 @@ fn derive_decodable_inner(input: DeriveInput) -> Result<TokenStream> {
     match input.data {
         syn::Data::Struct(struct_definition) => {
             DeriveStruct::parse(input.ident, input.generics, struct_definition)
-                .and_then(|str| str.to_decodable())
+                .and_then(|str| str.generate_decodable())
         }
         syn::Data::Enum(enum_definition) => {
             DeriveEnum::parse(input.ident, input.generics, enum_definition)
-                .and_then(|str| str.to_decodable())
+                .and_then(|str| str.generate_decodable())
         }
         syn::Data::Union(_) => Err(Error::UnionNotSupported),
     }
