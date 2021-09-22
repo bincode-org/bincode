@@ -12,18 +12,20 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", test))]
 extern crate std;
+
+mod features;
+pub(crate) mod varint;
+
+pub use features::*;
 
 pub mod config;
 pub mod de;
 pub mod enc;
 pub mod error;
 
-pub use bincode_derive::{Decodable, Encodable};
 use config::Config;
-
-pub(crate) mod varint;
 
 pub fn encode_into_slice<E: enc::Encodeable>(
     val: E,
@@ -56,20 +58,4 @@ pub fn decode_with_config<'__de, D: de::BorrowDecodable<'__de>, C: Config>(
     let reader = de::read::SliceReader::new(src);
     let mut decoder = de::Decoder::<_, C>::new(reader, _config);
     D::borrow_decode(&mut decoder)
-}
-
-#[cfg(feature = "std")]
-pub fn decode_from<'__de, D: de::Decodable<'__de>, R: std::io::Read>(
-    src: &'__de mut R,
-) -> Result<D, error::DecodeError> {
-    decode_from_with_config(src, config::Default)
-}
-
-#[cfg(feature = "std")]
-pub fn decode_from_with_config<'__de, D: de::Decodable<'__de>, C: Config, R: std::io::Read>(
-    src: &'__de mut R,
-    _config: C,
-) -> Result<D, error::DecodeError> {
-    let mut decoder = de::Decoder::<_, C>::new(src, _config);
-    D::decode(&mut decoder)
 }

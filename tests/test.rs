@@ -1,5 +1,3 @@
-extern crate bincode;
-
 use bincode::config::{self, Config};
 use core::fmt::Debug;
 

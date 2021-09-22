@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use bincode::{de::Decodable, enc::Encodeable};
 use core::marker::PhantomData;
 

@@ -6,7 +6,7 @@ use crate::{
     config::{Config, Endian, IntEncoding},
     error::DecodeError,
 };
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 pub struct Decoder<R, C: Config> {
     reader: R,

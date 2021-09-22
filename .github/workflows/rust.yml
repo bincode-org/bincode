@@ -91,11 +91,16 @@
           "name": "Install Rust ${{ matrix.rust }}"
         },
         {
-          "uses": "actions-rs/cargo@v1",
+          "uses": "actions-rs/install@v0.1",
           "with": {
-            "command": "test"
+            "crate": "cargo-all-features",
+            "version": "1.6.0"
           },
-          "name": "Run `cargo test`"
+          "name": "Install cargo-all-features"
+        },
+        {
+          "run": "cargo test-all-features",
+          "name": "Run `cargo test` on all features"
         }
       ]
     },

@@ -1,13 +1,10 @@
 use crate::Result;
 use proc_macro::TokenStream;
-use proc_macro2::Span;
-use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
-use quote::ToTokens;
-use syn::GenericParam;
-use syn::Lifetime;
-use syn::LifetimeDef;
-use syn::{spanned::Spanned, Fields, Generics, Ident, Index, Variant};
+use proc_macro2::{Span, TokenStream as TokenStream2};
+use quote::{quote, ToTokens};
+use syn::{
+    spanned::Spanned, Fields, GenericParam, Generics, Ident, Index, Lifetime, LifetimeDef, Variant,
+};
 pub struct DeriveEnum {
     name: Ident,
     generics: Generics,

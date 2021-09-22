@@ -49,14 +49,3 @@ impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
         self.get_byte_slice(length)
     }
 }
-
-#[cfg(feature = "std")]
-impl<'storage, R: std::io::Read> Reader<'storage> for R {
-    #[inline(always)]
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
-        match self.read_exact(bytes) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(DecodeError::UnexpectedEnd),
-        }
-    }
-}

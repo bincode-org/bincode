@@ -1,5 +1,4 @@
-use super::write::Writer;
-use super::Encode;
+use super::{write::Writer, Encode};
 use crate::{
     config::{Config, Endian, IntEncoding},
     error::EncodeError,

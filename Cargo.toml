@@ -23,10 +23,11 @@ description = "A binary serialization / deserialization strategy for transformin
 edition = "2018"
 
 [features]
-default = ["std"]
-std = []
+default = ["std", "derive"]
+std = ["alloc"]
 alloc = []
+derive = ["bincode_derive"]
 
 [dependencies]
-bincode_derive = { path = "derive", version = "2.0.0-dev" }
+bincode_derive = { path = "derive", version = "2.0.0-dev", optional = true }
 # serde = { version = "1.0.130", optional = true }

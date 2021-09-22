@@ -1,5 +1,5 @@
 pub(crate) use self::internal::*;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 pub trait Config: InternalConfig + Copy + Clone + Sized {
     fn with_big_endian(self) -> BigEndian<Self> {
