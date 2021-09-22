@@ -21,6 +21,7 @@ pub mod enc;
 pub mod error;
 
 pub use bincode_derive::{Decodable, Encodable};
+use config::Config;
 
 pub(crate) mod varint;
 
@@ -28,14 +29,29 @@ pub fn encode_into_slice<E: enc::Encodeable>(
     val: E,
     dst: &mut [u8],
 ) -> Result<usize, error::EncodeError> {
+    encode_into_slice_with_config(val, dst, config::Default)
+}
+
+pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
+    val: E,
+    dst: &mut [u8],
+    _config: C,
+) -> Result<usize, error::EncodeError> {
     let writer = enc::write::SliceWriter::new(dst);
-    let mut encoder = enc::Encoder::<_, config::Default>::new(writer);
+    let mut encoder = enc::Encoder::<_, C>::new(writer);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())
 }
 
 pub fn decode<D: de::Decodable>(src: &mut [u8]) -> Result<D, error::DecodeError> {
+    decode_with_config(src, config::Default)
+}
+
+pub fn decode_with_config<D: de::Decodable, C: Config>(
+    src: &mut [u8],
+    _config: C,
+) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
-    let mut decoder = de::Decoder::<_, config::Default>::new(reader);
+    let mut decoder = de::Decoder::<_, C>::new(reader, _config);
     D::decode(&mut decoder)
 }

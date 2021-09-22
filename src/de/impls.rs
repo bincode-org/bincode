@@ -73,6 +73,24 @@ impl Decodable for isize {
     }
 }
 
+impl Decodable for f32 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.decode_f32()
+    }
+}
+
+impl Decodable for f64 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.decode_f64()
+    }
+}
+
+impl<const N: usize> Decodable for [u8; N] {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.decode_array()
+    }
+}
+
 impl<'a, T> Decode for &'a mut T
 where
     T: Decode,

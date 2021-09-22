@@ -11,7 +11,7 @@ pub struct Decoder<R, C: Config> {
 }
 
 impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
-    pub fn new(reader: R) -> Decoder<R, C> {
+    pub fn new(reader: R, _config: C) -> Decoder<R, C> {
         Decoder {
             reader,
             config: PhantomData,
