@@ -6,11 +6,11 @@ mod impls;
 pub mod read;
 pub use self::decoder::Decoder;
 
-pub trait Decodable: Sized {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError>;
+pub trait Decodable<'de>: Sized {
+    fn decode<D: Decode<'de>>(decoder: D) -> Result<Self, DecodeError>;
 }
 
-pub trait Decode {
+pub trait Decode<'de> {
     fn decode_u8(&mut self) -> Result<u8, DecodeError>;
     fn decode_u16(&mut self) -> Result<u16, DecodeError>;
     fn decode_u32(&mut self) -> Result<u32, DecodeError>;
@@ -27,6 +27,6 @@ pub trait Decode {
 
     fn decode_f32(&mut self) -> Result<f32, DecodeError>;
     fn decode_f64(&mut self) -> Result<f64, DecodeError>;
-    fn decode_slice(&mut self, slice: &mut [u8]) -> Result<(), DecodeError>;
+    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError>;
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError>;
 }

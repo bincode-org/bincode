@@ -29,4 +29,5 @@ pub trait Encode {
     fn encode_f32(&mut self, val: f32) -> Result<(), EncodeError>;
     fn encode_f64(&mut self, val: f64) -> Result<(), EncodeError>;
     fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError>;
+    fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError>;
 }

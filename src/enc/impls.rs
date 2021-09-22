@@ -91,6 +91,18 @@ impl Encodeable for &'_ [u8] {
     }
 }
 
+impl Encodeable for &'_ str {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        encoder.encode_slice(self.as_bytes())
+    }
+}
+
+impl<const N: usize> Encodeable for [u8; N] {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        encoder.encode_array(*self)
+    }
+}
+
 impl<'a, T> Encode for &'a mut T
 where
     T: Encode,
@@ -141,5 +153,8 @@ where
     }
     fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError> {
         T::encode_slice(self, val)
+    }
+    fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError> {
+        T::encode_array(self, val)
     }
 }

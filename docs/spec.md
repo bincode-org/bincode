@@ -90,6 +90,8 @@ assert_eq!(encoded.as_slice(), &[
 
 Collections are encoded with their length value first, following by each entry of the collection. The length value is based on your `IntEncoding`.
 
+**note**: fixed array length do not have their `len` encoded. See [Arrays](#arrays)
+
 ```rs
 let list = vec![
     0u8,
@@ -121,3 +123,38 @@ assert_eq!(encoded.as_slice(), &[
     b'H', b'e', b'l', b'l', b'o'
 ]);
 ```
+
+# Arrays
+
+Arrays are encoded *without* a length.
+
+```rs
+let arr: [u8; 5] = [10, 20, 30, 40, 50];
+let encoded = bincode::encode_to_vec(&list).unwrap();
+assert_eq!(encoded.as_slice(), &[10, 20, 30, 40 50]);
+```
+
+This applies to any type `T` that implements `Encodabl`/`Decodabl`
+
+```rs
+#[derive(bincode::Encodabl)]
+struct Foo {
+    first: u8,
+    second: u8
+};
+
+let arr: [Foo; 2] = [
+    Foo {
+        first: 10,
+        second: 20,
+    },
+    Foo {
+        first: 30,
+        second: 40,
+    },
+];
+
+let encoded = bincode::encode_to_vec(&list).unwrap();
+assert_eq!(encoded.as_slice(), &[10, 20, 30, 40]);
+```
+

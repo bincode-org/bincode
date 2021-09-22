@@ -168,6 +168,11 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
     }
 
     fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError> {
+        self.encode_usize(val.len())?;
         self.writer.write(val)
+    }
+
+    fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError> {
+        self.writer.write(&val)
     }
 }

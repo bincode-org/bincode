@@ -23,7 +23,7 @@ impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
     }
 }
 
-impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
+impl<'a, 'de, R: Reader<'de>, C: Config> Decode<'de> for &'a mut Decoder<R, C> {
     fn decode_u8(&mut self) -> Result<u8, DecodeError> {
         let mut bytes = [0u8; 1];
         self.reader.read(&mut bytes)?;
@@ -198,8 +198,8 @@ impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
         })
     }
 
-    fn decode_slice(&mut self, slice: &mut [u8]) -> Result<(), DecodeError> {
-        self.reader.read(slice)
+    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError> {
+        self.reader.forward_read(len, |s| s)
     }
 
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {

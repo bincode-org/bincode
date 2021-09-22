@@ -21,6 +21,8 @@ pub enum DecodeError {
         max: u32,
         found: u32,
     },
+
+    Utf8(core::str::Utf8Error),
 }
 
 #[non_exhaustive]

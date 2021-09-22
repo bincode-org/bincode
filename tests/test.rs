@@ -5,7 +5,12 @@ use core::fmt::Debug;
 
 fn the_same_with_config<V, C>(element: V, config: C)
 where
-    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + Clone + 'static,
+    V: bincode::enc::Encodeable
+        + for<'de> bincode::de::Decodable<'de>
+        + PartialEq
+        + Debug
+        + Clone
+        + 'static,
     C: Config,
 {
     let mut buffer = [0u8; 32];
@@ -16,7 +21,12 @@ where
 }
 fn the_same<V>(element: V)
 where
-    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + Clone + 'static,
+    V: bincode::enc::Encodeable
+        + for<'de> bincode::de::Decodable<'de>
+        + PartialEq
+        + Debug
+        + Clone
+        + 'static,
 {
     the_same_with_config(
         element.clone(),
@@ -60,4 +70,40 @@ fn test_numbers() {
 
     the_same(5.0f32);
     the_same(5.0f64);
+}
+
+#[test]
+fn test_slice() {
+    let mut buffer = [0u8; 32];
+    let input: &[u8] = &[1, 2, 3, 4, 5, 6, 7];
+    bincode::encode_into_slice(input, &mut buffer).unwrap();
+    assert_eq!(&buffer[..8], &[7, 1, 2, 3, 4, 5, 6, 7]);
+
+    let output: &[u8] = bincode::decode(&mut buffer[..8]).unwrap();
+    assert_eq!(input, output);
+}
+
+#[test]
+fn test_str() {
+    let mut buffer = [0u8; 32];
+    let input: &str = "Hello world";
+    bincode::encode_into_slice(input, &mut buffer).unwrap();
+    assert_eq!(
+        &buffer[..12],
+        &[11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
+    );
+
+    let output: &str = bincode::decode(&mut buffer[..12]).unwrap();
+    assert_eq!(input, output);
+}
+
+#[test]
+fn test_array() {
+    let mut buffer = [0u8; 32];
+    let input: [u8; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+    bincode::encode_into_slice(input, &mut buffer).unwrap();
+    assert_eq!(&buffer[..10], &[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+
+    let output: [u8; 10] = bincode::decode(&mut buffer[..10]).unwrap();
+    assert_eq!(input, output);
 }

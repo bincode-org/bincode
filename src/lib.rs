@@ -43,12 +43,14 @@ pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
     Ok(encoder.into_writer().bytes_written())
 }
 
-pub fn decode<D: de::Decodable>(src: &mut [u8]) -> Result<D, error::DecodeError> {
+pub fn decode<'__de, D: de::Decodable<'__de>>(
+    src: &'__de mut [u8],
+) -> Result<D, error::DecodeError> {
     decode_with_config(src, config::Default)
 }
 
-pub fn decode_with_config<D: de::Decodable, C: Config>(
-    src: &mut [u8],
+pub fn decode_with_config<'__de, D: de::Decodable<'__de>, C: Config>(
+    src: &'__de mut [u8],
     _config: C,
 ) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);

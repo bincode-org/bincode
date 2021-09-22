@@ -1,8 +1,8 @@
 use crate::Result;
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{quote, ToTokens};
-use syn::{Generics, Ident, Index};
+use syn::{GenericParam, Generics, Ident, Index, Lifetime, LifetimeDef};
 
 pub struct DeriveStruct {
     name: Ident,
@@ -70,7 +70,33 @@ impl DeriveStruct {
             fields,
         } = self;
 
-        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+        let (mut impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+        // check if we don't already have a '__de lifetime
+        let mut should_insert_lifetime = true;
+
+        for param in &generics.params {
+            if let GenericParam::Lifetime(lt) = param {
+                if lt.lifetime.ident == "__de" {
+                    should_insert_lifetime = false;
+                    break;
+                }
+            }
+        }
+
+        // if we don't have a '__de lifetime, insert it
+        let mut generics_with_decode_lifetime;
+        if should_insert_lifetime {
+            generics_with_decode_lifetime = generics.clone();
+            generics_with_decode_lifetime
+                .params
+                .push(GenericParam::Lifetime(LifetimeDef::new(Lifetime::new(
+                    "'__de",
+                    Span::call_site(),
+                ))));
+
+            impl_generics = generics_with_decode_lifetime.split_for_impl().0;
+        }
 
         let fields = fields
             .into_iter()
@@ -82,8 +108,8 @@ impl DeriveStruct {
             .collect::<Vec<_>>();
 
         let result = quote! {
-            impl #impl_generics bincode::de::Decodable for #name #ty_generics #where_clause {
-                fn decode<D: bincode::de::Decode>(mut decoder: D) -> Result<#name #ty_generics, bincode::error::DecodeError> {
+            impl #impl_generics bincode::de::Decodable< '__de > for #name #ty_generics #where_clause {
+                fn decode<D: bincode::de::Decode< '__de >>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
                     Ok(#name {
                         #(#fields)*
                     })
@@ -91,6 +117,7 @@ impl DeriveStruct {
 
             }
         };
+
         Ok(result.into())
     }
 }

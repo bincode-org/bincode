@@ -1,99 +1,119 @@
 use super::{Decodable, Decode};
 use crate::error::DecodeError;
 
-impl Decodable for u8 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for u8 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u8()
     }
 }
 
-impl Decodable for u16 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for u16 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u16()
     }
 }
 
-impl Decodable for u32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for u32 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u32()
     }
 }
 
-impl Decodable for u64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for u64 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u64()
     }
 }
 
-impl Decodable for u128 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for u128 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u128()
     }
 }
 
-impl Decodable for usize {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for usize {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_usize()
     }
 }
 
-impl Decodable for i8 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for i8 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i8()
     }
 }
 
-impl Decodable for i16 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for i16 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i16()
     }
 }
 
-impl Decodable for i32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for i32 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i32()
     }
 }
 
-impl Decodable for i64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for i64 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i64()
     }
 }
 
-impl Decodable for i128 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for i128 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i128()
     }
 }
 
-impl Decodable for isize {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for isize {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_isize()
     }
 }
 
-impl Decodable for f32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for f32 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_f32()
     }
 }
 
-impl Decodable for f64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for f64 {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_f64()
     }
 }
 
-impl<const N: usize> Decodable for [u8; N] {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'de> Decodable<'de> for &'de [u8] {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
+        let len = usize::decode(&mut decoder)?;
+        decoder.decode_slice(len)
+    }
+}
+
+impl<'de> Decodable<'de> for &'de str {
+    fn decode<D: Decode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+        let slice: &[u8] = Decodable::decode(decoder)?;
+        core::str::from_utf8(slice).map_err(DecodeError::Utf8)
+    }
+}
+
+impl<'de, const N: usize> Decodable<'de> for [u8; N] {
+    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_array()
     }
 }
 
-impl<'a, T> Decode for &'a mut T
+impl<'de, T> Decodable<'de> for core::marker::PhantomData<T> {
+    fn decode<D: Decode<'de>>(_: D) -> Result<Self, DecodeError> {
+        Ok(core::marker::PhantomData)
+    }
+}
+
+impl<'a, 'de, T> Decode<'de> for &'a mut T
 where
-    T: Decode,
+    T: Decode<'de>,
 {
     fn decode_u8(&mut self) -> Result<u8, DecodeError> {
         T::decode_u8(self)
@@ -151,8 +171,8 @@ where
         T::decode_f64(self)
     }
 
-    fn decode_slice(&mut self, slice: &mut [u8]) -> Result<(), DecodeError> {
-        T::decode_slice(self, slice)
+    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError> {
+        T::decode_slice(self, len)
     }
 
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
