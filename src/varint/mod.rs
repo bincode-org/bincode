@@ -1,7 +1,12 @@
+mod decode_signed;
 mod decode_unsigned;
 mod encode_signed;
 mod encode_unsigned;
 
+pub use self::decode_signed::{
+    varint_decode_i128, varint_decode_i16, varint_decode_i32, varint_decode_i64,
+    varint_decode_isize,
+};
 pub use self::decode_unsigned::{
     varint_decode_u128, varint_decode_u16, varint_decode_u32, varint_decode_u64,
     varint_decode_usize,

@@ -154,27 +154,20 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
     }
 
     fn encode_f32(&mut self, val: f32) -> Result<(), EncodeError> {
-        match C::INT_ENCODING {
-            IntEncoding::Variable => unimplemented!(), // crate::int_encoding::varint_encode_f32(&mut self.writer, C::ENDIAN, val),
-            IntEncoding::Fixed => match C::ENDIAN {
-                Endian::Big => self.writer.write(&val.to_be_bytes()),
-                Endian::Little => self.writer.write(&val.to_le_bytes()),
-            },
+        match C::ENDIAN {
+            Endian::Big => self.writer.write(&val.to_be_bytes()),
+            Endian::Little => self.writer.write(&val.to_le_bytes()),
         }
     }
 
     fn encode_f64(&mut self, val: f64) -> Result<(), EncodeError> {
-        match C::INT_ENCODING {
-            IntEncoding::Variable => unimplemented!(), // crate::int_encoding::varint_encode_f64(&mut self.writer, C::ENDIAN, val),
-            IntEncoding::Fixed => match C::ENDIAN {
-                Endian::Big => self.writer.write(&val.to_be_bytes()),
-                Endian::Little => self.writer.write(&val.to_le_bytes()),
-            },
+        match C::ENDIAN {
+            Endian::Big => self.writer.write(&val.to_be_bytes()),
+            Endian::Little => self.writer.write(&val.to_le_bytes()),
         }
     }
 
     fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError> {
-        // TODO: Should this be swapped if we're big or little endian?
         self.writer.write(val)
     }
 }
