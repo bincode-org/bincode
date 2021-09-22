@@ -32,7 +32,7 @@ impl<'a, 'de, R: BorrowReader<'de>, C: Config> BorrowDecode<'de> for &'a mut Dec
     }
 }
 
-impl<'a, 'de, R: Reader<'de>, C: Config> Decode<'de> for &'a mut Decoder<R, C> {
+impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
     fn decode_u8(&mut self) -> Result<u8, DecodeError> {
         let mut bytes = [0u8; 1];
         self.reader.read(&mut bytes)?;

@@ -1,7 +1,6 @@
 #![cfg(feature = "derive")]
 
 use bincode::{de::Decodable, enc::Encodeable};
-use core::marker::PhantomData;
 
 #[derive(bincode::Encodable, PartialEq, Debug)]
 pub struct Test<T: Encodeable> {
@@ -11,11 +10,17 @@ pub struct Test<T: Encodeable> {
 }
 
 #[derive(bincode::Decodable, PartialEq, Debug, Eq)]
-pub struct Test2<'__de, T: Decodable<'__de>> {
+pub struct Test2<T: Decodable> {
     a: T,
     b: u32,
     c: u32,
-    pd: PhantomData<&'__de ()>,
+}
+
+#[derive(bincode::Decodable, PartialEq, Debug, Eq)]
+pub struct Test3<'a> {
+    a: &'a str,
+    b: u32,
+    c: u32,
 }
 
 #[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
@@ -25,6 +30,13 @@ pub struct TestTupleStruct(u32, u32, u32);
 pub enum TestEnum {
     Foo,
     Bar { name: u32 },
+    Baz(u32, u32, u32),
+}
+
+#[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
+pub enum TestEnum2<'a> {
+    Foo,
+    Bar { name: &'a str },
     Baz(u32, u32, u32),
 }
 
@@ -47,10 +59,9 @@ fn test_decodable() {
         a: 5u32,
         b: 10u32,
         c: 1024u32,
-        pd: PhantomData,
     };
-    let mut slice = [5, 10, 251, 0, 4];
-    let result: Test2<u32> = bincode::decode(&mut slice).unwrap();
+    let slice = [5, 10, 251, 0, 4];
+    let result: Test2<u32> = bincode::decode_from(&mut slice.as_ref()).unwrap();
     assert_eq!(result, start);
 }
 

@@ -4,7 +4,7 @@ use core::fmt::Debug;
 fn the_same_with_config<V, C>(element: V, config: C)
 where
     V: bincode::enc::Encodeable
-        + for<'de> bincode::de::Decodable<'de>
+        + for<'de> bincode::de::Decodable
         + PartialEq
         + Debug
         + Clone
@@ -20,7 +20,7 @@ where
 fn the_same<V>(element: V)
 where
     V: bincode::enc::Encodeable
-        + for<'de> bincode::de::Decodable<'de>
+        + for<'de> bincode::de::Decodable
         + PartialEq
         + Debug
         + Clone

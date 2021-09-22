@@ -6,21 +6,21 @@ mod impls;
 pub mod read;
 pub use self::decoder::Decoder;
 
-pub trait Decodable<'de>: Sized + BorrowDecodable<'de> {
-    fn decode<D: Decode<'de>>(decoder: D) -> Result<Self, DecodeError>;
+pub trait Decodable: for<'de> BorrowDecodable<'de> {
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError>;
 }
 
 pub trait BorrowDecodable<'de>: Sized {
     fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError>;
 }
 
-impl<'de, T: Decodable<'de>> BorrowDecodable<'de> for T {
-    fn borrow_decode<D: Decode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+impl<'de, T: Decodable> BorrowDecodable<'de> for T {
+    fn borrow_decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
         Decodable::decode(decoder)
     }
 }
 
-pub trait Decode<'de> {
+pub trait Decode {
     fn decode_u8(&mut self) -> Result<u8, DecodeError>;
     fn decode_u16(&mut self) -> Result<u16, DecodeError>;
     fn decode_u32(&mut self) -> Result<u32, DecodeError>;
@@ -40,6 +40,6 @@ pub trait Decode<'de> {
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError>;
 }
 
-pub trait BorrowDecode<'de>: Decode<'de> {
+pub trait BorrowDecode<'de>: Decode {
     fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError>;
 }

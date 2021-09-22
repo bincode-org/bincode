@@ -4,13 +4,13 @@ use crate::{
     error::DecodeError,
 };
 
-pub fn decode_from<'__de, D: Decodable<'__de>, R: std::io::Read>(
+pub fn decode_from<'__de, D: Decodable, R: std::io::Read>(
     src: &'__de mut R,
 ) -> Result<D, DecodeError> {
     decode_from_with_config(src, config::Default)
 }
 
-pub fn decode_from_with_config<'__de, D: Decodable<'__de>, C: Config, R: std::io::Read>(
+pub fn decode_from_with_config<'__de, D: Decodable, C: Config, R: std::io::Read>(
     src: &'__de mut R,
     _config: C,
 ) -> Result<D, DecodeError> {

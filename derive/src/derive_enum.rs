@@ -66,15 +66,13 @@ impl DeriveEnum {
 
         let (mut impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-        // check if we don't already have a '__de lifetime
-        let mut should_insert_lifetime = true;
+        // check if the type has lifetimes
+        let mut should_insert_lifetime = false;
 
         for param in &generics.params {
-            if let GenericParam::Lifetime(lt) = param {
-                if lt.lifetime.ident == "__de" {
-                    should_insert_lifetime = false;
-                    break;
-                }
+            if let GenericParam::Lifetime(_) = param {
+                should_insert_lifetime = true;
+                break;
             }
         }
 
@@ -82,12 +80,18 @@ impl DeriveEnum {
         let mut generics_with_decode_lifetime;
         if should_insert_lifetime {
             generics_with_decode_lifetime = generics.clone();
+
+            let mut new_lifetime = LifetimeDef::new(Lifetime::new("'__de", Span::call_site()));
+
+            for param in &generics.params {
+                if let GenericParam::Lifetime(lt) = param {
+                    new_lifetime.bounds.push(lt.lifetime.clone())
+                }
+            }
+
             generics_with_decode_lifetime
                 .params
-                .push(GenericParam::Lifetime(LifetimeDef::new(Lifetime::new(
-                    "'__de",
-                    Span::call_site(),
-                ))));
+                .push(GenericParam::Lifetime(new_lifetime));
 
             impl_generics = generics_with_decode_lifetime.split_for_impl().0;
         }
@@ -95,8 +99,10 @@ impl DeriveEnum {
         let max_variant = (variants.len() - 1) as u32;
         let match_arms = variants.iter().enumerate().map(|(index, variant)| {
             let index = index as u32;
-            let decode_statements =
-                field_names_to_decodable(&fields_to_constructable_names(&variant.fields));
+            let decode_statements = field_names_to_decodable(
+                &fields_to_constructable_names(&variant.fields),
+                should_insert_lifetime,
+            );
             let variant_name = variant.ident.clone();
             quote! {
                 #index => {
@@ -106,20 +112,39 @@ impl DeriveEnum {
                 }
             }
         });
-        let result = quote! {
-            impl #impl_generics bincode::de::Decodable<'__de> for #name #ty_generics #where_clause {
-                fn decode<D: bincode::de::Decode<'__de>>(mut decoder: D) -> Result<#name #ty_generics, bincode::error::DecodeError> {
-                    let i = decoder.decode_u32()?;
-                    Ok(match i {
-                        #(#match_arms)*
-                        variant => return Err(bincode::error::DecodeError::UnexpectedVariant{
-                            min: 0,
-                            max: #max_variant,
-                            found: variant,
+        let result = if should_insert_lifetime {
+            quote! {
+                impl #impl_generics bincode::de::BorrowDecodable<'__de> for #name #ty_generics #where_clause {
+                    fn borrow_decode<D: bincode::de::BorrowDecode<'__de>>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
+                        let i = decoder.decode_u32()?;
+                        Ok(match i {
+                            #(#match_arms)*
+                            variant => return Err(bincode::error::DecodeError::UnexpectedVariant{
+                                min: 0,
+                                max: #max_variant,
+                                found: variant,
+                            })
                         })
-                    })
-                }
+                    }
 
+                }
+            }
+        } else {
+            quote! {
+                impl #impl_generics bincode::de::Decodable for #name #ty_generics #where_clause {
+                    fn decode<D: bincode::de::Decode>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
+                        let i = decoder.decode_u32()?;
+                        Ok(match i {
+                            #(#match_arms)*
+                            variant => return Err(bincode::error::DecodeError::UnexpectedVariant{
+                                min: 0,
+                                max: #max_variant,
+                                found: variant,
+                            })
+                        })
+                    }
+
+                }
             }
         };
 
@@ -199,12 +224,18 @@ fn fields_to_constructable_names(fields: &Fields) -> Vec<TokenStream2> {
     }
 }
 
-fn field_names_to_decodable(names: &[TokenStream2]) -> Vec<TokenStream2> {
+fn field_names_to_decodable(names: &[TokenStream2], borrowed: bool) -> Vec<TokenStream2> {
     names
         .iter()
         .map(|field| {
-            quote! {
-                #field: bincode::de::Decodable::decode(&mut decoder)?,
+            if borrowed {
+                quote! {
+                    #field: bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,
+                }
+            } else {
+                quote! {
+                    #field: bincode::de::Decodable::decode(&mut decoder)?,
+                }
             }
         })
         .collect::<Vec<_>>()
