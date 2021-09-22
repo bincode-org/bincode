@@ -2,9 +2,10 @@ use crate::error::DecodeError;
 
 pub trait Reader<'storage> {
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError>;
-    fn forward_read<F, R>(&mut self, length: usize, visitor: F) -> Result<R, DecodeError>
-    where
-        F: Fn(&'storage [u8]) -> R;
+}
+
+pub trait BorrowReader<'storage>: Reader<'storage> {
+    fn take_bytes(&mut self, length: usize) -> Result<&'storage [u8], DecodeError>;
 }
 
 pub struct SliceReader<'storage> {
@@ -40,12 +41,22 @@ impl<'storage> Reader<'storage> for SliceReader<'storage> {
 
         Ok(())
     }
+}
 
+impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
     #[inline(always)]
-    fn forward_read<F, R>(&mut self, length: usize, visitor: F) -> Result<R, DecodeError>
-    where
-        F: Fn(&'storage [u8]) -> R,
-    {
-        Ok(visitor(self.get_byte_slice(length)?))
+    fn take_bytes(&mut self, length: usize) -> Result<&'storage [u8], DecodeError> {
+        self.get_byte_slice(length)
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'storage, R: std::io::Read> Reader<'storage> for R {
+    #[inline(always)]
+    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
+        match self.read_exact(bytes) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(DecodeError::UnexpectedEnd),
+        }
     }
 }

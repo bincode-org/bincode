@@ -43,17 +43,33 @@ pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
     Ok(encoder.into_writer().bytes_written())
 }
 
-pub fn decode<'__de, D: de::Decodable<'__de>>(
+pub fn decode<'__de, D: de::BorrowDecodable<'__de>>(
     src: &'__de mut [u8],
 ) -> Result<D, error::DecodeError> {
     decode_with_config(src, config::Default)
 }
 
-pub fn decode_with_config<'__de, D: de::Decodable<'__de>, C: Config>(
+pub fn decode_with_config<'__de, D: de::BorrowDecodable<'__de>, C: Config>(
     src: &'__de mut [u8],
     _config: C,
 ) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
     let mut decoder = de::Decoder::<_, C>::new(reader, _config);
+    D::borrow_decode(&mut decoder)
+}
+
+#[cfg(feature = "std")]
+pub fn decode_from<'__de, D: de::Decodable<'__de>, R: std::io::Read>(
+    src: &'__de mut R,
+) -> Result<D, error::DecodeError> {
+    decode_from_with_config(src, config::Default)
+}
+
+#[cfg(feature = "std")]
+pub fn decode_from_with_config<'__de, D: de::Decodable<'__de>, C: Config, R: std::io::Read>(
+    src: &'__de mut R,
+    _config: C,
+) -> Result<D, error::DecodeError> {
+    let mut decoder = de::Decoder::<_, C>::new(src, _config);
     D::decode(&mut decoder)
 }

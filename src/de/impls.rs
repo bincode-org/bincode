@@ -1,4 +1,4 @@
-use super::{Decodable, Decode};
+use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
 use crate::error::DecodeError;
 
 impl<'de> Decodable<'de> for u8 {
@@ -85,16 +85,16 @@ impl<'de> Decodable<'de> for f64 {
     }
 }
 
-impl<'de> Decodable<'de> for &'de [u8] {
-    fn decode<D: Decode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'a, 'de: 'a> BorrowDecodable<'de> for &'a [u8] {
+    fn borrow_decode<D: BorrowDecode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
         decoder.decode_slice(len)
     }
 }
 
-impl<'de> Decodable<'de> for &'de str {
-    fn decode<D: Decode<'de>>(decoder: D) -> Result<Self, DecodeError> {
-        let slice: &[u8] = Decodable::decode(decoder)?;
+impl<'a, 'de: 'a> BorrowDecodable<'de> for &'a str {
+    fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+        let slice: &[u8] = BorrowDecodable::borrow_decode(decoder)?;
         core::str::from_utf8(slice).map_err(DecodeError::Utf8)
     }
 }
@@ -169,10 +169,6 @@ where
 
     fn decode_f64(&mut self) -> Result<f64, DecodeError> {
         T::decode_f64(self)
-    }
-
-    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError> {
-        T::decode_slice(self, len)
     }
 
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {

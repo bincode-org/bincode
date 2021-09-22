@@ -1,4 +1,7 @@
-use super::{read::Reader, Decode};
+use super::{
+    read::{BorrowReader, Reader},
+    BorrowDecode, Decode,
+};
 use crate::{
     config::{Config, Endian, IntEncoding},
     error::DecodeError,
@@ -20,6 +23,12 @@ impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
 
     pub fn into_reader(self) -> R {
         self.reader
+    }
+}
+
+impl<'a, 'de, R: BorrowReader<'de>, C: Config> BorrowDecode<'de> for &'a mut Decoder<R, C> {
+    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError> {
+        self.reader.take_bytes(len)
     }
 }
 
@@ -196,10 +205,6 @@ impl<'a, 'de, R: Reader<'de>, C: Config> Decode<'de> for &'a mut Decoder<R, C> {
             Endian::Little => f64::from_le_bytes(bytes),
             Endian::Big => f64::from_be_bytes(bytes),
         })
-    }
-
-    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError> {
-        self.reader.forward_read(len, |s| s)
     }
 
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
