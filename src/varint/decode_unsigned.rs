@@ -5,7 +5,6 @@ use crate::{
     error::{DecodeError, IntegerType},
 };
 
-#[allow(dead_code)]
 pub fn varint_decode_u16<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -37,7 +36,6 @@ pub fn varint_decode_u16<'a, R: Reader<'a>>(
     }
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_u32<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -73,7 +71,6 @@ pub fn varint_decode_u32<'a, R: Reader<'a>>(
     }
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_u64<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -113,7 +110,6 @@ pub fn varint_decode_u64<'a, R: Reader<'a>>(
     }
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_usize<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -153,7 +149,6 @@ pub fn varint_decode_usize<'a, R: Reader<'a>>(
     }
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_u128<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,

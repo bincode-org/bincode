@@ -1,8 +1,5 @@
-#![allow(unused_variables)]
-
 use crate::{config::Endian, de::read::Reader, error::DecodeError};
 
-#[allow(dead_code)]
 pub fn varint_decode_i16<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -22,7 +19,6 @@ pub fn varint_decode_i16<'a, R: Reader<'a>>(
     })
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_i32<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -42,7 +38,6 @@ pub fn varint_decode_i32<'a, R: Reader<'a>>(
     })
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_i64<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -62,7 +57,6 @@ pub fn varint_decode_i64<'a, R: Reader<'a>>(
     })
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_i128<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,
@@ -82,7 +76,6 @@ pub fn varint_decode_i128<'a, R: Reader<'a>>(
     })
 }
 
-#[allow(dead_code)]
 pub fn varint_decode_isize<'a, R: Reader<'a>>(
     read: &mut R,
     endian: Endian,

@@ -53,6 +53,7 @@ fn test_encodable() {
     assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn test_decodable() {
     let start = Test2 {
