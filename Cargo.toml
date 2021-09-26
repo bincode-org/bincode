@@ -21,6 +21,7 @@ license = "MIT"
 description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
 
 edition = "2018"
+resolver = "2"
 
 [features]
 default = ["std", "derive"]

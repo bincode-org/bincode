@@ -2,15 +2,10 @@
 name = "bincode_derive"
 version = "2.0.0-dev" # remember to update bincode
 edition = "2018"
+resolver = "2"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-quote = "1.0.9"
 proc-macro2 = "1.0"
-
-[dependencies.syn]
-version = "1.0.74"
-default-features = false
-features  = ["parsing", "derive", "proc-macro", "printing", "clone-impls"]
