@@ -5,13 +5,23 @@ extern crate proc_macro;
 mod error;
 mod parse;
 
+#[cfg(test)]
+pub(crate) mod prelude {
+    pub use proc_macro2::*;
+}
+#[cfg(not(test))]
+pub(crate) mod prelude {
+    pub use proc_macro::*;
+}
+
 use error::Error;
-use proc_macro2::TokenStream;
+use prelude::TokenStream;
 
 type Result<T = ()> = std::result::Result<T, Error>;
 
 #[proc_macro_derive(Encodable)]
 pub fn derive_encodable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    #[allow(clippy::useless_conversion)]
     derive_encodable_inner(input.into())
         .unwrap_or_else(|e| e.into_token_stream())
         .into()

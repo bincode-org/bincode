@@ -1,5 +1,5 @@
+use crate::prelude::TokenTree;
 use crate::{Error, Result};
-use proc_macro2::TokenTree;
 use std::iter::Peekable;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -11,7 +11,7 @@ pub enum Visibility {
 impl Visibility {
     pub fn try_take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Option<Self>> {
         if let Some(TokenTree::Ident(ident)) = input.peek() {
-            if ident == "pub" {
+            if super::ident_eq(ident, "pub") {
                 // Consume this token
                 let ident = super::assume_ident(input.next());
 
@@ -21,7 +21,7 @@ impl Visibility {
                     let mut group_stream = group.stream().into_iter();
                     return match (group_stream.next(), group_stream.next()) {
                         (Some(TokenTree::Ident(ident)), None) => {
-                            if ident == "crate" {
+                            if super::ident_eq(&ident, "crate") {
                                 return Ok(Some(Visibility::PubCrate));
                             } else {
                                 Err(Error::UnknownVisibility(ident.span()))

@@ -1,5 +1,5 @@
+use crate::prelude::{Ident, TokenTree};
 use crate::{Error, Result};
-use proc_macro2::{Ident, TokenTree};
 use std::iter::Peekable;
 
 #[derive(Debug)]

@@ -7,5 +7,5 @@ resolver = "2"
 [lib]
 proc-macro = true
 
-[dependencies]
+[dev-dependencies]
 proc-macro2 = "1.0"

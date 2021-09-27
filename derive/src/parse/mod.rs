@@ -1,4 +1,4 @@
-use proc_macro2::TokenTree;
+use crate::prelude::{Group, Ident, Punct, TokenTree};
 use std::iter::Peekable;
 
 mod data_type;
@@ -9,19 +9,19 @@ pub use self::data_type::DataType;
 pub use self::generics::{Generic, Generics, Lifetime};
 pub use self::visibility::Visibility;
 
-pub(self) fn assume_group(t: Option<TokenTree>) -> proc_macro2::Group {
+pub(self) fn assume_group(t: Option<TokenTree>) -> Group {
     match t {
         Some(TokenTree::Group(group)) => group,
         _ => unreachable!(),
     }
 }
-pub(self) fn assume_ident(t: Option<TokenTree>) -> proc_macro2::Ident {
+pub(self) fn assume_ident(t: Option<TokenTree>) -> Ident {
     match t {
         Some(TokenTree::Ident(ident)) => ident,
         _ => unreachable!(),
     }
 }
-pub(self) fn assume_punct(t: Option<TokenTree>, punct: char) -> proc_macro2::Punct {
+pub(self) fn assume_punct(t: Option<TokenTree>, punct: char) -> Punct {
     match t {
         Some(TokenTree::Punct(p)) => {
             debug_assert_eq!(punct, p.as_char());
@@ -37,4 +37,14 @@ pub(self) fn consume_punct_if(input: &mut Peekable<impl Iterator<Item = TokenTre
             input.next();
         }
     }
+}
+
+#[cfg(test)]
+pub(self) fn ident_eq(ident: &Ident, text: &str) -> bool {
+    ident == text
+}
+
+#[cfg(not(test))]
+pub(self) fn ident_eq(ident: &Ident, text: &str) -> bool {
+    ident.to_string() == text
 }

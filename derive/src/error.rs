@@ -1,4 +1,4 @@
-use proc_macro2::*;
+use crate::prelude::*;
 use std::fmt;
 
 #[derive(Debug)]
