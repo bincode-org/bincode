@@ -2,6 +2,8 @@ use crate::prelude::{Ident, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
+use super::assume_punct;
+
 #[derive(Debug)]
 pub struct Generics {
     lifetimes: Vec<Lifetime>,
@@ -125,17 +127,21 @@ pub struct Lifetime {
 impl Lifetime {
     pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Self> {
         let start = super::assume_punct(input.next(), '\'');
-        match input.peek() {
-            Some(TokenTree::Ident(_)) => {
-                let ident = super::assume_ident(input.next());
-                let constraint = Vec::new();
-                // todo: parse constraints, e.g. `'a: 'b + 'c + 'static`
+        let ident = match input.peek() {
+            Some(TokenTree::Ident(_)) => super::assume_ident(input.next()),
+            Some(t) => return Err(Error::ExpectedIdent(t.span())),
+            None => return Err(Error::ExpectedIdent(start.span())),
+        };
 
-                Ok(Lifetime { ident, constraint })
+        let mut constraint = Vec::new();
+        if let Some(TokenTree::Punct(p)) = input.peek() {
+            if p.as_char() == ':' {
+                assume_punct(input.next(), ':');
+                constraint = super::read_tokens_until_punct(input, &[',', '>'])?;
             }
-            Some(t) => Err(Error::ExpectedIdent(t.span())),
-            None => Err(Error::ExpectedIdent(start.span())),
         }
+
+        Ok(Self { ident, constraint })
     }
 
     #[cfg(test)]
@@ -151,11 +157,21 @@ fn test_lifetime_take() {
     assert!(Lifetime::take(&mut token_stream("'a"))
         .unwrap()
         .is_ident("a"));
-    assert!(catch_unwind(|| Lifetime::take(&mut token_stream(""))).is_err());
     assert!(catch_unwind(|| Lifetime::take(&mut token_stream("'0"))).is_err());
     assert!(catch_unwind(|| Lifetime::take(&mut token_stream("'("))).is_err());
     assert!(catch_unwind(|| Lifetime::take(&mut token_stream("')"))).is_err());
     assert!(catch_unwind(|| Lifetime::take(&mut token_stream("'0'"))).is_err());
+
+    let stream = &mut token_stream("'a: 'b>");
+    let lifetime = Lifetime::take(stream).unwrap();
+    assert_eq!(lifetime.ident, "a");
+    assert_eq!(lifetime.constraint.len(), 2);
+    if let Some(TokenTree::Punct(p)) = stream.next() {
+        assert_eq!(p.as_char(), '>');
+    } else {
+        assert!(false);
+    }
+    assert!(stream.next().is_none());
 }
 
 #[derive(Debug)]
@@ -171,68 +187,7 @@ impl Generic {
         if let Some(TokenTree::Punct(punct)) = input.peek() {
             if punct.as_char() == ':' {
                 super::assume_punct(input.next(), ':');
-                let mut open_brackets = Vec::<char>::new();
-                loop {
-                    match input.peek() {
-                        Some(TokenTree::Punct(punct)) => {
-                            dbg!(punct);
-                            if ['<', '(', '[', '{'].contains(&punct.as_char()) {
-                                open_brackets.push(punct.as_char());
-                            } else if ['>', ')', ']', '}'].contains(&punct.as_char()) {
-                                let last_bracket = match open_brackets.pop() {
-                                    Some(bracket) => Some(bracket),
-                                    None if punct.as_char() == '>' => {
-                                        // if the previous token was punctiation `-`, then this is part of an arrow ->
-                                        let is_arrow = if let Some(TokenTree::Punct(punct)) =
-                                            constraints.last()
-                                        {
-                                            punct.as_char() == '-'
-                                        } else {
-                                            false
-                                        };
-                                        if is_arrow {
-                                            None
-                                        } else {
-                                            // If it's not an arrow, then it's the closing bracket of the actual generic group
-                                            break;
-                                        }
-                                    }
-                                    None => {
-                                        return Err(Error::InvalidRustSyntax(punct.span()));
-                                    }
-                                };
-                                if let Some(last_bracket) = last_bracket {
-                                    let expected = match last_bracket {
-                                        '<' => '>',
-                                        '{' => '}',
-                                        '(' => ')',
-                                        '[' => ']',
-                                        _ => unreachable!(),
-                                    };
-                                    assert_eq!(
-                                        expected,
-                                        punct.as_char(),
-                                        "Unexpected closing bracket: found {}, expected {}",
-                                        punct.as_char(),
-                                        expected
-                                    );
-                                }
-                            } else if punct.as_char() == ',' && open_brackets.is_empty() {
-                                break;
-                            }
-                            constraints.push(input.next().unwrap());
-                        }
-                        Some(_) => constraints.push(input.next().unwrap()),
-                        None => {
-                            return Err(Error::InvalidRustSyntax(
-                                constraints
-                                    .last()
-                                    .map(|c| c.span())
-                                    .unwrap_or_else(|| ident.span()),
-                            ))
-                        }
-                    }
-                }
+                constraints = super::read_tokens_until_punct(input, &['>', ','])?;
             }
         }
         Ok(Generic { ident, constraints })

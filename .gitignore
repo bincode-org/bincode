@@ -5,3 +5,4 @@
 .cargo
 .vscode
 rls*.log
+tarpaulin-report.html
