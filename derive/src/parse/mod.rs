@@ -1,13 +1,15 @@
 use crate::error::Error;
-use crate::prelude::{Group, Ident, Punct, Span, TokenTree};
+use crate::prelude::{Delimiter, Group, Ident, Punct, TokenTree};
 use std::iter::Peekable;
 
+mod body;
 mod data_type;
 mod generics;
 mod visibility;
 
+pub use self::body::{EnumBody, EnumVariant, Field, StructBody};
 pub use self::data_type::DataType;
-pub use self::generics::{Generic, Generics, Lifetime};
+pub use self::generics::{Generic, GenericConstraints, Generics, Lifetime};
 pub use self::visibility::Visibility;
 
 pub(self) fn assume_group(t: Option<TokenTree>) -> Group {
@@ -32,9 +34,9 @@ pub(self) fn assume_punct(t: Option<TokenTree>, punct: char) -> Punct {
     }
 }
 
-pub(self) fn consume_punct_if(input: &mut Peekable<impl Iterator<Item = TokenTree>>, punct: &str) {
+pub(self) fn consume_punct_if(input: &mut Peekable<impl Iterator<Item = TokenTree>>, punct: char) {
     if let Some(TokenTree::Punct(p)) = input.peek() {
-        if p.to_string() == punct {
+        if p.as_char() == punct {
             input.next();
         }
     }
@@ -63,6 +65,12 @@ fn check_if_arrow(tokens: &[TokenTree], punct: &Punct) -> bool {
 
 const OPEN_BRACKETS: &[char] = &['<', '(', '[', '{'];
 const CLOSING_BRACKETS: &[char] = &['>', ')', ']', '}'];
+const BRACKET_DELIMITER: &[Option<Delimiter>] = &[
+    None,
+    Some(Delimiter::Parenthesis),
+    Some(Delimiter::Bracket),
+    Some(Delimiter::Brace),
+];
 
 pub(self) fn read_tokens_until_punct(
     input: &mut Peekable<impl Iterator<Item = TokenTree>>,
@@ -70,7 +78,8 @@ pub(self) fn read_tokens_until_punct(
 ) -> Result<Vec<TokenTree>, Error> {
     let mut result = Vec::new();
     let mut open_brackets = Vec::<char>::new();
-    loop {
+    'outer: loop {
+        dbg!(input.peek());
         match input.peek() {
             Some(TokenTree::Punct(punct)) => {
                 if check_if_arrow(&result, punct) {
@@ -102,14 +111,22 @@ pub(self) fn read_tokens_until_punct(
                 }
                 result.push(input.next().unwrap());
             }
+            Some(TokenTree::Group(g)) if open_brackets.is_empty() => {
+                for punct in expected_puncts {
+                    if let Some(idx) = OPEN_BRACKETS.iter().position(|c| c == punct) {
+                        if let Some(delim) = BRACKET_DELIMITER[idx] {
+                            if delim == g.delimiter() {
+                                // we need to split on this delimiter
+                                break 'outer;
+                            }
+                        }
+                    }
+                }
+                result.push(input.next().unwrap());
+            }
             Some(_) => result.push(input.next().unwrap()),
             None => {
-                return Err(Error::InvalidRustSyntax(
-                    result
-                        .last()
-                        .map(|c| c.span())
-                        .unwrap_or_else(Span::call_site),
-                ))
+                break;
             }
         }
     }

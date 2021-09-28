@@ -31,12 +31,25 @@ fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
     let mut source = input.into_iter().peekable();
     let source = &mut source;
     let _visibility = parse::Visibility::try_take(source)?;
-    let _datatype = parse::DataType::take(source)?;
+    let datatype = parse::DataType::take(source)?;
     let _generics = parse::Generics::try_take(source)?;
+    let _where = parse::GenericConstraints::try_take(source)?;
 
     dbg!(_visibility);
-    dbg!(_datatype);
+    dbg!(&datatype);
     dbg!(_generics);
+    dbg!(_where);
+
+    match datatype {
+        parse::DataType::Struct(_name) => {
+            let body = parse::StructBody::take(source)?;
+            dbg!(body);
+        }
+        parse::DataType::Enum(_name) => {
+            let body = parse::EnumBody::take(source)?;
+            dbg!(body);
+        }
+    }
 
     unimplemented!();
 }

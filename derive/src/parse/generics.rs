@@ -1,8 +1,8 @@
+use super::assume_punct;
+use crate::parse::{ident_eq, read_tokens_until_punct};
 use crate::prelude::{Ident, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
-
-use super::assume_punct;
 
 #[derive(Debug)]
 pub struct Generics {
@@ -23,14 +23,14 @@ impl Generics {
                     match input.peek() {
                         Some(TokenTree::Punct(punct)) if punct.as_char() == '\'' => {
                             result.lifetimes.push(Lifetime::take(input)?);
-                            super::consume_punct_if(input, ",");
+                            super::consume_punct_if(input, ',');
                         }
                         Some(TokenTree::Punct(punct)) if punct.as_char() == '>' => {
                             break;
                         }
                         Some(TokenTree::Ident(_)) => {
                             result.generics.push(Generic::take(input)?);
-                            super::consume_punct_if(input, ",");
+                            super::consume_punct_if(input, ',');
                         }
                         x => {
                             return Err(Error::InvalidRustSyntax(
@@ -166,11 +166,7 @@ fn test_lifetime_take() {
     let lifetime = Lifetime::take(stream).unwrap();
     assert_eq!(lifetime.ident, "a");
     assert_eq!(lifetime.constraint.len(), 2);
-    if let Some(TokenTree::Punct(p)) = stream.next() {
-        assert_eq!(p.as_char(), '>');
-    } else {
-        assert!(false);
-    }
+    assume_punct(stream.next(), '>');
     assert!(stream.next().is_none());
 }
 
@@ -197,4 +193,57 @@ impl Generic {
     fn is_ident(&self, i: &str) -> bool {
         self.ident.to_string() == i
     }
+}
+
+#[derive(Debug)]
+pub struct GenericConstraints {
+    constraints: Vec<TokenTree>,
+}
+
+impl GenericConstraints {
+    pub fn try_take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Option<Self>> {
+        match input.peek() {
+            Some(TokenTree::Ident(ident)) => {
+                if !ident_eq(ident, "where") {
+                    return Ok(None);
+                }
+            }
+            _ => {
+                return Ok(None);
+            }
+        }
+        input.next();
+        let constraints = read_tokens_until_punct(input, &['{', '('])?;
+        Ok(Some(Self { constraints }))
+    }
+}
+
+#[test]
+fn test_generic_constraints_try_take() {
+    use crate::token_stream;
+
+    let stream = &mut token_stream("struct Foo where Foo: Bar { }");
+    super::DataType::take(stream).unwrap();
+    assert!(GenericConstraints::try_take(stream).unwrap().is_some());
+
+    let stream = &mut token_stream("struct Foo { }");
+    super::DataType::take(stream).unwrap();
+    assert!(GenericConstraints::try_take(stream).unwrap().is_none());
+
+    let stream = &mut token_stream("struct Foo where Foo: Bar(Foo)");
+    super::DataType::take(stream).unwrap();
+    assert!(GenericConstraints::try_take(stream).unwrap().is_some());
+
+    let stream = &mut token_stream("struct Foo()");
+    super::DataType::take(stream).unwrap();
+    assert!(GenericConstraints::try_take(stream).unwrap().is_none());
+
+    let stream = &mut token_stream("struct Foo()");
+    assert!(GenericConstraints::try_take(stream).unwrap().is_none());
+
+    let stream = &mut token_stream("{}");
+    assert!(GenericConstraints::try_take(stream).unwrap().is_none());
+
+    let stream = &mut token_stream("");
+    assert!(GenericConstraints::try_take(stream).unwrap().is_none());
 }
