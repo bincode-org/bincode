@@ -79,7 +79,6 @@ pub(self) fn read_tokens_until_punct(
     let mut result = Vec::new();
     let mut open_brackets = Vec::<char>::new();
     'outer: loop {
-        dbg!(input.peek());
         match input.peek() {
             Some(TokenTree::Punct(punct)) => {
                 if check_if_arrow(&result, punct) {

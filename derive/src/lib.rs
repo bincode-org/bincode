@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
 // mod derive_enum;
-// mod derive_struct;
+mod derive_struct;
 mod error;
 mod parse;
 
@@ -28,32 +28,56 @@ pub fn derive_encodable(input: proc_macro::TokenStream) -> proc_macro::TokenStre
 }
 
 fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
-    let mut source = input.into_iter().peekable();
-    let source = &mut source;
+    let source = &mut input.into_iter().peekable();
+
     let _visibility = parse::Visibility::try_take(source)?;
     let datatype = parse::DataType::take(source)?;
-    let _generics = parse::Generics::try_take(source)?;
-    let _where = parse::GenericConstraints::try_take(source)?;
-
-    dbg!(&_visibility);
-    dbg!(&datatype);
-    dbg!(&_generics);
-    dbg!(&_where);
+    let generics = parse::Generics::try_take(source)?;
+    let generic_constraints = parse::GenericConstraints::try_take(source)?;
 
     match datatype {
-        parse::DataType::Struct(_name) => {
+        parse::DataType::Struct(name) => {
             let body = parse::StructBody::take(source)?;
-            dbg!(&body);
+            let stream = derive_struct::DeriveStruct {
+                name: name.clone(),
+                generics,
+                generic_constraints,
+                fields: body.fields,
+            }
+            .generate_encodable();
+
+            dump_output(name, "encodable", &stream);
+
+            stream
         }
         parse::DataType::Enum(_name) => {
             let body = parse::EnumBody::take(source)?;
             dbg!(&body);
+
+            unimplemented!();
         }
     }
-
-    unimplemented!();
 }
 
+fn dump_output(
+    name: crate::prelude::Ident,
+    derive: &str,
+    stream: &Result<crate::prelude::TokenStream>,
+) {
+    use std::io::Write;
+    if let Ok(stream) = stream {
+        if let Ok(var) = std::env::var("CARGO_MANIFEST_DIR") {
+            let mut path = std::path::PathBuf::from(var);
+            path.push("target");
+            if path.exists() {
+                path.push(format!("{}_{}.rs", name, derive));
+                if let Ok(mut file) = std::fs::File::create(path) {
+                    let _ = file.write_all(stream.to_string().as_bytes());
+                }
+            }
+        }
+    }
+}
 /*
 #[proc_macro_derive(Decodable)]
 pub fn derive_decodable(input: TokenStream) -> TokenStream {

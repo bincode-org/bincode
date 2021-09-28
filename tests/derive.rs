@@ -1,13 +1,13 @@
-// #![cfg(feature = "derive")]
+#![cfg(feature = "derive")]
 
-// use bincode::{de::Decodable, enc::Encodeable};
+use bincode::enc::Encodeable; // de::Decodable,
 
-// #[derive(bincode::Encodable, PartialEq, Debug)]
-// pub(crate) struct Test<T: Encodeable> {
-//     a: T,
-//     b: u32,
-//     c: u8,
-// }
+#[derive(bincode::Encodable, PartialEq, Debug)]
+pub(crate) struct Test<T: Encodeable> {
+    a: T,
+    b: u32,
+    c: u8,
+}
 
 // #[derive(bincode::Decodable, PartialEq, Debug, Eq)]
 // pub struct Test2<T: Decodable> {

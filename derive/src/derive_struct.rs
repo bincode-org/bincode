@@ -1,69 +1,59 @@
+use crate::parse::{Field, GenericConstraints, Generics};
+use crate::prelude::{Delimiter, Group, Ident, TokenStream, TokenTree};
 use crate::Result;
-use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{quote, ToTokens};
-use syn::{GenericParam, Generics, Ident, Index, Lifetime, LifetimeDef};
+use std::str::FromStr;
 
 pub struct DeriveStruct {
-    name: Ident,
-    generics: Generics,
-    fields: Vec<TokenStream2>,
+    pub name: Ident,
+    pub generics: Option<Generics>,
+    pub generic_constraints: Option<GenericConstraints>,
+    pub fields: Vec<Field>,
 }
 
 impl DeriveStruct {
-    pub fn parse(name: Ident, generics: Generics, str: syn::DataStruct) -> Result<Self> {
-        let fields = match str.fields {
-            syn::Fields::Named(fields) => fields
-                .named
-                .iter()
-                .map(|f| f.ident.clone().unwrap().to_token_stream())
-                .collect(),
-            syn::Fields::Unnamed(fields) => fields
-                .unnamed
-                .iter()
-                .enumerate()
-                .map(|(i, _)| Index::from(i).to_token_stream())
-                .collect(),
-            syn::Fields::Unit => Vec::new(),
-        };
-
-        Ok(Self {
-            name,
-            generics,
-            fields,
-        })
-    }
-
     pub fn generate_encodable(self) -> Result<TokenStream> {
         let DeriveStruct {
             name,
             generics,
+            generic_constraints,
             fields,
         } = self;
 
-        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+        let mut result = TokenStream::new();
+        result.extend([TokenStream::from_str("impl").unwrap()]);
+        if let Some(generics) = &generics {
+            result.extend([generics.impl_generics()]);
+        }
+        result.extend([
+            TokenStream::from_str("bincode::enc::Encodeable for").unwrap(),
+            TokenTree::Ident(name).into(),
+        ]);
+        if let Some(generics) = &generics {
+            result.extend([generics.type_generics()]);
+        }
+        if let Some(generic_constraints) = &generic_constraints {
+            result.extend([generic_constraints.where_clause()]);
+        }
+        result.extend([
+            TokenTree::Group(Group::new(Delimiter::Brace, {
+                let mut fn_def = TokenStream::from_str("fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError>").unwrap();
+                let body = TokenTree::Group(Group::new(Delimiter::Brace, {
+                    let mut stream = TokenStream::new();
+                    for field in fields {
+                        stream.extend([TokenStream::from_str(&format!("bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;", field.ident.unwrap())).unwrap()]);
+                    }
+                    stream.extend([TokenStream::from_str("Ok(())").unwrap()]);
+                    stream
+                }));
+                fn_def.extend([body]);
+                fn_def
+            })),
+        ]);
 
-        let fields = fields
-            .into_iter()
-            .map(|field| {
-                quote! {
-                    bincode::enc::Encodeable::encode(&self. #field, &mut encoder)?;
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let result = quote! {
-            impl #impl_generics bincode::enc::Encodeable for #name #ty_generics #where_clause {
-                fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError> {
-                    #(#fields)*
-                    Ok(())
-                }
-
-            }
-        };
-        Ok(result.into())
+        Ok(result)
     }
 
+    /*
     pub fn generate_decodable(self) -> Result<TokenStream> {
         let DeriveStruct {
             name,
@@ -141,5 +131,5 @@ impl DeriveStruct {
         };
 
         Ok(result.into())
-    }
+    } */
 }

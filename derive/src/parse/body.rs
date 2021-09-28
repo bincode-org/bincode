@@ -24,14 +24,12 @@ impl StructBody {
             }
         }
         let group = assume_group(input.next());
-        dbg!(&group);
         let mut stream = group.stream().into_iter().peekable();
         let fields = match group.delimiter() {
             Delimiter::Brace => Field::parse_named(&mut stream)?,
             Delimiter::Parenthesis => Field::parse_unnamed(&mut stream)?,
             _ => return Err(Error::InvalidRustSyntax(group.span())),
         };
-        dbg!(&fields);
         assert!(
             stream.peek().is_none(),
             "Stream should be empty: {:?}",
@@ -111,7 +109,6 @@ pub struct EnumBody {
 
 impl EnumBody {
     pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Self> {
-        dbg!(input.peek());
         match input.peek() {
             Some(TokenTree::Group(_)) => {}
             Some(TokenTree::Punct(p)) if p.as_char() == ';' => {
@@ -130,7 +127,6 @@ impl EnumBody {
         let mut variants = Vec::new();
         let stream = &mut group.stream().into_iter().peekable();
         while stream.peek().is_some() {
-            dbg!(stream.peek());
             let ident = match stream.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
                 Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
@@ -142,7 +138,6 @@ impl EnumBody {
             if let Some(TokenTree::Group(_)) = stream.peek() {
                 let group = assume_group(stream.next());
                 let stream = &mut group.stream().into_iter().peekable();
-                dbg!(group.delimiter());
                 match group.delimiter() {
                     Delimiter::Brace => fields = Some(Field::parse_named(stream)?),
                     Delimiter::Parenthesis => fields = Some(Field::parse_unnamed(stream)?),

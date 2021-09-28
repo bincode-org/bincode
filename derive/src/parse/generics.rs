@@ -1,14 +1,14 @@
 use super::assume_punct;
 use crate::parse::{ident_eq, read_tokens_until_punct};
-use crate::prelude::{Ident, TokenTree};
+use crate::prelude::{Ident, Punct, Spacing, TokenStream, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
 #[derive(Debug)]
 pub struct Generics {
-    lifetimes: Vec<Lifetime>,
-    generics: Vec<Generic>,
+    lifetimes_and_generics: Vec<LifetimeOrGeneric>,
 }
+
 impl Generics {
     pub fn try_take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Option<Self>> {
         let maybe_punct = input.peek();
@@ -16,20 +16,24 @@ impl Generics {
             if punct.as_char() == '<' {
                 let punct = super::assume_punct(input.next(), '<');
                 let mut result = Generics {
-                    lifetimes: Vec::new(),
-                    generics: Vec::new(),
+                    lifetimes_and_generics: Vec::new(),
                 };
                 loop {
                     match input.peek() {
                         Some(TokenTree::Punct(punct)) if punct.as_char() == '\'' => {
-                            result.lifetimes.push(Lifetime::take(input)?);
+                            result
+                                .lifetimes_and_generics
+                                .push(Lifetime::take(input)?.into());
                             super::consume_punct_if(input, ',');
                         }
                         Some(TokenTree::Punct(punct)) if punct.as_char() == '>' => {
+                            assume_punct(input.next(), '>');
                             break;
                         }
                         Some(TokenTree::Ident(_)) => {
-                            result.generics.push(Generic::take(input)?);
+                            result
+                                .lifetimes_and_generics
+                                .push(Generic::take(input)?.into());
                             super::consume_punct_if(input, ',');
                         }
                         x => {
@@ -43,6 +47,105 @@ impl Generics {
             }
         }
         Ok(None)
+    }
+
+    pub fn impl_generics(&self) -> TokenStream {
+        let mut result = vec![TokenTree::Punct(Punct::new('<', Spacing::Alone))];
+
+        let mut is_first = true;
+        for generic in &self.lifetimes_and_generics {
+            if is_first {
+                is_first = false;
+            } else {
+                result.push(TokenTree::Punct(Punct::new(',', Spacing::Alone)));
+            }
+
+            if generic.is_lifetime() {
+                result.push(TokenTree::Punct(Punct::new('\'', Spacing::Joint)));
+            }
+
+            result.push(TokenTree::Ident(generic.ident()));
+
+            if generic.has_constraints() {
+                result.push(TokenTree::Punct(Punct::new(':', Spacing::Alone)));
+                result.extend(generic.constraints());
+            }
+        }
+
+        result.push(TokenTree::Punct(Punct::new('>', Spacing::Alone)));
+
+        let mut stream = TokenStream::new();
+        stream.extend(result);
+        stream
+    }
+
+    pub fn type_generics(&self) -> TokenStream {
+        let mut result = vec![TokenTree::Punct(Punct::new('<', Spacing::Alone))];
+
+        let mut is_first = true;
+        for generic in &self.lifetimes_and_generics {
+            if is_first {
+                is_first = false;
+            } else {
+                result.push(TokenTree::Punct(Punct::new(',', Spacing::Alone)));
+            }
+            if generic.is_lifetime() {
+                result.push(TokenTree::Punct(Punct::new('\'', Spacing::Joint)));
+            }
+
+            result.push(TokenTree::Ident(generic.ident()));
+        }
+
+        result.push(TokenTree::Punct(Punct::new('>', Spacing::Alone)));
+
+        let mut stream = TokenStream::new();
+        stream.extend(result);
+        stream
+    }
+}
+
+#[derive(Debug)]
+enum LifetimeOrGeneric {
+    Lifetime(Lifetime),
+    Generic(Generic),
+}
+
+impl LifetimeOrGeneric {
+    fn is_lifetime(&self) -> bool {
+        matches!(self, LifetimeOrGeneric::Lifetime(_))
+    }
+
+    fn ident(&self) -> Ident {
+        match self {
+            Self::Lifetime(lt) => lt.ident.clone(),
+            Self::Generic(gen) => gen.ident.clone(),
+        }
+    }
+
+    fn has_constraints(&self) -> bool {
+        match self {
+            Self::Lifetime(lt) => !lt.constraint.is_empty(),
+            Self::Generic(gen) => !gen.constraints.is_empty(),
+        }
+    }
+
+    fn constraints(&self) -> Vec<TokenTree> {
+        match self {
+            Self::Lifetime(lt) => lt.constraint.clone(),
+            Self::Generic(gen) => gen.constraints.clone(),
+        }
+    }
+}
+
+impl From<Lifetime> for LifetimeOrGeneric {
+    fn from(lt: Lifetime) -> Self {
+        Self::Lifetime(lt)
+    }
+}
+
+impl From<Generic> for LifetimeOrGeneric {
+    fn from(gen: Generic) -> Self {
+        Self::Generic(gen)
     }
 }
 
@@ -62,45 +165,40 @@ fn test_generics_try_take() {
     let mut stream = token_stream("struct Foo<'a, T>()");
     assert!(DataType::take(&mut stream).unwrap().is_struct("Foo"));
     let generics = Generics::try_take(&mut stream).unwrap().unwrap();
-    assert_eq!(generics.lifetimes.len(), 1);
-    assert_eq!(generics.generics.len(), 1);
-    assert!(generics.lifetimes[0].is_ident("a"));
-    assert!(generics.generics[0].is_ident("T"));
+    assert_eq!(generics.lifetimes_and_generics.len(), 2);
+    assert_eq!(generics.lifetimes_and_generics[0].ident(), "a");
+    assert_eq!(generics.lifetimes_and_generics[1].ident(), "T");
 
     let mut stream = token_stream("struct Foo<A, B>()");
     assert!(DataType::take(&mut stream).unwrap().is_struct("Foo"));
     let generics = Generics::try_take(&mut stream).unwrap().unwrap();
-    assert_eq!(generics.lifetimes.len(), 0);
-    assert_eq!(generics.generics.len(), 2);
-    assert!(generics.generics[0].is_ident("A"));
-    assert!(generics.generics[1].is_ident("B"));
+    assert_eq!(generics.lifetimes_and_generics.len(), 2);
+    assert_eq!(generics.lifetimes_and_generics[0].ident(), "A");
+    assert_eq!(generics.lifetimes_and_generics[1].ident(), "B");
 
     let mut stream = token_stream("struct Foo<'a, T: Display>()");
     assert!(DataType::take(&mut stream).unwrap().is_struct("Foo"));
     let generics = Generics::try_take(&mut stream).unwrap().unwrap();
     dbg!(&generics);
-    assert_eq!(generics.lifetimes.len(), 1);
-    assert_eq!(generics.generics.len(), 1);
-    assert!(generics.lifetimes[0].is_ident("a"));
-    assert!(generics.generics[0].is_ident("T"));
+    assert_eq!(generics.lifetimes_and_generics.len(), 2);
+    assert_eq!(generics.lifetimes_and_generics[0].ident(), "a");
+    assert_eq!(generics.lifetimes_and_generics[1].ident(), "T");
 
     let mut stream = token_stream("struct Foo<'a, T: for<'a> Bar<'a> + 'static>()");
     assert!(DataType::take(&mut stream).unwrap().is_struct("Foo"));
     let generics = Generics::try_take(&mut stream).unwrap().unwrap();
     dbg!(&generics);
-    assert_eq!(generics.lifetimes.len(), 1);
-    assert_eq!(generics.generics.len(), 1);
-    assert!(generics.lifetimes[0].is_ident("a"));
-    assert!(generics.generics[0].is_ident("T"));
+    assert_eq!(generics.lifetimes_and_generics.len(), 2);
+    assert_eq!(generics.lifetimes_and_generics[0].ident(), "a");
+    assert_eq!(generics.lifetimes_and_generics[1].ident(), "T");
 
     let mut stream =
         token_stream("struct Baz<T: for<'a> Bar<'a, for<'b> Bar<'b, for<'c> Bar<'c, u32>>>> {}");
     assert!(DataType::take(&mut stream).unwrap().is_struct("Baz"));
     let generics = Generics::try_take(&mut stream).unwrap().unwrap();
     dbg!(&generics);
-    assert_eq!(generics.lifetimes.len(), 0);
-    assert_eq!(generics.generics.len(), 1);
-    assert!(generics.generics[0].is_ident("T"));
+    assert_eq!(generics.lifetimes_and_generics.len(), 1);
+    assert_eq!(generics.lifetimes_and_generics[0].ident(), "T");
 
     let mut stream = token_stream("struct Baz<()> {}");
     assert!(DataType::take(&mut stream).unwrap().is_struct("Baz"));
@@ -112,10 +210,9 @@ fn test_generics_try_take() {
     assert!(DataType::take(&mut stream).unwrap().is_struct("Bar"));
     let generics = Generics::try_take(&mut stream).unwrap().unwrap();
     dbg!(&generics);
-    assert_eq!(generics.lifetimes.len(), 0);
-    assert_eq!(generics.generics.len(), 2);
-    assert!(generics.generics[0].is_ident("A"));
-    assert!(generics.generics[1].is_ident("B"));
+    assert_eq!(generics.lifetimes_and_generics.len(), 2);
+    assert_eq!(generics.lifetimes_and_generics[0].ident(), "A");
+    assert_eq!(generics.lifetimes_and_generics[1].ident(), "B");
 }
 
 #[derive(Debug)]
@@ -188,11 +285,6 @@ impl Generic {
         }
         Ok(Generic { ident, constraints })
     }
-
-    #[cfg(test)]
-    fn is_ident(&self, i: &str) -> bool {
-        self.ident.to_string() == i
-    }
 }
 
 #[derive(Debug)]
@@ -216,10 +308,18 @@ impl GenericConstraints {
         let constraints = read_tokens_until_punct(input, &['{', '('])?;
         Ok(Some(Self { constraints }))
     }
+
+    pub fn where_clause(&self) -> TokenStream {
+        use std::str::FromStr;
+        let mut stream = TokenStream::from_str("where").unwrap();
+        stream.extend(self.constraints.clone());
+        stream
+    }
 }
 
 #[test]
 fn test_generic_constraints_try_take() {
+    use super::{DataType, StructBody, Visibility};
     use crate::token_stream;
 
     let stream = &mut token_stream("struct Foo where Foo: Bar { }");
@@ -246,4 +346,13 @@ fn test_generic_constraints_try_take() {
 
     let stream = &mut token_stream("");
     assert!(GenericConstraints::try_take(stream).unwrap().is_none());
+
+    let stream = &mut token_stream("pub(crate) struct Test<T: Encodeable> {}");
+    assert_eq!(Ok(Some(Visibility::PubCrate)), Visibility::try_take(stream));
+    assert!(DataType::take(stream).unwrap().is_struct("Test"));
+    let constraints = Generics::try_take(stream).unwrap().unwrap();
+    assert_eq!(constraints.lifetimes_and_generics.len(), 1);
+    assert_eq!(constraints.lifetimes_and_generics[0].ident(), "T");
+    let body = StructBody::take(stream).unwrap();
+    assert_eq!(body.fields.len(), 0);
 }
