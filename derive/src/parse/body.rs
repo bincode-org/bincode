@@ -12,29 +12,32 @@ pub struct StructBody {
 impl StructBody {
     pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Self> {
         match input.peek() {
-            Some(TokenTree::Group(_)) => {
-                let group = assume_group(input.next());
-                dbg!(&group);
-                let mut stream = group.stream().into_iter().peekable();
-                let fields = match group.delimiter() {
-                    Delimiter::Brace => Field::parse_named(&mut stream)?,
-                    Delimiter::Parenthesis => Field::parse_unnamed(&mut stream)?,
-                    _ => return Err(Error::InvalidRustSyntax(group.span())),
-                };
-                dbg!(&fields);
-                assert!(
-                    stream.peek().is_none(),
-                    "Stream should be empty: {:?}",
-                    stream.collect::<Vec<_>>()
-                );
-                Ok(StructBody { fields })
-            }
+            Some(TokenTree::Group(_)) => {}
             Some(TokenTree::Punct(p)) if p.as_char() == ';' => {
-                Ok(StructBody { fields: Vec::new() })
+                return Ok(StructBody { fields: Vec::new() })
             }
-            Some(t) => Err(Error::InvalidRustSyntax(t.span())),
-            _ => Err(Error::InvalidRustSyntax(Span::call_site())),
+            Some(t) => {
+                return Err(Error::InvalidRustSyntax(t.span()));
+            }
+            _ => {
+                return Err(Error::InvalidRustSyntax(Span::call_site()));
+            }
         }
+        let group = assume_group(input.next());
+        dbg!(&group);
+        let mut stream = group.stream().into_iter().peekable();
+        let fields = match group.delimiter() {
+            Delimiter::Brace => Field::parse_named(&mut stream)?,
+            Delimiter::Parenthesis => Field::parse_unnamed(&mut stream)?,
+            _ => return Err(Error::InvalidRustSyntax(group.span())),
+        };
+        dbg!(&fields);
+        assert!(
+            stream.peek().is_none(),
+            "Stream should be empty: {:?}",
+            stream.collect::<Vec<_>>()
+        );
+        Ok(StructBody { fields })
     }
 }
 
@@ -107,9 +110,90 @@ pub struct EnumBody {
 }
 
 impl EnumBody {
-    pub fn take(_input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Self> {
-        unimplemented!()
+    pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Self> {
+        dbg!(input.peek());
+        match input.peek() {
+            Some(TokenTree::Group(_)) => {}
+            Some(TokenTree::Punct(p)) if p.as_char() == ';' => {
+                return Ok(EnumBody {
+                    variants: Vec::new(),
+                })
+            }
+            Some(t) => {
+                return Err(Error::InvalidRustSyntax(t.span()));
+            }
+            _ => {
+                return Err(Error::InvalidRustSyntax(Span::call_site()));
+            }
+        }
+        let group = assume_group(input.next());
+        let mut variants = Vec::new();
+        let stream = &mut group.stream().into_iter().peekable();
+        while stream.peek().is_some() {
+            dbg!(stream.peek());
+            let ident = match stream.peek() {
+                Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
+                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
+                None => return Err(Error::InvalidRustSyntax(Span::call_site())),
+            };
+
+            let mut fields = None;
+
+            if let Some(TokenTree::Group(_)) = stream.peek() {
+                let group = assume_group(stream.next());
+                let stream = &mut group.stream().into_iter().peekable();
+                dbg!(group.delimiter());
+                match group.delimiter() {
+                    Delimiter::Brace => fields = Some(Field::parse_named(stream)?),
+                    Delimiter::Parenthesis => fields = Some(Field::parse_unnamed(stream)?),
+                    _ => return Err(Error::InvalidRustSyntax(group.span())),
+                }
+            }
+            consume_punct_if(stream, ',');
+
+            variants.push(EnumVariant {
+                name: ident,
+                fields,
+            });
+        }
+
+        Ok(EnumBody { variants })
     }
+}
+
+#[test]
+fn test_enum_body_take() {
+    use crate::token_stream;
+
+    let stream = &mut token_stream("enum Foo { }");
+    let data_type = super::DataType::take(stream).unwrap();
+    assert!(data_type.is_enum("Foo"));
+    let body = EnumBody::take(stream).unwrap();
+    assert_eq!(0, body.variants.len());
+
+    let stream = &mut token_stream("enum Foo { Bar, Baz(u8), Blah { a: u32, b: u128 } }");
+    let data_type = super::DataType::take(stream).unwrap();
+    assert!(data_type.is_enum("Foo"));
+    let body = EnumBody::take(stream).unwrap();
+    assert_eq!(3, body.variants.len());
+
+    assert_eq!(body.variants[0].name, "Bar");
+    assert!(body.variants[0].fields.is_none());
+
+    assert_eq!(body.variants[1].name, "Baz");
+    assert_eq!(1, body.variants[1].fields.as_ref().unwrap().len());
+    let field = &body.variants[1].fields.as_ref().unwrap()[0];
+    assert!(field.ident.is_none());
+    assert_eq!(assume_ident(field.field_type(0)), "u8");
+
+    assert_eq!(body.variants[2].name, "Blah");
+    assert_eq!(2, body.variants[2].fields.as_ref().unwrap().len());
+    let field = &body.variants[2].fields.as_ref().unwrap()[0];
+    assert_eq!(field.ident.as_ref().unwrap(), "a");
+    assert_eq!(assume_ident(field.field_type(0)), "u32");
+    let field = &body.variants[2].fields.as_ref().unwrap()[1];
+    assert_eq!(field.ident.as_ref().unwrap(), "b");
+    assert_eq!(assume_ident(field.field_type(0)), "u128");
 }
 
 #[derive(Debug)]
