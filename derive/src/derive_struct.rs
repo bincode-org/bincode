@@ -1,7 +1,6 @@
 use crate::parse::{Field, GenericConstraints, Generics};
-use crate::prelude::{Delimiter, Group, Ident, TokenStream, TokenTree};
+use crate::prelude::{Ident, TokenStream};
 use crate::Result;
-use std::str::FromStr;
 
 pub struct DeriveStruct {
     pub name: Ident,
@@ -19,43 +18,34 @@ impl DeriveStruct {
             fields,
         } = self;
 
-        let mut result = TokenStream::new();
-        result.extend([TokenStream::from_str("impl").unwrap()]);
-        if let Some(generics) = &generics {
-            result.extend([generics.impl_generics()]);
+        let mut result = crate::generate::Generate::impl_for(
+            "bincode::enc::Encodeable",
+            &name,
+            &generics,
+            &generic_constraints,
+        );
+        {
+            let mut fn_body = result.generate_fn(
+                "encode",
+                Some("E: bincode::enc::Encode"),
+                "&self, mut encoder: E",
+                "Result<(), bincode::error::EncodeError>",
+            );
+            for (idx, field) in fields.iter().enumerate() {
+                let field_name = field
+                    .ident
+                    .as_ref()
+                    .map(|idx| idx.to_string())
+                    .unwrap_or_else(|| idx.to_string());
+                fn_body.push(format!(
+                    "bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;",
+                    field_name
+                ));
+            }
+            fn_body.push("Ok(())");
         }
-        result.extend([
-            TokenStream::from_str("bincode::enc::Encodeable for").unwrap(),
-            TokenTree::Ident(name).into(),
-        ]);
-        if let Some(generics) = &generics {
-            result.extend([generics.type_generics()]);
-        }
-        if let Some(generic_constraints) = &generic_constraints {
-            result.extend([generic_constraints.where_clause()]);
-        }
-        result.extend([
-            TokenTree::Group(Group::new(Delimiter::Brace, {
-                let mut fn_def = TokenStream::from_str("fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError>").unwrap();
-                let body = TokenTree::Group(Group::new(Delimiter::Brace, {
-                    let mut stream = TokenStream::new();
-                    for (i, field) in fields.iter().enumerate() {
-                        let field_name = field.ident.as_ref().map(|i| i.to_string()).unwrap_or_else(|| i.to_string());
-                        stream.extend([
-                            TokenStream::from_str(
-                                &format!("bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;", field_name)
-                            ).unwrap()
-                        ]);
-                    }
-                    stream.extend([TokenStream::from_str("Ok(())").unwrap()]);
-                    stream
-                }));
-                fn_def.extend([body]);
-                fn_def
-            })),
-        ]);
 
-        Ok(result)
+        Ok(result.build())
     }
 
     /*

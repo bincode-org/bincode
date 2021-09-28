@@ -3,6 +3,7 @@ extern crate proc_macro;
 // mod derive_enum;
 mod derive_struct;
 mod error;
+mod generate;
 mod parse;
 
 #[cfg(test)]
