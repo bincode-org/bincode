@@ -23,8 +23,8 @@ pub(crate) struct Test<T: Encodeable> {
 //     c: u32,
 // }
 
-// #[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
-// pub struct TestTupleStruct(u32, u32, u32);
+#[derive(bincode::Encodable, PartialEq, Debug, Eq)] // bincode::Decodable,
+pub struct TestTupleStruct(u32, u32, u32);
 
 // #[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
 // pub enum TestEnum {
@@ -40,18 +40,18 @@ pub(crate) struct Test<T: Encodeable> {
 //     Baz(u32, u32, u32),
 // }
 
-// #[test]
-// fn test_encodable() {
-//     let start = Test {
-//         a: 5i32,
-//         b: 10u32,
-//         c: 20u8,
-//     };
-//     let mut slice = [0u8; 1024];
-//     let bytes_written = bincode::encode_into_slice(start, &mut slice).unwrap();
-//     assert_eq!(bytes_written, 3);
-//     assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
-// }
+#[test]
+fn test_encodable() {
+    let start = Test {
+        a: 5i32,
+        b: 10u32,
+        c: 20u8,
+    };
+    let mut slice = [0u8; 1024];
+    let bytes_written = bincode::encode_into_slice(start, &mut slice).unwrap();
+    assert_eq!(bytes_written, 3);
+    assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
+}
 
 // #[cfg(feature = "std")]
 // #[test]
@@ -66,14 +66,14 @@ pub(crate) struct Test<T: Encodeable> {
 //     assert_eq!(result, start);
 // }
 
-// #[test]
-// fn test_encodable_tuple() {
-//     let start = TestTupleStruct(5, 10, 1024);
-//     let mut slice = [0u8; 1024];
-//     let bytes_written = bincode::encode_into_slice(start, &mut slice).unwrap();
-//     assert_eq!(bytes_written, 5);
-//     assert_eq!(&slice[..bytes_written], &[5, 10, 251, 0, 4]);
-// }
+#[test]
+fn test_encodable_tuple() {
+    let start = TestTupleStruct(5, 10, 1024);
+    let mut slice = [0u8; 1024];
+    let bytes_written = bincode::encode_into_slice(start, &mut slice).unwrap();
+    assert_eq!(bytes_written, 5);
+    assert_eq!(&slice[..bytes_written], &[5, 10, 251, 0, 4]);
+}
 
 // #[test]
 // fn test_decodable_tuple() {

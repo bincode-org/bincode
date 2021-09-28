@@ -39,8 +39,13 @@ impl DeriveStruct {
                 let mut fn_def = TokenStream::from_str("fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError>").unwrap();
                 let body = TokenTree::Group(Group::new(Delimiter::Brace, {
                     let mut stream = TokenStream::new();
-                    for field in fields {
-                        stream.extend([TokenStream::from_str(&format!("bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;", field.ident.unwrap())).unwrap()]);
+                    for (i, field) in fields.iter().enumerate() {
+                        let field_name = field.ident.as_ref().map(|i| i.to_string()).unwrap_or_else(|| i.to_string());
+                        stream.extend([
+                            TokenStream::from_str(
+                                &format!("bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;", field_name)
+                            ).unwrap()
+                        ]);
                     }
                     stream.extend([TokenStream::from_str("Ok(())").unwrap()]);
                     stream

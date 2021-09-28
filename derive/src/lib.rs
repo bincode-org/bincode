@@ -46,7 +46,7 @@ fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
             }
             .generate_encodable();
 
-            dump_output(name, "encodable", &stream);
+            dump_output(name, "Encodeable", &stream);
 
             stream
         }
