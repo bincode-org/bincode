@@ -1,6 +1,7 @@
 use super::assume_punct;
 use crate::parse::{ident_eq, read_tokens_until_punct};
-use crate::prelude::{Ident, Punct, Spacing, TokenStream, TokenTree};
+use crate::prelude::{Ident, TokenStream, TokenTree};
+use crate::utils::*;
 use crate::{Error, Result};
 use std::iter::Peekable;
 
@@ -49,30 +50,73 @@ impl Generics {
         Ok(None)
     }
 
-    pub fn impl_generics(&self) -> TokenStream {
-        let mut result = vec![TokenTree::Punct(Punct::new('<', Spacing::Alone))];
+    pub fn has_lifetime(&self) -> bool {
+        self.lifetimes_and_generics
+            .iter()
+            .any(|lt| lt.is_lifetime())
+    }
 
-        let mut is_first = true;
-        for generic in &self.lifetimes_and_generics {
-            if is_first {
-                is_first = false;
-            } else {
-                result.push(TokenTree::Punct(Punct::new(',', Spacing::Alone)));
+    pub fn impl_generics(&self) -> TokenStream {
+        let mut result = vec![punct('<')];
+
+        for (idx, generic) in self.lifetimes_and_generics.iter().enumerate() {
+            if idx > 0 {
+                result.push(punct(','));
             }
 
             if generic.is_lifetime() {
-                result.push(TokenTree::Punct(Punct::new('\'', Spacing::Joint)));
+                result.push(punct('\''));
             }
 
             result.push(TokenTree::Ident(generic.ident()));
 
             if generic.has_constraints() {
-                result.push(TokenTree::Punct(Punct::new(':', Spacing::Alone)));
+                result.push(punct(':'));
                 result.extend(generic.constraints());
             }
         }
 
-        result.push(TokenTree::Punct(Punct::new('>', Spacing::Alone)));
+        result.push(punct('>'));
+
+        let mut stream = TokenStream::new();
+        stream.extend(result);
+        stream
+    }
+
+    pub fn impl_generics_with_additional_lifetime(&self, lifetime: &str) -> TokenStream {
+        assert!(self.has_lifetime());
+
+        let mut result = vec![punct('<'), punct('\''), ident(lifetime)];
+
+        if self.has_lifetime() {
+            for (idx, lt) in self
+                .lifetimes_and_generics
+                .iter()
+                .filter_map(|lt| lt.as_lifetime())
+                .enumerate()
+            {
+                result.push(punct(if idx == 0 { ':' } else { '+' }));
+                result.push(punct('\''));
+                result.push(TokenTree::Ident(lt.ident.clone()));
+            }
+        }
+
+        for generic in &self.lifetimes_and_generics {
+            result.push(punct(','));
+
+            if generic.is_lifetime() {
+                result.push(punct('\''));
+            }
+
+            result.push(TokenTree::Ident(generic.ident()));
+
+            if generic.has_constraints() {
+                result.push(punct(':'));
+                result.extend(generic.constraints());
+            }
+        }
+
+        result.push(punct('>'));
 
         let mut stream = TokenStream::new();
         stream.extend(result);
@@ -80,23 +124,20 @@ impl Generics {
     }
 
     pub fn type_generics(&self) -> TokenStream {
-        let mut result = vec![TokenTree::Punct(Punct::new('<', Spacing::Alone))];
+        let mut result = vec![punct('<')];
 
-        let mut is_first = true;
-        for generic in &self.lifetimes_and_generics {
-            if is_first {
-                is_first = false;
-            } else {
-                result.push(TokenTree::Punct(Punct::new(',', Spacing::Alone)));
+        for (idx, generic) in self.lifetimes_and_generics.iter().enumerate() {
+            if idx > 0 {
+                result.push(punct(','));
             }
             if generic.is_lifetime() {
-                result.push(TokenTree::Punct(Punct::new('\'', Spacing::Joint)));
+                result.push(punct('\''));
             }
 
             result.push(TokenTree::Ident(generic.ident()));
         }
 
-        result.push(TokenTree::Punct(Punct::new('>', Spacing::Alone)));
+        result.push(punct('>'));
 
         let mut stream = TokenStream::new();
         stream.extend(result);
@@ -119,6 +160,13 @@ impl LifetimeOrGeneric {
         match self {
             Self::Lifetime(lt) => lt.ident.clone(),
             Self::Generic(gen) => gen.ident.clone(),
+        }
+    }
+
+    fn as_lifetime(&self) -> Option<&Lifetime> {
+        match self {
+            Self::Lifetime(lt) => Some(lt),
+            Self::Generic(_) => None,
         }
     }
 

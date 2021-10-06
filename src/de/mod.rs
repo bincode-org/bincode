@@ -6,7 +6,8 @@ mod impls;
 pub mod read;
 pub use self::decoder::Decoder;
 
-pub trait Decodable: for<'de> BorrowDecodable<'de> {
+pub trait Decodable: Sized {
+    // }: for<'de> BorrowDecodable<'de> {
     fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError>;
 }
 

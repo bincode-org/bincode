@@ -5,6 +5,7 @@ mod derive_struct;
 mod error;
 mod generate;
 mod parse;
+mod utils;
 
 #[cfg(test)]
 pub(crate) mod prelude {
@@ -60,6 +61,46 @@ fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
     }
 }
 
+#[proc_macro_derive(Decodable)]
+pub fn derive_decodable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    #[allow(clippy::useless_conversion)]
+    derive_decodable_inner(input.into())
+        .unwrap_or_else(|e| e.into_token_stream())
+        .into()
+}
+
+fn derive_decodable_inner(input: TokenStream) -> Result<TokenStream> {
+    let source = &mut input.into_iter().peekable();
+
+    let _visibility = parse::Visibility::try_take(source)?;
+    let datatype = parse::DataType::take(source)?;
+    let generics = parse::Generics::try_take(source)?;
+    let generic_constraints = parse::GenericConstraints::try_take(source)?;
+
+    match datatype {
+        parse::DataType::Struct(name) => {
+            let body = parse::StructBody::take(source)?;
+            let stream = derive_struct::DeriveStruct {
+                name: name.clone(),
+                generics,
+                generic_constraints,
+                fields: body.fields,
+            }
+            .generate_decodable();
+
+            dump_output(name, "Decodeable", &stream);
+
+            stream
+        }
+        parse::DataType::Enum(_name) => {
+            let body = parse::EnumBody::take(source)?;
+            dbg!(&body);
+
+            unimplemented!();
+        }
+    }
+}
+
 fn dump_output(
     name: crate::prelude::Ident,
     derive: &str,
@@ -79,28 +120,6 @@ fn dump_output(
         }
     }
 }
-/*
-#[proc_macro_derive(Decodable)]
-pub fn derive_decodable(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-    derive_decodable_inner(input).unwrap_or_else(|e| e.into_token_stream())
-}
-
-fn derive_decodable_inner(input: DeriveInput) -> Result<TokenStream> {
-    match input.data {
-        syn::Data::Struct(struct_definition) => {
-            DeriveStruct::parse(input.ident, input.generics, struct_definition)
-                .and_then(|str| str.generate_decodable())
-        }
-        syn::Data::Enum(enum_definition) => {
-            DeriveEnum::parse(input.ident, input.generics, enum_definition)
-                .and_then(|str| str.generate_decodable())
-        }
-        syn::Data::Union(_) => Err(Error::UnionNotSupported),
-    }
-}
-*/
-
 #[cfg(test)]
 pub(crate) fn token_stream(
     s: &str,

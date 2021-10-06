@@ -1,6 +1,6 @@
 #![cfg(feature = "derive")]
 
-use bincode::enc::Encodeable; // de::Decodable,
+use bincode::{de::Decodable, enc::Encodeable};
 
 #[derive(bincode::Encodable, PartialEq, Debug)]
 pub(crate) struct Test<T: Encodeable> {
@@ -9,21 +9,21 @@ pub(crate) struct Test<T: Encodeable> {
     c: u8,
 }
 
-// #[derive(bincode::Decodable, PartialEq, Debug, Eq)]
-// pub struct Test2<T: Decodable> {
-//     a: T,
-//     b: u32,
-//     c: u32,
-// }
+#[derive(bincode::Decodable, PartialEq, Debug, Eq)]
+pub struct Test2<T: Decodable> {
+    a: T,
+    b: u32,
+    c: u32,
+}
 
-// #[derive(bincode::Decodable, PartialEq, Debug, Eq)]
-// pub struct Test3<'a> {
-//     a: &'a str,
-//     b: u32,
-//     c: u32,
-// }
+#[derive(bincode::Decodable, PartialEq, Debug, Eq)]
+pub struct Test3<'a> {
+    a: &'a str,
+    b: u32,
+    c: u32,
+}
 
-#[derive(bincode::Encodable, PartialEq, Debug, Eq)] // bincode::Decodable,
+#[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
 pub struct TestTupleStruct(u32, u32, u32);
 
 // #[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
@@ -53,18 +53,18 @@ fn test_encodable() {
     assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
 }
 
-// #[cfg(feature = "std")]
-// #[test]
-// fn test_decodable() {
-//     let start = Test2 {
-//         a: 5u32,
-//         b: 10u32,
-//         c: 1024u32,
-//     };
-//     let slice = [5, 10, 251, 0, 4];
-//     let result: Test2<u32> = bincode::decode_from(&mut slice.as_ref()).unwrap();
-//     assert_eq!(result, start);
-// }
+#[cfg(feature = "std")]
+#[test]
+fn test_decodable() {
+    let start = Test2 {
+        a: 5u32,
+        b: 10u32,
+        c: 1024u32,
+    };
+    let slice = [5, 10, 251, 0, 4];
+    let result: Test2<u32> = bincode::decode_from(&mut slice.as_ref()).unwrap();
+    assert_eq!(result, start);
+}
 
 #[test]
 fn test_encodable_tuple() {
@@ -75,13 +75,13 @@ fn test_encodable_tuple() {
     assert_eq!(&slice[..bytes_written], &[5, 10, 251, 0, 4]);
 }
 
-// #[test]
-// fn test_decodable_tuple() {
-//     let start = TestTupleStruct(5, 10, 1024);
-//     let mut slice = [5, 10, 251, 0, 4];
-//     let result: TestTupleStruct = bincode::decode(&mut slice).unwrap();
-//     assert_eq!(result, start);
-// }
+#[test]
+fn test_decodable_tuple() {
+    let start = TestTupleStruct(5, 10, 1024);
+    let mut slice = [5, 10, 251, 0, 4];
+    let result: TestTupleStruct = bincode::decode(&mut slice).unwrap();
+    assert_eq!(result, start);
+}
 
 // #[test]
 // fn test_encodable_enum_struct_variant() {

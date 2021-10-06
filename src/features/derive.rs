@@ -1,1 +1,1 @@
-pub use bincode_derive::Encodable; // Decodable,
+pub use bincode_derive::{Decodable, Encodable};
