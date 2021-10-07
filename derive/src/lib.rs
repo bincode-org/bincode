@@ -89,9 +89,10 @@ fn derive_decodable_inner(input: TokenStream) -> Result<TokenStream> {
         }
         parse::DataType::Enum => {
             let body = parse::EnumBody::take(source)?;
-            dbg!(&body);
-
-            unimplemented!();
+            derive_enum::DeriveEnum {
+                variants: body.variants,
+            }
+            .generate_decodable(&mut generator)?;
         }
     }
 

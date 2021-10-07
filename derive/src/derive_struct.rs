@@ -40,9 +40,6 @@ impl DeriveStruct {
         if generator.has_lifetimes() {
             // struct has a lifetime, implement BorrowDecodable
 
-            // impl #impl_generics bincode::de::BorrowDecodable<'__de> for #name #ty_generics #where_clause {
-            //     fn borrow_decode<D: bincode::de::BorrowDecode<'__de>>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
-
             let mut impl_for =
                 generator.impl_for_with_de_lifetime("bincode::de::BorrowDecodable<'__de>");
             let mut fn_builder = impl_for.generate_fn("borrow_decode", |builder| {
@@ -68,9 +65,6 @@ impl DeriveStruct {
             fn_builder.push_str(body);
         } else {
             // struct has no lifetimes, implement Decodable
-
-            // impl #impl_generics bincode::de::Decodable for #name #ty_generics #where_clause {
-            //     fn decode<D: bincode::de::Decode>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
 
             let mut impl_for = generator.impl_for("bincode::de::Decodable");
             let mut fn_builder = impl_for.generate_fn("decode", |builder| {

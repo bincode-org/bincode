@@ -26,14 +26,14 @@ pub struct Test3<'a> {
 #[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
 pub struct TestTupleStruct(u32, u32, u32);
 
-#[derive(bincode::Encodable, PartialEq, Debug, Eq)] // bincode::Decodable,
+#[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
 pub enum TestEnum {
     Foo,
     Bar { name: u32 },
     Baz(u32, u32, u32),
 }
 
-#[derive(bincode::Encodable, PartialEq, Debug, Eq)] // bincode::Decodable,
+#[derive(bincode::Encodable, bincode::Decodable, PartialEq, Debug, Eq)]
 pub enum TestEnum2<'a> {
     Foo,
     Bar { name: &'a str },
@@ -92,13 +92,13 @@ fn test_encodable_enum_struct_variant() {
     assert_eq!(&slice[..bytes_written], &[1, 5]);
 }
 
-// #[test]
-// fn test_decodable_enum_struct_variant() {
-//     let start = TestEnum::Bar { name: 5u32 };
-//     let mut slice = [1, 5];
-//     let result: TestEnum = bincode::decode(&mut slice).unwrap();
-//     assert_eq!(result, start);
-// }
+#[test]
+fn test_decodable_enum_struct_variant() {
+    let start = TestEnum::Bar { name: 5u32 };
+    let mut slice = [1, 5];
+    let result: TestEnum = bincode::decode(&mut slice).unwrap();
+    assert_eq!(result, start);
+}
 
 #[test]
 fn test_encodable_enum_tuple_variant() {
@@ -109,13 +109,13 @@ fn test_encodable_enum_tuple_variant() {
     assert_eq!(&slice[..bytes_written], &[2, 5, 10, 251, 0, 4]);
 }
 
-// #[test]
-// fn test_decodable_enum_unit_variant() {
-//     let start = TestEnum::Foo;
-//     let mut slice = [0];
-//     let result: TestEnum = bincode::decode(&mut slice).unwrap();
-//     assert_eq!(result, start);
-// }
+#[test]
+fn test_decodable_enum_unit_variant() {
+    let start = TestEnum::Foo;
+    let mut slice = [0];
+    let result: TestEnum = bincode::decode(&mut slice).unwrap();
+    assert_eq!(result, start);
+}
 
 #[test]
 fn test_encodable_enum_unit_variant() {
@@ -126,10 +126,10 @@ fn test_encodable_enum_unit_variant() {
     assert_eq!(&slice[..bytes_written], &[0]);
 }
 
-// #[test]
-// fn test_decodable_enum_tuple_variant() {
-//     let start = TestEnum::Baz(5, 10, 1024);
-//     let mut slice = [2, 5, 10, 251, 0, 4];
-//     let result: TestEnum = bincode::decode(&mut slice).unwrap();
-//     assert_eq!(result, start);
-// }
+#[test]
+fn test_decodable_enum_tuple_variant() {
+    let start = TestEnum::Baz(5, 10, 1024);
+    let mut slice = [2, 5, 10, 251, 0, 4];
+    let result: TestEnum = bincode::decode(&mut slice).unwrap();
+    assert_eq!(result, start);
+}
