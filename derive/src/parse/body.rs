@@ -203,10 +203,30 @@ pub struct EnumVariant {
     pub fields: Option<Vec<Field>>,
 }
 
+impl EnumVariant {
+    pub fn is_struct_variant(&self) -> bool {
+        // An enum variant is a struct variant if it has any fields with a name
+        // enum Foo { Bar { a: u32, b: u32 } }
+        self.fields
+            .as_ref()
+            .map(|f| f.iter().any(|f| f.ident.is_some()))
+            .unwrap_or(false)
+    }
+    pub fn is_tuple_variant(&self) -> bool {
+        // An enum variant is a struct variant if it has no fields with a name
+        // enum Foo { Bar(u32, u32) }
+        self.fields
+            .as_ref()
+            .map(|f| f.iter().all(|f| f.ident.is_none()))
+            .unwrap_or(false)
+    }
+}
+
 #[derive(Debug)]
 pub struct Field {
     pub vis: Option<Visibility>,
     pub ident: Option<Ident>,
+    // TODO: Can this be non-Option?
     pub r#type: Option<Vec<TokenTree>>,
 }
 
@@ -260,5 +280,35 @@ impl Field {
     #[cfg(test)]
     fn field_type(&self, n: usize) -> Option<TokenTree> {
         self.r#type.as_ref().and_then(|t| t.get(n)).cloned()
+    }
+
+    pub fn name_or_idx(&self, idx: usize) -> IdentOrString {
+        match self.ident.as_ref() {
+            Some(i) => IdentOrString::Ident(i),
+            None => IdentOrString::String(format!("field_{}", idx)),
+        }
+    }
+}
+
+pub enum IdentOrString<'a> {
+    Ident(&'a Ident),
+    String(String),
+}
+
+impl IdentOrString<'_> {
+    pub fn into_token_tree(self) -> TokenTree {
+        TokenTree::Ident(match self {
+            Self::Ident(i) => i.clone(),
+            Self::String(s) => Ident::new(&s, Span::call_site()),
+        })
+    }
+}
+
+impl std::fmt::Display for IdentOrString<'_> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Ident(i) => write!(fmt, "{}", i.to_string()),
+            Self::String(s) => write!(fmt, "{}", s),
+        }
     }
 }

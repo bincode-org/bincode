@@ -1,6 +1,6 @@
 extern crate proc_macro;
 
-// mod derive_enum;
+mod derive_enum;
 mod derive_struct;
 mod error;
 mod generate;
@@ -49,9 +49,10 @@ fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
         }
         parse::DataType::Enum => {
             let body = parse::EnumBody::take(source)?;
-            dbg!(&body);
-
-            unimplemented!();
+            derive_enum::DeriveEnum {
+                variants: body.variants,
+            }
+            .generate_encodable(&mut generator)?;
         }
     }
 

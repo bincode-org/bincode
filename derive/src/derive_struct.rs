@@ -24,12 +24,12 @@ impl DeriveStruct {
                 .as_ref()
                 .map(|idx| idx.to_string())
                 .unwrap_or_else(|| idx.to_string());
-            fn_body.push(format!(
+            fn_body.push_str(format!(
                 "bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;",
                 field_name
             ));
         }
-        fn_body.push("Ok(())");
+        fn_body.push_str("Ok(())");
 
         Ok(())
     }
@@ -65,7 +65,7 @@ impl DeriveStruct {
                 );
             }
             body += "})";
-            fn_builder.push(body);
+            fn_builder.push_str(body);
         } else {
             // struct has no lifetimes, implement Decodable
 
@@ -93,7 +93,7 @@ impl DeriveStruct {
                 );
             }
             body += "})";
-            fn_builder.push(body);
+            fn_builder.push_str(body);
         };
 
         Ok(())

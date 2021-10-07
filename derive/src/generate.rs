@@ -47,7 +47,7 @@ impl Generator {
 
 impl Drop for Generator {
     fn drop(&mut self) {
-        if !self.stream.is_empty() {
+        if !self.stream.is_empty() && !std::thread::panicking() {
             panic!("Generator dropped but the stream is not empty. Please call `.take_stream()` on the generator");
         }
     }
@@ -194,10 +194,22 @@ pub struct GenerateFnBody<'a, 'b> {
 }
 
 impl GenerateFnBody<'_, '_> {
-    pub fn push(&mut self, str: impl AsRef<str>) {
+    pub fn push_str(&mut self, str: impl AsRef<str>) {
         self.group
             .1
             .extend([TokenStream::from_str(str.as_ref()).unwrap()]);
+    }
+
+    pub fn push_group(
+        &mut self,
+        delim: Delimiter,
+        group_content: impl IntoIterator<Item = TokenTree>,
+    ) {
+        let mut stream = TokenStream::new();
+        stream.extend(group_content);
+        self.group
+            .1
+            .extend([TokenTree::Group(Group::new(delim, stream))]);
     }
 }
 
