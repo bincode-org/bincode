@@ -226,8 +226,7 @@ impl EnumVariant {
 pub struct Field {
     pub vis: Option<Visibility>,
     pub ident: Option<Ident>,
-    // TODO: Can this be non-Option?
-    pub r#type: Option<Vec<TokenTree>>,
+    pub r#type: Vec<TokenTree>,
 }
 
 impl Field {
@@ -253,7 +252,7 @@ impl Field {
             result.push(Field {
                 vis,
                 ident: Some(ident),
-                r#type: Some(r#type),
+                r#type,
             });
         }
         Ok(result)
@@ -271,7 +270,7 @@ impl Field {
             result.push(Field {
                 vis,
                 ident: None,
-                r#type: Some(r#type),
+                r#type,
             });
         }
         Ok(result)
@@ -279,7 +278,7 @@ impl Field {
 
     #[cfg(test)]
     fn field_type(&self, n: usize) -> Option<TokenTree> {
-        self.r#type.as_ref().and_then(|t| t.get(n)).cloned()
+        self.r#type.get(n).cloned()
     }
 
     pub fn name_or_idx(&self, idx: usize) -> IdentOrString {
