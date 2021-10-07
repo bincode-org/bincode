@@ -188,7 +188,7 @@ impl<'storage> BincodeRead<'storage> for SliceReader<'storage> {
 
     #[inline]
     fn consume(&mut self, n: usize) {
-        self.slice = &self.slice.get(n..).unwrap_or_default();
+        self.slice = self.slice.get(n..).unwrap_or_default();
     }
 }
 
@@ -225,7 +225,7 @@ where
 
     fn get_byte_buffer(&mut self, length: usize) -> Result<Vec<u8>> {
         self.fill_buffer(length)?;
-        Ok(::std::mem::replace(&mut self.temp_buffer, Vec::new()))
+        Ok(::std::mem::take(&mut self.temp_buffer))
     }
 
     fn forward_read_bytes<V>(&mut self, length: usize, visitor: V) -> Result<V::Value>
@@ -255,7 +255,7 @@ where
             <Self as std::io::Read>::read_exact(self, &mut temp_buf)?;
             &temp_buf
         };
-        let string = match ::std::str::from_utf8(&buf) {
+        let string = match ::std::str::from_utf8(buf) {
             Ok(s) => s,
             Err(e) => return Err(crate::ErrorKind::InvalidUtf8Encoding(e).into()),
         };
