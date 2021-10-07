@@ -1,5 +1,6 @@
 use crate::generate::Generator;
 use crate::parse::Field;
+use crate::prelude::Delimiter;
 use crate::Result;
 
 pub struct DeriveStruct {
@@ -18,18 +19,19 @@ impl DeriveStruct {
                 .with_arg("mut encoder", "E")
                 .with_return_type("Result<(), bincode::error::EncodeError>")
         });
+        let fn_body = fn_body.stream();
         for (idx, field) in fields.iter().enumerate() {
             let field_name = field
                 .ident
                 .as_ref()
                 .map(|idx| idx.to_string())
                 .unwrap_or_else(|| idx.to_string());
-            fn_body.push_str(format!(
+            fn_body.push_parsed(format!(
                 "bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;",
                 field_name
             ));
         }
-        fn_body.push_str("Ok(())");
+        fn_body.push_parsed("Ok(())");
 
         Ok(())
     }
@@ -48,21 +50,26 @@ impl DeriveStruct {
                     .with_arg("mut decoder", "D")
                     .with_return_type("Result<Self, bincode::error::DecodeError>")
             });
-            let mut body = String::new();
-            body += "Ok(Self {";
-            for (idx, field) in fields.into_iter().enumerate() {
-                let field_name_or_number = field
-                    .ident
-                    .map(|i| i.to_string())
-                    .unwrap_or_else(|| idx.to_string());
+            let fn_body = fn_builder.stream();
+            // Ok(Self {
+            fn_body.ident_str("Ok");
+            fn_body.group(Delimiter::Parenthesis, |ok_group| {
+                ok_group.ident_str("Self");
+                ok_group.group(Delimiter::Brace, |struct_body| {
+                    for (idx, field) in fields.into_iter().enumerate() {
+                        let field_name_or_number = field
+                            .ident
+                            .map(|i| i.to_string())
+                            .unwrap_or_else(|| idx.to_string());
+                        struct_body.push_parsed(format!(
+                            "{}: bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,",
+                            field_name_or_number
+                        ));
+                    }
+                });
+            });
 
-                body += &format!(
-                    "{}: bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,",
-                    field_name_or_number
-                );
-            }
-            body += "})";
-            fn_builder.push_str(body);
+            Ok(())
         } else {
             // struct has no lifetimes, implement Decodable
 
@@ -73,23 +80,27 @@ impl DeriveStruct {
                     .with_arg("mut decoder", "D")
                     .with_return_type("Result<Self, bincode::error::DecodeError>")
             });
-            let mut body = String::new();
-            body += "Ok(Self {";
-            for (idx, field) in fields.into_iter().enumerate() {
-                let field_name_or_number = field
-                    .ident
-                    .map(|i| i.to_string())
-                    .unwrap_or_else(|| idx.to_string());
 
-                body += &format!(
-                    "{}: bincode::de::Decodable::decode(&mut decoder)?,",
-                    field_name_or_number
-                );
-            }
-            body += "})";
-            fn_builder.push_str(body);
-        };
+            let fn_body = fn_builder.stream();
+            // Ok(Self {
+            fn_body.ident_str("Ok");
+            fn_body.group(Delimiter::Parenthesis, |ok_group| {
+                ok_group.ident_str("Self");
+                ok_group.group(Delimiter::Brace, |struct_body| {
+                    for (idx, field) in fields.into_iter().enumerate() {
+                        let field_name_or_number = field
+                            .ident
+                            .map(|i| i.to_string())
+                            .unwrap_or_else(|| idx.to_string());
+                        struct_body.push_parsed(format!(
+                            "{}: bincode::de::Decodable::decode(&mut decoder)?,",
+                            field_name_or_number
+                        ));
+                    }
+                });
+            });
 
-        Ok(())
+            Ok(())
+        }
     }
 }

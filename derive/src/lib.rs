@@ -5,7 +5,6 @@ mod derive_struct;
 mod error;
 mod generate;
 mod parse;
-mod utils;
 
 #[cfg(test)]
 pub(crate) mod prelude {

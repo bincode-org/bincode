@@ -1,7 +1,7 @@
 use super::assume_punct;
+use crate::generate::StreamBuilder;
 use crate::parse::{ident_eq, read_tokens_until_punct};
-use crate::prelude::{Ident, TokenStream, TokenTree};
-use crate::utils::*;
+use crate::prelude::{Ident, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
@@ -56,37 +56,38 @@ impl Generics {
             .any(|lt| lt.is_lifetime())
     }
 
-    pub fn impl_generics(&self) -> TokenStream {
-        let mut result = vec![punct('<')];
+    pub fn impl_generics(&self) -> StreamBuilder {
+        let mut result = StreamBuilder::new();
+        result.punct('<');
 
         for (idx, generic) in self.lifetimes_and_generics.iter().enumerate() {
             if idx > 0 {
-                result.push(punct(','));
+                result.punct(',');
             }
 
             if generic.is_lifetime() {
-                result.push(punct('\''));
+                result.lifetime(generic.ident());
+            } else {
+                result.ident(generic.ident());
             }
 
-            result.push(TokenTree::Ident(generic.ident()));
-
             if generic.has_constraints() {
-                result.push(punct(':'));
+                result.punct(':');
                 result.extend(generic.constraints());
             }
         }
 
-        result.push(punct('>'));
+        result.punct('>');
 
-        let mut stream = TokenStream::new();
-        stream.extend(result);
-        stream
+        result
     }
 
-    pub fn impl_generics_with_additional_lifetime(&self, lifetime: &str) -> TokenStream {
+    pub fn impl_generics_with_additional_lifetime(&self, lifetime: &str) -> StreamBuilder {
         assert!(self.has_lifetime());
 
-        let mut result = vec![punct('<'), punct('\''), ident(lifetime)];
+        let mut result = StreamBuilder::new();
+        result.punct('<');
+        result.lifetime_str(lifetime);
 
         if self.has_lifetime() {
             for (idx, lt) in self
@@ -95,53 +96,48 @@ impl Generics {
                 .filter_map(|lt| lt.as_lifetime())
                 .enumerate()
             {
-                result.push(punct(if idx == 0 { ':' } else { '+' }));
-                result.push(punct('\''));
-                result.push(TokenTree::Ident(lt.ident.clone()));
+                result.punct(if idx == 0 { ':' } else { '+' });
+                result.lifetime(lt.ident.clone());
             }
         }
 
         for generic in &self.lifetimes_and_generics {
-            result.push(punct(','));
+            result.punct(',');
 
             if generic.is_lifetime() {
-                result.push(punct('\''));
+                result.lifetime(generic.ident());
+            } else {
+                result.ident(generic.ident());
             }
 
-            result.push(TokenTree::Ident(generic.ident()));
-
             if generic.has_constraints() {
-                result.push(punct(':'));
+                result.punct(':');
                 result.extend(generic.constraints());
             }
         }
 
-        result.push(punct('>'));
+        result.punct('>');
 
-        let mut stream = TokenStream::new();
-        stream.extend(result);
-        stream
+        result
     }
 
-    pub fn type_generics(&self) -> TokenStream {
-        let mut result = vec![punct('<')];
+    pub fn type_generics(&self) -> StreamBuilder {
+        let mut result = StreamBuilder::new();
+        result.punct('<');
 
         for (idx, generic) in self.lifetimes_and_generics.iter().enumerate() {
             if idx > 0 {
-                result.push(punct(','));
+                result.punct(',');
             }
             if generic.is_lifetime() {
-                result.push(punct('\''));
+                result.lifetime(generic.ident());
+            } else {
+                result.ident(generic.ident());
             }
-
-            result.push(TokenTree::Ident(generic.ident()));
         }
 
-        result.push(punct('>'));
-
-        let mut stream = TokenStream::new();
-        stream.extend(result);
-        stream
+        result.punct('>');
+        result
     }
 }
 
@@ -370,11 +366,11 @@ impl GenericConstraints {
         Ok(Some(Self { constraints }))
     }
 
-    pub fn where_clause(&self) -> TokenStream {
-        use std::str::FromStr;
-        let mut stream = TokenStream::from_str("where").unwrap();
-        stream.extend(self.constraints.clone());
-        stream
+    pub fn where_clause(&self) -> StreamBuilder {
+        let mut result = StreamBuilder::new();
+        result.ident_str("where");
+        result.extend(self.constraints.clone());
+        result
     }
 }
 

@@ -294,11 +294,11 @@ pub enum IdentOrString<'a> {
     String(String),
 }
 
-impl IdentOrString<'_> {
-    pub fn into_token_tree(self) -> TokenTree {
-        TokenTree::Ident(match self {
-            Self::Ident(i) => i.clone(),
-            Self::String(s) => Ident::new(&s, Span::call_site()),
+impl From<IdentOrString<'_>> for TokenTree {
+    fn from(i: IdentOrString) -> TokenTree {
+        TokenTree::Ident(match i {
+            IdentOrString::Ident(i) => i.clone(),
+            IdentOrString::String(s) => Ident::new(&s, Span::call_site()),
         })
     }
 }
