@@ -1,6 +1,6 @@
 # Bincode
 
-<img align="right" src="./logo.png" />
+<img align="right" src="./logo.svg" />
 
 ![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)
 [![](https://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
