@@ -46,8 +46,9 @@ fn test_struct_body_take() {
     let stream = &mut token_stream(
         "struct Foo { pub bar: u8, pub(crate) baz: u32, bla: Vec<Box<dyn Future<Output = ()>>> }",
     );
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_struct("Foo"));
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Struct);
+    assert_eq!(ident, "Foo");
     let body = StructBody::take(stream).unwrap();
 
     assert_eq!(body.fields.len(), 3);
@@ -66,8 +67,9 @@ fn test_struct_body_take() {
     let stream = &mut token_stream(
         "struct Foo ( pub u8, pub(crate) u32, Vec<Box<dyn Future<Output = ()>>> )",
     );
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_struct("Foo"));
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Struct);
+    assert_eq!(ident, "Foo");
     let body = StructBody::take(stream).unwrap();
 
     assert_eq!(body.fields.len(), 3);
@@ -84,21 +86,23 @@ fn test_struct_body_take() {
     assert!(body.fields[2].ident.is_none());
 
     let stream = &mut token_stream("struct Foo;");
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_struct("Foo"));
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Struct);
+    assert_eq!(ident, "Foo");
     let body = StructBody::take(stream).unwrap();
     assert_eq!(body.fields.len(), 0);
 
     let stream = &mut token_stream("struct Foo {}");
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_struct("Foo"));
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Struct);
+    assert_eq!(ident, "Foo");
     let body = StructBody::take(stream).unwrap();
     assert_eq!(body.fields.len(), 0);
 
     let stream = &mut token_stream("struct Foo ()");
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_struct("Foo"));
-    let body = StructBody::take(stream).unwrap();
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Struct);
+    assert_eq!(ident, "Foo");
     assert_eq!(body.fields.len(), 0);
 }
 
@@ -161,14 +165,16 @@ fn test_enum_body_take() {
     use crate::token_stream;
 
     let stream = &mut token_stream("enum Foo { }");
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_enum("Foo"));
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Enum);
+    assert_eq!(ident, "Foo");
     let body = EnumBody::take(stream).unwrap();
     assert_eq!(0, body.variants.len());
 
     let stream = &mut token_stream("enum Foo { Bar, Baz(u8), Blah { a: u32, b: u128 } }");
-    let data_type = super::DataType::take(stream).unwrap();
-    assert!(data_type.is_enum("Foo"));
+    let (data_type, ident) = super::DataType::take(stream).unwrap();
+    assert_eq!(data_type, super::DataType::Enum);
+    assert_eq!(ident, "Foo");
     let body = EnumBody::take(stream).unwrap();
     assert_eq!(3, body.variants.len());
 

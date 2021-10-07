@@ -4,74 +4,111 @@ use crate::utils::*;
 use std::str::FromStr;
 
 #[must_use]
-pub struct Generate {
+pub struct Generator {
+    name: Ident,
+    generics: Option<Generics>,
+    generic_constraints: Option<GenericConstraints>,
     stream: TokenStream,
+}
+
+impl Generator {
+    pub(crate) fn new(
+        name: Ident,
+        generics: Option<Generics>,
+        generic_constraints: Option<GenericConstraints>,
+    ) -> Self {
+        Self {
+            name,
+            generics,
+            generic_constraints,
+            stream: TokenStream::new(),
+        }
+    }
+
+    pub fn impl_for<'a>(&'a mut self, trait_name: &str) -> ImplFor<'a> {
+        ImplFor::new(self, trait_name)
+    }
+
+    pub fn impl_for_with_de_lifetime<'a>(&'a mut self, trait_name: &str) -> ImplFor<'a> {
+        ImplFor::new_with_de_lifetime(self, trait_name)
+    }
+
+    pub fn has_lifetimes(&self) -> bool {
+        self.generics
+            .as_ref()
+            .map(|g| g.has_lifetime())
+            .unwrap_or(false)
+    }
+
+    pub fn take_stream(mut self) -> TokenStream {
+        std::mem::replace(&mut self.stream, TokenStream::new())
+    }
+}
+
+impl Drop for Generator {
+    fn drop(&mut self) {
+        if !self.stream.is_empty() {
+            panic!("Generator dropped but the stream is not empty. Please call `.take_stream()` on the generator");
+        }
+    }
+}
+
+#[must_use]
+pub struct ImplFor<'a> {
+    generator: &'a mut Generator,
     group: (Delimiter, TokenStream),
 }
 
-impl Generate {
-    pub fn impl_for(
-        trait_name: &str,
-        name: &Ident,
-        generics: &Option<Generics>,
-        generic_constraints: &Option<GenericConstraints>,
-    ) -> Self {
-        let mut stream = TokenStream::new();
-        stream.extend([ident("impl")]);
+impl<'a> ImplFor<'a> {
+    fn new(generator: &'a mut Generator, trait_name: &str) -> Self {
+        let mut stream = vec![ident("impl")];
 
-        if let Some(generics) = &generics {
-            stream.extend([generics.impl_generics()]);
+        if let Some(generics) = &generator.generics {
+            stream.extend(generics.impl_generics());
         }
-        stream.extend([
-            TokenStream::from_str(trait_name).unwrap(),
-            ident("for").into(),
-            TokenTree::Ident(name.clone()).into(),
-        ]);
-        if let Some(generics) = &generics {
-            stream.extend([generics.type_generics()]);
+        stream.extend(TokenStream::from_str(trait_name).unwrap());
+        stream.extend([ident("for"), TokenTree::Ident(generator.name.clone())]);
+
+        if let Some(generics) = &generator.generics {
+            stream.extend(generics.type_generics());
         }
-        if let Some(generic_constraints) = &generic_constraints {
-            stream.extend([generic_constraints.where_clause()]);
+        if let Some(generic_constraints) = &generator.generic_constraints {
+            stream.extend(generic_constraints.where_clause());
         }
+        generator.stream.extend(stream);
+
         let group = (Delimiter::Brace, TokenStream::new());
-        Self { stream, group }
+        Self { generator, group }
     }
 
-    pub fn impl_for_with_de_lifetime(
-        trait_name: &str,
-        name: &Ident,
-        generics: &Option<Generics>,
-        generic_constraints: &Option<GenericConstraints>,
-    ) -> Self {
-        let mut stream = TokenStream::new();
-        stream.extend([ident("impl")]);
+    fn new_with_de_lifetime(generator: &'a mut Generator, trait_name: &str) -> Self {
+        let mut stream = vec![ident("impl")];
 
-        if let Some(generics) = &generics {
-            stream.extend([generics.impl_generics_with_additional_lifetime("__de")]);
+        if let Some(generics) = &generator.generics {
+            stream.extend(generics.impl_generics_with_additional_lifetime("__de"));
         } else {
             stream.extend([punct('<'), punct('\''), ident("__de"), punct('>')]);
         }
 
-        stream.extend([
-            TokenStream::from_str(trait_name).unwrap(),
-            ident("for").into(),
-            TokenTree::Ident(name.clone()).into(),
-        ]);
-        if let Some(generics) = &generics {
-            stream.extend([generics.type_generics()]);
+        stream.extend(TokenStream::from_str(trait_name).unwrap());
+        stream.extend([ident("for"), TokenTree::Ident(generator.name.clone())]);
+        if let Some(generics) = &generator.generics {
+            stream.extend(generics.type_generics());
         }
-        if let Some(generic_constraints) = &generic_constraints {
-            stream.extend([generic_constraints.where_clause()]);
+        if let Some(generic_constraints) = &generator.generic_constraints {
+            stream.extend(generic_constraints.where_clause());
         }
+        generator.stream.extend(stream);
+
         let group = (Delimiter::Brace, TokenStream::new());
-        Self { stream, group }
+        Self { generator, group }
     }
 
-    pub fn generate_fn(
-        &mut self,
+    pub fn generate_fn<'b>(
+        &'b mut self,
         name: &str,
         builder: impl FnOnce(FnBuilder) -> FnBuilder,
-    ) -> GenerateFnBody {
+    ) -> GenerateFnBody<'a, 'b> {
         let FnBuilder {
             name,
             lifetime_and_generics,
@@ -140,32 +177,31 @@ impl Generate {
             group: (Delimiter::Brace, TokenStream::new()),
         }
     }
+}
 
-    pub fn build(mut self) -> TokenStream {
-        self.stream
-            .extend([TokenTree::Group(Group::new(self.group.0, self.group.1))]);
-        self.stream
+impl Drop for ImplFor<'_> {
+    fn drop(&mut self) {
+        let stream = std::mem::replace(&mut self.group.1, TokenStream::new());
+        self.generator
+            .stream
+            .extend([TokenTree::Group(Group::new(self.group.0, stream))]);
     }
 }
 
-pub struct GenerateFnBody<'a> {
-    generate: &'a mut Generate,
+pub struct GenerateFnBody<'a, 'b> {
+    generate: &'b mut ImplFor<'a>,
     group: (Delimiter, TokenStream),
 }
 
-impl GenerateFnBody<'_> {
+impl GenerateFnBody<'_, '_> {
     pub fn push(&mut self, str: impl AsRef<str>) {
         self.group
             .1
             .extend([TokenStream::from_str(str.as_ref()).unwrap()]);
     }
-
-    pub fn finish(self) {
-        // make sure this is dropped so we release the lifetime on &'a mut Generate
-    }
 }
 
-impl<'a> Drop for GenerateFnBody<'a> {
+impl Drop for GenerateFnBody<'_, '_> {
     fn drop(&mut self) {
         let stream = std::mem::replace(&mut self.group.1, TokenStream::new());
         self.generate

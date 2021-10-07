@@ -33,32 +33,31 @@ fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
     let _visibility = parse::Visibility::try_take(source)?;
-    let datatype = parse::DataType::take(source)?;
+    let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;
     let generic_constraints = parse::GenericConstraints::try_take(source)?;
 
+    let mut generator = generate::Generator::new(name.clone(), generics, generic_constraints);
+
     match datatype {
-        parse::DataType::Struct(name) => {
+        parse::DataType::Struct => {
             let body = parse::StructBody::take(source)?;
-            let stream = derive_struct::DeriveStruct {
-                name: name.clone(),
-                generics,
-                generic_constraints,
+            derive_struct::DeriveStruct {
                 fields: body.fields,
             }
-            .generate_encodable();
-
-            dump_output(name, "Encodeable", &stream);
-
-            stream
+            .generate_encodable(&mut generator)?;
         }
-        parse::DataType::Enum(_name) => {
+        parse::DataType::Enum => {
             let body = parse::EnumBody::take(source)?;
             dbg!(&body);
 
             unimplemented!();
         }
     }
+
+    let stream = generator.take_stream();
+    dump_output(name, "Encodeable", &stream);
+    Ok(stream)
 }
 
 #[proc_macro_derive(Decodable)]
@@ -73,53 +72,48 @@ fn derive_decodable_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
     let _visibility = parse::Visibility::try_take(source)?;
-    let datatype = parse::DataType::take(source)?;
+    let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;
     let generic_constraints = parse::GenericConstraints::try_take(source)?;
 
+    let mut generator = generate::Generator::new(name.clone(), generics, generic_constraints);
+
     match datatype {
-        parse::DataType::Struct(name) => {
+        parse::DataType::Struct => {
             let body = parse::StructBody::take(source)?;
-            let stream = derive_struct::DeriveStruct {
-                name: name.clone(),
-                generics,
-                generic_constraints,
+            derive_struct::DeriveStruct {
                 fields: body.fields,
             }
-            .generate_decodable();
-
-            dump_output(name, "Decodeable", &stream);
-
-            stream
+            .generate_decodable(&mut generator)?;
         }
-        parse::DataType::Enum(_name) => {
+        parse::DataType::Enum => {
             let body = parse::EnumBody::take(source)?;
             dbg!(&body);
 
             unimplemented!();
         }
     }
+
+    let stream = generator.take_stream();
+    dump_output(name, "Decodeable", &stream);
+    Ok(stream)
 }
 
-fn dump_output(
-    name: crate::prelude::Ident,
-    derive: &str,
-    stream: &Result<crate::prelude::TokenStream>,
-) {
+fn dump_output(name: crate::prelude::Ident, derive: &str, stream: &crate::prelude::TokenStream) {
     use std::io::Write;
-    if let Ok(stream) = stream {
-        if let Ok(var) = std::env::var("CARGO_MANIFEST_DIR") {
-            let mut path = std::path::PathBuf::from(var);
-            path.push("target");
-            if path.exists() {
-                path.push(format!("{}_{}.rs", name, derive));
-                if let Ok(mut file) = std::fs::File::create(path) {
-                    let _ = file.write_all(stream.to_string().as_bytes());
-                }
+
+    if let Ok(var) = std::env::var("CARGO_MANIFEST_DIR") {
+        let mut path = std::path::PathBuf::from(var);
+        path.push("target");
+        if path.exists() {
+            path.push(format!("{}_{}.rs", name, derive));
+            if let Ok(mut file) = std::fs::File::create(path) {
+                let _ = file.write_all(stream.to_string().as_bytes());
             }
         }
     }
 }
+
 #[cfg(test)]
 pub(crate) fn token_stream(
     s: &str,

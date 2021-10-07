@@ -2,14 +2,14 @@ use crate::prelude::{Ident, Span, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DataType {
-    Enum(Ident),
-    Struct(Ident),
+    Enum,
+    Struct,
 }
 
 impl DataType {
-    pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Self> {
+    pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<(Self, Ident)> {
         if let Some(TokenTree::Ident(ident)) = input.peek() {
             let result = match ident.to_string().as_str() {
                 "struct" => DataType::Struct,
@@ -18,7 +18,7 @@ impl DataType {
             };
             let ident = super::assume_ident(input.next());
             return match input.next() {
-                Some(TokenTree::Ident(ident)) => Ok((result)(ident)),
+                Some(TokenTree::Ident(ident)) => Ok((result, ident)),
                 Some(t) => Err(Error::InvalidRustSyntax(t.span())),
                 None => Err(Error::InvalidRustSyntax(ident.span())),
             };
@@ -29,72 +29,39 @@ impl DataType {
             .unwrap_or_else(Span::call_site);
         Err(Error::InvalidRustSyntax(span))
     }
-
-    // pub fn ident(&self) -> String {
-    //     match self {
-    //         Self::Enum(ident) => ident,
-    //         Self::Struct(ident) => ident,
-    //     }
-    //     .to_string()
-    // }
-}
-
-#[cfg(test)]
-impl DataType {
-    pub fn is_enum(&self, ident: &str) -> bool {
-        if let Self::Enum(i) = self {
-            i.to_string() == ident
-        } else {
-            false
-        }
-    }
-    pub fn is_struct(&self, ident: &str) -> bool {
-        if let Self::Struct(i) = self {
-            i.to_string() == ident
-        } else {
-            false
-        }
-    }
 }
 
 #[test]
 fn test_datatype_take() {
     use crate::token_stream;
 
+    fn validate_output_eq(input: &str, expected_dt: DataType, expected_ident: &str) {
+        let (dt, ident) = DataType::take(&mut token_stream(input)).unwrap_or_else(|e| {
+            panic!("Could not parse tokenstream {:?}: {:?}", input, e);
+        });
+        if dt != expected_dt || ident != expected_ident {
+            println!("While parsing {:?}", input);
+            panic!(
+                "Expected {:?} {:?}, received {:?} {:?}",
+                dt, ident, expected_dt, expected_ident
+            );
+        }
+    }
+
     assert!(DataType::take(&mut token_stream("enum"))
         .unwrap_err()
         .is_invalid_rust_syntax());
-    assert!(DataType::take(&mut token_stream("enum Foo"))
-        .unwrap()
-        .is_enum("Foo"));
-    assert!(DataType::take(&mut token_stream("enum Foo { }"))
-        .unwrap()
-        .is_enum("Foo"));
-    assert!(DataType::take(&mut token_stream("enum Foo { bar, baz }"))
-        .unwrap()
-        .is_enum("Foo"));
-    assert!(
-        DataType::take(&mut token_stream("enum Foo<'a, T> { bar, baz }"))
-            .unwrap()
-            .is_enum("Foo")
-    );
+    validate_output_eq("enum Foo", DataType::Enum, "Foo");
+    validate_output_eq("enum Foo { }", DataType::Enum, "Foo");
+    validate_output_eq("enum Foo { bar, baz }", DataType::Enum, "Foo");
+    validate_output_eq("enum Foo<'a, T> { bar, baz }", DataType::Enum, "Foo");
 
     assert!(DataType::take(&mut token_stream("struct"))
         .unwrap_err()
         .is_invalid_rust_syntax());
-    assert!(DataType::take(&mut token_stream("struct Foo { }"))
-        .unwrap()
-        .is_struct("Foo"));
-    assert!(
-        DataType::take(&mut token_stream("struct Foo { bar: u32, baz: u32 }"))
-            .unwrap()
-            .is_struct("Foo")
-    );
-    assert!(
-        DataType::take(&mut token_stream("struct Foo<'a, T> { bar: &'a T }"))
-            .unwrap()
-            .is_struct("Foo")
-    );
+    validate_output_eq("struct Foo { }", DataType::Struct, "Foo");
+    validate_output_eq("struct Foo { bar: u32, baz: u32 }", DataType::Struct, "Foo");
+    validate_output_eq("struct Foo<'a, T> { bar: &'a T }", DataType::Struct, "Foo");
 
     assert!(DataType::take(&mut token_stream("fn foo() {}"))
         .unwrap_err()
