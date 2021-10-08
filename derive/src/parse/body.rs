@@ -32,11 +32,6 @@ impl StructBody {
             Delimiter::Parenthesis => Fields::Tuple(UnnamedField::parse(&mut stream)?),
             _ => return Err(Error::InvalidRustSyntax(group.span())),
         };
-        assert!(
-            stream.peek().is_none(),
-            "Stream should be empty: {:?}",
-            stream.collect::<Vec<_>>()
-        );
         Ok(StructBody { fields })
     }
 }
