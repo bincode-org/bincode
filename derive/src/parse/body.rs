@@ -246,7 +246,11 @@ pub enum Fields {
 impl Fields {
     pub fn names(&self) -> Vec<IdentOrIndex> {
         match self {
-            Self::Tuple(fields) => (0..fields.len()).map(IdentOrIndex::Index).collect(),
+            Self::Tuple(fields) => fields
+                .iter()
+                .enumerate()
+                .map(|(idx, field)| IdentOrIndex::Index(idx, field.span()))
+                .collect(),
             Self::Struct(fields) => fields
                 .iter()
                 .map(|(ident, _)| IdentOrIndex::Ident(ident))
@@ -336,12 +340,31 @@ impl UnnamedField {
     pub fn type_string(&self) -> String {
         self.r#type.iter().map(|t| t.to_string()).collect()
     }
+
+    pub fn span(&self) -> Span {
+        // BlockedTODO: https://github.com/rust-lang/rust/issues/54725
+        // Span::join is unstable
+        // if let Some(first) = self.r#type.first() {
+        //     let mut span = first.span();
+        //     for token in self.r#type.iter().skip(1) {
+        //         span = span.join(span).unwrap();
+        //     }
+        //     span
+        // } else {
+        //     Span::call_site()
+        // }
+
+        match self.r#type.first() {
+            Some(first) => first.span(),
+            None => Span::call_site(),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum IdentOrIndex<'a> {
     Ident(&'a Ident),
-    Index(usize),
+    Index(usize, Span),
 }
 
 impl<'a> IdentOrIndex<'a> {
@@ -355,16 +378,16 @@ impl<'a> IdentOrIndex<'a> {
     pub fn to_token_tree_with_prefix(&self, prefix: &str) -> TokenTree {
         TokenTree::Ident(match self {
             IdentOrIndex::Ident(i) => (*i).clone(),
-            IdentOrIndex::Index(idx) => {
+            IdentOrIndex::Index(idx, span) => {
                 let name = format!("{}{}", prefix, idx);
-                Ident::new(&name, Span::call_site())
+                Ident::new(&name, *span)
             }
         })
     }
     pub fn to_string_with_prefix(&self, prefix: &str) -> String {
         match self {
             IdentOrIndex::Ident(i) => i.to_string(),
-            IdentOrIndex::Index(idx) => {
+            IdentOrIndex::Index(idx, _) => {
                 format!("{}{}", prefix, idx)
             }
         }
@@ -375,7 +398,7 @@ impl std::fmt::Display for IdentOrIndex<'_> {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             IdentOrIndex::Ident(i) => write!(fmt, "{}", i),
-            IdentOrIndex::Index(idx) => write!(fmt, "{}", idx),
+            IdentOrIndex::Index(idx, _) => write!(fmt, "{}", idx),
         }
     }
 }
