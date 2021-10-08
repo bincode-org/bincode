@@ -2,7 +2,6 @@
 name = "bincode_derive"
 version = "2.0.0-dev" # remember to update bincode
 edition = "2018"
-resolver = "2"
 
 [lib]
 proc-macro = true

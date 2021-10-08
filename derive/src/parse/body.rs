@@ -6,7 +6,7 @@ use std::iter::Peekable;
 
 #[derive(Debug)]
 pub struct StructBody {
-    pub fields: Vec<Field>,
+    pub fields: Fields,
 }
 
 impl StructBody {
@@ -14,7 +14,9 @@ impl StructBody {
         match input.peek() {
             Some(TokenTree::Group(_)) => {}
             Some(TokenTree::Punct(p)) if p.as_char() == ';' => {
-                return Ok(StructBody { fields: Vec::new() })
+                return Ok(StructBody {
+                    fields: Fields::Unit,
+                })
             }
             Some(t) => {
                 return Err(Error::InvalidRustSyntax(t.span()));
@@ -26,8 +28,8 @@ impl StructBody {
         let group = assume_group(input.next());
         let mut stream = group.stream().into_iter().peekable();
         let fields = match group.delimiter() {
-            Delimiter::Brace => Field::parse_named(&mut stream)?,
-            Delimiter::Parenthesis => Field::parse_unnamed(&mut stream)?,
+            Delimiter::Brace => Fields::Struct(UnnamedField::parse_with_name(&mut stream)?),
+            Delimiter::Parenthesis => Fields::Tuple(UnnamedField::parse(&mut stream)?),
             _ => return Err(Error::InvalidRustSyntax(group.span())),
         };
         assert!(
@@ -52,17 +54,20 @@ fn test_struct_body_take() {
     let body = StructBody::take(stream).unwrap();
 
     assert_eq!(body.fields.len(), 3);
+    let (ident, field) = body.fields.get(0).unwrap();
+    assert_eq!(ident.unwrap(), "bar");
+    assert_eq!(field.vis, Visibility::Pub);
+    assert_eq!(field.type_string(), "u8");
 
-    assert_eq!(body.fields[0].vis, Some(Visibility::Pub));
-    assert_eq!(body.fields[0].ident.as_ref().unwrap(), "bar");
-    assert_eq!(assume_ident(body.fields[0].field_type(0)), "u8");
+    let (ident, field) = body.fields.get(1).unwrap();
+    assert_eq!(ident.unwrap(), "baz");
+    assert_eq!(field.vis, Visibility::Pub);
+    assert_eq!(field.type_string(), "u32");
 
-    assert_eq!(body.fields[1].vis, Some(Visibility::PubCrate));
-    assert_eq!(body.fields[1].ident.as_ref().unwrap(), "baz");
-    assert_eq!(assume_ident(body.fields[1].field_type(0)), "u32");
-
-    assert_eq!(body.fields[2].vis, None);
-    assert_eq!(body.fields[2].ident.as_ref().unwrap(), "bla");
+    let (ident, field) = body.fields.get(2).unwrap();
+    assert_eq!(ident.unwrap(), "bla");
+    assert_eq!(field.vis, Visibility::Default);
+    assert_eq!(field.type_string(), "Vec<Box<dynFuture<Output=()>>>");
 
     let stream = &mut token_stream(
         "struct Foo ( pub u8, pub(crate) u32, Vec<Box<dyn Future<Output = ()>>> )",
@@ -74,16 +79,20 @@ fn test_struct_body_take() {
 
     assert_eq!(body.fields.len(), 3);
 
-    assert_eq!(body.fields[0].vis, Some(Visibility::Pub));
-    assert!(body.fields[0].ident.is_none());
-    assert_eq!(assume_ident(body.fields[0].field_type(0)), "u8");
+    let (ident, field) = body.fields.get(0).unwrap();
+    assert!(ident.is_none());
+    assert_eq!(field.vis, Visibility::Pub);
+    assert_eq!(field.type_string(), "u8");
 
-    assert_eq!(body.fields[1].vis, Some(Visibility::PubCrate));
-    assert!(body.fields[1].ident.is_none());
-    assert_eq!(assume_ident(body.fields[1].field_type(0)), "u32");
+    let (ident, field) = body.fields.get(1).unwrap();
+    assert!(ident.is_none());
+    assert_eq!(field.vis, Visibility::Pub);
+    assert_eq!(field.type_string(), "u32");
 
-    assert_eq!(body.fields[2].vis, None);
-    assert!(body.fields[2].ident.is_none());
+    let (ident, field) = body.fields.get(2).unwrap();
+    assert!(ident.is_none());
+    assert_eq!(field.vis, Visibility::Default);
+    assert_eq!(field.type_string(), "Vec<Box<dynFuture<Output=()>>>");
 
     let stream = &mut token_stream("struct Foo;");
     let (data_type, ident) = super::DataType::take(stream).unwrap();
@@ -137,14 +146,16 @@ impl EnumBody {
                 None => return Err(Error::InvalidRustSyntax(Span::call_site())),
             };
 
-            let mut fields = None;
+            let mut fields = Fields::Unit;
 
             if let Some(TokenTree::Group(_)) = stream.peek() {
                 let group = assume_group(stream.next());
                 let stream = &mut group.stream().into_iter().peekable();
                 match group.delimiter() {
-                    Delimiter::Brace => fields = Some(Field::parse_named(stream)?),
-                    Delimiter::Parenthesis => fields = Some(Field::parse_unnamed(stream)?),
+                    Delimiter::Brace => {
+                        fields = Fields::Struct(UnnamedField::parse_with_name(stream)?)
+                    }
+                    Delimiter::Parenthesis => fields = Fields::Tuple(UnnamedField::parse(stream)?),
                     _ => return Err(Error::InvalidRustSyntax(group.span())),
                 }
             }
@@ -179,58 +190,118 @@ fn test_enum_body_take() {
     assert_eq!(3, body.variants.len());
 
     assert_eq!(body.variants[0].name, "Bar");
-    assert!(body.variants[0].fields.is_none());
+    assert!(body.variants[0].fields.is_unit());
 
     assert_eq!(body.variants[1].name, "Baz");
-    assert_eq!(1, body.variants[1].fields.as_ref().unwrap().len());
-    let field = &body.variants[1].fields.as_ref().unwrap()[0];
-    assert!(field.ident.is_none());
-    assert_eq!(assume_ident(field.field_type(0)), "u8");
+    assert_eq!(1, body.variants[1].fields.len());
+    let (ident, field) = body.variants[1].fields.get(0).unwrap();
+    assert!(ident.is_none());
+    assert_eq!(field.type_string(), "u8");
 
     assert_eq!(body.variants[2].name, "Blah");
-    assert_eq!(2, body.variants[2].fields.as_ref().unwrap().len());
-    let field = &body.variants[2].fields.as_ref().unwrap()[0];
-    assert_eq!(field.ident.as_ref().unwrap(), "a");
-    assert_eq!(assume_ident(field.field_type(0)), "u32");
-    let field = &body.variants[2].fields.as_ref().unwrap()[1];
-    assert_eq!(field.ident.as_ref().unwrap(), "b");
-    assert_eq!(assume_ident(field.field_type(0)), "u128");
+    assert_eq!(2, body.variants[2].fields.len());
+    let (ident, field) = body.variants[2].fields.get(0).unwrap();
+    assert_eq!(ident.unwrap(), "a");
+    assert_eq!(field.type_string(), "u32");
+    let (ident, field) = body.variants[2].fields.get(1).unwrap();
+    assert_eq!(ident.unwrap(), "b");
+    assert_eq!(field.type_string(), "u128");
 }
 
 #[derive(Debug)]
 pub struct EnumVariant {
     pub name: Ident,
-    pub fields: Option<Vec<Field>>,
+    pub fields: Fields,
 }
 
-impl EnumVariant {
-    pub fn is_struct_variant(&self) -> bool {
-        // An enum variant is a struct variant if it has any fields with a name
-        // enum Foo { Bar { a: u32, b: u32 } }
-        self.fields
-            .as_ref()
-            .map(|f| f.iter().any(|f| f.ident.is_some()))
-            .unwrap_or(false)
+#[derive(Debug)]
+pub enum Fields {
+    /// Empty variant.
+    /// ```rs
+    /// enum Foo {
+    ///     Baz,
+    /// }
+    /// struct Bar { }
+    /// ```
+    Unit,
+
+    /// Tuple-like variant
+    /// ```rs
+    /// enum Foo {
+    ///     Baz(u32)
+    /// }
+    /// struct Bar(u32);
+    /// ```
+    Tuple(Vec<UnnamedField>),
+
+    /// Struct-like variant
+    /// ```rs
+    /// enum Foo {
+    ///     Baz {
+    ///         baz: u32
+    ///     }
+    /// }
+    /// struct Bar {
+    ///     baz: u32
+    /// }
+    /// ```
+    Struct(Vec<(Ident, UnnamedField)>),
+}
+
+impl Fields {
+    pub fn names(&self) -> Vec<IdentOrIndex> {
+        match self {
+            Self::Tuple(fields) => (0..fields.len()).map(IdentOrIndex::Index).collect(),
+            Self::Struct(fields) => fields
+                .iter()
+                .map(|(ident, _)| IdentOrIndex::Ident(ident))
+                .collect(),
+            Self::Unit => Vec::new(),
+        }
     }
-    pub fn is_tuple_variant(&self) -> bool {
-        // An enum variant is a struct variant if it has no fields with a name
-        // enum Foo { Bar(u32, u32) }
-        self.fields
-            .as_ref()
-            .map(|f| f.iter().all(|f| f.ident.is_none()))
-            .unwrap_or(false)
+
+    pub fn delimiter(&self) -> Option<Delimiter> {
+        match self {
+            Self::Tuple(_) => Some(Delimiter::Parenthesis),
+            Self::Struct(_) => Some(Delimiter::Brace),
+            Self::Unit => None,
+        }
+    }
+}
+
+#[cfg(test)]
+impl Fields {
+    pub fn is_unit(&self) -> bool {
+        matches!(self, Self::Unit)
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Tuple(fields) => fields.len(),
+            Self::Struct(fields) => fields.len(),
+            Self::Unit => 0,
+        }
+    }
+
+    pub fn get(&self, index: usize) -> Option<(Option<&Ident>, &UnnamedField)> {
+        match self {
+            Self::Tuple(fields) => fields.get(index).map(|f| (None, f)),
+            Self::Struct(fields) => fields.get(index).map(|(ident, field)| (Some(ident), field)),
+            Self::Unit => None,
+        }
     }
 }
 
 #[derive(Debug)]
-pub struct Field {
-    pub vis: Option<Visibility>,
-    pub ident: Option<Ident>,
+pub struct UnnamedField {
+    pub vis: Visibility,
     pub r#type: Vec<TokenTree>,
 }
 
-impl Field {
-    pub fn parse_named(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
+impl UnnamedField {
+    pub fn parse_with_name(
+        input: &mut Peekable<impl Iterator<Item = TokenTree>>,
+    ) -> Result<Vec<(Ident, Self)>> {
         let mut result = Vec::new();
         loop {
             let vis = Visibility::try_take(input)?;
@@ -249,65 +320,67 @@ impl Field {
             }
             let r#type = read_tokens_until_punct(input, &[','])?;
             consume_punct_if(input, ',');
-            result.push(Field {
-                vis,
-                ident: Some(ident),
-                r#type,
-            });
+            result.push((ident, Self { vis, r#type }));
         }
         Ok(result)
     }
 
-    pub fn parse_unnamed(
-        input: &mut Peekable<impl Iterator<Item = TokenTree>>,
-    ) -> Result<Vec<Self>> {
+    pub fn parse(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
         let mut result = Vec::new();
         while input.peek().is_some() {
             let vis = Visibility::try_take(input)?;
 
             let r#type = read_tokens_until_punct(input, &[','])?;
             consume_punct_if(input, ',');
-            result.push(Field {
-                vis,
-                ident: None,
-                r#type,
-            });
+            result.push(Self { vis, r#type });
         }
         Ok(result)
     }
 
     #[cfg(test)]
-    fn field_type(&self, n: usize) -> Option<TokenTree> {
-        self.r#type.get(n).cloned()
+    pub fn type_string(&self) -> String {
+        self.r#type.iter().map(|t| t.to_string()).collect()
+    }
+}
+
+#[derive(Debug)]
+pub enum IdentOrIndex<'a> {
+    Ident(&'a Ident),
+    Index(usize),
+}
+
+impl<'a> IdentOrIndex<'a> {
+    pub fn unwrap_ident(&self) -> &'a Ident {
+        match self {
+            Self::Ident(i) => i,
+            x => panic!("Expected ident, found {:?}", x),
+        }
     }
 
-    pub fn name_or_idx(&self, idx: usize) -> IdentOrString {
-        match self.ident.as_ref() {
-            Some(i) => IdentOrString::Ident(i),
-            None => IdentOrString::String(format!("field_{}", idx)),
+    pub fn to_token_tree_with_prefix(&self, prefix: &str) -> TokenTree {
+        TokenTree::Ident(match self {
+            IdentOrIndex::Ident(i) => (*i).clone(),
+            IdentOrIndex::Index(idx) => {
+                let name = format!("{}{}", prefix, idx);
+                Ident::new(&name, Span::call_site())
+            }
+        })
+    }
+    pub fn to_string_with_prefix(&self, prefix: &str) -> String {
+        match self {
+            IdentOrIndex::Ident(i) => i.to_string(),
+            IdentOrIndex::Index(idx) => {
+                format!("{}{}", prefix, idx)
+            }
         }
     }
 }
 
-pub enum IdentOrString<'a> {
-    Ident(&'a Ident),
-    String(String),
-}
-
-impl From<IdentOrString<'_>> for TokenTree {
-    fn from(i: IdentOrString) -> TokenTree {
-        TokenTree::Ident(match i {
-            IdentOrString::Ident(i) => i.clone(),
-            IdentOrString::String(s) => Ident::new(&s, Span::call_site()),
-        })
-    }
-}
-
-impl std::fmt::Display for IdentOrString<'_> {
+impl std::fmt::Display for IdentOrIndex<'_> {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Ident(i) => write!(fmt, "{}", i.to_string()),
-            Self::String(s) => write!(fmt, "{}", s),
+            IdentOrIndex::Ident(i) => write!(fmt, "{}", i),
+            IdentOrIndex::Index(idx) => write!(fmt, "{}", idx),
         }
     }
 }

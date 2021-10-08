@@ -3,34 +3,14 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum Error {
-    UnknownVisibility(Span),
     UnknownDataType(Span),
     InvalidRustSyntax(Span),
     ExpectedIdent(Span),
-    // UnionNotSupported,
-}
-
-impl PartialEq for Error {
-    fn eq(&self, other: &Error) -> bool {
-        #[allow(clippy::match_like_matches_macro)]
-        match (self, other) {
-            (Error::UnknownVisibility(_), Error::UnknownVisibility(_)) => true,
-            (Error::UnknownDataType(_), Error::UnknownDataType(_)) => true,
-            // (Error::UnionNotSupported, Error::UnionNotSupported) => true,
-            (Error::InvalidRustSyntax(_), Error::InvalidRustSyntax(_)) => true,
-            (Error::ExpectedIdent(_), Error::ExpectedIdent(_)) => true,
-            _ => false,
-        }
-    }
 }
 
 // helper functions for the unit tests
 #[cfg(test)]
 impl Error {
-    pub fn is_unknown_visibility(&self) -> bool {
-        matches!(self, Error::UnknownVisibility(_))
-    }
-
     pub fn is_unknown_data_type(&self) -> bool {
         matches!(self, Error::UnknownDataType(_))
     }
@@ -47,7 +27,6 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::UnknownVisibility(_) => write!(fmt, "Unknown visibility"),
             Self::UnknownDataType(_) => {
                 write!(fmt, "Unknown data type, only enum and struct are supported")
             }
@@ -61,8 +40,7 @@ impl fmt::Display for Error {
 impl Error {
     pub fn into_token_stream(self) -> TokenStream {
         let maybe_span = match &self {
-            Error::UnknownVisibility(span)
-            | Error::UnknownDataType(span)
+            Error::UnknownDataType(span)
             | Error::ExpectedIdent(span)
             | Error::InvalidRustSyntax(span) => Some(*span),
             // Error::UnionNotSupported => None,

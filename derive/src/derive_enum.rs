@@ -1,7 +1,9 @@
 use crate::generate::{FnSelfArg, Generator};
-use crate::parse::EnumVariant;
+use crate::parse::{EnumVariant, Fields};
 use crate::prelude::*;
 use crate::Result;
+
+const TUPLE_FIELD_PREFIX: &str = "field_";
 
 pub struct DeriveEnum {
     pub variants: Vec<EnumVariant>,
@@ -31,39 +33,40 @@ impl DeriveEnum {
                 match_body.ident(variant.name.clone());
 
                 // if we have any fields, declare them here
-                if let Some(fields) = variant.fields.as_ref() {
-                    let delimiter = if variant.is_struct_variant() {
-                        Delimiter::Brace
-                    } else if variant.is_tuple_variant() {
-                        Delimiter::Parenthesis
-                    } else {
-                        unreachable!()
-                    };
-
-                    // field names
+                // Self::Variant { a, b, c }
+                if let Some(delimiter) = variant.fields.delimiter() {
                     match_body.group(delimiter, |field_body| {
-                        for (idx, field) in fields.iter().enumerate() {
+                        for (idx, field_name) in variant.fields.names().into_iter().enumerate() {
                             if idx != 0 {
                                 field_body.punct(',');
                             }
-                            field_body.push(field.name_or_idx(idx));
+                            field_body
+                                .push(field_name.to_token_tree_with_prefix(TUPLE_FIELD_PREFIX));
                         }
                     });
                 }
 
                 // Arrow
+                // Self::Variant { a, b, c } =>
                 match_body.puncts("=>");
+
+                // Body of this variant
+                // Note that the fields are available as locals because of the match destructuring above
+                // {
+                //      encoder.encode_u32(n)?;
+                //      bincode::enc::Encodeable::encode(a, &mut encoder)?;
+                //      bincode::enc::Encodeable::encode(b, &mut encoder)?;
+                //      bincode::enc::Encodeable::encode(c, &mut encoder)?;
+                // }
                 match_body.group(Delimiter::Brace, |body| {
                     // variant index
                     body.push_parsed(format!("encoder.encode_u32({})?;", variant_index));
-                    if let Some(fields) = variant.fields.as_ref() {
-                        // If we have any fields, encode them all one by one
-                        for (idx, field) in fields.iter().enumerate() {
-                            body.push_parsed(format!(
-                                "bincode::enc::Encodeable::encode({}, &mut encoder)?;",
-                                field.name_or_idx(idx)
-                            ));
-                        }
+                    // If we have any fields, encode them all one by one
+                    for field_name in variant.fields.names() {
+                        body.push_parsed(format!(
+                            "bincode::enc::Encodeable::encode({}, &mut encoder)?;",
+                            field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                        ));
                     }
                 });
                 match_body.punct(',');
@@ -99,26 +102,25 @@ impl DeriveEnum {
                     variant_case.puncts("=>");
                     variant_case.ident_str("Ok");
                     variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
-                        // Self::Variant
+                        // Self::Variant { }
                         // Self::Variant { 0: ..., 1: ... 2: ... },
                         // Self::Variant { a: ..., b: ... c: ... },
                         variant_case_body.ident_str("Self");
                         variant_case_body.puncts("::");
                         variant_case_body.ident(variant.name.clone());
 
-                        if let Some(fields) = variant.fields.as_ref() {
-                            variant_case_body.group(Delimiter::Brace, |variant_body| {
-                                for (idx, field) in fields.iter().enumerate() {
-                                    if let Some(ident) = field.ident.clone() {
-                                        variant_body.ident(ident);
-                                    } else {
-                                        variant_body.lit_usize(idx);
-                                    }
-                                    variant_body.punct(':');
-                                    variant_body.push_parsed("bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,");
+                        variant_case_body.group(Delimiter::Brace, |variant_body| {
+                            let is_tuple = matches!(variant.fields, Fields::Tuple(_));
+                            for (idx, field) in variant.fields.names().into_iter().enumerate() {
+                                if is_tuple {
+                                    variant_body.lit_usize(idx);
+                                } else {
+                                    variant_body.ident(field.unwrap_ident().clone());
                                 }
-                            })
-                        }
+                                variant_body.punct(':');
+                                variant_body.push_parsed("bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,");
+                            }
+                        });
                     });
                     variant_case.punct(',');
                 }
@@ -152,30 +154,27 @@ impl DeriveEnum {
                     variant_case.puncts("=>");
                     variant_case.ident_str("Ok");
                     variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
-                            // Self::Variant
-                            // Self::Variant { 0: ..., 1: ... 2: ... },
-                            // Self::Variant { a: ..., b: ... c: ... },
-                            variant_case_body.ident_str("Self");
-                            variant_case_body.puncts("::");
-                            variant_case_body.ident(variant.name.clone());
+                        // Self::Variant { }
+                        // Self::Variant { 0: ..., 1: ... 2: ... },
+                        // Self::Variant { a: ..., b: ... c: ... },
+                        variant_case_body.ident_str("Self");
+                        variant_case_body.puncts("::");
+                        variant_case_body.ident(variant.name.clone());
 
-                            if let Some(fields) = variant.fields.as_ref() {
-                                variant_case_body.group(Delimiter::Brace, |variant_body| {
-                                    for (idx, field) in fields.iter().enumerate() {
-
-                                        if let Some(ident) = field.ident.clone() {
-                                            variant_body.ident(ident)
-                                        } else {
-                                            variant_body.lit_usize(idx)
-                                        }
-
-                                        variant_body.punct(':');
-                                        variant_body.push_parsed("bincode::de::Decodable::decode(&mut decoder)?,");
-                                    }
-                                });
+                        variant_case_body.group(Delimiter::Brace, |variant_body| {
+                            let is_tuple = matches!(variant.fields, Fields::Tuple(_));
+                            for (idx, field) in variant.fields.names().into_iter().enumerate() {
+                                if is_tuple {
+                                    variant_body.lit_usize(idx);
+                                } else {
+                                    variant_body.ident(field.unwrap_ident().clone());
+                                }
+                                variant_body.punct(':');
+                                variant_body.push_parsed("bincode::de::Decodable::decode(&mut decoder)?,");
                             }
                         });
-                        variant_case.  punct(',');
+                    });
+                    variant_case.punct(',');
                 }
 
                 // invalid idx

@@ -1,10 +1,10 @@
 use crate::generate::Generator;
-use crate::parse::Field;
+use crate::parse::Fields;
 use crate::prelude::Delimiter;
 use crate::Result;
 
 pub struct DeriveStruct {
-    pub fields: Vec<Field>,
+    pub fields: Fields,
 }
 
 impl DeriveStruct {
@@ -20,15 +20,10 @@ impl DeriveStruct {
                 .with_return_type("Result<(), bincode::error::EncodeError>")
         });
         let fn_body = fn_body.stream();
-        for (idx, field) in fields.iter().enumerate() {
-            let field_name = field
-                .ident
-                .as_ref()
-                .map(|idx| idx.to_string())
-                .unwrap_or_else(|| idx.to_string());
+        for field in fields.names() {
             fn_body.push_parsed(format!(
                 "bincode::enc::Encodeable::encode(&self.{}, &mut encoder)?;",
-                field_name
+                field.to_string()
             ));
         }
         fn_body.push_parsed("Ok(())");
@@ -56,14 +51,10 @@ impl DeriveStruct {
             fn_body.group(Delimiter::Parenthesis, |ok_group| {
                 ok_group.ident_str("Self");
                 ok_group.group(Delimiter::Brace, |struct_body| {
-                    for (idx, field) in fields.into_iter().enumerate() {
-                        let field_name_or_number = field
-                            .ident
-                            .map(|i| i.to_string())
-                            .unwrap_or_else(|| idx.to_string());
+                    for field in fields.names() {
                         struct_body.push_parsed(format!(
                             "{}: bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,",
-                            field_name_or_number
+                            field.to_string()
                         ));
                     }
                 });
@@ -87,14 +78,10 @@ impl DeriveStruct {
             fn_body.group(Delimiter::Parenthesis, |ok_group| {
                 ok_group.ident_str("Self");
                 ok_group.group(Delimiter::Brace, |struct_body| {
-                    for (idx, field) in fields.into_iter().enumerate() {
-                        let field_name_or_number = field
-                            .ident
-                            .map(|i| i.to_string())
-                            .unwrap_or_else(|| idx.to_string());
+                    for field in fields.names() {
                         struct_body.push_parsed(format!(
                             "{}: bincode::de::Decodable::decode(&mut decoder)?,",
-                            field_name_or_number
+                            field.to_string()
                         ));
                     }
                 });

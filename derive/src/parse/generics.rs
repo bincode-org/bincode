@@ -405,7 +405,7 @@ fn test_generic_constraints_try_take() {
     assert!(GenericConstraints::try_take(stream).unwrap().is_none());
 
     let stream = &mut token_stream("pub(crate) struct Test<T: Encodeable> {}");
-    assert_eq!(Ok(Some(Visibility::PubCrate)), Visibility::try_take(stream));
+    assert_eq!(Visibility::Pub, Visibility::try_take(stream).unwrap());
     let (data_type, ident) = DataType::take(stream).unwrap();
     assert_eq!(data_type, DataType::Struct);
     assert_eq!(ident, "Test");
