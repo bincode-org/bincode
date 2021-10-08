@@ -228,17 +228,6 @@ impl FnBuilder {
         }
     }
 
-    // pub fn with_lifetime(
-    //     mut self,
-    //     name: impl Into<String>,
-    //     dependencies: impl Into<Vec<String>>,
-    // ) -> Self {
-    //     let name = name.into();
-    //     assert!(name.starts_with('\''));
-    //     self.lifetime_and_generics.push((name, dependencies.into()));
-    //     self
-    // }
-
     pub fn with_generic<T, U, V>(mut self, name: T, dependencies: U) -> Self
     where
         T: Into<String>,
@@ -270,9 +259,7 @@ impl FnBuilder {
 
 pub enum FnSelfArg {
     None,
-    // TakeSelf,
     RefSelf,
-    // MutSelf,
 }
 
 impl FnSelfArg {
@@ -280,11 +267,10 @@ impl FnSelfArg {
         let mut builder = StreamBuilder::new();
         match self {
             Self::None => return None,
-            // Self::TakeSelf => Some(vec![ident("self")]),
             Self::RefSelf => {
                 builder.punct('&');
                 builder.ident_str("self");
-            } // Self::MutSelf => Some(vec![punct('&'), ident("mut"), ident("self")]),
+            }
         }
         Some(builder)
     }
