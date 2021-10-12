@@ -3,7 +3,7 @@
 use bincode::{de::Decodable, enc::Encodeable};
 
 #[derive(bincode::Encodable, PartialEq, Debug)]
-pub struct Test<T: Encodeable> {
+pub(crate) struct Test<T: Encodeable> {
     a: T,
     b: u32,
     c: u8,

@@ -1,242 +1,187 @@
+use crate::generate::{FnSelfArg, Generator};
+use crate::parse::{EnumVariant, Fields};
+use crate::prelude::*;
 use crate::Result;
-use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
-use quote::{quote, ToTokens};
-use syn::{
-    spanned::Spanned, Fields, GenericParam, Generics, Ident, Index, Lifetime, LifetimeDef, Variant,
-};
+
+const TUPLE_FIELD_PREFIX: &str = "field_";
+
 pub struct DeriveEnum {
-    name: Ident,
-    generics: Generics,
-    variants: Vec<Variant>,
+    pub variants: Vec<EnumVariant>,
 }
 
 impl DeriveEnum {
-    pub fn parse(name: Ident, generics: Generics, en: syn::DataEnum) -> Result<Self> {
-        let variants = en.variants.into_iter().collect();
+    pub fn generate_encodable(self, generator: &mut Generator) -> Result<()> {
+        let DeriveEnum { variants } = self;
 
-        Ok(DeriveEnum {
-            name,
-            generics,
-            variants,
-        })
+        generator
+            .impl_for("bincode::enc::Encodeable")
+            .generate_fn("encode")
+            .with_generic("E", ["bincode::enc::Encode"])
+            .with_self_arg(FnSelfArg::RefSelf)
+            .with_arg("mut encoder", "E")
+            .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
+            .body(|fn_body| {
+                fn_body.ident_str("match");
+                fn_body.ident_str("self");
+                fn_body.group(Delimiter::Brace, |match_body| {
+                    for (variant_index, variant) in variants.into_iter().enumerate() {
+                        // Self::Variant
+                        match_body.ident_str("Self");
+                        match_body.puncts("::");
+                        match_body.ident(variant.name.clone());
+
+                        // if we have any fields, declare them here
+                        // Self::Variant { a, b, c }
+                        if let Some(delimiter) = variant.fields.delimiter() {
+                            match_body.group(delimiter, |field_body| {
+                                for (idx, field_name) in
+                                    variant.fields.names().into_iter().enumerate()
+                                {
+                                    if idx != 0 {
+                                        field_body.punct(',');
+                                    }
+                                    field_body.push(
+                                        field_name.to_token_tree_with_prefix(TUPLE_FIELD_PREFIX),
+                                    );
+                                }
+                            });
+                        }
+
+                        // Arrow
+                        // Self::Variant { a, b, c } =>
+                        match_body.puncts("=>");
+
+                        // Body of this variant
+                        // Note that the fields are available as locals because of the match destructuring above
+                        // {
+                        //      encoder.encode_u32(n)?;
+                        //      bincode::enc::Encodeable::encode(a, &mut encoder)?;
+                        //      bincode::enc::Encodeable::encode(b, &mut encoder)?;
+                        //      bincode::enc::Encodeable::encode(c, &mut encoder)?;
+                        // }
+                        match_body.group(Delimiter::Brace, |body| {
+                            // variant index
+                            body.push_parsed(format!("encoder.encode_u32({})?;", variant_index));
+                            // If we have any fields, encode them all one by one
+                            for field_name in variant.fields.names() {
+                                body.push_parsed(format!(
+                                    "bincode::enc::Encodeable::encode({}, &mut encoder)?;",
+                                    field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                ));
+                            }
+                        });
+                        match_body.punct(',');
+                    }
+                });
+                fn_body.push_parsed("Ok(())");
+            });
+        Ok(())
     }
 
-    pub fn generate_encodable(self) -> Result<TokenStream> {
-        let DeriveEnum {
-            name,
-            generics,
-            variants,
-        } = self;
+    pub fn generate_decodable(self, generator: &mut Generator) -> Result<()> {
+        let DeriveEnum { variants } = self;
 
-        let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+        if generator.has_lifetimes() {
+            // enum has a lifetime, implement BorrowDecodable
 
-        let match_arms = variants.iter().enumerate().map(|(index, variant)| {
-            let fields_section = fields_to_match_arm(&variant.fields);
-            let encode_statements = field_names_to_encodable(&fields_to_names(&variant.fields));
-            let variant_name = variant.ident.clone();
-            quote! {
-                #name :: #variant_name #fields_section => {
-                    encoder.encode_u32(#index as u32)?;
-                    #(#encode_statements)*
-                }
-            }
-        });
-        let result = quote! {
-            impl #impl_generics bincode::enc::Encodeable for #name #ty_generics #where_clause {
-                fn encode<E: bincode::enc::Encode>(&self, mut encoder: E) -> Result<(), bincode::error::EncodeError> {
-                    match self {
-                        #(#match_arms)*
-                    }
-                    Ok(())
-                }
+            generator.impl_for_with_de_lifetime("bincode::de::BorrowDecodable<'__de>")
+                .generate_fn("borrow_decode")
+                .with_generic("D", ["bincode::de::BorrowDecode<'__de>"])
+                .with_arg("mut decoder", "D")
+                .with_return_type("Result<Self, bincode::error::DecodeError>")
+                .body(|fn_builder| {
+                    fn_builder
+                        .push_parsed("let variant_index = bincode::de::Decode::decode_u32(&mut decoder)?;");
+                    fn_builder.push_parsed("match variant_index");
+                    fn_builder.group(Delimiter::Brace, |variant_case| {
+                    for (idx, variant) in variants.iter().enumerate() {
+                        // idx => Ok(..)
+                        variant_case.lit_u32(idx as u32);
+                        variant_case.puncts("=>");
+                        variant_case.ident_str("Ok");
+                        variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
+                            // Self::Variant { }
+                            // Self::Variant { 0: ..., 1: ... 2: ... },
+                            // Self::Variant { a: ..., b: ... c: ... },
+                            variant_case_body.ident_str("Self");
+                            variant_case_body.puncts("::");
+                            variant_case_body.ident(variant.name.clone());
 
-            }
-        };
-
-        Ok(result.into())
-    }
-
-    pub fn generate_decodable(self) -> Result<TokenStream> {
-        let DeriveEnum {
-            name,
-            generics,
-            variants,
-        } = self;
-
-        let (mut impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-        // check if the type has lifetimes
-        let mut should_insert_lifetime = false;
-
-        for param in &generics.params {
-            if let GenericParam::Lifetime(_) = param {
-                should_insert_lifetime = true;
-                break;
-            }
-        }
-
-        // if we don't have a '__de lifetime, insert it
-        let mut generics_with_decode_lifetime;
-        if should_insert_lifetime {
-            generics_with_decode_lifetime = generics.clone();
-
-            let mut new_lifetime = LifetimeDef::new(Lifetime::new("'__de", Span::call_site()));
-
-            for param in &generics.params {
-                if let GenericParam::Lifetime(lt) = param {
-                    new_lifetime.bounds.push(lt.lifetime.clone())
-                }
-            }
-
-            generics_with_decode_lifetime
-                .params
-                .push(GenericParam::Lifetime(new_lifetime));
-
-            impl_generics = generics_with_decode_lifetime.split_for_impl().0;
-        }
-
-        let max_variant = (variants.len() - 1) as u32;
-        let match_arms = variants.iter().enumerate().map(|(index, variant)| {
-            let index = index as u32;
-            let decode_statements = field_names_to_decodable(
-                &fields_to_constructable_names(&variant.fields),
-                should_insert_lifetime,
-            );
-            let variant_name = variant.ident.clone();
-            quote! {
-                #index => {
-                    #name :: #variant_name {
-                        #(#decode_statements)*
-                    }
-                }
-            }
-        });
-        let result = if should_insert_lifetime {
-            quote! {
-                impl #impl_generics bincode::de::BorrowDecodable<'__de> for #name #ty_generics #where_clause {
-                    fn borrow_decode<D: bincode::de::BorrowDecode<'__de>>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
-                        let i = decoder.decode_u32()?;
-                        Ok(match i {
-                            #(#match_arms)*
-                            variant => return Err(bincode::error::DecodeError::UnexpectedVariant{
-                                min: 0,
-                                max: #max_variant,
-                                found: variant,
-                            })
-                        })
+                            variant_case_body.group(Delimiter::Brace, |variant_body| {
+                                let is_tuple = matches!(variant.fields, Fields::Tuple(_));
+                                for (idx, field) in variant.fields.names().into_iter().enumerate() {
+                                    if is_tuple {
+                                        variant_body.lit_usize(idx);
+                                    } else {
+                                        variant_body.ident(field.unwrap_ident().clone());
+                                    }
+                                    variant_body.punct(':');
+                                    variant_body.push_parsed("bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,");
+                                }
+                            });
+                        });
+                        variant_case.punct(',');
                     }
 
-                }
-            }
+                    // invalid idx
+                    variant_case.push_parsed(format!(
+                        "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant }})",
+                        variants.len() - 1
+                    ));
+                });
+            });
         } else {
-            quote! {
-                impl #impl_generics bincode::de::Decodable for #name #ty_generics #where_clause {
-                    fn decode<D: bincode::de::Decode>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
-                        let i = decoder.decode_u32()?;
-                        Ok(match i {
-                            #(#match_arms)*
-                            variant => return Err(bincode::error::DecodeError::UnexpectedVariant{
-                                min: 0,
-                                max: #max_variant,
-                                found: variant,
-                            })
-                        })
-                    }
+            // enum has no lifetimes, implement Decodable
 
+            generator.impl_for("bincode::de::Decodable")
+                .generate_fn("decode")
+                .with_generic("D", ["bincode::de::Decode"])
+                .with_arg("mut decoder", "D")
+                .with_return_type("Result<Self, bincode::error::DecodeError>")
+                .body(|fn_builder| {
+
+            fn_builder
+                .push_parsed("let variant_index = bincode::de::Decode::decode_u32(&mut decoder)?;");
+            fn_builder.push_parsed("match variant_index");
+            fn_builder.group(Delimiter::Brace, |variant_case| {
+                for (idx, variant) in variants.iter().enumerate() {
+                    // idx => Ok(..)
+                    variant_case.lit_u32(idx as u32);
+                    variant_case.puncts("=>");
+                    variant_case.ident_str("Ok");
+                    variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
+                        // Self::Variant { }
+                        // Self::Variant { 0: ..., 1: ... 2: ... },
+                        // Self::Variant { a: ..., b: ... c: ... },
+                        variant_case_body.ident_str("Self");
+                        variant_case_body.puncts("::");
+                        variant_case_body.ident(variant.name.clone());
+
+                        variant_case_body.group(Delimiter::Brace, |variant_body| {
+                            let is_tuple = matches!(variant.fields, Fields::Tuple(_));
+                            for (idx, field) in variant.fields.names().into_iter().enumerate() {
+                                if is_tuple {
+                                    variant_body.lit_usize(idx);
+                                } else {
+                                    variant_body.ident(field.unwrap_ident().clone());
+                                }
+                                variant_body.punct(':');
+                                variant_body.push_parsed("bincode::de::Decodable::decode(&mut decoder)?,");
+                            }
+                        });
+                    });
+                    variant_case.punct(',');
                 }
-            }
-        };
 
-        Ok(result.into())
-    }
-}
-
-fn fields_to_match_arm(fields: &Fields) -> TokenStream2 {
-    match fields {
-        syn::Fields::Named(fields) => {
-            let fields: Vec<_> = fields
-                .named
-                .iter()
-                .map(|f| f.ident.clone().unwrap().to_token_stream())
-                .collect();
-            quote! {
-                {#(#fields),*}
-            }
+                // invalid idx
+                variant_case.push_parsed(format!(
+                    "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant }})",
+                    variants.len() - 1
+                ));
+            });
+        });
         }
-        syn::Fields::Unnamed(fields) => {
-            let fields: Vec<_> = fields
-                .unnamed
-                .iter()
-                .enumerate()
-                .map(|(i, f)| Ident::new(&format!("_{}", i), f.span()))
-                .collect();
-            quote! {
-                (#(#fields),*)
-            }
-        }
-        syn::Fields::Unit => quote! {},
+
+        Ok(())
     }
-}
-
-fn fields_to_names(fields: &Fields) -> Vec<TokenStream2> {
-    match fields {
-        syn::Fields::Named(fields) => fields
-            .named
-            .iter()
-            .map(|f| f.ident.clone().unwrap().to_token_stream())
-            .collect(),
-        syn::Fields::Unnamed(fields) => fields
-            .unnamed
-            .iter()
-            .enumerate()
-            .map(|(i, f)| Ident::new(&format!("_{}", i), f.span()).to_token_stream())
-            .collect(),
-        syn::Fields::Unit => Vec::new(),
-    }
-}
-
-fn field_names_to_encodable(names: &[TokenStream2]) -> Vec<TokenStream2> {
-    names
-        .iter()
-        .map(|field| {
-            quote! {
-                bincode::enc::Encodeable::encode(#field, &mut encoder)?;
-            }
-        })
-        .collect::<Vec<_>>()
-}
-
-fn fields_to_constructable_names(fields: &Fields) -> Vec<TokenStream2> {
-    match fields {
-        syn::Fields::Named(fields) => fields
-            .named
-            .iter()
-            .map(|f| f.ident.clone().unwrap().to_token_stream())
-            .collect(),
-        syn::Fields::Unnamed(fields) => fields
-            .unnamed
-            .iter()
-            .enumerate()
-            .map(|(i, _)| Index::from(i).to_token_stream())
-            .collect(),
-        syn::Fields::Unit => Vec::new(),
-    }
-}
-
-fn field_names_to_decodable(names: &[TokenStream2], borrowed: bool) -> Vec<TokenStream2> {
-    names
-        .iter()
-        .map(|field| {
-            if borrowed {
-                quote! {
-                    #field: bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,
-                }
-            } else {
-                quote! {
-                    #field: bincode::de::Decodable::decode(&mut decoder)?,
-                }
-            }
-        })
-        .collect::<Vec<_>>()
 }

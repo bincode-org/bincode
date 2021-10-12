@@ -1,16 +1,17 @@
 [package]
 name = "bincode_derive"
 version = "2.0.0-dev" # remember to update bincode
+authors = ["Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
 edition = "2018"
+
+repository = "https://github.com/bincode-org/bincode"
+documentation = "https://docs.rs/bincode_derive"
+readme = "./readme.md"
+categories = ["encoding", "network-programming"]
+keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 
 [lib]
 proc-macro = true
 
-[dependencies]
-quote = "1.0.9"
+[dev-dependencies]
 proc-macro2 = "1.0"
-
-[dependencies.syn]
-version = "1.0.74"
-default-features = false
-features  = ["parsing", "derive", "proc-macro", "printing", "clone-impls"]
