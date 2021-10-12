@@ -20,8 +20,7 @@ fn test_serde_round_trip() {
     assert_eq!(result.b, 0);
 
     // validate bincode working
-    let bytes =
-        bincode::encode_to_vec(SerdeRoundtrip { a: 15, b: 15 }).unwrap();
+    let bytes = bincode::encode_to_vec(SerdeRoundtrip { a: 15, b: 15 }).unwrap();
     assert_eq!(bytes, &[15, 15]);
     let result: SerdeRoundtrip = bincode::decode(&bytes).unwrap();
     assert_eq!(result.a, 15);

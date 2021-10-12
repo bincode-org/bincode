@@ -26,6 +26,11 @@ impl Attributes {
                     tokens: assume_group(input.next()),
                 }));
             }
+            // expected [] group, found something else
+            return Err(Error::InvalidRustSyntax(match input.peek() {
+                Some(next_token) => next_token.span(),
+                None => punct.span(),
+            }));
         }
         Ok(None)
     }
