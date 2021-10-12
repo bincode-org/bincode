@@ -2,11 +2,13 @@ use crate::error::Error;
 use crate::prelude::{Delimiter, Group, Ident, Punct, TokenTree};
 use std::iter::Peekable;
 
+mod attributes;
 mod body;
 mod data_type;
 mod generics;
 mod visibility;
 
+pub use self::attributes::Attributes;
 pub use self::body::{EnumBody, EnumVariant, Fields, StructBody, UnnamedField};
 pub use self::data_type::DataType;
 pub use self::generics::{Generic, GenericConstraints, Generics, Lifetime};
@@ -34,12 +36,19 @@ pub(self) fn assume_punct(t: Option<TokenTree>, punct: char) -> Punct {
     }
 }
 
-pub(self) fn consume_punct_if(input: &mut Peekable<impl Iterator<Item = TokenTree>>, punct: char) {
+pub(self) fn consume_punct_if(
+    input: &mut Peekable<impl Iterator<Item = TokenTree>>,
+    punct: char,
+) -> Option<Punct> {
     if let Some(TokenTree::Punct(p)) = input.peek() {
         if p.as_char() == punct {
-            input.next();
+            match input.next() {
+                Some(TokenTree::Punct(p)) => return Some(p),
+                _ => unreachable!(),
+            }
         }
     }
+    None
 }
 
 #[cfg(test)]

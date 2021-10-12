@@ -1,4 +1,4 @@
-use super::{assume_group, assume_ident, read_tokens_until_punct, Visibility};
+use super::{assume_group, assume_ident, read_tokens_until_punct, Attributes, Visibility};
 use crate::parse::consume_punct_if;
 use crate::prelude::{Delimiter, Ident, Span, TokenTree};
 use crate::{Error, Result};
@@ -135,6 +135,7 @@ impl EnumBody {
         let mut variants = Vec::new();
         let stream = &mut group.stream().into_iter().peekable();
         while stream.peek().is_some() {
+            let attributes = Attributes::try_take(stream)?;
             let ident = match stream.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
                 Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
@@ -159,6 +160,7 @@ impl EnumBody {
             variants.push(EnumVariant {
                 name: ident,
                 fields,
+                attributes,
             });
         }
 
@@ -207,6 +209,7 @@ fn test_enum_body_take() {
 pub struct EnumVariant {
     pub name: Ident,
     pub fields: Fields,
+    pub attributes: Option<Attributes>,
 }
 
 #[derive(Debug)]
@@ -295,6 +298,7 @@ impl Fields {
 pub struct UnnamedField {
     pub vis: Visibility,
     pub r#type: Vec<TokenTree>,
+    pub attributes: Option<Attributes>,
 }
 
 impl UnnamedField {
@@ -303,6 +307,7 @@ impl UnnamedField {
     ) -> Result<Vec<(Ident, Self)>> {
         let mut result = Vec::new();
         loop {
+            let attributes = Attributes::try_take(input)?;
             let vis = Visibility::try_take(input)?;
 
             let ident = match input.peek() {
@@ -319,7 +324,14 @@ impl UnnamedField {
             }
             let r#type = read_tokens_until_punct(input, &[','])?;
             consume_punct_if(input, ',');
-            result.push((ident, Self { vis, r#type }));
+            result.push((
+                ident,
+                Self {
+                    vis,
+                    r#type,
+                    attributes,
+                },
+            ));
         }
         Ok(result)
     }
@@ -327,11 +339,16 @@ impl UnnamedField {
     pub fn parse(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
         let mut result = Vec::new();
         while input.peek().is_some() {
+            let attributes = Attributes::try_take(input)?;
             let vis = Visibility::try_take(input)?;
 
             let r#type = read_tokens_until_punct(input, &[','])?;
             consume_punct_if(input, ',');
-            result.push(Self { vis, r#type });
+            result.push(Self {
+                vis,
+                r#type,
+                attributes,
+            });
         }
         Ok(result)
     }

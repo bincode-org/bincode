@@ -46,13 +46,13 @@ pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
 }
 
 pub fn decode<'__de, D: de::BorrowDecodable<'__de>>(
-    src: &'__de mut [u8],
+    src: &'__de [u8],
 ) -> Result<D, error::DecodeError> {
     decode_with_config(src, config::Default)
 }
 
 pub fn decode_with_config<'__de, D: de::BorrowDecodable<'__de>, C: Config>(
-    src: &'__de mut [u8],
+    src: &'__de [u8],
     _config: C,
 ) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);

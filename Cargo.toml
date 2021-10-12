@@ -6,7 +6,7 @@ members = [
 [package]
 name = "bincode"
 version = "2.0.0-dev" # remember to update html_root_url and bincode_derive
-authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "Zoey Riordan <zoey@dos.cafe>"]
+authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
 exclude = ["logo.png", "examples/*", ".gitignore", ".github/"]
 
 publish =  true
@@ -30,4 +30,9 @@ derive = ["bincode_derive"]
 
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-dev", optional = true }
-# serde = { version = "1.0.130", optional = true }
+serde = { version = "1.0.130", optional = true }
+
+# Used for derive tests
+[dev-dependencies]
+serde_derive = "1.0.130"
+serde_json = "1.0.68"
