@@ -18,10 +18,6 @@ impl Error {
     pub fn is_invalid_rust_syntax(&self) -> bool {
         matches!(self, Error::InvalidRustSyntax(_))
     }
-
-    // pub fn is_expected_ident(&self) -> bool {
-    //     matches!(self, Error::ExpectedIdent(_))
-    // }
 }
 
 impl fmt::Display for Error {
@@ -30,7 +26,6 @@ impl fmt::Display for Error {
             Self::UnknownDataType(_) => {
                 write!(fmt, "Unknown data type, only enum and struct are supported")
             }
-            // Self::UnionNotSupported => write!(fmt, "Unions are not supported"),
             Self::InvalidRustSyntax(_) => write!(fmt, "Invalid rust syntax"),
             Self::ExpectedIdent(_) => write!(fmt, "Expected ident"),
         }
@@ -43,7 +38,6 @@ impl Error {
             Error::UnknownDataType(span)
             | Error::ExpectedIdent(span)
             | Error::InvalidRustSyntax(span) => Some(*span),
-            // Error::UnionNotSupported => None,
         };
         self.throw_with_span(maybe_span.unwrap_or_else(Span::call_site))
     }
