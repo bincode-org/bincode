@@ -32,7 +32,7 @@ use core::marker::PhantomData;
 /// [with_big_endian]: #method.with_big_endian
 /// [with_fixed_int_encoding]: #method.with_fixed_int_encoding
 /// [with_variable_int_encoding]: #method.with_variable_int_encoding
-pub trait Config: InternalConfig + Copy + Clone + Sized {
+pub trait Config: InternalConfig {
     /// Makes bincode encode all integer types in big endian.
     fn with_big_endian(self) -> BigEndian<Self> {
         BigEndian { _pd: PhantomData }
