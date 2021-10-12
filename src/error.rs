@@ -3,6 +3,12 @@
 pub enum EncodeError {
     InvalidIntEncoding,
     UnexpectedEnd,
+
+    #[cfg(feature = "std")]
+    Io {
+        error: std::io::Error,
+        index: usize,
+    },
 }
 
 #[non_exhaustive]
