@@ -1,20 +1,29 @@
+//! Errors that can be encounting by Encoding and Decoding.
+
+/// Errors that can be encountered by encoding a type
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum EncodeError {
-    InvalidIntEncoding,
+    /// The writer ran out of storage.
     UnexpectedEnd,
 
+    /// The targetted writer encountered an `std::io::Error`
     #[cfg(feature = "std")]
     Io {
+        /// The encountered error
         error: std::io::Error,
+        /// The amount of bytes that were written before the error occured
         index: usize,
     },
 }
 
+/// Errors that can be encounted by decoding a type
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum DecodeError {
+    /// The reader reached its end but more bytes were expected.
     UnexpectedEnd,
+
     /// Invalid type was found. The decoder tried to read type `expected`, but found type `found` instead.
     InvalidIntegerType {
         /// The type that was being read from the reader
@@ -22,12 +31,20 @@ pub enum DecodeError {
         /// The type that was encoded in the data
         found: IntegerType,
     },
+
+    /// Invalid enum variant was found. The decoder tried to decode variant index `found`, but the variant index should be between `min` and `max`.
     UnexpectedVariant {
+        /// The min index of the enum. Usually this is `0`.
         min: u32,
+
+        /// the max index of the enum.
         max: u32,
+
+        // The index of the enum that the decoder encountered
         found: u32,
     },
 
+    /// The decoder tried to decode a `str`, but an utf8 error was encountered.
     Utf8(core::str::Utf8Error),
 }
 
