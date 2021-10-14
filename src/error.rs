@@ -52,6 +52,14 @@ pub enum DecodeError {
 
     /// The decoder tried to decode a `bool` and failed. The given value is what is actually read.
     InvalidBooleanValue(u8),
+
+    /// The decoder tried to decode an array of length `required`, but the binary data contained an array of length `found`.
+    ArrayLengthMismatch {
+        /// The length of the array required by the rust type.
+        required: usize,
+        /// The length of the array found in the binary format.
+        found: usize,
+    },
 }
 
 /// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.

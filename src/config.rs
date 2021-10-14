@@ -12,7 +12,10 @@
 //!     .with_little_endian()
 //!     // pick one of:
 //!     .with_variable_int_encoding()
-//!     .with_fixed_int_encoding();
+//!     .with_fixed_int_encoding()
+//!     // pick one of:
+//!     .skip_fixed_array_length()
+//!     .write_fixed_array_length();
 //! ```
 //!
 //! See [Config] for more information on the configuration options.
@@ -26,12 +29,15 @@ use core::marker::PhantomData;
 ///
 /// - [with_little_endian] and [with_big_endian]
 /// - [with_fixed_int_encoding] and [with_variable_int_encoding]
+/// - [skip_fixed_array_length] and [write_fixed_array_length]
 ///
 ///
 /// [with_little_endian]: #method.with_little_endian
 /// [with_big_endian]: #method.with_big_endian
 /// [with_fixed_int_encoding]: #method.with_fixed_int_encoding
 /// [with_variable_int_encoding]: #method.with_variable_int_encoding
+/// [skip_fixed_array_length]: #method.skip_fixed_array_length
+/// [write_fixed_array_length]: #method.write_fixed_array_length
 pub trait Config: InternalConfig {
     /// Makes bincode encode all integer types in big endian.
     fn with_big_endian(self) -> BigEndian<Self> {
@@ -97,6 +103,16 @@ pub trait Config: InternalConfig {
     fn with_fixed_int_encoding(self) -> Fixint<Self> {
         Fixint { _pd: PhantomData }
     }
+
+    /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
+    fn skip_fixed_array_length(self) -> SkipFixedArrayLength<Self> {
+        SkipFixedArrayLength { _pd: PhantomData }
+    }
+
+    /// Write the length of fixed size arrays (`[u8; N]`) before writing the array
+    fn write_fixed_array_length(self) -> WriteFixedArrayLength<Self> {
+        WriteFixedArrayLength { _pd: PhantomData }
+    }
 }
 
 impl<T: InternalConfig> Config for T {}
@@ -104,6 +120,7 @@ impl<T: InternalConfig> Config for T {}
 /// The default config. By default this will be:
 /// - Little endian
 /// - Variable int encoding
+/// - Skip fixed array length
 #[derive(Copy, Clone)]
 pub struct Default;
 
@@ -112,6 +129,7 @@ impl InternalConfig for Default {
     const INT_ENCODING: IntEncoding = IntEncoding::Variable;
     const LIMIT: Option<u64> = None;
     const ALLOW_TRAILING: bool = true;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = true;
 }
 
 #[doc(hidden)]
@@ -125,6 +143,7 @@ impl<C: InternalConfig> InternalConfig for BigEndian<C> {
     const INT_ENCODING: IntEncoding = C::INT_ENCODING;
     const LIMIT: Option<u64> = C::LIMIT;
     const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = C::SKIP_FIXED_ARRAY_LENGTH;
 }
 
 #[doc(hidden)]
@@ -138,6 +157,7 @@ impl<C: InternalConfig> InternalConfig for LittleEndian<C> {
     const INT_ENCODING: IntEncoding = C::INT_ENCODING;
     const LIMIT: Option<u64> = C::LIMIT;
     const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = C::SKIP_FIXED_ARRAY_LENGTH;
 }
 
 #[doc(hidden)]
@@ -151,6 +171,7 @@ impl<C: InternalConfig> InternalConfig for Fixint<C> {
     const INT_ENCODING: IntEncoding = IntEncoding::Fixed;
     const LIMIT: Option<u64> = C::LIMIT;
     const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = C::SKIP_FIXED_ARRAY_LENGTH;
 }
 
 #[doc(hidden)]
@@ -164,6 +185,35 @@ impl<C: InternalConfig> InternalConfig for Varint<C> {
     const INT_ENCODING: IntEncoding = IntEncoding::Variable;
     const LIMIT: Option<u64> = C::LIMIT;
     const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = C::SKIP_FIXED_ARRAY_LENGTH;
+}
+
+#[doc(hidden)]
+#[derive(Copy, Clone)]
+pub struct SkipFixedArrayLength<C: Config> {
+    _pd: PhantomData<C>,
+}
+
+impl<C: InternalConfig> InternalConfig for SkipFixedArrayLength<C> {
+    const ENDIAN: Endian = C::ENDIAN;
+    const INT_ENCODING: IntEncoding = C::INT_ENCODING;
+    const LIMIT: Option<u64> = C::LIMIT;
+    const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = true;
+}
+
+#[doc(hidden)]
+#[derive(Copy, Clone)]
+pub struct WriteFixedArrayLength<C: Config> {
+    _pd: PhantomData<C>,
+}
+
+impl<C: InternalConfig> InternalConfig for WriteFixedArrayLength<C> {
+    const ENDIAN: Endian = C::ENDIAN;
+    const INT_ENCODING: IntEncoding = C::INT_ENCODING;
+    const LIMIT: Option<u64> = C::LIMIT;
+    const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+    const SKIP_FIXED_ARRAY_LENGTH: bool = false;
 }
 
 mod internal {
@@ -172,6 +222,7 @@ mod internal {
         const INT_ENCODING: IntEncoding;
         const LIMIT: Option<u64>;
         const ALLOW_TRAILING: bool;
+        const SKIP_FIXED_ARRAY_LENGTH: bool;
     }
 
     #[derive(PartialEq, Eq)]
@@ -194,5 +245,6 @@ mod internal {
         const INT_ENCODING: IntEncoding = C::INT_ENCODING;
         const LIMIT: Option<u64> = C::LIMIT;
         const ALLOW_TRAILING: bool = C::ALLOW_TRAILING;
+        const SKIP_FIXED_ARRAY_LENGTH: bool = C::SKIP_FIXED_ARRAY_LENGTH;
     }
 }

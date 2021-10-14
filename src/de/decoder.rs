@@ -228,6 +228,15 @@ impl<'a, 'de, R: Reader<'de>, C: Config> Decode for &'a mut Decoder<R, C> {
 
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
         let mut array = [0u8; N];
+        if !C::SKIP_FIXED_ARRAY_LENGTH {
+            let length = self.decode_usize()?;
+            if length != N {
+                return Err(DecodeError::ArrayLengthMismatch {
+                    found: length,
+                    required: N,
+                });
+            }
+        }
         self.reader.read(&mut array)?;
         Ok(array)
     }

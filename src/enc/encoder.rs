@@ -195,6 +195,9 @@ impl<'a, W: Writer, C: Config> Encode for &'a mut Encoder<W, C> {
     }
 
     fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError> {
+        if !C::SKIP_FIXED_ARRAY_LENGTH {
+            self.encode_usize(N)?;
+        }
         self.writer.write(&val)
     }
 
