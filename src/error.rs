@@ -40,7 +40,7 @@ pub enum DecodeError {
         /// the max index of the enum.
         max: u32,
 
-        // The index of the enum that the decoder encountered
+        /// The index of the enum that the decoder encountered
         found: u32,
     },
 
@@ -48,8 +48,10 @@ pub enum DecodeError {
     Utf8(core::str::Utf8Error),
 }
 
+/// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.
 #[non_exhaustive]
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub enum IntegerType {
     U16,
     U32,

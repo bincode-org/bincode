@@ -1,3 +1,5 @@
+//! Decoder-based structs and traits.
+
 use crate::error::DecodeError;
 
 mod decoder;

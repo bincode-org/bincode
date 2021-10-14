@@ -101,6 +101,9 @@ pub trait Config: InternalConfig {
 
 impl<T: InternalConfig> Config for T {}
 
+/// The default config. By default this will be:
+/// - Little endian
+/// - Variable int encoding
 #[derive(Copy, Clone)]
 pub struct Default;
 

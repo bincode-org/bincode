@@ -1,4 +1,5 @@
 #![no_std]
+#![warn(missing_docs)]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
@@ -58,10 +59,10 @@ pub fn encode_into_slice<E: enc::Encodeable>(
 pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
     val: E,
     dst: &mut [u8],
-    _config: C,
+    config: C,
 ) -> Result<usize, error::EncodeError> {
     let writer = enc::write::SliceWriter::new(dst);
-    let mut encoder = enc::Encoder::<_, C>::new(writer);
+    let mut encoder = enc::Encoder::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())
 }
