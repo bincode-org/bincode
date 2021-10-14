@@ -1,6 +1,12 @@
 use super::{Encode, Encodeable};
 use crate::error::EncodeError;
 
+impl Encodeable for bool {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        encoder.encode_u8(if *self { 1 } else { 0 })
+    }
+}
+
 impl Encodeable for u8 {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_u8(*self)

@@ -1,6 +1,16 @@
 use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
 use crate::error::DecodeError;
 
+impl<'de> Decodable for bool {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        match decoder.decode_u8()? {
+            0 => Ok(false),
+            1 => Ok(true),
+            x => Err(DecodeError::InvalidBooleanValue(x)),
+        }
+    }
+}
+
 impl<'de> Decodable for u8 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u8()

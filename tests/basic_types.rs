@@ -75,6 +75,9 @@ fn test_numbers() {
     the_same(5.0f32);
     the_same(5.0f64);
 
+    the_same(true);
+    the_same(false);
+
     for char in "aÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö文".chars()
     {
         the_same(char);

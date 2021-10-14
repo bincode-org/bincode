@@ -49,6 +49,9 @@ pub enum DecodeError {
 
     /// The decoder tried to decode a `char` and failed. The given buffer contains the bytes that are read at the moment of failure.
     InvalidCharEncoding([u8; 4]),
+
+    /// The decoder tried to decode a `bool` and failed. The given value is what is actually read.
+    InvalidBooleanValue(u8),
 }
 
 /// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.
