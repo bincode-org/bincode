@@ -85,6 +85,12 @@ impl<'de> Decodable for f64 {
     }
 }
 
+impl<'de> Decodable for char {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.decode_char()
+    }
+}
+
 impl<'a, 'de: 'a> BorrowDecodable<'de> for &'a [u8] {
     fn borrow_decode<D: BorrowDecode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
@@ -173,6 +179,10 @@ where
 
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
         T::decode_array::<N>(self)
+    }
+
+    fn decode_char(&mut self) -> Result<char, DecodeError> {
+        T::decode_char(self)
     }
 }
 

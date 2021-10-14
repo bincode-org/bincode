@@ -53,4 +53,7 @@ pub trait Encode {
     fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError>;
     /// Encode an array. Exactly `N` bytes must be encoded, else an error should be thrown.
     fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError>;
+
+    /// Encode a single utf8 char
+    fn encode_char(&mut self, val: char) -> Result<(), EncodeError>;
 }

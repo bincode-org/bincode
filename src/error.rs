@@ -46,6 +46,9 @@ pub enum DecodeError {
 
     /// The decoder tried to decode a `str`, but an utf8 error was encountered.
     Utf8(core::str::Utf8Error),
+
+    /// The decoder tried to decode a `char` and failed. The given buffer contains the bytes that are read at the moment of failure.
+    InvalidCharEncoding([u8; 4]),
 }
 
 /// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.

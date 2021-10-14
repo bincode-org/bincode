@@ -12,7 +12,13 @@ where
     C: Config,
 {
     let mut buffer = [0u8; 32];
-    bincode::encode_into_slice_with_config(element.clone(), &mut buffer, config).unwrap();
+    let len = bincode::encode_into_slice_with_config(element.clone(), &mut buffer, config).unwrap();
+    println!(
+        "{:?}: {:?} ({:?})",
+        element,
+        &buffer[..len],
+        core::any::type_name::<C>()
+    );
     let decoded: V = bincode::decode_with_config(&mut buffer, config).unwrap();
 
     assert_eq!(element, decoded);
@@ -68,6 +74,11 @@ fn test_numbers() {
 
     the_same(5.0f32);
     the_same(5.0f64);
+
+    for char in "aÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö文".chars()
+    {
+        the_same(char);
+    }
 }
 
 #[test]

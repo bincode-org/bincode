@@ -66,6 +66,9 @@ pub trait Decode {
     fn decode_f64(&mut self) -> Result<f64, DecodeError>;
     /// Attempt to decode an array of `N` entries.
     fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError>;
+
+    /// Attempt to decode a `char`
+    fn decode_char(&mut self) -> Result<char, DecodeError>;
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].

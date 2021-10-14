@@ -85,6 +85,12 @@ impl Encodeable for f64 {
     }
 }
 
+impl Encodeable for char {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        encoder.encode_char(*self)
+    }
+}
+
 impl Encodeable for &'_ [u8] {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_slice(*self)
@@ -156,5 +162,9 @@ where
     }
     fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError> {
         T::encode_array(self, val)
+    }
+
+    fn encode_char(&mut self, val: char) -> Result<(), EncodeError> {
+        T::encode_char(self, val)
     }
 }
