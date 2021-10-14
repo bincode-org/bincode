@@ -8,12 +8,30 @@ use crate::{
 };
 use core::marker::PhantomData;
 
+/// A Decoder that reads bytes from a given reader `R`.
+///
+/// This struct should rarely be used.
+/// In most cases, prefer any of the `decode` functions.
+///
+/// The ByteOrder that is chosen will impact the endianness that
+/// is used to read integers out of the reader.
+///
+/// ```
+/// # let slice: &[u8] = &[0, 0, 0, 0];
+/// # let some_reader = bincode::de::read::SliceReader::new(slice);
+/// use bincode::de::{Decoder, Decodable};
+/// use bincode::config;
+/// let mut decoder = Decoder::new(some_reader, config::Default);
+/// // this u32 can be any Decodable
+/// let value = u32::decode(&mut decoder).unwrap();
+/// ```
 pub struct Decoder<R, C: Config> {
     reader: R,
     config: PhantomData<C>,
 }
 
 impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
+    /// Construct a new Decoder
     pub fn new(reader: R, _config: C) -> Decoder<R, C> {
         Decoder {
             reader,
@@ -21,6 +39,7 @@ impl<'de, R: Reader<'de>, C: Config> Decoder<R, C> {
         }
     }
 
+    /// Consume the decoder and return the inner reader
     pub fn into_reader(self) -> R {
         self.reader
     }
