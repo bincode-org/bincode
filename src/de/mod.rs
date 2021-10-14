@@ -3,6 +3,7 @@
 use crate::error::DecodeError;
 
 mod decoder;
+mod impl_tuples;
 mod impls;
 
 pub mod read;

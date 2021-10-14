@@ -58,6 +58,7 @@ where
 
 #[test]
 fn test_numbers() {
+    // integer types
     the_same(5u8);
     the_same(5u16);
     the_same(5u32);
@@ -75,13 +76,25 @@ fn test_numbers() {
     the_same(5.0f32);
     the_same(5.0f64);
 
+    // bool
     the_same(true);
     the_same(false);
 
+    // utf8 characters
     for char in "aÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö文".chars()
     {
         the_same(char);
     }
+
+    // tuples, up to 8
+    the_same((1u8,));
+    the_same((1u8, 2u8));
+    the_same((1u8, 2u8, 3u8));
+    the_same((1u8, 2u8, 3u8, 4u8));
+    the_same((1u8, 2u8, 3u8, 4u8, 5u8));
+    the_same((1u8, 2u8, 3u8, 4u8, 5u8, 6u8));
+    the_same((1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8));
+    the_same((1u8, 2u8, 3u8, 4u8, 5u8, 6u8, 7u8, 8u8));
 }
 
 #[test]

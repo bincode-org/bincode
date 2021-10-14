@@ -1,6 +1,7 @@
 //! Encoder-based structs and traits.
 
 mod encoder;
+mod impl_tuples;
 mod impls;
 
 use crate::error::EncodeError;
