@@ -1,3 +1,5 @@
+//! Contains
+
 use super::{write::Writer, Encode};
 use crate::{
     config::{Config, Endian, IntEncoding},
@@ -5,19 +7,40 @@ use crate::{
 };
 use core::marker::PhantomData;
 
+/// An Encoder that writes bytes into a given writer `W`.
+///
+/// This struct should rarely be used.
+/// In most cases, prefer any of the `encode` functions.
+///
+/// The ByteOrder that is chosen will impact the endianness that
+/// is used to write integers to the writer.
+///
+/// ```
+/// # use bincode::enc::{write::SliceWriter, Encoder, Encodeable};
+/// # use bincode::config::{self, Config};
+/// # let config = config::Default.with_fixed_int_encoding().with_big_endian();
+/// let slice: &mut [u8] = &mut [0, 0, 0, 0];
+/// let mut encoder = Encoder::new(SliceWriter::new(slice), config);
+/// // this u32 can be any Encodable
+/// 5u32.encode(&mut encoder).unwrap();
+/// assert_eq!(encoder.into_writer().bytes_written(), 4);
+/// assert_eq!(slice, [0, 0, 0, 5]);
+/// ```
 pub struct Encoder<W: Writer, C: Config> {
     writer: W,
     config: PhantomData<C>,
 }
 
 impl<W: Writer, C: Config> Encoder<W, C> {
-    pub fn new(writer: W) -> Encoder<W, C> {
+    /// Create a new Encoder
+    pub fn new(writer: W, _config: C) -> Encoder<W, C> {
         Encoder {
             writer,
             config: PhantomData,
         }
     }
 
+    /// Return the underlying writer
     pub fn into_writer(self) -> W {
         self.writer
     }
