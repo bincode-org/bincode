@@ -7,6 +7,7 @@ use crate::{
 use core::time::Duration;
 use std::{
     ffi::{CStr, CString},
+    path::{Path, PathBuf},
     sync::{Mutex, RwLock},
     time::SystemTime,
 };
@@ -171,5 +172,34 @@ impl Decodable for SystemTime {
     fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         Ok(SystemTime::UNIX_EPOCH + duration)
+    }
+}
+
+impl Encodeable for &'_ Path {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        match self.to_str() {
+            Some(str) => str.encode(encoder),
+            None => Err(EncodeError::Other("Path contains invalid UTF-8 characters")),
+        }
+    }
+}
+
+impl<'de> BorrowDecodable<'de> for &'de Path {
+    fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+        let str = <&'de str>::borrow_decode(decoder)?;
+        Ok(Path::new(str))
+    }
+}
+
+impl Encodeable for PathBuf {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.as_path().encode(encoder)
+    }
+}
+
+impl Decodable for PathBuf {
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let string = std::string::String::decode(decoder)?;
+        Ok(string.into())
     }
 }

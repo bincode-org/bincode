@@ -15,6 +15,9 @@ pub enum EncodeError {
         type_name: &'static str,
     },
 
+    /// An uncommon error occured, see the inner text for more information
+    Other(&'static str),
+
     /// The targetted writer encountered an `std::io::Error`
     #[cfg(feature = "std")]
     Io {

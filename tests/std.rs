@@ -59,23 +59,34 @@ fn test_std_file() {
 #[test]
 fn test_std_commons() {
     use std::ffi::{CStr, CString};
+    use std::path::{Path, PathBuf};
     the_same(CString::new("Hello world").unwrap());
+    the_same(PathBuf::from("C:/Program Files/Foo"));
 
     let config = bincode::config::Default;
     let mut buffer = [0u8; 1024];
 
+    // &CStr
     let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
     let len = bincode::encode_into_slice_with_config(cstr, &mut buffer, config).unwrap();
     let decoded: &CStr = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
     assert_eq!(cstr, decoded);
 
+    // Mutex<T>
     let mutex = Mutex::new("Hello world".to_string());
     let len = bincode::encode_into_slice_with_config(&mutex, &mut buffer, config).unwrap();
     let decoded: Mutex<String> = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
     assert_eq!(&*mutex.lock().unwrap(), &*decoded.lock().unwrap());
 
+    // RwLock<T>
     let rwlock = RwLock::new("Hello world".to_string());
-    let len = bincode::encode_into_slice_with_config(&mutex, &mut buffer, config).unwrap();
+    let len = bincode::encode_into_slice_with_config(&rwlock, &mut buffer, config).unwrap();
     let decoded: RwLock<String> = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
     assert_eq!(&*rwlock.read().unwrap(), &*decoded.read().unwrap());
+
+    // Path
+    let path = Path::new("C:/Program Files/Foo");
+    let len = bincode::encode_into_slice_with_config(path, &mut buffer, config).unwrap();
+    let decoded: &Path = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
+    assert_eq!(path, decoded);
 }
