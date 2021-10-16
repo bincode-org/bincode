@@ -4,7 +4,10 @@ use crate::{
     enc::{write::Writer, Encode, Encodeable, Encoder},
     error::{DecodeError, EncodeError},
 };
-use std::ffi::{CStr, CString};
+use std::{
+    ffi::{CStr, CString},
+    sync::{Mutex, RwLock},
+};
 
 /// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 pub fn decode_from<D: Decodable, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
@@ -103,5 +106,49 @@ impl Decodable for CString {
         let cstr =
             CStr::from_bytes_with_nul(&vec).map_err(|e| DecodeError::CStrNulError { inner: e })?;
         Ok(cstr.into())
+    }
+}
+
+impl<T> Encodeable for Mutex<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        let t = self.lock().map_err(|_| EncodeError::LockFailed {
+            type_name: core::any::type_name::<Mutex<T>>(),
+        })?;
+        t.encode(encoder)
+    }
+}
+
+impl<T> Decodable for Mutex<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(Mutex::new(t))
+    }
+}
+
+impl<T> Encodeable for RwLock<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        let t = self.read().map_err(|_| EncodeError::LockFailed {
+            type_name: core::any::type_name::<Mutex<T>>(),
+        })?;
+        t.encode(encoder)
+    }
+}
+
+impl<T> Decodable for RwLock<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(RwLock::new(t))
     }
 }

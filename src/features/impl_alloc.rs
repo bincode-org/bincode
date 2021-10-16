@@ -5,7 +5,7 @@ use crate::{
     error::{DecodeError, EncodeError},
     Config,
 };
-use alloc::{borrow::Cow, boxed::Box, collections::*, rc::Rc, sync::Arc, vec::Vec};
+use alloc::{borrow::Cow, boxed::Box, collections::*, rc::Rc, string::String, sync::Arc, vec::Vec};
 
 #[derive(Default)]
 struct VecWriter {
@@ -175,6 +175,19 @@ where
             item.encode(&mut encoder)?;
         }
         Ok(())
+    }
+}
+
+impl Decodable for String {
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let bytes = Vec::<u8>::decode(decoder)?;
+        String::from_utf8(bytes).map_err(|e| DecodeError::Utf8(e.utf8_error()))
+    }
+}
+
+impl Encodeable for String {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.as_bytes().encode(encoder)
     }
 }
 

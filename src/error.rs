@@ -23,6 +23,13 @@ pub enum EncodeError {
         /// The amount of bytes that were written before the error occured
         index: usize,
     },
+
+    /// The encoder tried to encode a `Mutex` or `RwLock`, but the locking failed
+    #[cfg(feature = "std")]
+    LockFailed {
+        /// The type name of the mutex for debugging purposes
+        type_name: &'static str,
+    },
 }
 
 /// Errors that can be encounted by decoding a type

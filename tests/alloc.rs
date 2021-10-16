@@ -48,6 +48,7 @@ fn test_vec() {
 #[test]
 fn test_alloc_commons() {
     the_same::<Vec<u32>>(vec![1, 2, 3, 4, 5]);
+    the_same(String::from("Hello world"));
     the_same(Box::<u32>::new(5));
     the_same(Box::<[u32]>::from(vec![1, 2, 3, 4, 5]));
     the_same(Cow::<u32>::Owned(5));

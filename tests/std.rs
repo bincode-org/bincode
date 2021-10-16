@@ -2,6 +2,8 @@
 
 mod utils;
 
+use std::sync::{Mutex, RwLock};
+
 use utils::the_same;
 
 struct Foo {
@@ -60,10 +62,20 @@ fn test_std_commons() {
     the_same(CString::new("Hello world").unwrap());
 
     let config = bincode::config::Default;
-    let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
     let mut buffer = [0u8; 1024];
+
+    let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
     let len = bincode::encode_into_slice_with_config(cstr, &mut buffer, config).unwrap();
     let decoded: &CStr = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
-
     assert_eq!(cstr, decoded);
+
+    let mutex = Mutex::new("Hello world".to_string());
+    let len = bincode::encode_into_slice_with_config(&mutex, &mut buffer, config).unwrap();
+    let decoded: Mutex<String> = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
+    assert_eq!(&*mutex.lock().unwrap(), &*decoded.lock().unwrap());
+
+    let rwlock = RwLock::new("Hello world".to_string());
+    let len = bincode::encode_into_slice_with_config(&mutex, &mut buffer, config).unwrap();
+    let decoded: RwLock<String> = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
+    assert_eq!(&*rwlock.read().unwrap(), &*decoded.read().unwrap());
 }
