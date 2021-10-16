@@ -115,6 +115,39 @@ impl<const N: usize> Encodeable for [u8; N] {
     }
 }
 
+impl<T> Encodeable for Option<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        if let Some(val) = self {
+            1u8.encode(&mut encoder)?;
+            val.encode(encoder)
+        } else {
+            0u8.encode(encoder)
+        }
+    }
+}
+
+impl<T, U> Encodeable for Result<T, U>
+where
+    T: Encodeable,
+    U: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        match self {
+            Ok(val) => {
+                0u8.encode(&mut encoder)?;
+                val.encode(encoder)
+            }
+            Err(err) => {
+                1u8.encode(&mut encoder)?;
+                err.encode(encoder)
+            }
+        }
+    }
+}
+
 impl<'a, T> Encode for &'a mut T
 where
     T: Encode,

@@ -34,6 +34,9 @@ pub enum DecodeError {
 
     /// Invalid enum variant was found. The decoder tried to decode variant index `found`, but the variant index should be between `min` and `max`.
     UnexpectedVariant {
+        /// The type name that was being decoded.
+        type_name: &'static str,
+
         /// The min index of the enum. Usually this is `0`.
         min: u32,
 

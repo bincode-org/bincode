@@ -80,6 +80,7 @@ impl DeriveEnum {
 
     pub fn generate_decodable(self, generator: &mut Generator) -> Result<()> {
         let DeriveEnum { variants } = self;
+        let enum_name = generator.target_name().to_string();
 
         if generator.has_lifetimes() {
             // enum has a lifetime, implement BorrowDecodable
@@ -125,14 +126,14 @@ impl DeriveEnum {
 
                     // invalid idx
                     variant_case.push_parsed(format!(
-                        "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant }})",
-                        variants.len() - 1
+                        "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant, type_name: {:?} }})",
+                        variants.len() - 1,
+                        enum_name.to_string()
                     ));
                 });
             });
         } else {
             // enum has no lifetimes, implement Decodable
-
             generator.impl_for("bincode::de::Decodable")
                 .generate_fn("decode")
                 .with_generic("D", ["bincode::de::Decode"])
@@ -175,8 +176,9 @@ impl DeriveEnum {
 
                 // invalid idx
                 variant_case.push_parsed(format!(
-                    "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant }})",
-                    variants.len() - 1
+                    "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant, type_name: {:?} }})",
+                    variants.len() - 1,
+                    enum_name.to_string()
                 ));
             });
         });

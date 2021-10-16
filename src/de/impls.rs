@@ -127,6 +127,54 @@ impl<'de, T> Decodable for core::marker::PhantomData<T> {
     }
 }
 
+impl<'de, T> Decodable for Option<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let is_some = u8::decode(&mut decoder)?;
+        match is_some {
+            0 => Ok(None),
+            1 => {
+                let val = T::decode(decoder)?;
+                Ok(Some(val))
+            }
+            x => Err(DecodeError::UnexpectedVariant {
+                found: x as u32,
+                max: 1,
+                min: 0,
+                type_name: core::any::type_name::<Option<T>>(),
+            }),
+        }
+    }
+}
+
+impl<'de, T, U> Decodable for Result<T, U>
+where
+    T: Decodable,
+    U: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let is_ok = u8::decode(&mut decoder)?;
+        match is_ok {
+            0 => {
+                let t = T::decode(decoder)?;
+                Ok(Ok(t))
+            }
+            1 => {
+                let u = U::decode(decoder)?;
+                Ok(Err(u))
+            }
+            x => Err(DecodeError::UnexpectedVariant {
+                found: x as u32,
+                max: 1,
+                min: 0,
+                type_name: core::any::type_name::<Result<T, U>>(),
+            }),
+        }
+    }
+}
+
 impl<'a, 'de, T> Decode for &'a mut T
 where
     T: Decode,

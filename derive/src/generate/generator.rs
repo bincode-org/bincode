@@ -24,6 +24,10 @@ impl Generator {
         }
     }
 
+    pub fn target_name(&self) -> &Ident {
+        &self.name
+    }
+
     pub fn impl_for<'a>(&'a mut self, trait_name: &str) -> ImplFor<'a> {
         ImplFor::new(self, trait_name)
     }

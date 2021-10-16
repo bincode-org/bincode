@@ -151,6 +151,13 @@ fn test_numbers() {
         225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240,
         241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255
     ]);
+
+    // Option and Result
+    the_same(Option::<u32>::None);
+    the_same(Option::<u32>::Some(1234));
+
+    the_same(Result::<u32, u8>::Ok(1555));
+    the_same(Result::<u32, u8>::Err(15));
 }
 
 #[test]
