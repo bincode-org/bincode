@@ -5,6 +5,7 @@ extern crate alloc;
 mod utils;
 
 use alloc::borrow::Cow;
+use alloc::collections::*;
 use alloc::rc::Rc;
 use alloc::sync::Arc;
 use utils::the_same;
@@ -53,4 +54,20 @@ fn test_alloc_commons() {
     the_same(Cow::<u32>::Borrowed(&5));
     the_same(Rc::<u32>::new(5));
     the_same(Arc::<u32>::new(5));
+    the_same({
+        let mut map = BTreeMap::<u32, i32>::new();
+        map.insert(5, -5);
+        map
+    });
+    the_same({
+        let mut set = BTreeSet::<u32>::new();
+        set.insert(5);
+        set
+    });
+    the_same({
+        let mut set = VecDeque::<u32>::new();
+        set.push_back(15);
+        set.push_front(5);
+        set
+    });
 }

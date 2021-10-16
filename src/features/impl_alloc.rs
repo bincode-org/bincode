@@ -5,7 +5,7 @@ use crate::{
     error::{DecodeError, EncodeError},
     Config,
 };
-use alloc::{borrow::Cow, boxed::Box, rc::Rc, sync::Arc, vec::Vec};
+use alloc::{borrow::Cow, boxed::Box, collections::*, rc::Rc, sync::Arc, vec::Vec};
 
 #[derive(Default)]
 struct VecWriter {
@@ -33,6 +33,122 @@ pub fn encode_to_vec_with_config<E: enc::Encodeable, C: Config>(
     let mut encoder = enc::Encoder::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().inner)
+}
+
+impl<T> Decodable for BinaryHeap<T>
+where
+    T: Decodable + Ord,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let len = usize::decode(&mut decoder)?;
+        let mut map = BinaryHeap::with_capacity(len);
+        for _ in 0..len {
+            let key = T::decode(&mut decoder)?;
+            map.push(key);
+        }
+        Ok(map)
+    }
+}
+
+impl<T> Encodeable for BinaryHeap<T>
+where
+    T: Encodeable + Ord,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.len().encode(&mut encoder)?;
+        for val in self.iter() {
+            val.encode(&mut encoder)?;
+        }
+        Ok(())
+    }
+}
+
+impl<K, V> Decodable for BTreeMap<K, V>
+where
+    K: Decodable + Ord,
+    V: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let len = usize::decode(&mut decoder)?;
+        let mut map = BTreeMap::new();
+        for _ in 0..len {
+            let key = K::decode(&mut decoder)?;
+            let value = V::decode(&mut decoder)?;
+            map.insert(key, value);
+        }
+        Ok(map)
+    }
+}
+
+impl<K, V> Encodeable for BTreeMap<K, V>
+where
+    K: Encodeable + Ord,
+    V: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.len().encode(&mut encoder)?;
+        for (key, val) in self.iter() {
+            key.encode(&mut encoder)?;
+            val.encode(&mut encoder)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T> Decodable for BTreeSet<T>
+where
+    T: Decodable + Ord,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let len = usize::decode(&mut decoder)?;
+        let mut map = BTreeSet::new();
+        for _ in 0..len {
+            let key = T::decode(&mut decoder)?;
+            map.insert(key);
+        }
+        Ok(map)
+    }
+}
+
+impl<T> Encodeable for BTreeSet<T>
+where
+    T: Encodeable + Ord,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.len().encode(&mut encoder)?;
+        for item in self.iter() {
+            item.encode(&mut encoder)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T> Decodable for VecDeque<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let len = usize::decode(&mut decoder)?;
+        let mut map = VecDeque::with_capacity(len);
+        for _ in 0..len {
+            let key = T::decode(&mut decoder)?;
+            map.push_back(key);
+        }
+        Ok(map)
+    }
+}
+
+impl<T> Encodeable for VecDeque<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.len().encode(&mut encoder)?;
+        for item in self.iter() {
+            item.encode(&mut encoder)?;
+        }
+        Ok(())
+    }
 }
 
 impl<T> Decodable for Vec<T>
