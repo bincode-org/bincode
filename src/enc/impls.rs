@@ -103,6 +103,27 @@ impl Encodeable for &'_ [u8] {
     }
 }
 
+// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
+//
+// We'll want to implement encoding for both &[u8] and &[T: Encodeable],
+// but those implementations overlap because u8 also implements Encodeabl
+//
+// default impl Encodeable for &'_ [u8] {
+//     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+//         encoder.encode_slice(*self)
+//     }
+// }
+//
+// impl<T: Encodeable> Encodeable for &'_ [T] {
+//     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+//         self.len().encode(&mut encoder)?;
+//         for item in self.iter() {
+//             item.encode(&mut encoder)?;
+//         }
+//         Ok(())
+//     }
+// }
+
 impl Encodeable for &'_ str {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_slice(self.as_bytes())

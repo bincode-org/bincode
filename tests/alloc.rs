@@ -1,5 +1,9 @@
 #![cfg(feature = "alloc")]
 
+mod utils;
+
+use utils::the_same;
+
 struct Foo {
     pub a: u32,
     pub b: u32,
@@ -33,4 +37,11 @@ fn test_vec() {
     let foo: Foo = bincode::decode(&vec).unwrap();
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
+}
+
+#[test]
+fn test_alloc_commons() {
+    the_same::<Vec<u32>>(vec![1, 2, 3, 4, 5]);
+    the_same(Box::<u32>::new(5));
+    the_same(Box::<[u32]>::from(vec![1, 2, 3, 4, 5]));
 }
