@@ -5,7 +5,7 @@ use crate::{
     error::{DecodeError, EncodeError},
     Config,
 };
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{borrow::Cow, boxed::Box, rc::Rc, sync::Arc, vec::Vec};
 
 #[derive(Default)]
 struct VecWriter {
@@ -35,7 +35,7 @@ pub fn encode_to_vec_with_config<E: enc::Encodeable, C: Config>(
     Ok(encoder.into_writer().inner)
 }
 
-impl<'de, T> Decodable for Vec<T>
+impl<T> Decodable for Vec<T>
 where
     T: Decodable,
 {
@@ -62,7 +62,7 @@ where
     }
 }
 
-impl<'de, T> Decodable for Box<T>
+impl<T> Decodable for Box<T>
 where
     T: Decodable,
 {
@@ -81,7 +81,7 @@ where
     }
 }
 
-impl<'de, T> Decodable for Box<[T]>
+impl<T> Decodable for Box<[T]>
 where
     T: Decodable,
 {
@@ -101,5 +101,62 @@ where
             item.encode(&mut encoder)?;
         }
         Ok(())
+    }
+}
+
+impl<'cow, T> Decodable for Cow<'cow, T>
+where
+    T: Decodable + Clone,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(Cow::Owned(t))
+    }
+}
+
+impl<'cow, T> Encodeable for Cow<'cow, T>
+where
+    T: Encodeable + Clone,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.as_ref().encode(encoder)
+    }
+}
+
+impl<T> Decodable for Rc<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(Rc::new(t))
+    }
+}
+
+impl<T> Encodeable for Rc<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        T::encode(self, encoder)
+    }
+}
+
+impl<T> Decodable for Arc<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(Arc::new(t))
+    }
+}
+
+impl<T> Encodeable for Arc<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        T::encode(self, encoder)
     }
 }

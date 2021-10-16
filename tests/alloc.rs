@@ -1,7 +1,12 @@
 #![cfg(feature = "alloc")]
 
+extern crate alloc;
+
 mod utils;
 
+use alloc::borrow::Cow;
+use alloc::rc::Rc;
+use alloc::sync::Arc;
 use utils::the_same;
 
 struct Foo {
@@ -44,4 +49,8 @@ fn test_alloc_commons() {
     the_same::<Vec<u32>>(vec![1, 2, 3, 4, 5]);
     the_same(Box::<u32>::new(5));
     the_same(Box::<[u32]>::from(vec![1, 2, 3, 4, 5]));
+    the_same(Cow::<u32>::Owned(5));
+    the_same(Cow::<u32>::Borrowed(&5));
+    the_same(Rc::<u32>::new(5));
+    the_same(Arc::<u32>::new(5));
 }
