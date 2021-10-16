@@ -1,3 +1,5 @@
+use core::cell::{Cell, RefCell};
+
 use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
 use crate::error::DecodeError;
 
@@ -172,6 +174,26 @@ where
                 type_name: core::any::type_name::<Result<T, U>>(),
             }),
         }
+    }
+}
+
+impl<'de, T> Decodable for Cell<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(Cell::new(t))
+    }
+}
+
+impl<'de, T> Decodable for RefCell<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let t = T::decode(decoder)?;
+        Ok(RefCell::new(t))
     }
 }
 

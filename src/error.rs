@@ -7,6 +7,14 @@ pub enum EncodeError {
     /// The writer ran out of storage.
     UnexpectedEnd,
 
+    /// The RefCell<T> is already borrowed
+    RefCellAlreadyBorrowed {
+        /// The inner borrow error
+        inner: core::cell::BorrowError,
+        /// the type name of the RefCell being encoded that is currently borrowed.
+        type_name: &'static str,
+    },
+
     /// The targetted writer encountered an `std::io::Error`
     #[cfg(feature = "std")]
     Io {

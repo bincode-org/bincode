@@ -1,5 +1,7 @@
 mod utils;
 
+use core::cell::Cell;
+use std::cell::RefCell;
 use utils::the_same;
 
 #[test]
@@ -63,12 +65,31 @@ fn test_numbers() {
         241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255
     ]);
 
-    // Option and Result
+    // Common types
     the_same(Option::<u32>::None);
     the_same(Option::<u32>::Some(1234));
 
     the_same(Result::<u32, u8>::Ok(1555));
     the_same(Result::<u32, u8>::Err(15));
+
+    the_same(Cell::<u32>::new(15));
+    the_same(RefCell::<u32>::new(15));
+}
+
+#[test]
+fn test_refcell_already_borrowed() {
+    let cell = RefCell::new(5u32);
+    // first get a mutable reference to the cell
+    let _mutable_guard = cell.borrow_mut();
+    // now try to encode it
+    let mut slice = [0u8; 10];
+    let result = bincode::encode_into_slice(&cell, &mut slice)
+        .expect_err("Encoding a borrowed refcell should fail");
+
+    match result {
+        bincode::error::EncodeError::RefCellAlreadyBorrowed { .. } => {} // ok
+        x => panic!("Expected a RefCellAlreadyBorrowed error, found {:?}", x),
+    }
 }
 
 #[test]

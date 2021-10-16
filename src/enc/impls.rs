@@ -1,3 +1,5 @@
+use core::cell::{Cell, RefCell};
+
 use super::{Encode, Encodeable};
 use crate::error::EncodeError;
 
@@ -166,6 +168,39 @@ where
                 err.encode(encoder)
             }
         }
+    }
+}
+
+impl<T> Encodeable for Cell<T>
+where
+    T: Encodeable + Copy,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        T::encode(&self.get(), encoder)
+    }
+}
+
+impl<T> Encodeable for RefCell<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        let borrow_guard = self
+            .try_borrow()
+            .map_err(|e| EncodeError::RefCellAlreadyBorrowed {
+                inner: e,
+                type_name: core::any::type_name::<RefCell<T>>(),
+            })?;
+        T::encode(&borrow_guard, encoder)
+    }
+}
+
+impl<'a, T> Encodeable for &'a T
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        T::encode(self, encoder)
     }
 }
 
