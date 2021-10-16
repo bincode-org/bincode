@@ -2,8 +2,13 @@
 
 mod utils;
 
-use std::sync::{Mutex, RwLock};
-
+use std::{
+    ffi::{CStr, CString},
+    io::{Cursor, Seek, SeekFrom},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
+    path::{Path, PathBuf},
+    sync::{Mutex, RwLock},
+};
 use utils::the_same;
 
 struct Foo {
@@ -33,7 +38,7 @@ impl bincode::de::Decodable for Foo {
 
 #[test]
 fn test_std_cursor() {
-    let mut cursor = std::io::Cursor::<&[u8]>::new(&[5, 10]);
+    let mut cursor = Cursor::<&[u8]>::new(&[5, 10]);
     let foo: Foo = bincode::decode_from(&mut cursor).unwrap();
 
     assert_eq!(foo.a, 5);
@@ -42,8 +47,6 @@ fn test_std_cursor() {
 
 #[test]
 fn test_std_file() {
-    use std::io::{Seek, SeekFrom};
-
     let mut file = tempfile::tempfile().expect("Could not create temp file");
 
     let bytes_written = bincode::encode_into_write(Foo { a: 30, b: 50 }, &mut file).unwrap();
@@ -58,10 +61,24 @@ fn test_std_file() {
 
 #[test]
 fn test_std_commons() {
-    use std::ffi::{CStr, CString};
-    use std::path::{Path, PathBuf};
     the_same(CString::new("Hello world").unwrap());
     the_same(PathBuf::from("C:/Program Files/Foo"));
+    the_same(Ipv4Addr::LOCALHOST);
+    the_same(Ipv6Addr::LOCALHOST);
+    the_same(IpAddr::V4(Ipv4Addr::LOCALHOST));
+    the_same(IpAddr::V6(Ipv6Addr::LOCALHOST));
+    the_same(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 12345));
+    the_same(SocketAddrV6::new(Ipv6Addr::LOCALHOST, 12345, 0, 0));
+    the_same(SocketAddr::V4(SocketAddrV4::new(
+        Ipv4Addr::LOCALHOST,
+        12345,
+    )));
+    the_same(SocketAddr::V6(SocketAddrV6::new(
+        Ipv6Addr::LOCALHOST,
+        12345,
+        0,
+        0,
+    )));
 
     let config = bincode::config::Default;
     let mut buffer = [0u8; 1024];

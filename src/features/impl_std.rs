@@ -7,6 +7,7 @@ use crate::{
 use core::time::Duration;
 use std::{
     ffi::{CStr, CString},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     path::{Path, PathBuf},
     sync::{Mutex, RwLock},
     time::SystemTime,
@@ -201,5 +202,119 @@ impl Decodable for PathBuf {
     fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
+    }
+}
+
+impl Encodeable for IpAddr {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        match self {
+            IpAddr::V4(v4) => {
+                0u32.encode(&mut encoder)?;
+                v4.encode(encoder)
+            }
+            IpAddr::V6(v6) => {
+                1u32.encode(&mut encoder)?;
+                v6.encode(encoder)
+            }
+        }
+    }
+}
+
+impl Decodable for IpAddr {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        match u32::decode(&mut decoder)? {
+            0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
+            1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
+            found => Err(DecodeError::UnexpectedVariant {
+                min: 0,
+                max: 1,
+                found,
+                type_name: core::any::type_name::<IpAddr>(),
+            }),
+        }
+    }
+}
+
+impl Encodeable for Ipv4Addr {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.octets().encode(encoder)
+    }
+}
+
+impl Decodable for Ipv4Addr {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        Ok(Self::from(decoder.decode_array::<4>()?))
+    }
+}
+
+impl Encodeable for Ipv6Addr {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.octets().encode(encoder)
+    }
+}
+
+impl Decodable for Ipv6Addr {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        Ok(Self::from(decoder.decode_array::<16>()?))
+    }
+}
+
+impl Encodeable for SocketAddr {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        match self {
+            SocketAddr::V4(v4) => {
+                0u32.encode(&mut encoder)?;
+                v4.encode(encoder)
+            }
+            SocketAddr::V6(v6) => {
+                1u32.encode(&mut encoder)?;
+                v6.encode(encoder)
+            }
+        }
+    }
+}
+
+impl Decodable for SocketAddr {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        match u32::decode(&mut decoder)? {
+            0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
+            1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
+            found => Err(DecodeError::UnexpectedVariant {
+                min: 0,
+                max: 1,
+                found,
+                type_name: core::any::type_name::<SocketAddr>(),
+            }),
+        }
+    }
+}
+
+impl Encodeable for SocketAddrV4 {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.ip().encode(&mut encoder)?;
+        self.port().encode(encoder)
+    }
+}
+
+impl Decodable for SocketAddrV4 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let ip = Ipv4Addr::decode(&mut decoder)?;
+        let port = u16::decode(decoder)?;
+        Ok(Self::new(ip, port))
+    }
+}
+
+impl Encodeable for SocketAddrV6 {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.ip().encode(&mut encoder)?;
+        self.port().encode(encoder)
+    }
+}
+
+impl Decodable for SocketAddrV6 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let ip = Ipv6Addr::decode(&mut decoder)?;
+        let port = u16::decode(decoder)?;
+        Ok(Self::new(ip, port, 0, 0))
     }
 }
