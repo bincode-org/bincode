@@ -1,10 +1,10 @@
-use core::{
-    cell::{Cell, RefCell},
-    time::Duration,
-};
-
 use super::{Encode, Encodeable};
 use crate::error::EncodeError;
+use core::{
+    cell::{Cell, RefCell},
+    ops::{Bound, Range, RangeInclusive},
+    time::Duration,
+};
 
 impl Encodeable for bool {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
@@ -202,6 +202,50 @@ impl Encodeable for Duration {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.as_secs().encode(&mut encoder)?;
         self.subsec_nanos().encode(&mut encoder)?;
+        Ok(())
+    }
+}
+
+impl<T> Encodeable for Range<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.start.encode(&mut encoder)?;
+        self.end.encode(&mut encoder)?;
+        Ok(())
+    }
+}
+
+impl<T> Encodeable for RangeInclusive<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.start().encode(&mut encoder)?;
+        self.end().encode(&mut encoder)?;
+        Ok(())
+    }
+}
+
+impl<T> Encodeable for Bound<T>
+where
+    T: Encodeable,
+{
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        match self {
+            Self::Unbounded => {
+                0u32.encode(encoder)?;
+            }
+            Self::Included(val) => {
+                1u32.encode(&mut encoder)?;
+                val.encode(encoder)?;
+            }
+            Self::Excluded(val) => {
+                2u32.encode(&mut encoder)?;
+                val.encode(encoder)?;
+            }
+        }
         Ok(())
     }
 }

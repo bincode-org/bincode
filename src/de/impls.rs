@@ -1,5 +1,6 @@
 use core::{
     cell::{Cell, RefCell},
+    ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
 
@@ -205,6 +206,47 @@ impl Decodable for Duration {
         let secs = Decodable::decode(&mut decoder)?;
         let nanos = Decodable::decode(&mut decoder)?;
         Ok(Duration::new(secs, nanos))
+    }
+}
+
+impl<T> Decodable for Range<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let min = T::decode(&mut decoder)?;
+        let max = T::decode(&mut decoder)?;
+        Ok(min..max)
+    }
+}
+
+impl<T> Decodable for RangeInclusive<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let min = T::decode(&mut decoder)?;
+        let max = T::decode(&mut decoder)?;
+        Ok(RangeInclusive::new(min, max))
+    }
+}
+
+impl<T> Decodable for Bound<T>
+where
+    T: Decodable,
+{
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        match u32::decode(&mut decoder)? {
+            0 => Ok(Bound::Unbounded),
+            1 => Ok(Bound::Included(T::decode(decoder)?)),
+            2 => Ok(Bound::Excluded(T::decode(decoder)?)),
+            x => Err(DecodeError::UnexpectedVariant {
+                min: 0,
+                max: 2,
+                found: x,
+                type_name: core::any::type_name::<Bound<T>>(),
+            }),
+        }
     }
 }
 

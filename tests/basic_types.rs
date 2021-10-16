@@ -1,6 +1,7 @@
 mod utils;
 
 use core::cell::{Cell, RefCell};
+use core::ops::Bound;
 use core::time::Duration;
 use utils::the_same;
 
@@ -76,6 +77,11 @@ fn test_numbers() {
     the_same(RefCell::<u32>::new(15));
 
     the_same(Duration::new(5, 730023852));
+    the_same(5u8..10u8);
+    the_same(5u8..=10u8);
+    the_same(Bound::<usize>::Unbounded);
+    the_same(Bound::<usize>::Included(105));
+    the_same(Bound::<usize>::Excluded(5));
 }
 
 #[test]
