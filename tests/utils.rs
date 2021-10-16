@@ -1,13 +1,14 @@
 use bincode::config::{self, Config};
 use core::fmt::Debug;
 
-fn the_same_with_config<V, C>(element: V, config: C)
+fn the_same_with_config<V, C, CMP>(element: &V, config: C, cmp: CMP)
 where
-    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + Clone + 'static,
+    V: bincode::enc::Encodeable + bincode::de::Decodable + Debug + 'static,
     C: Config,
+    CMP: Fn(&V, &V) -> bool,
 {
     let mut buffer = [0u8; 1024];
-    let len = bincode::encode_into_slice_with_config(element.clone(), &mut buffer, config).unwrap();
+    let len = bincode::encode_into_slice_with_config(&element, &mut buffer, config).unwrap();
     println!(
         "{:?}: {:?} ({:?})",
         element,
@@ -16,68 +17,91 @@ where
     );
     let decoded: V = bincode::decode_with_config(&mut buffer, config).unwrap();
 
-    assert_eq!(element, decoded);
+    assert!(
+        cmp(&element, &decoded),
+        "Comparison failed\nDecoded:  {:?}\nExpected: {:?}\nBytes: {:?}",
+        decoded,
+        element,
+        &buffer[..len],
+    );
 }
 
-pub fn the_same<V>(element: V)
+pub fn the_same_with_comparer<V, CMP>(element: V, cmp: CMP)
 where
-    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + Clone + 'static,
+    V: bincode::enc::Encodeable + bincode::de::Decodable + Debug + 'static,
+    CMP: Fn(&V, &V) -> bool,
 {
     // A matrix of each different config option possible
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_little_endian()
             .with_fixed_int_encoding()
             .skip_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_big_endian()
             .with_fixed_int_encoding()
             .skip_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_little_endian()
             .with_variable_int_encoding()
             .skip_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_big_endian()
             .with_variable_int_encoding()
             .skip_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_little_endian()
             .with_fixed_int_encoding()
             .write_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_big_endian()
             .with_fixed_int_encoding()
             .write_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element.clone(),
+        &element,
         config::Default
             .with_little_endian()
             .with_variable_int_encoding()
             .write_fixed_array_length(),
+        &cmp,
     );
     the_same_with_config(
-        element,
+        &element,
         config::Default
             .with_big_endian()
             .with_variable_int_encoding()
             .write_fixed_array_length(),
+        &cmp,
     );
+}
+
+#[allow(dead_code)] // This is not used in every test
+pub fn the_same<V>(element: V)
+where
+    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + 'static,
+{
+    the_same_with_comparer(element, |a, b| a == b);
 }

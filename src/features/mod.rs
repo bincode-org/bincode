@@ -1,3 +1,8 @@
+#[cfg(feature = "atomic")]
+mod atomic;
+#[cfg(feature = "atomic")]
+pub use self::atomic::*;
+
 #[cfg(feature = "alloc")]
 mod impl_alloc;
 #[cfg(feature = "alloc")]

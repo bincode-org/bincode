@@ -23,9 +23,10 @@ description = "A binary serialization / deserialization strategy for transformin
 edition = "2018"
 
 [features]
-default = ["std", "derive"]
+default = ["std", "derive", "atomic"]
 std = ["alloc"]
 alloc = []
+atomic = []
 derive = ["bincode_derive"]
 
 [dependencies]

@@ -11,6 +11,8 @@ use std::{
 };
 use utils::the_same;
 
+use crate::utils::the_same_with_comparer;
+
 struct Foo {
     pub a: u32,
     pub b: u32,
@@ -79,7 +81,14 @@ fn test_std_commons() {
         0,
         0,
     )));
+    the_same_with_comparer(Mutex::new("Hello world".to_string()), |a, b| {
+        &*a.lock().unwrap() == &*b.lock().unwrap()
+    });
+    the_same_with_comparer(RwLock::new("Hello world".to_string()), |a, b| {
+        &*a.read().unwrap() == &*b.read().unwrap()
+    });
 
+    // Borrowed values
     let config = bincode::config::Default;
     let mut buffer = [0u8; 1024];
 
@@ -88,18 +97,6 @@ fn test_std_commons() {
     let len = bincode::encode_into_slice_with_config(cstr, &mut buffer, config).unwrap();
     let decoded: &CStr = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
     assert_eq!(cstr, decoded);
-
-    // Mutex<T>
-    let mutex = Mutex::new("Hello world".to_string());
-    let len = bincode::encode_into_slice_with_config(&mutex, &mut buffer, config).unwrap();
-    let decoded: Mutex<String> = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
-    assert_eq!(&*mutex.lock().unwrap(), &*decoded.lock().unwrap());
-
-    // RwLock<T>
-    let rwlock = RwLock::new("Hello world".to_string());
-    let len = bincode::encode_into_slice_with_config(&rwlock, &mut buffer, config).unwrap();
-    let decoded: RwLock<String> = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
-    assert_eq!(&*rwlock.read().unwrap(), &*decoded.read().unwrap());
 
     // Path
     let path = Path::new("C:/Program Files/Foo");

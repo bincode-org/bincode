@@ -8,7 +8,7 @@ use alloc::borrow::Cow;
 use alloc::collections::*;
 use alloc::rc::Rc;
 use alloc::sync::Arc;
-use utils::the_same;
+use utils::{the_same, the_same_with_comparer};
 
 struct Foo {
     pub a: u32,
@@ -55,6 +55,18 @@ fn test_alloc_commons() {
     the_same(Cow::<u32>::Borrowed(&5));
     the_same(Rc::<u32>::new(5));
     the_same(Arc::<u32>::new(5));
+    the_same_with_comparer(
+        {
+            let mut map = BinaryHeap::<u32>::new();
+            map.push(1);
+            map.push(2);
+            map.push(3);
+            map.push(4);
+            map.push(5);
+            map
+        },
+        |a, b| a.into_iter().collect::<Vec<_>>() == b.into_iter().collect::<Vec<_>>(),
+    );
     the_same({
         let mut map = BTreeMap::<u32, i32>::new();
         map.insert(5, -5);
