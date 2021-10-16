@@ -71,6 +71,13 @@ pub enum DecodeError {
         /// The length of the array found in the binary format.
         found: usize,
     },
+
+    /// The decoder tried to decode a `CStr` or `CString`, but the incoming data contained a 0 byte
+    #[cfg(feature = "std")]
+    CStrNulError {
+        /// The inner exception
+        inner: std::ffi::FromBytesWithNulError,
+    },
 }
 
 /// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.

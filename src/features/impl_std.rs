@@ -1,9 +1,10 @@
 use crate::{
     config::{self, Config},
-    de::{read::Reader, Decodable, Decoder},
-    enc::{write::Writer, Encodeable, Encoder},
+    de::{read::Reader, BorrowDecodable, BorrowDecode, Decodable, Decode, Decoder},
+    enc::{write::Writer, Encode, Encodeable, Encoder},
     error::{DecodeError, EncodeError},
 };
+use std::ffi::{CStr, CString};
 
 /// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 pub fn decode_from<D: Decodable, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
@@ -69,5 +70,38 @@ impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
             })?;
         self.bytes_written += bytes.len();
         Ok(())
+    }
+}
+
+impl<'a> Encodeable for &'a CStr {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.to_bytes_with_nul().encode(encoder)
+    }
+}
+
+impl<'de> BorrowDecodable<'de> for &'de CStr {
+    fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+        let bytes = <&[u8]>::borrow_decode(decoder)?;
+        CStr::from_bytes_with_nul(bytes).map_err(|e| DecodeError::CStrNulError { inner: e })
+    }
+}
+
+impl Encodeable for CString {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.as_bytes_with_nul().encode(encoder)
+    }
+}
+
+impl Decodable for CString {
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        // BlockedTODO: https://github.com/rust-lang/rust/issues/73179
+        // use `from_vec_with_nul` instead, combined with:
+        // let bytes = std::vec::Vec::<u8>::decode(decoder)?;
+
+        // now we have to allocate twice unfortunately
+        let vec: std::vec::Vec<u8> = std::vec::Vec::decode(decoder)?;
+        let cstr =
+            CStr::from_bytes_with_nul(&vec).map_err(|e| DecodeError::CStrNulError { inner: e })?;
+        Ok(cstr.into())
     }
 }

@@ -3,12 +3,7 @@ use core::fmt::Debug;
 
 fn the_same_with_config<V, C>(element: V, config: C)
 where
-    V: bincode::enc::Encodeable
-        + for<'de> bincode::de::Decodable
-        + PartialEq
-        + Debug
-        + Clone
-        + 'static,
+    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + Clone + 'static,
     C: Config,
 {
     let mut buffer = [0u8; 1024];
@@ -26,12 +21,7 @@ where
 
 pub fn the_same<V>(element: V)
 where
-    V: bincode::enc::Encodeable
-        + for<'de> bincode::de::Decodable
-        + PartialEq
-        + Debug
-        + Clone
-        + 'static,
+    V: bincode::enc::Encodeable + bincode::de::Decodable + PartialEq + Debug + Clone + 'static,
 {
     // A matrix of each different config option possible
     the_same_with_config(

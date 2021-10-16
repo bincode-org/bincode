@@ -1,5 +1,9 @@
 #![cfg(feature = "std")]
 
+mod utils;
+
+use utils::the_same;
+
 struct Foo {
     pub a: u32,
     pub b: u32,
@@ -48,4 +52,18 @@ fn test_std_file() {
 
     assert_eq!(foo.a, 30);
     assert_eq!(foo.b, 50);
+}
+
+#[test]
+fn test_std_commons() {
+    use std::ffi::{CStr, CString};
+    the_same(CString::new("Hello world").unwrap());
+
+    let config = bincode::config::Default;
+    let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
+    let mut buffer = [0u8; 1024];
+    let len = bincode::encode_into_slice_with_config(cstr, &mut buffer, config).unwrap();
+    let decoded: &CStr = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
+
+    assert_eq!(cstr, decoded);
 }
