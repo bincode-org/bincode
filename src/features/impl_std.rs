@@ -4,9 +4,11 @@ use crate::{
     enc::{write::Writer, Encode, Encodeable, Encoder},
     error::{DecodeError, EncodeError},
 };
+use core::time::Duration;
 use std::{
     ffi::{CStr, CString},
     sync::{Mutex, RwLock},
+    time::SystemTime,
 };
 
 /// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
@@ -150,5 +152,24 @@ where
     fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RwLock::new(t))
+    }
+}
+
+impl Encodeable for SystemTime {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        let duration = self.duration_since(SystemTime::UNIX_EPOCH).map_err(|e| {
+            EncodeError::InvalidSystemTime {
+                inner: e,
+                time: *self,
+            }
+        })?;
+        duration.encode(encoder)
+    }
+}
+
+impl Decodable for SystemTime {
+    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+        let duration = Duration::decode(decoder)?;
+        Ok(SystemTime::UNIX_EPOCH + duration)
     }
 }

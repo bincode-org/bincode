@@ -30,6 +30,15 @@ pub enum EncodeError {
         /// The type name of the mutex for debugging purposes
         type_name: &'static str,
     },
+
+    /// The encoder tried to encode a `SystemTime`, but it was before `SystemTime::UNIX_EPOCH`
+    #[cfg(feature = "std")]
+    InvalidSystemTime {
+        /// The error that was thrown by the SystemTime
+        inner: std::time::SystemTimeError,
+        /// The SystemTime that caused the error
+        time: std::time::SystemTime,
+    },
 }
 
 /// Errors that can be encounted by decoding a type

@@ -1,4 +1,7 @@
-use core::cell::{Cell, RefCell};
+use core::{
+    cell::{Cell, RefCell},
+    time::Duration,
+};
 
 use super::{Encode, Encodeable};
 use crate::error::EncodeError;
@@ -192,6 +195,14 @@ where
                 type_name: core::any::type_name::<RefCell<T>>(),
             })?;
         T::encode(&borrow_guard, encoder)
+    }
+}
+
+impl Encodeable for Duration {
+    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        self.as_secs().encode(&mut encoder)?;
+        self.subsec_nanos().encode(&mut encoder)?;
+        Ok(())
     }
 }
 

@@ -1,7 +1,7 @@
 mod utils;
 
-use core::cell::Cell;
-use std::cell::RefCell;
+use core::cell::{Cell, RefCell};
+use core::time::Duration;
 use utils::the_same;
 
 #[test]
@@ -74,6 +74,8 @@ fn test_numbers() {
 
     the_same(Cell::<u32>::new(15));
     the_same(RefCell::<u32>::new(15));
+
+    the_same(Duration::new(5, 730023852));
 }
 
 #[test]

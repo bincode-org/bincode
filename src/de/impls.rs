@@ -1,4 +1,7 @@
-use core::cell::{Cell, RefCell};
+use core::{
+    cell::{Cell, RefCell},
+    time::Duration,
+};
 
 use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
 use crate::error::DecodeError;
@@ -177,7 +180,7 @@ where
     }
 }
 
-impl<'de, T> Decodable for Cell<T>
+impl<T> Decodable for Cell<T>
 where
     T: Decodable,
 {
@@ -187,13 +190,21 @@ where
     }
 }
 
-impl<'de, T> Decodable for RefCell<T>
+impl<T> Decodable for RefCell<T>
 where
     T: Decodable,
 {
     fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RefCell::new(t))
+    }
+}
+
+impl Decodable for Duration {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        let secs = Decodable::decode(&mut decoder)?;
+        let nanos = Decodable::decode(&mut decoder)?;
+        Ok(Duration::new(secs, nanos))
     }
 }
 
