@@ -3,6 +3,7 @@ mod utils;
 use core::cell::{Cell, RefCell};
 use core::ops::Bound;
 use core::time::Duration;
+use std::num::*;
 use utils::the_same;
 
 #[test]
@@ -82,6 +83,33 @@ fn test_numbers() {
     the_same(Bound::<usize>::Unbounded);
     the_same(Bound::<usize>::Included(105));
     the_same(Bound::<usize>::Excluded(5));
+
+    // NonZero* types
+    the_same(NonZeroU8::new(0));
+    the_same(NonZeroU8::new(123));
+    the_same(NonZeroU16::new(0));
+    the_same(NonZeroU16::new(12345));
+    the_same(NonZeroU32::new(0));
+    the_same(NonZeroU32::new(12345));
+    the_same(NonZeroU64::new(0));
+    the_same(NonZeroU64::new(12345));
+    the_same(NonZeroU128::new(0));
+    the_same(NonZeroU128::new(12345));
+    the_same(NonZeroUsize::new(0));
+    the_same(NonZeroUsize::new(12345));
+
+    the_same(NonZeroI8::new(0));
+    the_same(NonZeroI8::new(123));
+    the_same(NonZeroI16::new(0));
+    the_same(NonZeroI16::new(12345));
+    the_same(NonZeroI32::new(0));
+    the_same(NonZeroI32::new(12345));
+    the_same(NonZeroI64::new(0));
+    the_same(NonZeroI64::new(12345));
+    the_same(NonZeroI128::new(0));
+    the_same(NonZeroI128::new(12345));
+    the_same(NonZeroIsize::new(0));
+    the_same(NonZeroIsize::new(12345));
 }
 
 #[test]

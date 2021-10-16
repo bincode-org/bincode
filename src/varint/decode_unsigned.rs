@@ -142,7 +142,7 @@ pub fn varint_decode_usize<'a, R: Reader<'a>>(
             })
         }
         U128_BYTE => Err(DecodeError::InvalidIntegerType {
-            expected: IntegerType::USize,
+            expected: IntegerType::Usize,
             found: IntegerType::U128,
         }),
         x => Ok(x as usize),

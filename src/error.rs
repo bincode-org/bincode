@@ -59,6 +59,12 @@ pub enum DecodeError {
         found: IntegerType,
     },
 
+    /// The decoder tried to decode any of the `NonZero*` types but the value is zero
+    NonZeroTypeIsZero {
+        /// The type that was being read from the reader
+        non_zero_type: IntegerType,
+    },
+
     /// Invalid enum variant was found. The decoder tried to decode variant index `found`, but the variant index should be between `min` and `max`.
     UnexpectedVariant {
         /// The type name that was being decoded.
@@ -104,9 +110,17 @@ pub enum DecodeError {
 #[derive(Debug)]
 #[allow(missing_docs)]
 pub enum IntegerType {
+    U8,
     U16,
     U32,
     U64,
     U128,
-    USize,
+    Usize,
+
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    Isize,
 }

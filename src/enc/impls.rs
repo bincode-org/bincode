@@ -2,6 +2,10 @@ use super::{Encode, Encodeable};
 use crate::error::EncodeError;
 use core::{
     cell::{Cell, RefCell},
+    num::{
+        NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
+        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize,
+    },
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
@@ -18,9 +22,21 @@ impl Encodeable for u8 {
     }
 }
 
+impl Encodeable for NonZeroU8 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
+    }
+}
+
 impl Encodeable for u16 {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_u16(*self)
+    }
+}
+
+impl Encodeable for NonZeroU16 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
     }
 }
 
@@ -30,9 +46,21 @@ impl Encodeable for u32 {
     }
 }
 
+impl Encodeable for NonZeroU32 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
+    }
+}
+
 impl Encodeable for u64 {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_u64(*self)
+    }
+}
+
+impl Encodeable for NonZeroU64 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
     }
 }
 
@@ -42,9 +70,21 @@ impl Encodeable for u128 {
     }
 }
 
+impl Encodeable for NonZeroU128 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
+    }
+}
+
 impl Encodeable for usize {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_usize(*self)
+    }
+}
+
+impl Encodeable for NonZeroUsize {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
     }
 }
 
@@ -54,9 +94,21 @@ impl Encodeable for i8 {
     }
 }
 
+impl Encodeable for NonZeroI8 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
+    }
+}
+
 impl Encodeable for i16 {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_i16(*self)
+    }
+}
+
+impl Encodeable for NonZeroI16 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
     }
 }
 
@@ -66,9 +118,21 @@ impl Encodeable for i32 {
     }
 }
 
+impl Encodeable for NonZeroI32 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
+    }
+}
+
 impl Encodeable for i64 {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_i64(*self)
+    }
+}
+
+impl Encodeable for NonZeroI64 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
     }
 }
 
@@ -78,9 +142,21 @@ impl Encodeable for i128 {
     }
 }
 
+impl Encodeable for NonZeroI128 {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
+    }
+}
+
 impl Encodeable for isize {
     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
         encoder.encode_isize(*self)
+    }
+}
+
+impl Encodeable for NonZeroIsize {
+    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+        self.get().encode(encoder)
     }
 }
 

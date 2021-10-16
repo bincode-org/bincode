@@ -1,13 +1,16 @@
+use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
+use crate::error::{DecodeError, IntegerType};
 use core::{
     cell::{Cell, RefCell},
+    num::{
+        NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
+        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize,
+    },
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
 
-use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
-use crate::error::DecodeError;
-
-impl<'de> Decodable for bool {
+impl Decodable for bool {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         match decoder.decode_u8()? {
             0 => Ok(false),
@@ -17,91 +20,187 @@ impl<'de> Decodable for bool {
     }
 }
 
-impl<'de> Decodable for u8 {
+impl Decodable for u8 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u8()
     }
 }
 
-impl<'de> Decodable for u16 {
+impl Decodable for NonZeroU8 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU8::new(decoder.decode_u8()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::U8,
+        })
+    }
+}
+
+impl Decodable for u16 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u16()
     }
 }
 
-impl<'de> Decodable for u32 {
+impl Decodable for NonZeroU16 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU16::new(decoder.decode_u16()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::U16,
+        })
+    }
+}
+
+impl Decodable for u32 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u32()
     }
 }
 
-impl<'de> Decodable for u64 {
+impl Decodable for NonZeroU32 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU32::new(decoder.decode_u32()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::U32,
+        })
+    }
+}
+
+impl Decodable for u64 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u64()
     }
 }
 
-impl<'de> Decodable for u128 {
+impl Decodable for NonZeroU64 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU64::new(decoder.decode_u64()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::U64,
+        })
+    }
+}
+
+impl Decodable for u128 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_u128()
     }
 }
 
-impl<'de> Decodable for usize {
+impl Decodable for NonZeroU128 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU128::new(decoder.decode_u128()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::U128,
+        })
+    }
+}
+
+impl Decodable for usize {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_usize()
     }
 }
 
-impl<'de> Decodable for i8 {
+impl Decodable for NonZeroUsize {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroUsize::new(decoder.decode_usize()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::Usize,
+        })
+    }
+}
+
+impl Decodable for i8 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i8()
     }
 }
 
-impl<'de> Decodable for i16 {
+impl Decodable for NonZeroI8 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI8::new(decoder.decode_i8()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::I8,
+        })
+    }
+}
+
+impl Decodable for i16 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i16()
     }
 }
 
-impl<'de> Decodable for i32 {
+impl Decodable for NonZeroI16 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI16::new(decoder.decode_i16()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::I16,
+        })
+    }
+}
+
+impl Decodable for i32 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i32()
     }
 }
 
-impl<'de> Decodable for i64 {
+impl Decodable for NonZeroI32 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI32::new(decoder.decode_i32()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::I32,
+        })
+    }
+}
+
+impl Decodable for i64 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i64()
     }
 }
 
-impl<'de> Decodable for i128 {
+impl Decodable for NonZeroI64 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI64::new(decoder.decode_i64()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::I64,
+        })
+    }
+}
+
+impl Decodable for i128 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_i128()
     }
 }
 
-impl<'de> Decodable for isize {
+impl Decodable for NonZeroI128 {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI128::new(decoder.decode_i128()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::I128,
+        })
+    }
+}
+
+impl Decodable for isize {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_isize()
     }
 }
 
-impl<'de> Decodable for f32 {
+impl Decodable for NonZeroIsize {
+    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+        NonZeroIsize::new(decoder.decode_isize()?).ok_or(DecodeError::NonZeroTypeIsZero {
+            non_zero_type: IntegerType::Isize,
+        })
+    }
+}
+
+impl Decodable for f32 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_f32()
     }
 }
 
-impl<'de> Decodable for f64 {
+impl Decodable for f64 {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_f64()
     }
 }
 
-impl<'de> Decodable for char {
+impl Decodable for char {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_char()
     }
@@ -121,19 +220,19 @@ impl<'a, 'de: 'a> BorrowDecodable<'de> for &'a str {
     }
 }
 
-impl<'de, const N: usize> Decodable for [u8; N] {
+impl<const N: usize> Decodable for [u8; N] {
     fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
         decoder.decode_array()
     }
 }
 
-impl<'de, T> Decodable for core::marker::PhantomData<T> {
+impl<T> Decodable for core::marker::PhantomData<T> {
     fn decode<D: Decode>(_: D) -> Result<Self, DecodeError> {
         Ok(core::marker::PhantomData)
     }
 }
 
-impl<'de, T> Decodable for Option<T>
+impl<T> Decodable for Option<T>
 where
     T: Decodable,
 {
@@ -155,7 +254,7 @@ where
     }
 }
 
-impl<'de, T, U> Decodable for Result<T, U>
+impl<T, U> Decodable for Result<T, U>
 where
     T: Decodable,
     U: Decodable,
