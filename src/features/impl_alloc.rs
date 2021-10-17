@@ -20,11 +20,13 @@ impl enc::write::Writer for VecWriter {
 }
 
 /// Encode the given value into a `Vec<u8>`.
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_to_vec<E: enc::Encodeable>(val: E) -> Result<Vec<u8>, EncodeError> {
     encode_to_vec_with_config(val, config::Default)
 }
 
 /// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_to_vec_with_config<E: enc::Encodeable, C: Config>(
     val: E,
     config: C,
@@ -271,6 +273,7 @@ where
     }
 }
 
+#[cfg(feature = "atomic")]
 impl<T> Decodable for Arc<T>
 where
     T: Decodable,
@@ -281,6 +284,7 @@ where
     }
 }
 
+#[cfg(feature = "atomic")]
 impl<T> Encodeable for Arc<T>
 where
     T: Encodeable,

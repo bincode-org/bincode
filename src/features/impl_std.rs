@@ -14,6 +14,7 @@ use std::{
 };
 
 /// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from<D: Decodable, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
     decode_from_with_config(src, config::Default)
 }
@@ -21,6 +22,7 @@ pub fn decode_from<D: Decodable, R: std::io::Read>(src: &mut R) -> Result<D, Dec
 /// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 ///
 /// See the [config] module for more information about config options.
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from_with_config<D: Decodable, C: Config, R: std::io::Read>(
     src: &mut R,
     _config: C,
@@ -40,6 +42,7 @@ impl<'storage, R: std::io::Read> Reader<'storage> for R {
 }
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`.
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn encode_into_write<E: Encodeable, W: std::io::Write>(
     val: E,
     dst: &mut W,
@@ -48,6 +51,7 @@ pub fn encode_into_write<E: Encodeable, W: std::io::Write>(
 }
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`. See the [config] module for more information.
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn encode_into_write_with_config<E: Encodeable, C: Config, W: std::io::Write>(
     val: E,
     dst: &mut W,

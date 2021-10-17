@@ -54,6 +54,7 @@ fn test_alloc_commons() {
     the_same(Cow::<u32>::Owned(5));
     the_same(Cow::<u32>::Borrowed(&5));
     the_same(Rc::<u32>::new(5));
+    #[cfg(feature = "atomic")]
     the_same(Arc::<u32>::new(5));
     the_same_with_comparer(
         {

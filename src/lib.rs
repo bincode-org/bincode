@@ -1,5 +1,6 @@
 #![no_std]
 #![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
@@ -15,7 +16,8 @@
 //! |Name  |Default?|Supported types for Encodeable/Decodeable|Enabled methods                                                  |Other|
 //! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
 //! |std   | Yes    ||`decode_from[_with_config]` and `encode_into_write[_with_config]`|
-//! |alloc | Yes    |`Vec`, `HashMap`, `BinaryHeap`, `BTreeMap`, `BTreeSet`, `LinkedList`, `VecDeque`, `Box`, `Arc`, `Rc`, `Cow`|`encode_to_vec[_with_config]`|
+//! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec[_with_config]`|
+//! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    |||Enables the `Encodeable` and `Decodeable` derive macro|
 //! |serde | No     ||`serde_decode_from[_with_config]`, `serde_encode_into[_with_config]`|Also enables `_to_vec` when `alloc` is enabled|
 
