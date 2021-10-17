@@ -13,12 +13,12 @@
 //!
 //! # Features
 //!
-//! |Name  |Default?|Supported types for Encodeable/Decodeable|Enabled methods                                                  |Other|
+//! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
 //! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
 //! |std   | Yes    ||`decode_from[_with_config]` and `encode_into_write[_with_config]`|
 //! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec[_with_config]`|
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
-//! |derive| Yes    |||Enables the `Encodeable` and `Decodeable` derive macro|
+//! |derive| Yes    |||Enables the `Encode` and `Decode` derive macro|
 //! |serde | No     ||`serde_decode_from[_with_config]`, `serde_encode_into[_with_config]`|Also enables `_to_vec` when `alloc` is enabled|
 
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-dev")]
@@ -48,7 +48,7 @@ use config::Config;
 /// Will take the [Default] configuration. See the [config] module for more information.
 ///
 /// [Default]: config/struct.Default.html
-pub fn encode_into_slice<E: enc::Encodeable>(
+pub fn encode_into_slice<E: enc::Encode>(
     val: E,
     dst: &mut [u8],
 ) -> Result<usize, error::EncodeError> {
@@ -58,13 +58,13 @@ pub fn encode_into_slice<E: enc::Encodeable>(
 /// Encode the given value into the given slice. Returns the amount of bytes that have been written.
 ///
 /// See the [config] module for more information on configurations.
-pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
+pub fn encode_into_slice_with_config<E: enc::Encode, C: Config>(
     val: E,
     dst: &mut [u8],
     config: C,
 ) -> Result<usize, error::EncodeError> {
     let writer = enc::write::SliceWriter::new(dst);
-    let mut encoder = enc::Encoder::<_, C>::new(writer, config);
+    let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written())
 }
@@ -74,7 +74,7 @@ pub fn encode_into_slice_with_config<E: enc::Encodeable, C: Config>(
 /// Will take the [Default] configuration. See the [config] module for more information.
 ///
 /// [Default]: config/struct.Default.html
-pub fn decode<'__de, D: de::BorrowDecodable<'__de>>(
+pub fn decode<'__de, D: de::BorrowDecode<'__de>>(
     src: &'__de [u8],
 ) -> Result<D, error::DecodeError> {
     decode_with_config(src, config::Default)
@@ -83,11 +83,11 @@ pub fn decode<'__de, D: de::BorrowDecodable<'__de>>(
 /// Attempt to decode a given type `D` from the given slice.
 ///
 /// See the [config] module for more information on configurations.
-pub fn decode_with_config<'__de, D: de::BorrowDecodable<'__de>, C: Config>(
+pub fn decode_with_config<'__de, D: de::BorrowDecode<'__de>, C: Config>(
     src: &'__de [u8],
     _config: C,
 ) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
-    let mut decoder = de::Decoder::<_, C>::new(reader, _config);
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
     D::borrow_decode(&mut decoder)
 }

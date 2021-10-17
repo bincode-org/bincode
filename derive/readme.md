@@ -1,6 +1,6 @@
 # Bincode-derive
 
-The derive crate for bincode. Implements `bincode::Encodable` and `bincode::Decodable`.
+The derive crate for bincode. Implements `bincode::Encode` and `bincode::Decode`.
 
 This crate is roughly split into 2 parts:
 
@@ -25,4 +25,4 @@ This is supported by the structs in `src/generate`. The most notable points of t
 
 For additional derive testing, see the test cases in `../tests`
 
-For testing purposes, all generated code is outputted to the current `target` folder, under file name `<struct/enum name>_Encodeable.rs` and `<struct/enum name>_Decodeable.rs`. This can help with debugging.
+For testing purposes, all generated code is outputted to the current `target` folder, under file name `<struct/enum name>_Encode.rs` and `<struct/enum name>_Decode.rs`. This can help with debugging.

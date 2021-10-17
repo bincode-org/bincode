@@ -20,15 +20,15 @@ use prelude::TokenStream;
 
 type Result<T = ()> = std::result::Result<T, Error>;
 
-#[proc_macro_derive(Encodable)]
-pub fn derive_encodable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(Encode)]
+pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     #[allow(clippy::useless_conversion)]
-    derive_encodable_inner(input.into())
+    derive_encode_inner(input.into())
         .unwrap_or_else(|e| e.into_token_stream())
         .into()
 }
 
-fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
+fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
     let _attributes = parse::Attributes::try_take(source)?;
@@ -45,31 +45,31 @@ fn derive_encodable_inner(input: TokenStream) -> Result<TokenStream> {
             derive_struct::DeriveStruct {
                 fields: body.fields,
             }
-            .generate_encodable(&mut generator)?;
+            .generate_encode(&mut generator)?;
         }
         parse::DataType::Enum => {
             let body = parse::EnumBody::take(source)?;
             derive_enum::DeriveEnum {
                 variants: body.variants,
             }
-            .generate_encodable(&mut generator)?;
+            .generate_encode(&mut generator)?;
         }
     }
 
     let stream = generator.take_stream();
-    dump_output(name, "Encodeable", &stream);
+    dump_output(name, "Encode", &stream);
     Ok(stream)
 }
 
-#[proc_macro_derive(Decodable)]
-pub fn derive_decodable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(Decode)]
+pub fn derive_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     #[allow(clippy::useless_conversion)]
-    derive_decodable_inner(input.into())
+    derive_decode_inner(input.into())
         .unwrap_or_else(|e| e.into_token_stream())
         .into()
 }
 
-fn derive_decodable_inner(input: TokenStream) -> Result<TokenStream> {
+fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
     let _attributes = parse::Attributes::try_take(source)?;
@@ -86,19 +86,19 @@ fn derive_decodable_inner(input: TokenStream) -> Result<TokenStream> {
             derive_struct::DeriveStruct {
                 fields: body.fields,
             }
-            .generate_decodable(&mut generator)?;
+            .generate_decode(&mut generator)?;
         }
         parse::DataType::Enum => {
             let body = parse::EnumBody::take(source)?;
             derive_enum::DeriveEnum {
                 variants: body.variants,
             }
-            .generate_decodable(&mut generator)?;
+            .generate_decode(&mut generator)?;
         }
     }
 
     let stream = generator.take_stream();
-    dump_output(name, "Decodeable", &stream);
+    dump_output(name, "Decode", &stream);
     Ok(stream)
 }
 

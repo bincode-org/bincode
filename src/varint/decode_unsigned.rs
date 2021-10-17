@@ -5,10 +5,7 @@ use crate::{
     error::{DecodeError, IntegerType},
 };
 
-pub fn varint_decode_u16<'a, R: Reader<'a>>(
-    read: &mut R,
-    endian: Endian,
-) -> Result<u16, DecodeError> {
+pub fn varint_decode_u16<R: Reader>(read: &mut R, endian: Endian) -> Result<u16, DecodeError> {
     let mut byte = [0u8; 1];
     read.read(&mut byte)?;
     match byte[0] {
@@ -36,10 +33,7 @@ pub fn varint_decode_u16<'a, R: Reader<'a>>(
     }
 }
 
-pub fn varint_decode_u32<'a, R: Reader<'a>>(
-    read: &mut R,
-    endian: Endian,
-) -> Result<u32, DecodeError> {
+pub fn varint_decode_u32<R: Reader>(read: &mut R, endian: Endian) -> Result<u32, DecodeError> {
     let mut byte = [0u8; 1];
     read.read(&mut byte)?;
     match byte[0] {
@@ -71,10 +65,7 @@ pub fn varint_decode_u32<'a, R: Reader<'a>>(
     }
 }
 
-pub fn varint_decode_u64<'a, R: Reader<'a>>(
-    read: &mut R,
-    endian: Endian,
-) -> Result<u64, DecodeError> {
+pub fn varint_decode_u64<R: Reader>(read: &mut R, endian: Endian) -> Result<u64, DecodeError> {
     let mut byte = [0u8; 1];
     read.read(&mut byte)?;
     match byte[0] {
@@ -110,10 +101,7 @@ pub fn varint_decode_u64<'a, R: Reader<'a>>(
     }
 }
 
-pub fn varint_decode_usize<'a, R: Reader<'a>>(
-    read: &mut R,
-    endian: Endian,
-) -> Result<usize, DecodeError> {
+pub fn varint_decode_usize<R: Reader>(read: &mut R, endian: Endian) -> Result<usize, DecodeError> {
     let mut byte = [0u8; 1];
     read.read(&mut byte)?;
     match byte[0] {
@@ -149,10 +137,7 @@ pub fn varint_decode_usize<'a, R: Reader<'a>>(
     }
 }
 
-pub fn varint_decode_u128<'a, R: Reader<'a>>(
-    read: &mut R,
-    endian: Endian,
-) -> Result<u128, DecodeError> {
+pub fn varint_decode_u128<R: Reader>(read: &mut R, endian: Endian) -> Result<u128, DecodeError> {
     let mut byte = [0u8; 1];
     read.read(&mut byte)?;
     match byte[0] {

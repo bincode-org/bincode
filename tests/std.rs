@@ -18,8 +18,8 @@ struct Foo {
     pub b: u32,
 }
 
-impl bincode::enc::Encodeable for Foo {
-    fn encode<E: bincode::enc::Encode>(
+impl bincode::enc::Encode for Foo {
+    fn encode<E: bincode::enc::Encoder>(
         &self,
         mut encoder: E,
     ) -> Result<(), bincode::error::EncodeError> {
@@ -29,11 +29,13 @@ impl bincode::enc::Encodeable for Foo {
     }
 }
 
-impl bincode::de::Decodable for Foo {
-    fn decode<D: bincode::de::Decode>(mut decoder: D) -> Result<Self, bincode::error::DecodeError> {
+impl bincode::de::Decode for Foo {
+    fn decode<D: bincode::de::Decoder>(
+        mut decoder: D,
+    ) -> Result<Self, bincode::error::DecodeError> {
         Ok(Self {
-            a: bincode::de::Decodable::decode(&mut decoder)?,
-            b: bincode::de::Decodable::decode(&mut decoder)?,
+            a: bincode::de::Decode::decode(&mut decoder)?,
+            b: bincode::de::Decode::decode(&mut decoder)?,
         })
     }
 }

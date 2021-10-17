@@ -1,35 +1,35 @@
-use super::{Encode, Encodeable};
+use super::{Encode, Encoder};
 use crate::error::EncodeError;
 
-impl<A> Encodeable for (A,)
+impl<A> Encode for (A,)
 where
-    A: Encodeable,
+    A: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         Ok(())
     }
 }
 
-impl<A, B> Encodeable for (A, B)
+impl<A, B> Encode for (A, B)
 where
-    A: Encodeable,
-    B: Encodeable,
+    A: Encode,
+    B: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         Ok(())
     }
 }
 
-impl<A, B, C> Encodeable for (A, B, C)
+impl<A, B, C> Encode for (A, B, C)
 where
-    A: Encodeable,
-    B: Encodeable,
-    C: Encodeable,
+    A: Encode,
+    B: Encode,
+    C: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         self.2.encode(&mut encoder)?;
@@ -37,14 +37,14 @@ where
     }
 }
 
-impl<A, B, C, D> Encodeable for (A, B, C, D)
+impl<A, B, C, D> Encode for (A, B, C, D)
 where
-    A: Encodeable,
-    B: Encodeable,
-    C: Encodeable,
-    D: Encodeable,
+    A: Encode,
+    B: Encode,
+    C: Encode,
+    D: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         self.2.encode(&mut encoder)?;
@@ -53,15 +53,15 @@ where
     }
 }
 
-impl<A, B, C, D, E> Encodeable for (A, B, C, D, E)
+impl<A, B, C, D, E> Encode for (A, B, C, D, E)
 where
-    A: Encodeable,
-    B: Encodeable,
-    C: Encodeable,
-    D: Encodeable,
-    E: Encodeable,
+    A: Encode,
+    B: Encode,
+    C: Encode,
+    D: Encode,
+    E: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         self.2.encode(&mut encoder)?;
@@ -71,16 +71,16 @@ where
     }
 }
 
-impl<A, B, C, D, E, F> Encodeable for (A, B, C, D, E, F)
+impl<A, B, C, D, E, F> Encode for (A, B, C, D, E, F)
 where
-    A: Encodeable,
-    B: Encodeable,
-    C: Encodeable,
-    D: Encodeable,
-    E: Encodeable,
-    F: Encodeable,
+    A: Encode,
+    B: Encode,
+    C: Encode,
+    D: Encode,
+    E: Encode,
+    F: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         self.2.encode(&mut encoder)?;
@@ -91,17 +91,17 @@ where
     }
 }
 
-impl<A, B, C, D, E, F, G> Encodeable for (A, B, C, D, E, F, G)
+impl<A, B, C, D, E, F, G> Encode for (A, B, C, D, E, F, G)
 where
-    A: Encodeable,
-    B: Encodeable,
-    C: Encodeable,
-    D: Encodeable,
-    E: Encodeable,
-    F: Encodeable,
-    G: Encodeable,
+    A: Encode,
+    B: Encode,
+    C: Encode,
+    D: Encode,
+    E: Encode,
+    F: Encode,
+    G: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         self.2.encode(&mut encoder)?;
@@ -113,18 +113,18 @@ where
     }
 }
 
-impl<A, B, C, D, E, F, G, H> Encodeable for (A, B, C, D, E, F, G, H)
+impl<A, B, C, D, E, F, G, H> Encode for (A, B, C, D, E, F, G, H)
 where
-    A: Encodeable,
-    B: Encodeable,
-    C: Encodeable,
-    D: Encodeable,
-    E: Encodeable,
-    F: Encodeable,
-    G: Encodeable,
-    H: Encodeable,
+    A: Encode,
+    B: Encode,
+    C: Encode,
+    D: Encode,
+    E: Encode,
+    F: Encode,
+    G: Encode,
+    H: Encode,
 {
-    fn encode<_E: Encode>(&self, mut encoder: _E) -> Result<(), EncodeError> {
+    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
         self.0.encode(&mut encoder)?;
         self.1.encode(&mut encoder)?;
         self.2.encode(&mut encoder)?;

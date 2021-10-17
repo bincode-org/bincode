@@ -1,32 +1,32 @@
-use super::{Decodable, Decode};
+use super::{Decode, Decoder};
 use crate::error::DecodeError;
 
-impl<A> Decodable for (A,)
+impl<A> Decode for (A,)
 where
-    A: Decodable,
+    A: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((A::decode(&mut decoder)?,))
     }
 }
 
-impl<A, B> Decodable for (A, B)
+impl<A, B> Decode for (A, B)
 where
-    A: Decodable,
-    B: Decodable,
+    A: Decode,
+    B: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((A::decode(&mut decoder)?, B::decode(&mut decoder)?))
     }
 }
 
-impl<A, B, C> Decodable for (A, B, C)
+impl<A, B, C> Decode for (A, B, C)
 where
-    A: Decodable,
-    B: Decodable,
-    C: Decodable,
+    A: Decode,
+    B: Decode,
+    C: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -35,14 +35,14 @@ where
     }
 }
 
-impl<A, B, C, D> Decodable for (A, B, C, D)
+impl<A, B, C, D> Decode for (A, B, C, D)
 where
-    A: Decodable,
-    B: Decodable,
-    C: Decodable,
-    D: Decodable,
+    A: Decode,
+    B: Decode,
+    C: Decode,
+    D: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -52,15 +52,15 @@ where
     }
 }
 
-impl<A, B, C, D, E> Decodable for (A, B, C, D, E)
+impl<A, B, C, D, E> Decode for (A, B, C, D, E)
 where
-    A: Decodable,
-    B: Decodable,
-    C: Decodable,
-    D: Decodable,
-    E: Decodable,
+    A: Decode,
+    B: Decode,
+    C: Decode,
+    D: Decode,
+    E: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -71,16 +71,16 @@ where
     }
 }
 
-impl<A, B, C, D, E, F> Decodable for (A, B, C, D, E, F)
+impl<A, B, C, D, E, F> Decode for (A, B, C, D, E, F)
 where
-    A: Decodable,
-    B: Decodable,
-    C: Decodable,
-    D: Decodable,
-    E: Decodable,
-    F: Decodable,
+    A: Decode,
+    B: Decode,
+    C: Decode,
+    D: Decode,
+    E: Decode,
+    F: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -92,17 +92,17 @@ where
     }
 }
 
-impl<A, B, C, D, E, F, G> Decodable for (A, B, C, D, E, F, G)
+impl<A, B, C, D, E, F, G> Decode for (A, B, C, D, E, F, G)
 where
-    A: Decodable,
-    B: Decodable,
-    C: Decodable,
-    D: Decodable,
-    E: Decodable,
-    F: Decodable,
-    G: Decodable,
+    A: Decode,
+    B: Decode,
+    C: Decode,
+    D: Decode,
+    E: Decode,
+    F: Decode,
+    G: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -115,18 +115,18 @@ where
     }
 }
 
-impl<A, B, C, D, E, F, G, H> Decodable for (A, B, C, D, E, F, G, H)
+impl<A, B, C, D, E, F, G, H> Decode for (A, B, C, D, E, F, G, H)
 where
-    A: Decodable,
-    B: Decodable,
-    C: Decodable,
-    D: Decodable,
-    E: Decodable,
-    F: Decodable,
-    G: Decodable,
-    H: Decodable,
+    A: Decode,
+    B: Decode,
+    C: Decode,
+    D: Decode,
+    E: Decode,
+    F: Decode,
+    G: Decode,
+    H: Decode,
 {
-    fn decode<_D: Decode>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,

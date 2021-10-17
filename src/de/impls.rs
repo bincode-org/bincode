@@ -1,5 +1,11 @@
-use super::{BorrowDecodable, BorrowDecode, Decodable, Decode};
-use crate::error::{DecodeError, IntegerType};
+use super::{
+    read::{BorrowReader, Reader},
+    BorrowDecode, BorrowDecoder, Decode, Decoder,
+};
+use crate::{
+    config::{Endian, IntEncoding, InternalConfig},
+    error::{DecodeError, IntegerType},
+};
 use core::{
     cell::{Cell, RefCell},
     num::{
@@ -10,9 +16,9 @@ use core::{
     time::Duration,
 };
 
-impl Decodable for bool {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        match decoder.decode_u8()? {
+impl Decode for bool {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        match u8::decode(decoder)? {
             0 => Ok(false),
             1 => Ok(true),
             x => Err(DecodeError::InvalidBooleanValue(x)),
@@ -20,223 +26,387 @@ impl Decodable for bool {
     }
 }
 
-impl Decodable for u8 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_u8()
+impl Decode for u8 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let mut bytes = [0u8; 1];
+        decoder.reader().read(&mut bytes)?;
+        Ok(bytes[0])
     }
 }
 
-impl Decodable for NonZeroU8 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroU8::new(decoder.decode_u8()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroU8 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU8::new(u8::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U8,
         })
     }
 }
 
-impl Decodable for u16 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_u16()
+impl Decode for u16 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_u16(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 2];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => u16::from_le_bytes(bytes),
+                    Endian::Big => u16::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroU16 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroU16::new(decoder.decode_u16()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroU16 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU16::new(u16::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U16,
         })
     }
 }
 
-impl Decodable for u32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_u32()
+impl Decode for u32 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_u32(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 4];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => u32::from_le_bytes(bytes),
+                    Endian::Big => u32::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroU32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroU32::new(decoder.decode_u32()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroU32 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU32::new(u32::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U32,
         })
     }
 }
 
-impl Decodable for u64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_u64()
+impl Decode for u64 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_u64(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 8];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => u64::from_le_bytes(bytes),
+                    Endian::Big => u64::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroU64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroU64::new(decoder.decode_u64()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroU64 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU64::new(u64::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U64,
         })
     }
 }
 
-impl Decodable for u128 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_u128()
+impl Decode for u128 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_u128(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 16];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => u128::from_le_bytes(bytes),
+                    Endian::Big => u128::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroU128 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroU128::new(decoder.decode_u128()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroU128 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroU128::new(u128::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U128,
         })
     }
 }
 
-impl Decodable for usize {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_usize()
+impl Decode for usize {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_usize(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 8];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => u64::from_le_bytes(bytes),
+                    Endian::Big => u64::from_be_bytes(bytes),
+                } as usize)
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroUsize {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroUsize::new(decoder.decode_usize()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroUsize {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroUsize::new(usize::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::Usize,
         })
     }
 }
 
-impl Decodable for i8 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_i8()
+impl Decode for i8 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let mut bytes = [0u8; 1];
+        decoder.reader().read(&mut bytes)?;
+        Ok(bytes[0] as i8)
     }
 }
 
-impl Decodable for NonZeroI8 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroI8::new(decoder.decode_i8()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroI8 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI8::new(i8::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I8,
         })
     }
 }
 
-impl Decodable for i16 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_i16()
+impl Decode for i16 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_i16(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 2];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => i16::from_le_bytes(bytes),
+                    Endian::Big => i16::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroI16 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroI16::new(decoder.decode_i16()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroI16 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI16::new(i16::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I16,
         })
     }
 }
 
-impl Decodable for i32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_i32()
+impl Decode for i32 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_i32(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 4];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => i32::from_le_bytes(bytes),
+                    Endian::Big => i32::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroI32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroI32::new(decoder.decode_i32()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroI32 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI32::new(i32::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I32,
         })
     }
 }
 
-impl Decodable for i64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_i64()
+impl Decode for i64 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_i64(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 8];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => i64::from_le_bytes(bytes),
+                    Endian::Big => i64::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroI64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroI64::new(decoder.decode_i64()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroI64 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI64::new(i64::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I64,
         })
     }
 }
 
-impl Decodable for i128 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_i128()
+impl Decode for i128 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_i128(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 16];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => i128::from_le_bytes(bytes),
+                    Endian::Big => i128::from_be_bytes(bytes),
+                })
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroI128 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroI128::new(decoder.decode_i128()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroI128 {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroI128::new(i128::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I128,
         })
     }
 }
 
-impl Decodable for isize {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_isize()
+impl Decode for isize {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        match D::C::INT_ENCODING {
+            IntEncoding::Variable => {
+                crate::varint::varint_decode_isize(decoder.reader(), D::C::ENDIAN)
+            }
+            IntEncoding::Fixed => {
+                let mut bytes = [0u8; 8];
+                decoder.reader().read(&mut bytes)?;
+                Ok(match D::C::ENDIAN {
+                    Endian::Little => i64::from_le_bytes(bytes),
+                    Endian::Big => i64::from_be_bytes(bytes),
+                } as isize)
+            }
+        }
     }
 }
 
-impl Decodable for NonZeroIsize {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        NonZeroIsize::new(decoder.decode_isize()?).ok_or(DecodeError::NonZeroTypeIsZero {
+impl Decode for NonZeroIsize {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        NonZeroIsize::new(isize::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::Isize,
         })
     }
 }
 
-impl Decodable for f32 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_f32()
+impl Decode for f32 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let mut bytes = [0u8; 4];
+        decoder.reader().read(&mut bytes)?;
+        Ok(match D::C::ENDIAN {
+            Endian::Little => f32::from_le_bytes(bytes),
+            Endian::Big => f32::from_be_bytes(bytes),
+        })
     }
 }
 
-impl Decodable for f64 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_f64()
+impl Decode for f64 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let mut bytes = [0u8; 8];
+        decoder.reader().read(&mut bytes)?;
+        Ok(match D::C::ENDIAN {
+            Endian::Little => f64::from_le_bytes(bytes),
+            Endian::Big => f64::from_be_bytes(bytes),
+        })
     }
 }
 
-impl Decodable for char {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_char()
+impl Decode for char {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let mut array = [0u8; 4];
+
+        // Look at the first byte to see how many bytes must be read
+        decoder.reader().read(&mut array[..1])?;
+
+        let width = utf8_char_width(array[0]);
+        if width == 0 {
+            return Err(DecodeError::InvalidCharEncoding(array));
+        }
+        if width == 1 {
+            return Ok(array[0] as char);
+        }
+
+        // read the remaining pain
+        decoder.reader().read(&mut array[1..width])?;
+        let res = core::str::from_utf8(&array[..width])
+            .ok()
+            .and_then(|s| s.chars().next())
+            .ok_or(DecodeError::InvalidCharEncoding(array))?;
+        Ok(res)
     }
 }
 
-impl<'a, 'de: 'a> BorrowDecodable<'de> for &'a [u8] {
-    fn borrow_decode<D: BorrowDecode<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
+impl<'a, 'de: 'a> BorrowDecode<'de> for &'a [u8] {
+    fn borrow_decode<D: BorrowDecoder<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
-        decoder.decode_slice(len)
+        decoder.borrow_reader().take_bytes(len)
     }
 }
 
-impl<'a, 'de: 'a> BorrowDecodable<'de> for &'a str {
-    fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError> {
-        let slice: &[u8] = BorrowDecodable::borrow_decode(decoder)?;
+impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError> {
+        let slice: &[u8] = BorrowDecode::borrow_decode(decoder)?;
         core::str::from_utf8(slice).map_err(DecodeError::Utf8)
     }
 }
 
-impl<const N: usize> Decodable for [u8; N] {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        decoder.decode_array()
+impl<const N: usize> Decode for [u8; N] {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let mut array = [0u8; N];
+        if !D::C::SKIP_FIXED_ARRAY_LENGTH {
+            let length = usize::decode(&mut decoder)?;
+            if length != N {
+                return Err(DecodeError::ArrayLengthMismatch {
+                    found: length,
+                    required: N,
+                });
+            }
+        }
+        decoder.reader().read(&mut array)?;
+        Ok(array)
     }
 }
 
-impl<T> Decodable for core::marker::PhantomData<T> {
-    fn decode<D: Decode>(_: D) -> Result<Self, DecodeError> {
+impl<T> Decode for core::marker::PhantomData<T> {
+    fn decode<D: Decoder>(_: D) -> Result<Self, DecodeError> {
         Ok(core::marker::PhantomData)
     }
 }
 
-impl<T> Decodable for Option<T>
+impl<T> Decode for Option<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let is_some = u8::decode(&mut decoder)?;
         match is_some {
             0 => Ok(None),
@@ -254,12 +424,12 @@ where
     }
 }
 
-impl<T, U> Decodable for Result<T, U>
+impl<T, U> Decode for Result<T, U>
 where
-    T: Decodable,
-    U: Decodable,
+    T: Decode,
+    U: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let is_ok = u8::decode(&mut decoder)?;
         match is_ok {
             0 => {
@@ -280,61 +450,61 @@ where
     }
 }
 
-impl<T> Decodable for Cell<T>
+impl<T> Decode for Cell<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Cell::new(t))
     }
 }
 
-impl<T> Decodable for RefCell<T>
+impl<T> Decode for RefCell<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RefCell::new(t))
     }
 }
 
-impl Decodable for Duration {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        let secs = Decodable::decode(&mut decoder)?;
-        let nanos = Decodable::decode(&mut decoder)?;
+impl Decode for Duration {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let secs = Decode::decode(&mut decoder)?;
+        let nanos = Decode::decode(&mut decoder)?;
         Ok(Duration::new(secs, nanos))
     }
 }
 
-impl<T> Decodable for Range<T>
+impl<T> Decode for Range<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let min = T::decode(&mut decoder)?;
         let max = T::decode(&mut decoder)?;
         Ok(min..max)
     }
 }
 
-impl<T> Decodable for RangeInclusive<T>
+impl<T> Decode for RangeInclusive<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let min = T::decode(&mut decoder)?;
         let max = T::decode(&mut decoder)?;
         Ok(RangeInclusive::new(min, max))
     }
 }
 
-impl<T> Decodable for Bound<T>
+impl<T> Decode for Bound<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         match u32::decode(&mut decoder)? {
             0 => Ok(Bound::Unbounded),
             1 => Ok(Bound::Included(T::decode(decoder)?)),
@@ -349,80 +519,26 @@ where
     }
 }
 
-impl<'a, 'de, T> Decode for &'a mut T
-where
-    T: Decode,
-{
-    fn decode_u8(&mut self) -> Result<u8, DecodeError> {
-        T::decode_u8(self)
-    }
+const UTF8_CHAR_WIDTH: [u8; 256] = [
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, // 0x1F
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, // 0x3F
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, // 0x5F
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, // 0x7F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, // 0x9F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, // 0xBF
+    0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, // 0xDF
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xEF
+    4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xFF
+];
 
-    fn decode_u16(&mut self) -> Result<u16, DecodeError> {
-        T::decode_u16(self)
-    }
-
-    fn decode_u32(&mut self) -> Result<u32, DecodeError> {
-        T::decode_u32(self)
-    }
-
-    fn decode_u64(&mut self) -> Result<u64, DecodeError> {
-        T::decode_u64(self)
-    }
-
-    fn decode_u128(&mut self) -> Result<u128, DecodeError> {
-        T::decode_u128(self)
-    }
-
-    fn decode_usize(&mut self) -> Result<usize, DecodeError> {
-        T::decode_usize(self)
-    }
-
-    fn decode_i8(&mut self) -> Result<i8, DecodeError> {
-        T::decode_i8(self)
-    }
-
-    fn decode_i16(&mut self) -> Result<i16, DecodeError> {
-        T::decode_i16(self)
-    }
-
-    fn decode_i32(&mut self) -> Result<i32, DecodeError> {
-        T::decode_i32(self)
-    }
-
-    fn decode_i64(&mut self) -> Result<i64, DecodeError> {
-        T::decode_i64(self)
-    }
-
-    fn decode_i128(&mut self) -> Result<i128, DecodeError> {
-        T::decode_i128(self)
-    }
-
-    fn decode_isize(&mut self) -> Result<isize, DecodeError> {
-        T::decode_isize(self)
-    }
-
-    fn decode_f32(&mut self) -> Result<f32, DecodeError> {
-        T::decode_f32(self)
-    }
-
-    fn decode_f64(&mut self) -> Result<f64, DecodeError> {
-        T::decode_f64(self)
-    }
-
-    fn decode_array<const N: usize>(&mut self) -> Result<[u8; N], DecodeError> {
-        T::decode_array::<N>(self)
-    }
-
-    fn decode_char(&mut self) -> Result<char, DecodeError> {
-        T::decode_char(self)
-    }
-}
-
-impl<'a, 'de, T> BorrowDecode<'de> for &'a mut T
-where
-    T: BorrowDecode<'de>,
-{
-    fn decode_slice(&mut self, len: usize) -> Result<&'de [u8], DecodeError> {
-        T::decode_slice(self, len)
-    }
+// This function is a copy of core::str::utf8_char_width
+const fn utf8_char_width(b: u8) -> usize {
+    UTF8_CHAR_WIDTH[b as usize] as usize
 }

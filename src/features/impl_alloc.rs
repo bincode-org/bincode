@@ -1,7 +1,7 @@
 use crate::{
     config,
-    de::{Decodable, Decode},
-    enc::{self, Encode, Encodeable},
+    de::{Decode, Decoder},
+    enc::{self, Encode, Encoder},
     error::{DecodeError, EncodeError},
     Config,
 };
@@ -21,27 +21,27 @@ impl enc::write::Writer for VecWriter {
 
 /// Encode the given value into a `Vec<u8>`.
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
-pub fn encode_to_vec<E: enc::Encodeable>(val: E) -> Result<Vec<u8>, EncodeError> {
+pub fn encode_to_vec<E: enc::Encode>(val: E) -> Result<Vec<u8>, EncodeError> {
     encode_to_vec_with_config(val, config::Default)
 }
 
 /// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
-pub fn encode_to_vec_with_config<E: enc::Encodeable, C: Config>(
+pub fn encode_to_vec_with_config<E: enc::Encode, C: Config>(
     val: E,
     config: C,
 ) -> Result<Vec<u8>, EncodeError> {
     let writer = VecWriter::default();
-    let mut encoder = enc::Encoder::<_, C>::new(writer, config);
+    let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().inner)
 }
 
-impl<T> Decodable for BinaryHeap<T>
+impl<T> Decode for BinaryHeap<T>
 where
-    T: Decodable + Ord,
+    T: Decode + Ord,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
         let mut map = BinaryHeap::with_capacity(len);
         for _ in 0..len {
@@ -52,11 +52,11 @@ where
     }
 }
 
-impl<T> Encodeable for BinaryHeap<T>
+impl<T> Encode for BinaryHeap<T>
 where
-    T: Encodeable + Ord,
+    T: Encode + Ord,
 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.len().encode(&mut encoder)?;
         for val in self.iter() {
             val.encode(&mut encoder)?;
@@ -65,12 +65,12 @@ where
     }
 }
 
-impl<K, V> Decodable for BTreeMap<K, V>
+impl<K, V> Decode for BTreeMap<K, V>
 where
-    K: Decodable + Ord,
-    V: Decodable,
+    K: Decode + Ord,
+    V: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
         let mut map = BTreeMap::new();
         for _ in 0..len {
@@ -82,12 +82,12 @@ where
     }
 }
 
-impl<K, V> Encodeable for BTreeMap<K, V>
+impl<K, V> Encode for BTreeMap<K, V>
 where
-    K: Encodeable + Ord,
-    V: Encodeable,
+    K: Encode + Ord,
+    V: Encode,
 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.len().encode(&mut encoder)?;
         for (key, val) in self.iter() {
             key.encode(&mut encoder)?;
@@ -97,11 +97,11 @@ where
     }
 }
 
-impl<T> Decodable for BTreeSet<T>
+impl<T> Decode for BTreeSet<T>
 where
-    T: Decodable + Ord,
+    T: Decode + Ord,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
         let mut map = BTreeSet::new();
         for _ in 0..len {
@@ -112,11 +112,11 @@ where
     }
 }
 
-impl<T> Encodeable for BTreeSet<T>
+impl<T> Encode for BTreeSet<T>
 where
-    T: Encodeable + Ord,
+    T: Encode + Ord,
 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.len().encode(&mut encoder)?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
@@ -125,11 +125,11 @@ where
     }
 }
 
-impl<T> Decodable for VecDeque<T>
+impl<T> Decode for VecDeque<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
         let mut map = VecDeque::with_capacity(len);
         for _ in 0..len {
@@ -140,11 +140,11 @@ where
     }
 }
 
-impl<T> Encodeable for VecDeque<T>
+impl<T> Encode for VecDeque<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.len().encode(&mut encoder)?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
@@ -153,11 +153,11 @@ where
     }
 }
 
-impl<T> Decodable for Vec<T>
+impl<T> Decode for Vec<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = usize::decode(&mut decoder)?;
         let mut vec = Vec::with_capacity(len);
         for _ in 0..len {
@@ -167,11 +167,11 @@ where
     }
 }
 
-impl<T> Encodeable for Vec<T>
+impl<T> Encode for Vec<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.len().encode(&mut encoder)?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
@@ -180,53 +180,53 @@ where
     }
 }
 
-impl Decodable for String {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+impl Decode for String {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
         String::from_utf8(bytes).map_err(|e| DecodeError::Utf8(e.utf8_error()))
     }
 }
 
-impl Encodeable for String {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for String {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
     }
 }
 
-impl<T> Decodable for Box<T>
+impl<T> Decode for Box<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Box::new(t))
     }
 }
 
-impl<T> Encodeable for Box<T>
+impl<T> Encode for Box<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }
 
-impl<T> Decodable for Box<[T]>
+impl<T> Decode for Box<[T]>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into_boxed_slice())
     }
 }
 
-impl<T> Encodeable for Box<[T]>
+impl<T> Encode for Box<[T]>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.len().encode(&mut encoder)?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
@@ -235,61 +235,61 @@ where
     }
 }
 
-impl<'cow, T> Decodable for Cow<'cow, T>
+impl<'cow, T> Decode for Cow<'cow, T>
 where
-    T: Decodable + Clone,
+    T: Decode + Clone,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Cow::Owned(t))
     }
 }
 
-impl<'cow, T> Encodeable for Cow<'cow, T>
+impl<'cow, T> Encode for Cow<'cow, T>
 where
-    T: Encodeable + Clone,
+    T: Encode + Clone,
 {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.as_ref().encode(encoder)
     }
 }
 
-impl<T> Decodable for Rc<T>
+impl<T> Decode for Rc<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Rc::new(t))
     }
 }
 
-impl<T> Encodeable for Rc<T>
+impl<T> Encode for Rc<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }
 
 #[cfg(feature = "atomic")]
-impl<T> Decodable for Arc<T>
+impl<T> Decode for Arc<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Arc::new(t))
     }
 }
 
 #[cfg(feature = "atomic")]
-impl<T> Encodeable for Arc<T>
+impl<T> Encode for Arc<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }

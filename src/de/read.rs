@@ -6,21 +6,21 @@
 //!
 //! [BorrowReader] is an extension of `Reader` that also allows returning borrowed data. A `BorrowReader` allows reading `&str` and `&[u8]`.
 //!
-//! Specifically the `Reader` trait is used by [Decodable] and the `BorrowReader` trait is used by `[BorrowDecodable]`.
+//! Specifically the `Reader` trait is used by [Decode] and the `BorrowReader` trait is used by `[BorrowDecode]`.
 //!
-//! [Decodable]: ../trait.Decodable.html
-//! [BorrowDecodable]: ../trait.BorrowDecodable.html
+//! [Decode]: ../trait.Decode.html
+//! [BorrowDecode]: ../trait.BorrowDecode.html
 
 use crate::error::DecodeError;
 
 /// A reader for owned data. See the module documentation for more information.
-pub trait Reader<'storage> {
+pub trait Reader {
     /// Fill the given `bytes` argument with values. Exactly the length of the given slice must be filled, or else an error must be returned.
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError>;
 }
 
 /// A reader for borrowed data. Implementors of this must also implement the [Reader] trait. See the module documentation for more information.
-pub trait BorrowReader<'storage>: Reader<'storage> {
+pub trait BorrowReader<'storage>: Reader {
     /// Read exactly `length` bytes and return a slice to this data. If not enough bytes could be read, an error should be returned.
     ///
     /// *note*: Exactly `length` bytes must be returned. If less bytes are returned, bincode may panic. If more bytes are returned, the excess bytes may be discarded.
@@ -49,7 +49,7 @@ impl<'storage> SliceReader<'storage> {
     }
 }
 
-impl<'storage> Reader<'storage> for SliceReader<'storage> {
+impl<'storage> Reader for SliceReader<'storage> {
     #[inline(always)]
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         if bytes.len() > self.slice.len() {

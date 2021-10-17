@@ -10,13 +10,13 @@ pub struct DeriveEnum {
 }
 
 impl DeriveEnum {
-    pub fn generate_encodable(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
         let DeriveEnum { variants } = self;
 
         generator
-            .impl_for("bincode::enc::Encodeable")
+            .impl_for("bincode::enc::Encode")
             .generate_fn("encode")
-            .with_generic("E", ["bincode::enc::Encode"])
+            .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(FnSelfArg::RefSelf)
             .with_arg("mut encoder", "E")
             .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
@@ -55,17 +55,20 @@ impl DeriveEnum {
                         // Note that the fields are available as locals because of the match destructuring above
                         // {
                         //      encoder.encode_u32(n)?;
-                        //      bincode::enc::Encodeable::encode(a, &mut encoder)?;
-                        //      bincode::enc::Encodeable::encode(b, &mut encoder)?;
-                        //      bincode::enc::Encodeable::encode(c, &mut encoder)?;
+                        //      bincode::enc::Encode::encode(a, &mut encoder)?;
+                        //      bincode::enc::Encode::encode(b, &mut encoder)?;
+                        //      bincode::enc::Encode::encode(c, &mut encoder)?;
                         // }
                         match_body.group(Delimiter::Brace, |body| {
                             // variant index
-                            body.push_parsed(format!("encoder.encode_u32({})?;", variant_index));
+                            body.push_parsed(format!(
+                                "<u32 as bincode::enc::Encode>::encode(&{}, &mut encoder)?;",
+                                variant_index
+                            ));
                             // If we have any fields, encode them all one by one
                             for field_name in variant.fields.names() {
                                 body.push_parsed(format!(
-                                    "bincode::enc::Encodeable::encode({}, &mut encoder)?;",
+                                    "bincode::enc::Encode::encode({}, &mut encoder)?;",
                                     field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                 ));
                             }
@@ -78,21 +81,21 @@ impl DeriveEnum {
         Ok(())
     }
 
-    pub fn generate_decodable(self, generator: &mut Generator) -> Result<()> {
+    pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
         let DeriveEnum { variants } = self;
         let enum_name = generator.target_name().to_string();
 
         if generator.has_lifetimes() {
-            // enum has a lifetime, implement BorrowDecodable
+            // enum has a lifetime, implement BorrowDecode
 
-            generator.impl_for_with_de_lifetime("bincode::de::BorrowDecodable<'__de>")
+            generator.impl_for_with_de_lifetime("bincode::de::BorrowDecode<'__de>")
                 .generate_fn("borrow_decode")
-                .with_generic("D", ["bincode::de::BorrowDecode<'__de>"])
+                .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
                 .with_arg("mut decoder", "D")
                 .with_return_type("Result<Self, bincode::error::DecodeError>")
                 .body(|fn_builder| {
                     fn_builder
-                        .push_parsed("let variant_index = bincode::de::Decode::decode_u32(&mut decoder)?;");
+                        .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;");
                     fn_builder.push_parsed("match variant_index");
                     fn_builder.group(Delimiter::Brace, |variant_case| {
                     for (idx, variant) in variants.iter().enumerate() {
@@ -117,7 +120,7 @@ impl DeriveEnum {
                                         variant_body.ident(field.unwrap_ident().clone());
                                     }
                                     variant_body.punct(':');
-                                    variant_body.push_parsed("bincode::de::BorrowDecodable::borrow_decode(&mut decoder)?,");
+                                    variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,");
                                 }
                             });
                         });
@@ -133,16 +136,16 @@ impl DeriveEnum {
                 });
             });
         } else {
-            // enum has no lifetimes, implement Decodable
-            generator.impl_for("bincode::de::Decodable")
+            // enum has no lifetimes, implement Decode
+            generator.impl_for("bincode::de::Decode")
                 .generate_fn("decode")
-                .with_generic("D", ["bincode::de::Decode"])
+                .with_generic("D", ["bincode::de::Decoder"])
                 .with_arg("mut decoder", "D")
                 .with_return_type("Result<Self, bincode::error::DecodeError>")
                 .body(|fn_builder| {
 
             fn_builder
-                .push_parsed("let variant_index = bincode::de::Decode::decode_u32(&mut decoder)?;");
+                .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;");
             fn_builder.push_parsed("match variant_index");
             fn_builder.group(Delimiter::Brace, |variant_case| {
                 for (idx, variant) in variants.iter().enumerate() {
@@ -167,7 +170,7 @@ impl DeriveEnum {
                                     variant_body.ident(field.unwrap_ident().clone());
                                 }
                                 variant_body.punct(':');
-                                variant_body.push_parsed("bincode::de::Decodable::decode(&mut decoder)?,");
+                                variant_body.push_parsed("bincode::de::Decode::decode(&mut decoder)?,");
                             }
                         });
                     });

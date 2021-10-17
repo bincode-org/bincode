@@ -4,57 +4,55 @@ mod encoder;
 mod impl_tuples;
 mod impls;
 
-use crate::error::EncodeError;
+use crate::{config::Config, error::EncodeError};
 
 pub mod write;
 
-pub use self::encoder::Encoder;
+pub use self::encoder::EncoderImpl;
+use self::write::Writer;
 
 /// Any source that can encode types. This type is most notably implemented for [Encoder].
 ///
 /// [Encoder]: ../struct.Encoder.html
-pub trait Encodeable {
+pub trait Encode {
     /// Encode a given type.
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError>;
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError>;
 }
 
 /// Helper trait to encode basic types into.
-pub trait Encode {
-    /// Encode an `u8`
-    fn encode_u8(&mut self, val: u8) -> Result<(), EncodeError>;
-    /// Encode an `u16`
-    fn encode_u16(&mut self, val: u16) -> Result<(), EncodeError>;
-    /// Encode an `u32`
-    fn encode_u32(&mut self, val: u32) -> Result<(), EncodeError>;
-    /// Encode an `u64`
-    fn encode_u64(&mut self, val: u64) -> Result<(), EncodeError>;
-    /// Encode an `u128`
-    fn encode_u128(&mut self, val: u128) -> Result<(), EncodeError>;
-    /// Encode an `usize`
-    fn encode_usize(&mut self, val: usize) -> Result<(), EncodeError>;
+pub trait Encoder: sealed::Sealed {
+    /// The concrete [Writer] type
+    type W: Writer;
 
-    /// Encode an `i8`
-    fn encode_i8(&mut self, val: i8) -> Result<(), EncodeError>;
-    /// Encode an `i16`
-    fn encode_i16(&mut self, val: i16) -> Result<(), EncodeError>;
-    /// Encode an `i32`
-    fn encode_i32(&mut self, val: i32) -> Result<(), EncodeError>;
-    /// Encode an `i64`
-    fn encode_i64(&mut self, val: i64) -> Result<(), EncodeError>;
-    /// Encode an `i128`
-    fn encode_i128(&mut self, val: i128) -> Result<(), EncodeError>;
-    /// Encode an `isize`
-    fn encode_isize(&mut self, val: isize) -> Result<(), EncodeError>;
+    /// The concrete [Config] type
+    type C: Config;
 
-    /// Encode an `f32`
-    fn encode_f32(&mut self, val: f32) -> Result<(), EncodeError>;
-    /// Encode an `f64`
-    fn encode_f64(&mut self, val: f64) -> Result<(), EncodeError>;
-    /// Encode a slice. Exactly `val.len()` bytes must be encoded, else an error should be thrown.
-    fn encode_slice(&mut self, val: &[u8]) -> Result<(), EncodeError>;
-    /// Encode an array. Exactly `N` bytes must be encoded, else an error should be thrown.
-    fn encode_array<const N: usize>(&mut self, val: [u8; N]) -> Result<(), EncodeError>;
+    /// Returns a mutable reference to the writer
+    fn writer(&mut self) -> &mut Self::W;
 
-    /// Encode a single utf8 char
-    fn encode_char(&mut self, val: char) -> Result<(), EncodeError>;
+    /// Returns a reference to the config
+    fn config(&self) -> &Self::C;
+}
+
+impl<'a, 'de, T> Encoder for &'a mut T
+where
+    T: Encoder,
+{
+    type W = T::W;
+
+    type C = T::C;
+
+    fn writer(&mut self) -> &mut Self::W {
+        T::writer(self)
+    }
+
+    fn config(&self) -> &Self::C {
+        T::config(self)
+    }
+}
+
+pub(crate) mod sealed {
+    pub trait Sealed {}
+
+    impl<'a, T> Sealed for &'a mut T where T: Sealed {}
 }

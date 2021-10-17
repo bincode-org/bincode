@@ -4,9 +4,9 @@
 
 use crate::error::EncodeError;
 
-/// Trait that indicates that a struct can be used as a destination to encode data too. This is used by [Encodeable]
+/// Trait that indicates that a struct can be used as a destination to encode data too. This is used by [Encode]
 ///
-/// [Encodeable]: ../trait.Encodeable.html
+/// [Encode]: ../trait.Encode.html
 pub trait Writer {
     /// Write `bytes` to the underlying writer. Exactly `bytes.len()` bytes must be written, or else an error should be returned.
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError>;

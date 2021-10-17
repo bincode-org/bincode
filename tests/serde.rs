@@ -2,7 +2,7 @@
 
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, bincode::Encodable, bincode::Decodable)]
+#[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode)]
 pub struct SerdeRoundtrip {
     pub a: u32,
     #[serde(skip)]

@@ -57,7 +57,7 @@ Enums are encoded with their variant first, followed by optionally the variant f
 Both named and unnamed fields are serialized with their values only, and therefor encode to the same value.
 
 ```rs
-#[derive(bincode::Encodable)]
+#[derive(bincode::Encode)]
 pub enum SomeEnum {
     A,
     B(u32),

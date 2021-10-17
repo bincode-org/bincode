@@ -1,7 +1,7 @@
 use crate::{
     config::{self, Config},
-    de::{read::Reader, BorrowDecodable, BorrowDecode, Decodable, Decode, Decoder},
-    enc::{write::Writer, Encode, Encodeable, Encoder},
+    de::{read::Reader, BorrowDecode, BorrowDecoder, Decode, Decoder, DecoderImpl},
+    enc::{write::Writer, Encode, Encoder, EncoderImpl},
     error::{DecodeError, EncodeError},
 };
 use core::time::Duration;
@@ -15,7 +15,7 @@ use std::{
 
 /// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from<D: Decodable, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
+pub fn decode_from<D: Decode, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
     decode_from_with_config(src, config::Default)
 }
 
@@ -23,15 +23,15 @@ pub fn decode_from<D: Decodable, R: std::io::Read>(src: &mut R) -> Result<D, Dec
 ///
 /// See the [config] module for more information about config options.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_with_config<D: Decodable, C: Config, R: std::io::Read>(
+pub fn decode_from_with_config<D: Decode, C: Config, R: std::io::Read>(
     src: &mut R,
     _config: C,
 ) -> Result<D, DecodeError> {
-    let mut decoder = Decoder::<_, C>::new(src, _config);
+    let mut decoder = DecoderImpl::<_, C>::new(src, _config);
     D::decode(&mut decoder)
 }
 
-impl<'storage, R: std::io::Read> Reader<'storage> for R {
+impl<'storage, R: std::io::Read> Reader for R {
     #[inline(always)]
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         match self.read_exact(bytes) {
@@ -43,7 +43,7 @@ impl<'storage, R: std::io::Read> Reader<'storage> for R {
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn encode_into_write<E: Encodeable, W: std::io::Write>(
+pub fn encode_into_write<E: Encode, W: std::io::Write>(
     val: E,
     dst: &mut W,
 ) -> Result<usize, EncodeError> {
@@ -52,7 +52,7 @@ pub fn encode_into_write<E: Encodeable, W: std::io::Write>(
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`. See the [config] module for more information.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn encode_into_write_with_config<E: Encodeable, C: Config, W: std::io::Write>(
+pub fn encode_into_write_with_config<E: Encode, C: Config, W: std::io::Write>(
     val: E,
     dst: &mut W,
     config: C,
@@ -61,7 +61,7 @@ pub fn encode_into_write_with_config<E: Encodeable, C: Config, W: std::io::Write
         writer: dst,
         bytes_written: 0,
     };
-    let mut encoder = Encoder::<_, C>::new(writer, config);
+    let mut encoder = EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().bytes_written)
 }
@@ -84,27 +84,27 @@ impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
     }
 }
 
-impl<'a> Encodeable for &'a CStr {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl<'a> Encode for &'a CStr {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.to_bytes_with_nul().encode(encoder)
     }
 }
 
-impl<'de> BorrowDecodable<'de> for &'de CStr {
-    fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+impl<'de> BorrowDecode<'de> for &'de CStr {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError> {
         let bytes = <&[u8]>::borrow_decode(decoder)?;
         CStr::from_bytes_with_nul(bytes).map_err(|e| DecodeError::CStrNulError { inner: e })
     }
 }
 
-impl Encodeable for CString {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for CString {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.as_bytes_with_nul().encode(encoder)
     }
 }
 
-impl Decodable for CString {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+impl Decode for CString {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         // BlockedTODO: https://github.com/rust-lang/rust/issues/73179
         // use `from_vec_with_nul` instead, combined with:
         // let bytes = std::vec::Vec::<u8>::decode(decoder)?;
@@ -117,11 +117,11 @@ impl Decodable for CString {
     }
 }
 
-impl<T> Encodeable for Mutex<T>
+impl<T> Encode for Mutex<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         let t = self.lock().map_err(|_| EncodeError::LockFailed {
             type_name: core::any::type_name::<Mutex<T>>(),
         })?;
@@ -129,21 +129,21 @@ where
     }
 }
 
-impl<T> Decodable for Mutex<T>
+impl<T> Decode for Mutex<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Mutex::new(t))
     }
 }
 
-impl<T> Encodeable for RwLock<T>
+impl<T> Encode for RwLock<T>
 where
-    T: Encodeable,
+    T: Encode,
 {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         let t = self.read().map_err(|_| EncodeError::LockFailed {
             type_name: core::any::type_name::<Mutex<T>>(),
         })?;
@@ -151,18 +151,18 @@ where
     }
 }
 
-impl<T> Decodable for RwLock<T>
+impl<T> Decode for RwLock<T>
 where
-    T: Decodable,
+    T: Decode,
 {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RwLock::new(t))
     }
 }
 
-impl Encodeable for SystemTime {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for SystemTime {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         let duration = self.duration_since(SystemTime::UNIX_EPOCH).map_err(|e| {
             EncodeError::InvalidSystemTime {
                 inner: e,
@@ -173,15 +173,15 @@ impl Encodeable for SystemTime {
     }
 }
 
-impl Decodable for SystemTime {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+impl Decode for SystemTime {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         Ok(SystemTime::UNIX_EPOCH + duration)
     }
 }
 
-impl Encodeable for &'_ Path {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for &'_ Path {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         match self.to_str() {
             Some(str) => str.encode(encoder),
             None => Err(EncodeError::Other("Path contains invalid UTF-8 characters")),
@@ -189,28 +189,28 @@ impl Encodeable for &'_ Path {
     }
 }
 
-impl<'de> BorrowDecodable<'de> for &'de Path {
-    fn borrow_decode<D: BorrowDecode<'de>>(decoder: D) -> Result<Self, DecodeError> {
+impl<'de> BorrowDecode<'de> for &'de Path {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError> {
         let str = <&'de str>::borrow_decode(decoder)?;
         Ok(Path::new(str))
     }
 }
 
-impl Encodeable for PathBuf {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for PathBuf {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.as_path().encode(encoder)
     }
 }
 
-impl Decodable for PathBuf {
-    fn decode<D: Decode>(decoder: D) -> Result<Self, DecodeError> {
+impl Decode for PathBuf {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
     }
 }
 
-impl Encodeable for IpAddr {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+impl Encode for IpAddr {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         match self {
             IpAddr::V4(v4) => {
                 0u32.encode(&mut encoder)?;
@@ -224,8 +224,8 @@ impl Encodeable for IpAddr {
     }
 }
 
-impl Decodable for IpAddr {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl Decode for IpAddr {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         match u32::decode(&mut decoder)? {
             0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
             1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
@@ -239,32 +239,32 @@ impl Decodable for IpAddr {
     }
 }
 
-impl Encodeable for Ipv4Addr {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for Ipv4Addr {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.octets().encode(encoder)
     }
 }
 
-impl Decodable for Ipv4Addr {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        Ok(Self::from(decoder.decode_array::<4>()?))
+impl Decode for Ipv4Addr {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        Ok(Self::from(<[u8; 4]>::decode(decoder)?))
     }
 }
 
-impl Encodeable for Ipv6Addr {
-    fn encode<E: Encode>(&self, encoder: E) -> Result<(), EncodeError> {
+impl Encode for Ipv6Addr {
+    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         self.octets().encode(encoder)
     }
 }
 
-impl Decodable for Ipv6Addr {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
-        Ok(Self::from(decoder.decode_array::<16>()?))
+impl Decode for Ipv6Addr {
+    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+        Ok(Self::from(<[u8; 16]>::decode(decoder)?))
     }
 }
 
-impl Encodeable for SocketAddr {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+impl Encode for SocketAddr {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         match self {
             SocketAddr::V4(v4) => {
                 0u32.encode(&mut encoder)?;
@@ -278,8 +278,8 @@ impl Encodeable for SocketAddr {
     }
 }
 
-impl Decodable for SocketAddr {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl Decode for SocketAddr {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         match u32::decode(&mut decoder)? {
             0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
             1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
@@ -293,30 +293,30 @@ impl Decodable for SocketAddr {
     }
 }
 
-impl Encodeable for SocketAddrV4 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+impl Encode for SocketAddrV4 {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.ip().encode(&mut encoder)?;
         self.port().encode(encoder)
     }
 }
 
-impl Decodable for SocketAddrV4 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl Decode for SocketAddrV4 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let ip = Ipv4Addr::decode(&mut decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port))
     }
 }
 
-impl Encodeable for SocketAddrV6 {
-    fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+impl Encode for SocketAddrV6 {
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         self.ip().encode(&mut encoder)?;
         self.port().encode(encoder)
     }
 }
 
-impl Decodable for SocketAddrV6 {
-    fn decode<D: Decode>(mut decoder: D) -> Result<Self, DecodeError> {
+impl Decode for SocketAddrV6 {
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(&mut decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port, 0, 0))
