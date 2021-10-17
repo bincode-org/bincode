@@ -34,7 +34,7 @@ pub trait Encoder: sealed::Sealed {
     fn config(&self) -> &Self::C;
 }
 
-impl<'a, 'de, T> Encoder for &'a mut T
+impl<'a, T> Encoder for &'a mut T
 where
     T: Encoder,
 {

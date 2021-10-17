@@ -31,7 +31,7 @@ pub fn decode_from_with_config<D: Decode, C: Config, R: std::io::Read>(
     D::decode(&mut decoder)
 }
 
-impl<'storage, R: std::io::Read> Reader for R {
+impl<R: std::io::Read> Reader for R {
     #[inline(always)]
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         match self.read_exact(bytes) {

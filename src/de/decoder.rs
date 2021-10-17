@@ -27,7 +27,7 @@ pub struct DecoderImpl<R, C: Config> {
     config: C,
 }
 
-impl<'de, R: Reader, C: Config> DecoderImpl<R, C> {
+impl<R: Reader, C: Config> DecoderImpl<R, C> {
     /// Construct a new Decoder
     pub fn new(reader: R, config: C) -> DecoderImpl<R, C> {
         DecoderImpl { reader, config }
@@ -44,7 +44,7 @@ impl<'a, 'de, R: BorrowReader<'de>, C: Config> BorrowDecoder<'de> for &'a mut De
     }
 }
 
-impl<'a, 'de, R: Reader, C: Config> Decoder for &'a mut DecoderImpl<R, C> {
+impl<'a, R: Reader, C: Config> Decoder for &'a mut DecoderImpl<R, C> {
     type R = R;
 
     type C = C;
