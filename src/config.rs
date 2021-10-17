@@ -54,6 +54,14 @@ impl Configuration {
     pub fn standard() -> Self {
         Self::generate()
     }
+
+    /// Creates the "legacy" default config. This is the default config that was present in bincode 1.0
+    /// - Little endian
+    /// - Fixed int length encoding
+    /// - Write array lengths
+    pub fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength> {
+        Self::generate()
+    }
 }
 
 impl<E, I, A> Configuration<E, I, A> {
