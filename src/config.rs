@@ -51,20 +51,27 @@ impl Configuration {
     /// - Variable int encoding
     /// - Skip fixed array length
     pub fn new() -> Self {
-        Default::default()
+        Self::generate()
     }
 }
 
 impl<E, I, A> Configuration<E, I, A> {
+    fn generate<_E, _I, _A>() -> Configuration<_E, _I, _A> {
+        Configuration {
+            _e: PhantomData,
+            _i: PhantomData,
+            _a: PhantomData,
+        }
+    }
 
     /// Makes bincode encode all integer types in big endian.
     pub fn with_big_endian(self) -> Configuration<BigEndian, I, A> {
-        Default::default()
+        Self::generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
     pub fn with_little_endian(self) -> Configuration<LittleEndian, I, A> {
-        Default::default()
+        Self::generate()
     }
 
     /// Makes bincode encode all integer types with a variable integer encoding.
@@ -110,7 +117,7 @@ impl<E, I, A> Configuration<E, I, A> {
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
     pub fn with_variable_int_encoding(self) -> Configuration<E, Varint, A> {
-        Default::default()
+        Self::generate()
     }
 
     /// Fixed-size integer encoding.
@@ -119,27 +126,17 @@ impl<E, I, A> Configuration<E, I, A> {
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
     pub fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A> {
-        Default::default()
+        Self::generate()
     }
 
     /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
     pub fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength> {
-        Default::default()
+        Self::generate()
     }
 
     /// Write the length of fixed size arrays (`[u8; N]`) before writing the array
     pub fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength> {
-        Default::default()
-    }
-}
-
-impl<E, I, A> Default for Configuration<E, I, A> {
-    fn default() -> Self {
-        Configuration {
-            _e: PhantomData,
-            _i: PhantomData,
-            _a: PhantomData,
-        }
+        Self::generate()
     }
 }
 
@@ -153,6 +150,7 @@ impl<T> Config for T where
     T: InternalEndianConfig + InternalArrayLengthConfig + InternalIntEncodingConfig + Copy + Clone
 {
 }
+
 #[doc(hidden)]
 #[derive(Copy, Clone)]
 pub struct BigEndian {}
