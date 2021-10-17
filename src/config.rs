@@ -51,31 +51,20 @@ impl Configuration {
     /// - Variable int encoding
     /// - Skip fixed array length
     pub fn new() -> Self {
-        Configuration {
-            _e: PhantomData,
-            _i: PhantomData,
-            _a: PhantomData,
-        }
+        Default::default()
     }
 }
 
 impl<E, I, A> Configuration<E, I, A> {
-    fn generate<_E, _I, _A>() -> Configuration<_E, _I, _A> {
-        Configuration {
-            _e: PhantomData,
-            _i: PhantomData,
-            _a: PhantomData,
-        }
-    }
 
     /// Makes bincode encode all integer types in big endian.
     pub fn with_big_endian(self) -> Configuration<BigEndian, I, A> {
-        Configuration::<E, I, WriteFixedArrayLength>::generate()
+        Default::default()
     }
 
     /// Makes bincode encode all integer types in little endian.
     pub fn with_little_endian(self) -> Configuration<LittleEndian, I, A> {
-        Configuration::<E, I, WriteFixedArrayLength>::generate()
+        Default::default()
     }
 
     /// Makes bincode encode all integer types with a variable integer encoding.
@@ -121,7 +110,7 @@ impl<E, I, A> Configuration<E, I, A> {
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
     pub fn with_variable_int_encoding(self) -> Configuration<E, Varint, A> {
-        Configuration::<E, I, WriteFixedArrayLength>::generate()
+        Default::default()
     }
 
     /// Fixed-size integer encoding.
@@ -130,23 +119,27 @@ impl<E, I, A> Configuration<E, I, A> {
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
     pub fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A> {
-        Configuration::<E, I, WriteFixedArrayLength>::generate()
+        Default::default()
     }
 
     /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
     pub fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength> {
-        Configuration::<E, I, WriteFixedArrayLength>::generate()
+        Default::default()
     }
 
     /// Write the length of fixed size arrays (`[u8; N]`) before writing the array
     pub fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength> {
-        Configuration::<E, I, WriteFixedArrayLength>::generate()
+        Default::default()
     }
 }
 
-impl Default for Configuration<LittleEndian, Varint, SkipFixedArrayLength> {
+impl<E, I, A> Default for Configuration<E, I, A> {
     fn default() -> Self {
-        Self::new()
+        Configuration {
+            _e: PhantomData,
+            _i: PhantomData,
+            _a: PhantomData,
+        }
     }
 }
 
