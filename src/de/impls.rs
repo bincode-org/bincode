@@ -3,7 +3,10 @@ use super::{
     BorrowDecode, BorrowDecoder, Decode, Decoder,
 };
 use crate::{
-    config::{Endian, IntEncoding, InternalConfig},
+    config::{
+        Endian, IntEncoding, InternalArrayLengthConfig, InternalEndianConfig,
+        InternalIntEncodingConfig,
+    },
     error::{DecodeError, IntegerType},
 };
 use core::{

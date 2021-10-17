@@ -14,7 +14,7 @@ use crate::config::Config;
 /// ```
 /// # use bincode::enc::{write::SliceWriter, EncoderImpl, Encode};
 /// # use bincode::config::{self, Config};
-/// # let config = config::Default.with_fixed_int_encoding().with_big_endian();
+/// # let config = config::Configuration::standard().with_fixed_int_encoding().with_big_endian();
 /// let slice: &mut [u8] = &mut [0, 0, 0, 0];
 /// let mut encoder = EncoderImpl::new(SliceWriter::new(slice), config);
 /// // this u32 can be any Encodable

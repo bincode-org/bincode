@@ -52,7 +52,7 @@ pub fn encode_into_slice<E: enc::Encode>(
     val: E,
     dst: &mut [u8],
 ) -> Result<usize, error::EncodeError> {
-    encode_into_slice_with_config(val, dst, config::Default)
+    encode_into_slice_with_config(val, dst, config::Configuration::standard())
 }
 
 /// Encode the given value into the given slice. Returns the amount of bytes that have been written.
@@ -77,7 +77,7 @@ pub fn encode_into_slice_with_config<E: enc::Encode, C: Config>(
 pub fn decode<'__de, D: de::BorrowDecode<'__de>>(
     src: &'__de [u8],
 ) -> Result<D, error::DecodeError> {
-    decode_with_config(src, config::Default)
+    decode_with_config(src, config::Configuration::standard())
 }
 
 /// Attempt to decode a given type `D` from the given slice.

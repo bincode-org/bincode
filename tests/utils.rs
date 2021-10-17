@@ -34,7 +34,7 @@ where
     // A matrix of each different config option possible
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_little_endian()
             .with_fixed_int_encoding()
             .skip_fixed_array_length(),
@@ -42,7 +42,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_big_endian()
             .with_fixed_int_encoding()
             .skip_fixed_array_length(),
@@ -50,7 +50,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_little_endian()
             .with_variable_int_encoding()
             .skip_fixed_array_length(),
@@ -58,7 +58,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_big_endian()
             .with_variable_int_encoding()
             .skip_fixed_array_length(),
@@ -66,7 +66,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_little_endian()
             .with_fixed_int_encoding()
             .write_fixed_array_length(),
@@ -74,7 +74,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_big_endian()
             .with_fixed_int_encoding()
             .write_fixed_array_length(),
@@ -82,7 +82,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_little_endian()
             .with_variable_int_encoding()
             .write_fixed_array_length(),
@@ -90,7 +90,7 @@ where
     );
     the_same_with_config(
         &element,
-        config::Default
+        config::Configuration::standard()
             .with_big_endian()
             .with_variable_int_encoding()
             .write_fixed_array_length(),

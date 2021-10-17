@@ -24,7 +24,7 @@ impl enc::write::Writer for VecWriter {
 /// Encode the given value into a `Vec<u8>`.
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_to_vec<E: enc::Encode>(val: E) -> Result<Vec<u8>, EncodeError> {
-    encode_to_vec_with_config(val, config::Default)
+    encode_to_vec_with_config(val, config::Configuration::standard())
 }
 
 /// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.

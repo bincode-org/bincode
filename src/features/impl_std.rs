@@ -16,7 +16,7 @@ use std::{
 /// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from<D: Decode, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
-    decode_from_with_config(src, config::Default)
+    decode_from_with_config(src, config::Configuration::standard())
 }
 
 /// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
@@ -47,7 +47,7 @@ pub fn encode_into_write<E: Encode, W: std::io::Write>(
     val: E,
     dst: &mut W,
 ) -> Result<usize, EncodeError> {
-    encode_into_write_with_config(val, dst, config::Default)
+    encode_into_write_with_config(val, dst, config::Configuration::standard())
 }
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`. See the [config] module for more information.

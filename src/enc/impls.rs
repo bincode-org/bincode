@@ -1,6 +1,9 @@
 use super::{write::Writer, Encode, Encoder};
 use crate::{
-    config::{Endian, IntEncoding, InternalConfig},
+    config::{
+        Endian, IntEncoding, InternalArrayLengthConfig, InternalEndianConfig,
+        InternalIntEncodingConfig,
+    },
     error::EncodeError,
 };
 use core::{
