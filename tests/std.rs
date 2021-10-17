@@ -91,7 +91,7 @@ fn test_std_commons() {
     });
 
     // Borrowed values
-    let config = bincode::config::Configuration::new();
+    let config = bincode::config::Configuration::standard();
     let mut buffer = [0u8; 1024];
 
     // &CStr

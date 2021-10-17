@@ -2,11 +2,11 @@
 //!
 //! *Important* make sure you use the same config for encoding and decoding, or else bincode will not work properly.
 //!
-//! To use a config, first create a type of [struct@Configuration]. This type will implement trait [Config] for use with bincode.
+//! To use a config, first create a type of [Configuration]. This type will implement trait [Config] for use with bincode.
 //!
 //! ```
 //! use bincode::config::{Config, Configuration};
-//! let config = Configuration::new()
+//! let config = Configuration::standard()
 //!     // pick one of:
 //!     .with_big_endian()
 //!     .with_little_endian()
@@ -46,13 +46,12 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength>
     _a: PhantomData<A>,
 }
 
-#[allow(clippy::new_without_default)]
 impl Configuration {
     /// The default config. By default this will be:
     /// - Little endian
     /// - Variable int encoding
     /// - Skip fixed array length
-    pub fn new() -> Self {
+    pub fn standard() -> Self {
         Self::generate()
     }
 }
