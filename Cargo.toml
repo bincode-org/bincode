@@ -7,7 +7,7 @@ members = [
 name = "bincode"
 version = "2.0.0-dev" # remember to update html_root_url and bincode_derive
 authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
-exclude = ["logo.png", "examples/*", ".gitignore", ".github/"]
+exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
 
 publish =  true
 
@@ -38,7 +38,16 @@ serde = { version = "1.0.130", optional = true }
 serde_derive = "1.0.130"
 serde_json = "1.0.68"
 tempfile = "3.2.0"
+criterion = "0.3"
+rand = "0.8"
 
+[[bench]]
+name = "varint"
+harness = false
+
+[profile.bench]
+codegen-units = 1
+debug = 1
 
 [package.metadata.docs.rs]
 all-features = true

@@ -1,11 +1,12 @@
 # Bincode
 
-<img align="right" src="./logo.png" />
+<img align="right" src="./logo.svg" />
 
 ![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)
 [![](https://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/02/27/Rust-1.41.1.html)
+<!-- [![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/02/27/Rust-1.41.1.html) -->
+[![Matrix](https://img.shields.io/matrix/bincode:matrix.org?label=Matrix%20Chat)](https://matrix.to/#/#bincode:matrix.org)
 
 A compact encoder / decoder pair that uses a binary zero-fluff encoding scheme.
 The size of the encoded object will be the same or smaller than the size that
@@ -109,4 +110,4 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
-Bincode 2.0 maintains support for Rust 1.41.1. Any changes to this are considered a breaking change for semver purposes.
+Bincode 2.0 is still in development and does not yet have a targetted MSRV. Once 2.0 is fully released the MSRV will be locked. After this point any changes to the MSRV are considered a breaking change for semver purposes.
