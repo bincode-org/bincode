@@ -105,6 +105,23 @@ pub enum DecodeError {
     },
 }
 
+impl DecodeError {
+    /// If the current error is `InvalidIntegerType`, change the `expected` and
+    /// `found` values from `Ux` to `Ix`. This is needed to have correct error
+    /// reporting in src/varint/decode_signed.rs since this calls
+    /// src/varint/decode_unsigned.rs and needs to correct the `expected` and
+    /// `found` types.
+    pub(crate) fn change_integer_type_to_signed(self) -> DecodeError {
+        match self {
+            Self::InvalidIntegerType { expected, found } => Self::InvalidIntegerType {
+                expected: expected.into_signed(),
+                found: found.into_signed(),
+            },
+            other => other,
+        }
+    }
+}
+
 /// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.
 #[non_exhaustive]
 #[derive(Debug)]
@@ -123,4 +140,21 @@ pub enum IntegerType {
     I64,
     I128,
     Isize,
+}
+
+impl IntegerType {
+    /// Change the `Ux` value to the associated `Ix` value.
+    /// Returns the old value if `self` is already `Ix`.
+    pub(crate) fn into_signed(self) -> Self {
+        match self {
+            Self::U8 => Self::I8,
+            Self::U16 => Self::I16,
+            Self::U32 => Self::I32,
+            Self::U64 => Self::I64,
+            Self::U128 => Self::I128,
+            Self::Usize => Self::Isize,
+
+            other => other,
+        }
+    }
 }
