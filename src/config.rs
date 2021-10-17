@@ -2,7 +2,7 @@
 //!
 //! *Important* make sure you use the same config for encoding and decoding, or else bincode will not work properly.
 //!
-//! To use a config, first create a type of [struct@Default]. This type will implement trait [Config] for further configuration.
+//! To use a config, first create a type of [struct@Configuration]. This type will implement trait [Config] for use with bincode.
 //!
 //! ```
 //! use bincode::config::{Config, Configuration};
@@ -23,7 +23,8 @@
 pub(crate) use self::internal::*;
 use core::marker::PhantomData;
 
-/// The config trait that is implemented by all types returned by this function, as well as [struct@Default].
+/// The Configuration struct is used to build bincode configurations. The [Config] trait is implemented
+/// by this struct when a valid configuration has been constructed.
 ///
 /// The following methods are mutually exclusive and will overwrite each other. The last call to one of these methods determines the behavior of the configuration:
 ///
@@ -45,6 +46,7 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength>
     _a: PhantomData<A>,
 }
 
+#[allow(clippy::new_without_default)]
 impl Configuration {
     /// The default config. By default this will be:
     /// - Little endian
