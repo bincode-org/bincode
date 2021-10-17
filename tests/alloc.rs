@@ -7,6 +7,7 @@ mod utils;
 use alloc::borrow::Cow;
 use alloc::collections::*;
 use alloc::rc::Rc;
+#[cfg(feature = "atomic")]
 use alloc::sync::Arc;
 use utils::{the_same, the_same_with_comparer};
 

@@ -5,7 +5,9 @@ use crate::{
     error::{DecodeError, EncodeError},
     Config,
 };
-use alloc::{borrow::Cow, boxed::Box, collections::*, rc::Rc, string::String, sync::Arc, vec::Vec};
+#[cfg(feature = "atomic")]
+use alloc::sync::Arc;
+use alloc::{borrow::Cow, boxed::Box, collections::*, rc::Rc, string::String, vec::Vec};
 
 #[derive(Default)]
 struct VecWriter {

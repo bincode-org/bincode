@@ -100,7 +100,10 @@
         },
         {
           "run": "cargo test-all-features",
-          "name": "Run `cargo test` on all features"
+          "name": "Run `cargo test` on all features",
+          "env": {
+            "RUSTFLAGS": "-D warnings"
+          }
         }
       ]
     },
