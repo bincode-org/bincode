@@ -6,7 +6,7 @@ use std::str::FromStr;
 #[must_use]
 #[derive(Default)]
 pub struct StreamBuilder {
-    pub(super) stream: TokenStream,
+    pub(crate) stream: TokenStream,
 }
 
 impl StreamBuilder {
@@ -83,6 +83,11 @@ impl StreamBuilder {
         ]);
     }
 
+    pub fn lit_str(&mut self, str: impl AsRef<str>) {
+        self.stream
+            .extend([TokenTree::Literal(Literal::string(str.as_ref()))]);
+    }
+
     pub fn lit_u32(&mut self, val: u32) {
         self.stream
             .extend([TokenTree::Literal(Literal::u32_unsuffixed(val))]);
@@ -91,5 +96,15 @@ impl StreamBuilder {
     pub fn lit_usize(&mut self, val: usize) {
         self.stream
             .extend([TokenTree::Literal(Literal::usize_unsuffixed(val))]);
+    }
+
+    pub fn set_span_on_all_tokens(&mut self, span: Span) {
+        self.stream = std::mem::take(&mut self.stream)
+            .into_iter()
+            .map(|mut token| {
+                token.set_span(span);
+                token
+            })
+            .collect();
     }
 }

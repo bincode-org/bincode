@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{generate::StreamBuilder, prelude::*};
 use std::fmt;
 
 #[derive(Debug)]
@@ -44,27 +44,13 @@ impl Error {
 
     pub fn throw_with_span(self, span: Span) -> TokenStream {
         // compile_error!($message)
-        vec![
-            TokenTree::Ident(Ident::new("compile_error", span)),
-            TokenTree::Punct({
-                let mut punct = Punct::new('!', Spacing::Alone);
-                punct.set_span(span);
-                punct
-            }),
-            TokenTree::Group({
-                let mut group = Group::new(Delimiter::Brace, {
-                    TokenTree::Literal({
-                        let mut string = Literal::string(&self.to_string());
-                        string.set_span(span);
-                        string
-                    })
-                    .into()
-                });
-                group.set_span(span);
-                group
-            }),
-        ]
-        .into_iter()
-        .collect()
+        let mut builder = StreamBuilder::new();
+        builder.ident_str("compile_error");
+        builder.punct('!');
+        builder.group(Delimiter::Brace, |b| {
+            b.lit_str(self.to_string());
+        });
+        builder.set_span_on_all_tokens(span);
+        builder.stream
     }
 }

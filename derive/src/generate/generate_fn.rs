@@ -1,7 +1,9 @@
 use super::{ImplFor, StreamBuilder};
 use crate::prelude::Delimiter;
+
+/// A builder for functions.
 pub struct FnBuilder<'a, 'b> {
-    generate: &'b mut ImplFor<'a>,
+    generate: Option<&'b mut ImplFor<'a>>,
     name: String,
 
     lifetime_and_generics: Vec<(String, Vec<String>)>,
@@ -13,7 +15,7 @@ pub struct FnBuilder<'a, 'b> {
 impl<'a, 'b> FnBuilder<'a, 'b> {
     pub(super) fn new(generate: &'b mut ImplFor<'a>, name: impl Into<String>) -> Self {
         Self {
-            generate,
+            generate: Some(generate),
             name: name.into(),
             lifetime_and_generics: Vec::new(),
             self_arg: FnSelfArg::None,
@@ -22,6 +24,30 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
         }
     }
 
+    #[cfg(test)]
+    #[doc(hidden)]
+    #[allow(unused)]
+    pub fn for_test() -> Self {
+        Self {
+            generate: None,
+            name: String::new(),
+            lifetime_and_generics: Vec::new(),
+            self_arg: FnSelfArg::None,
+            args: Vec::new(),
+            return_type: None,
+        }
+    }
+
+    /// Add a generic parameter. Keep in mind that this is *not* a valid lifetime.
+    ///
+    /// `dependencies` are the optional dependencies of the parameter.
+    ///
+    /// ```ignore
+    /// let mut builder: FnBuilder = ...;
+    /// builder
+    ///     .with_generic("D", None) // fn Foo<D>()
+    ///     .with_generic("E", &["Encodable"]); // fn foo<D, E: Encodable>();
+    /// ```
     pub fn with_generic<T, U, V>(mut self, name: T, dependencies: U) -> Self
     where
         T: Into<String>,
@@ -52,7 +78,7 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
 
     pub fn body(self, body_builder: impl FnOnce(&mut StreamBuilder)) {
         let FnBuilder {
-            generate,
+            mut generate,
             name,
             lifetime_and_generics,
             self_arg,
@@ -108,9 +134,10 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
             builder.push_parsed(&return_type);
         }
 
-        generate.group.append(builder);
+        let generator = generate.take().unwrap();
 
-        generate.group.group(Delimiter::Brace, body_builder);
+        generator.group.append(builder);
+        generator.group.group(Delimiter::Brace, body_builder);
     }
 }
 

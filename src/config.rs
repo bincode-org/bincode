@@ -47,7 +47,7 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength>
 }
 
 impl Configuration {
-    /// The default config. By default this will be:
+    /// The default config for bincode 2.0. By default this will be:
     /// - Little endian
     /// - Variable int encoding
     /// - Skip fixed array length
