@@ -58,6 +58,7 @@ impl<'a> ImplFor<'a> {
         Self { generator, group }
     }
 
+    /// Add a function to the trait implementation
     pub fn generate_fn<'b>(&'b mut self, name: &str) -> FnBuilder<'a, 'b> {
         FnBuilder::new(self, name)
     }

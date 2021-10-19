@@ -24,21 +24,7 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
         }
     }
 
-    #[cfg(test)]
-    #[doc(hidden)]
-    #[allow(unused)]
-    pub fn for_test() -> Self {
-        Self {
-            generate: None,
-            name: String::new(),
-            lifetime_and_generics: Vec::new(),
-            self_arg: FnSelfArg::None,
-            args: Vec::new(),
-            return_type: None,
-        }
-    }
-
-    /// Add a generic parameter. Keep in mind that this is *not* a valid lifetime.
+    /// Add a generic parameter. Keep in mind that will *not* work for lifetimes.
     ///
     /// `dependencies` are the optional dependencies of the parameter.
     ///
@@ -61,21 +47,53 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
         self
     }
 
+    /// Set the value for `self`. See [FnSelfArg] for more information.
+    ///
+    /// ```ignore
+    /// let mut builder: FnBuilder = ...;
+    /// // static function by default
+    /// builder.with_self_arg(FnSelfArg::RefSelf); // fn foo(&self)
+    /// ```
     pub fn with_self_arg(mut self, self_arg: FnSelfArg) -> Self {
         self.self_arg = self_arg;
         self
     }
 
+    /// Add an argument with a `name` and a `ty`.
+    ///
+    /// ```ignore
+    /// let mut builder: FnBuilder = ...;
+    /// // fn foo();
+    /// builder
+    ///     .with_arg("a", "u32") // fn foo(a: u32)
+    ///     .with_arg("b", "u32"); // fn foo(a: u32, b: u32)
+    /// ```
     pub fn with_arg(mut self, name: impl Into<String>, ty: impl Into<String>) -> Self {
         self.args.push((name.into(), ty.into()));
         self
     }
 
+    /// Set the return type for the function. By default the function will have no return type.
+    ///
+    /// ```ignore
+    /// let mut builder: FnBuilder = ...;
+    /// // fn foo()
+    /// builder.with_return_type("u32"); // fn foo() -> u32
+    /// ```
     pub fn with_return_type(mut self, ret_type: impl Into<String>) -> Self {
         self.return_type = Some(ret_type.into());
         self
     }
 
+    /// Complete the function definition. This function takes a callback that will form the body of the function.
+    ///
+    /// ```ignore
+    /// let mut builder: FnBuilder = ...;
+    /// // fn foo()
+    /// builder.body(|b| {
+    ///     b.push_parsed("println!(\"hello world\");");
+    /// });
+    /// ```
     pub fn body(self, body_builder: impl FnOnce(&mut StreamBuilder)) {
         let FnBuilder {
             mut generate,
@@ -141,9 +159,20 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
     }
 }
 
+/// The `self` argument of a function
+#[allow(dead_code)]
 pub enum FnSelfArg {
+    /// No `self` argument. The function will be a static function.
     None,
+
+    /// `self`. The function will consume self.
+    TakeSelf,
+
+    /// `&self`. The function will take self by reference.
     RefSelf,
+
+    /// `&mut self`. The function will take self by mutable reference.
+    MutSelf,
 }
 
 impl FnSelfArg {
@@ -151,8 +180,16 @@ impl FnSelfArg {
         let mut builder = StreamBuilder::new();
         match self {
             Self::None => return None,
+            Self::TakeSelf => {
+                builder.ident_str("self");
+            }
             Self::RefSelf => {
                 builder.punct('&');
+                builder.ident_str("self");
+            }
+            Self::MutSelf => {
+                builder.punct('&');
+                builder.ident_str("mut");
                 builder.ident_str("self");
             }
         }
