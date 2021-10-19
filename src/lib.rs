@@ -91,3 +91,7 @@ pub fn decode_with_config<'__de, D: de::BorrowDecode<'__de>, C: Config>(
     let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
     D::borrow_decode(&mut decoder)
 }
+
+pub mod spec {
+    #![doc = include_str!("../docs/spec.md")]
+}

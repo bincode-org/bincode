@@ -2,7 +2,7 @@
 
 *NOTE*: Serialization is done by `bincode_derive` by default. If you enable the `serde` flag, serialization with `serde-derive` is supported as well. `serde-derive` has the same guarantees as `bincode_derive` for now.
 
-Related issue: https://github.com/serde-rs/serde/issues/1756#issuecomment-689682123
+Related issue: <https://github.com/serde-rs/serde/issues/1756#issuecomment-689682123>
 
 ## Endian
 
@@ -17,12 +17,14 @@ All basic numeric types will be encoded based on the configured [IntEncoding](#I
 All floating point types will take up exactly 4 (for `f32`) or 8 (for `f64`) bytes.
 
 All tuples have no additional bytes, and are encoded in their specified order, e.g.
-```rs
+```rust
+use bincode::config::Configuration;
+
 let tuple = (u32::min_value(), i32::max_value()); // 8 bytes
-let encoded = bincode::encode_to_vec_with_options(&tuple, Options::default().with_fixint_encoding()).unwrap();
+let encoded = bincode::encode_to_vec_with_config(tuple, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0,   0,   0,   0,  // 4 bytes for first type:  u32
-    255, 255, 255, 255 // 4 bytes for second type: i32
+    255, 255, 255, 127 // 4 bytes for second type: i32
 ]);
 ```
 
@@ -56,7 +58,9 @@ Enums are encoded with their variant first, followed by optionally the variant f
 
 Both named and unnamed fields are serialized with their values only, and therefor encode to the same value.
 
-```rs
+```rust
+use bincode::config::Configuration;
+
 #[derive(bincode::Encode)]
 pub enum SomeEnum {
     A,
@@ -65,23 +69,23 @@ pub enum SomeEnum {
 }
 
 // SomeEnum::A
-let encoded = bincode::encode_to_vec_with_options(&SomeEnum::A, Options::default().with_fixint_encoding()).unwrap();
+let encoded = bincode::encode_to_vec_with_config(SomeEnum::A, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0, 0, 0, 0, // first variant, A
     // no extra bytes because A has no fields
 ]);
 
 // SomeEnum::B(0)
-let encoded = bincode::encode_to_vec_with_options(&SomeEnum::B(0), Options::default().with_fixint_encoding()).unwrap();
+let encoded = bincode::encode_to_vec_with_config(SomeEnum::B(0), Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    0, 0, 0, 1, // first variant, B
+    1, 0, 0, 0, // first variant, B
     0, 0, 0, 0  // B has 1 unnamed field, which is an u32, so 4 bytes
 ]);
 
 // SomeEnum::C { value: 0u32 }
-let encoded = bincode::encode_to_vec_with_options(&SomeEnum::C { value: 0u32 }, Options::default().with_fixint_encoding()).unwrap();
+let encoded = bincode::encode_to_vec_with_config(SomeEnum::C { value: 0u32 }, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    0, 0, 0, 2, // first variant, C
+    2, 0, 0, 0, // first variant, C
     0, 0, 0, 0  // C has 1 named field which is a u32, so 4 bytes
 ]);
 ```
@@ -92,16 +96,17 @@ Collections are encoded with their length value first, following by each entry o
 
 **note**: fixed array length do not have their `len` encoded. See [Arrays](#arrays)
 
-```rs
+```rust
+use bincode::config::Configuration;
 let list = vec![
     0u8,
     1u8,
     2u8
 ];
 
-let encoded = bincode::encode_to_vec_with_options(&list, Options::default().with_fixint_encoding()).unwrap();
+let encoded = bincode::encode_to_vec_with_config(list, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    0, 0, 0, 0, 0, 0, 0, 3, // length of 3u64
+    3, 0, 0, 0, 0, 0, 0, 0, // length of 3u64
     0, // entry 0
     1, // entry 1
     2, // entry 2
@@ -114,30 +119,39 @@ This also applies to e.g. `HashMap`, where each entry is a [tuple](#basic-types)
 
 Both `String` and `&str` are treated as a `Vec<u8>`. See [Collections](#collections) for more information.
 
-```rs
+```rust
+use bincode::config::Configuration;
+
 let str = "Hello"; // Could also be `String::new(...)`
 
-let encoded = bincode::encode_to_vec_with_options(&list, Options::default().with_fixint_encoding()).unwrap();
+let encoded = bincode::encode_to_vec_with_config(str, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    0, 0, 0, 0, 0, 0, 0, 5, // length of the string, 5 bytes
+    5, 0, 0, 0, 0, 0, 0, 0, // length of the string, 5 bytes
     b'H', b'e', b'l', b'l', b'o'
 ]);
 ```
 
 # Arrays
 
-Arrays are encoded *without* a length.
+Arrays are encoded *with* a length by default.
 
-```rs
+```rust
+use bincode::config::Configuration;
+
 let arr: [u8; 5] = [10, 20, 30, 40, 50];
-let encoded = bincode::encode_to_vec(&list).unwrap();
-assert_eq!(encoded.as_slice(), &[10, 20, 30, 40 50]);
+let encoded = bincode::encode_to_vec_with_config(arr, Configuration::legacy()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    5, 0, 0, 0, 0, 0, 0, 0, // The length, as a u64
+    10, 20, 30, 40, 50, // the bytes
+]);
 ```
 
 This applies to any type `T` that implements `Encodabl`/`Decodabl`
 
-```rs
-#[derive(bincode::Encodabl)]
+```rust
+use bincode::config::Configuration;
+
+#[derive(bincode::Encode)]
 struct Foo {
     first: u8,
     second: u8
@@ -154,7 +168,11 @@ let arr: [Foo; 2] = [
     },
 ];
 
-let encoded = bincode::encode_to_vec(&list).unwrap();
-assert_eq!(encoded.as_slice(), &[10, 20, 30, 40]);
+let encoded = bincode::encode_to_vec_with_config(arr, Configuration::legacy()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    2, 0, 0, 0, 0, 0, 0, 0, // Length of the array
+    10, 20, // First Foo
+    30, 40, // Second Foo
+]);
 ```
 

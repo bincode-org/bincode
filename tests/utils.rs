@@ -7,7 +7,7 @@ where
     C: Config,
     CMP: Fn(&V, &V) -> bool,
 {
-    let mut buffer = [0u8; 1024];
+    let mut buffer = [0u8; 2048];
     let len = bincode::encode_into_slice_with_config(&element, &mut buffer, config).unwrap();
     println!(
         "{:?}: {:?} ({:?})",

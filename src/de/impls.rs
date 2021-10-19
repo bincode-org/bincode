@@ -382,9 +382,11 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
     }
 }
 
-impl<const N: usize> Decode for [u8; N] {
+impl<T, const N: usize> Decode for [T; N]
+where
+    T: Decode + Sized,
+{
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let mut array = [0u8; N];
         if !D::C::SKIP_FIXED_ARRAY_LENGTH {
             let length = usize::decode(&mut decoder)?;
             if length != N {
@@ -394,8 +396,38 @@ impl<const N: usize> Decode for [u8; N] {
                 });
             }
         }
-        decoder.reader().read(&mut array)?;
-        Ok(array)
+
+        // Safety: this is taken from the example of https://doc.rust-lang.org/stable/std/mem/union.MaybeUninit.html
+        // and is therefor assumed to be safe
+
+        use core::mem::MaybeUninit;
+
+        // Create an uninitialized array of `MaybeUninit`. The `assume_init` is
+        // safe because the type we are claiming to have initialized here is a
+        // bunch of `MaybeUninit`s, which do not require initialization.
+        let mut data: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
+
+        // Dropping a `MaybeUninit` does nothing. Thus using raw pointer
+        // assignment instead of `ptr::write` does not cause the old
+        // uninitialized value to be dropped. Also if there is a panic during
+        // this loop, we have a memory leak, but there is no memory safety
+        // issue.
+        for elem in &mut data[..] {
+            elem.write(T::decode(&mut decoder)?);
+        }
+
+        // Everything is initialized. Transmute the array to the
+        // initialized type.
+
+        // BlockedTODO: https://github.com/rust-lang/rust/issues/61956
+        // let result = unsafe { transmute::<_, [T; N]>(data) };
+
+        // Const generics don't work well with transmute at the moment
+        // The above issue recommends doing the following
+        let ptr = &mut data as *mut _ as *mut [T; N];
+        let res = unsafe { ptr.read() };
+        core::mem::forget(data);
+        Ok(res)
     }
 }
 

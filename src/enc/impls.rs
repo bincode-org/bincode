@@ -338,12 +338,18 @@ impl Encode for &'_ str {
     }
 }
 
-impl<const N: usize> Encode for [u8; N] {
+impl<T, const N: usize> Encode for [T; N]
+where
+    T: Encode,
+{
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         if !E::C::SKIP_FIXED_ARRAY_LENGTH {
             N.encode(&mut encoder)?;
         }
-        encoder.writer().write(self)
+        for item in self.iter() {
+            item.encode(&mut encoder)?;
+        }
+        Ok(())
     }
 }
 
