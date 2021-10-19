@@ -1,4 +1,4 @@
-use super::{FnBuilder, Generator, StreamBuilder};
+use super::{stream_builder::PushParseError, FnBuilder, Generator, StreamBuilder};
 use crate::prelude::Delimiter;
 
 #[must_use]
@@ -8,14 +8,17 @@ pub struct ImplFor<'a> {
 }
 
 impl<'a> ImplFor<'a> {
-    pub(super) fn new(generator: &'a mut Generator, trait_name: &str) -> Self {
+    pub(super) fn new(
+        generator: &'a mut Generator,
+        trait_name: &str,
+    ) -> Result<Self, PushParseError> {
         let mut builder = StreamBuilder::new();
         builder.ident_str("impl");
 
         if let Some(generics) = &generator.generics {
             builder.append(generics.impl_generics());
         }
-        builder.push_parsed(trait_name);
+        builder.push_parsed(trait_name)?;
         builder.ident_str("for");
         builder.ident(generator.name.clone());
 
@@ -28,10 +31,13 @@ impl<'a> ImplFor<'a> {
         generator.stream.append(builder);
 
         let group = StreamBuilder::new();
-        Self { generator, group }
+        Ok(Self { generator, group })
     }
 
-    pub(super) fn new_with_de_lifetime(generator: &'a mut Generator, trait_name: &str) -> Self {
+    pub(super) fn new_with_de_lifetime(
+        generator: &'a mut Generator,
+        trait_name: &str,
+    ) -> Result<Self, PushParseError> {
         let mut builder = StreamBuilder::new();
         builder.ident_str("impl");
 
@@ -43,7 +49,7 @@ impl<'a> ImplFor<'a> {
             builder.punct('>');
         }
 
-        builder.push_parsed(trait_name);
+        builder.push_parsed(trait_name)?;
         builder.ident_str("for");
         builder.ident(generator.name.clone());
         if let Some(generics) = &generator.generics {
@@ -55,7 +61,7 @@ impl<'a> ImplFor<'a> {
         generator.stream.append(builder);
 
         let group = StreamBuilder::new();
-        Self { generator, group }
+        Ok(Self { generator, group })
     }
 
     /// Add a function to the trait implementation

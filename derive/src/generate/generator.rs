@@ -1,3 +1,4 @@
+use super::stream_builder::PushParseError;
 use super::{ImplFor, StreamBuilder};
 use crate::parse::{GenericConstraints, Generics};
 use crate::prelude::{Ident, TokenStream};
@@ -30,12 +31,15 @@ impl Generator {
     }
 
     /// Generate an `for <trait_name> for <target_name>` implementation. See [ImplFor] for more information.
-    pub fn impl_for<'a>(&'a mut self, trait_name: &str) -> ImplFor<'a> {
+    pub fn impl_for<'a>(&'a mut self, trait_name: &str) -> Result<ImplFor<'a>, PushParseError> {
         ImplFor::new(self, trait_name)
     }
 
     /// Generate an `for <'__de> <trait_name> for <target_name>` implementation. See [ImplFor] for more information.
-    pub fn impl_for_with_de_lifetime<'a>(&'a mut self, trait_name: &str) -> ImplFor<'a> {
+    pub fn impl_for_with_de_lifetime<'a>(
+        &'a mut self,
+        trait_name: &str,
+    ) -> Result<ImplFor<'a>, PushParseError> {
         ImplFor::new_with_de_lifetime(self, trait_name)
     }
 

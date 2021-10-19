@@ -1,5 +1,5 @@
 use crate::prelude::{
-    Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree,
+    Delimiter, Group, Ident, LexError, Literal, Punct, Spacing, Span, TokenStream, TokenTree,
 };
 use std::str::FromStr;
 
@@ -36,15 +36,13 @@ impl StreamBuilder {
     /// Attempt to parse the given string as valid Rust code, and append the parsed result to the internal stream.
     ///
     /// Currently panics if the string could not be parsed as valid Rust code.
-    pub fn push_parsed(&mut self, item: impl AsRef<str>) {
-        self.stream
-            .extend(TokenStream::from_str(item.as_ref()).unwrap_or_else(|e| {
-                panic!(
-                    "Could not parse string as rust: {:?}\n{:?}",
-                    item.as_ref(),
-                    e
-                )
-            }));
+    pub fn push_parsed(&mut self, item: impl AsRef<str>) -> Result<(), PushParseError> {
+        let tokens = TokenStream::from_str(item.as_ref()).map_err(|e| PushParseError {
+            error: e,
+            code: item.as_ref().to_string(),
+        })?;
+        self.stream.extend(tokens);
+        Ok(())
     }
 
     /// Push a single ident to the stream. An ident is any worse that a code file may contain, e.g. `fn`, `struct`, `where`, names of functions and structs, etc.
@@ -63,11 +61,12 @@ impl StreamBuilder {
     /// Add a group. A group is any block surrounded by `{ .. }`, `[ .. ]` or `( .. )`.
     ///
     /// `delim` indicates which group it is. The `inner` callback is used to fill the contents of the group.
-    pub fn group(&mut self, delim: Delimiter, inner: impl FnOnce(&mut StreamBuilder)) {
+    pub fn group<T>(&mut self, delim: Delimiter, inner: impl FnOnce(&mut StreamBuilder) -> T) -> T {
         let mut stream = StreamBuilder::new();
-        inner(&mut stream);
+        let result = inner(&mut stream);
         self.stream
             .extend([TokenTree::Group(Group::new(delim, stream.stream))]);
+        result
     }
 
     /// Add a single punctuation to the stream. Puncts are single-character tokens like `.`, `<`, `#`, etc
@@ -148,4 +147,10 @@ impl StreamBuilder {
             })
             .collect();
     }
+}
+
+#[derive(Debug)]
+pub struct PushParseError {
+    pub error: LexError,
+    pub code: String,
 }

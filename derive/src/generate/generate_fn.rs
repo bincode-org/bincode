@@ -1,9 +1,9 @@
-use super::{ImplFor, StreamBuilder};
+use super::{stream_builder::PushParseError, ImplFor, StreamBuilder};
 use crate::prelude::Delimiter;
 
 /// A builder for functions.
 pub struct FnBuilder<'a, 'b> {
-    generate: Option<&'b mut ImplFor<'a>>,
+    generate: &'b mut ImplFor<'a>,
     name: String,
 
     lifetime_and_generics: Vec<(String, Vec<String>)>,
@@ -15,7 +15,7 @@ pub struct FnBuilder<'a, 'b> {
 impl<'a, 'b> FnBuilder<'a, 'b> {
     pub(super) fn new(generate: &'b mut ImplFor<'a>, name: impl Into<String>) -> Self {
         Self {
-            generate: Some(generate),
+            generate,
             name: name.into(),
             lifetime_and_generics: Vec::new(),
             self_arg: FnSelfArg::None,
@@ -94,9 +94,9 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
     ///     b.push_parsed("println!(\"hello world\");");
     /// });
     /// ```
-    pub fn body(self, body_builder: impl FnOnce(&mut StreamBuilder)) {
+    pub fn body(self, body_builder: impl FnOnce(&mut StreamBuilder)) -> Result<(), PushParseError> {
         let FnBuilder {
-            mut generate,
+            generate,
             name,
             lifetime_and_generics,
             self_arg,
@@ -123,7 +123,7 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
                 if !dependencies.is_empty() {
                     for (idx, dependency) in dependencies.into_iter().enumerate() {
                         builder.punct(if idx == 0 { ':' } else { '+' });
-                        builder.push_parsed(&dependency);
+                        builder.push_parsed(&dependency)?;
                     }
                 }
             }
@@ -140,22 +140,23 @@ impl<'a, 'b> FnBuilder<'a, 'b> {
                 if idx != 0 {
                     arg_stream.punct(',');
                 }
-                arg_stream.push_parsed(&arg_name);
+                arg_stream.push_parsed(&arg_name)?;
                 arg_stream.punct(':');
-                arg_stream.push_parsed(&arg_ty);
+                arg_stream.push_parsed(&arg_ty)?;
             }
-        });
+            Ok(())
+        })?;
 
         // Return type: `-> ResultType`
         if let Some(return_type) = return_type {
             builder.puncts("->");
-            builder.push_parsed(&return_type);
+            builder.push_parsed(&return_type)?;
         }
 
-        let generator = generate.take().unwrap();
+        generate.group.append(builder);
+        generate.group.group(Delimiter::Brace, body_builder);
 
-        generator.group.append(builder);
-        generator.group.group(Delimiter::Brace, body_builder);
+        Ok(())
     }
 }
 

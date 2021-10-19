@@ -15,6 +15,7 @@ impl DeriveEnum {
 
         generator
             .impl_for("bincode::enc::Encode")
+            .unwrap()
             .generate_fn("encode")
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(FnSelfArg::RefSelf)
@@ -64,20 +65,23 @@ impl DeriveEnum {
                             body.push_parsed(format!(
                                 "<u32 as bincode::enc::Encode>::encode(&{}, &mut encoder)?;",
                                 variant_index
-                            ));
+                            ))
+                            .unwrap();
                             // If we have any fields, encode them all one by one
                             for field_name in variant.fields.names() {
                                 body.push_parsed(format!(
                                     "bincode::enc::Encode::encode({}, &mut encoder)?;",
                                     field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
-                                ));
+                                ))
+                                .unwrap();
                             }
                         });
                         match_body.punct(',');
                     }
                 });
-                fn_body.push_parsed("Ok(())");
-            });
+                fn_body.push_parsed("Ok(())").unwrap();
+            })
+            .unwrap();
         Ok(())
     }
 
@@ -89,14 +93,15 @@ impl DeriveEnum {
             // enum has a lifetime, implement BorrowDecode
 
             generator.impl_for_with_de_lifetime("bincode::de::BorrowDecode<'__de>")
+                .unwrap()
                 .generate_fn("borrow_decode")
                 .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
                 .with_arg("mut decoder", "D")
                 .with_return_type("Result<Self, bincode::error::DecodeError>")
                 .body(|fn_builder| {
                     fn_builder
-                        .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;");
-                    fn_builder.push_parsed("match variant_index");
+                        .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();
+                    fn_builder.push_parsed("match variant_index").unwrap();
                     fn_builder.group(Delimiter::Brace, |variant_case| {
                     for (idx, variant) in variants.iter().enumerate() {
                         // idx => Ok(..)
@@ -120,7 +125,7 @@ impl DeriveEnum {
                                         variant_body.ident(field.unwrap_ident().clone());
                                     }
                                     variant_body.punct(':');
-                                    variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,");
+                                    variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,").unwrap();
                                 }
                             });
                         });
@@ -132,59 +137,59 @@ impl DeriveEnum {
                         "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant, type_name: {:?} }})",
                         variants.len() - 1,
                         enum_name.to_string()
-                    ));
+                    )).unwrap();
                 });
-            });
+            }).unwrap();
         } else {
             // enum has no lifetimes, implement Decode
             generator.impl_for("bincode::de::Decode")
+            .unwrap()
                 .generate_fn("decode")
                 .with_generic("D", ["bincode::de::Decoder"])
                 .with_arg("mut decoder", "D")
                 .with_return_type("Result<Self, bincode::error::DecodeError>")
                 .body(|fn_builder| {
+                    fn_builder
+                        .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();
+                    fn_builder.push_parsed("match variant_index").unwrap();
+                    fn_builder.group(Delimiter::Brace, |variant_case| {
+                    for (idx, variant) in variants.iter().enumerate() {
+                        // idx => Ok(..)
+                        variant_case.lit_u32(idx as u32);
+                        variant_case.puncts("=>");
+                        variant_case.ident_str("Ok");
+                        variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
+                            // Self::Variant { }
+                            // Self::Variant { 0: ..., 1: ... 2: ... },
+                            // Self::Variant { a: ..., b: ... c: ... },
+                            variant_case_body.ident_str("Self");
+                            variant_case_body.puncts("::");
+                            variant_case_body.ident(variant.name.clone());
 
-            fn_builder
-                .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;");
-            fn_builder.push_parsed("match variant_index");
-            fn_builder.group(Delimiter::Brace, |variant_case| {
-                for (idx, variant) in variants.iter().enumerate() {
-                    // idx => Ok(..)
-                    variant_case.lit_u32(idx as u32);
-                    variant_case.puncts("=>");
-                    variant_case.ident_str("Ok");
-                    variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
-                        // Self::Variant { }
-                        // Self::Variant { 0: ..., 1: ... 2: ... },
-                        // Self::Variant { a: ..., b: ... c: ... },
-                        variant_case_body.ident_str("Self");
-                        variant_case_body.puncts("::");
-                        variant_case_body.ident(variant.name.clone());
-
-                        variant_case_body.group(Delimiter::Brace, |variant_body| {
-                            let is_tuple = matches!(variant.fields, Fields::Tuple(_));
-                            for (idx, field) in variant.fields.names().into_iter().enumerate() {
-                                if is_tuple {
-                                    variant_body.lit_usize(idx);
-                                } else {
-                                    variant_body.ident(field.unwrap_ident().clone());
+                            variant_case_body.group(Delimiter::Brace, |variant_body| {
+                                let is_tuple = matches!(variant.fields, Fields::Tuple(_));
+                                for (idx, field) in variant.fields.names().into_iter().enumerate() {
+                                    if is_tuple {
+                                        variant_body.lit_usize(idx);
+                                    } else {
+                                        variant_body.ident(field.unwrap_ident().clone());
+                                    }
+                                    variant_body.punct(':');
+                                    variant_body.push_parsed("bincode::de::Decode::decode(&mut decoder)?,").unwrap();
                                 }
-                                variant_body.punct(':');
-                                variant_body.push_parsed("bincode::de::Decode::decode(&mut decoder)?,");
-                            }
+                            });
                         });
-                    });
-                    variant_case.punct(',');
-                }
+                        variant_case.punct(',');
+                    }
 
-                // invalid idx
-                variant_case.push_parsed(format!(
-                    "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant, type_name: {:?} }})",
-                    variants.len() - 1,
-                    enum_name.to_string()
-                ));
-            });
-        });
+                    // invalid idx
+                    variant_case.push_parsed(format!(
+                        "variant => return Err(bincode::error::DecodeError::UnexpectedVariant {{ min: 0, max: {}, found: variant, type_name: {:?} }})",
+                        variants.len() - 1,
+                        enum_name.to_string()
+                    )).unwrap();
+                });
+            }).unwrap();
         }
 
         Ok(())
