@@ -92,6 +92,9 @@ pub fn decode_with_config<'__de, D: de::BorrowDecode<'__de>, C: Config>(
     D::borrow_decode(&mut decoder)
 }
 
+// TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
+// But we want to have the specs in the docs always
+#[cfg(all(feature = "alloc", feature = "derive"))]
 pub mod spec {
     #![doc = include_str!("../docs/spec.md")]
 }

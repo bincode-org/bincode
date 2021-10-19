@@ -400,31 +400,55 @@ where
         // Safety: this is taken from the example of https://doc.rust-lang.org/stable/std/mem/union.MaybeUninit.html
         // and is therefor assumed to be safe
 
-        use core::mem::MaybeUninit;
+        use core::mem::{ManuallyDrop, MaybeUninit};
 
         // Create an uninitialized array of `MaybeUninit`. The `assume_init` is
         // safe because the type we are claiming to have initialized here is a
         // bunch of `MaybeUninit`s, which do not require initialization.
         let mut data: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
 
-        // Dropping a `MaybeUninit` does nothing. Thus using raw pointer
-        // assignment instead of `ptr::write` does not cause the old
-        // uninitialized value to be dropped. Also if there is a panic during
-        // this loop, we have a memory leak, but there is no memory safety
-        // issue.
-        for elem in &mut data[..] {
-            elem.write(T::decode(&mut decoder)?);
+        for (idx, elem) in data.iter_mut().enumerate() {
+            match T::decode(&mut decoder) {
+                Ok(t) => {
+                    elem.write(t);
+                }
+                Err(e) => {
+                    // We encountered an error, clean up all previous entries
+
+                    unsafe {
+                        // Safety: we know we've written up to `idx` items
+                        for item in &mut data[..idx] {
+                            // Safety: We know the `item` is written with a valid value of `T`.
+                            // And we know that `&mut item` won't be used any more after this.
+                            ManuallyDrop::drop(&mut *(item as *mut _ as *mut ManuallyDrop<T>));
+                        }
+                        // make sure `data` isn't dropped twice
+                        core::mem::forget(data);
+                    }
+
+                    return Err(e);
+                }
+            }
         }
 
         // Everything is initialized. Transmute the array to the
         // initialized type.
 
         // BlockedTODO: https://github.com/rust-lang/rust/issues/61956
+        // This does not work at the moment:
         // let result = unsafe { transmute::<_, [T; N]>(data) };
 
+        // Alternatively we can use this:
+        // BlockedTODO: https://github.com/rust-lang/rust/issues/80908
+
         // Const generics don't work well with transmute at the moment
-        // The above issue recommends doing the following
+        // The first issue above recommends doing the following:
         let ptr = &mut data as *mut _ as *mut [T; N];
+
+        // Safety: we know this is an array with every value written,
+        // and that the array is valid.
+        // As well as the original `data` that will be forgotten so we won't get
+        // multiple (mutable) references to the same memory
         let res = unsafe { ptr.read() };
         core::mem::forget(data);
         Ok(res)
