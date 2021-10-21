@@ -1,7 +1,7 @@
 //! Contains
 
-use super::{sealed::Sealed, write::Writer, Encoder};
-use crate::config::Config;
+use super::{write::Writer, Encoder};
+use crate::{config::Config, utils::Sealed};
 
 /// An Encoder that writes bytes into a given writer `W`.
 ///

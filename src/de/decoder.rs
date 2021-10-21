@@ -1,9 +1,8 @@
 use super::{
     read::{BorrowReader, Reader},
-    sealed::Sealed,
     BorrowDecoder, Decoder,
 };
-use crate::config::Config;
+use crate::{config::Config, utils::Sealed};
 
 /// A Decoder that reads bytes from a given reader `R`.
 ///

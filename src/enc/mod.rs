@@ -4,12 +4,12 @@ mod encoder;
 mod impl_tuples;
 mod impls;
 
-use crate::{config::Config, error::EncodeError};
+use self::write::Writer;
+use crate::{config::Config, error::EncodeError, utils::Sealed};
 
 pub mod write;
 
 pub use self::encoder::EncoderImpl;
-use self::write::Writer;
 
 /// Any source that can encode types. This type is most notably implemented for [Encoder].
 ///
@@ -20,7 +20,7 @@ pub trait Encode {
 }
 
 /// Helper trait to encode basic types into.
-pub trait Encoder: sealed::Sealed {
+pub trait Encoder: Sealed {
     /// The concrete [Writer] type
     type W: Writer;
 
@@ -49,10 +49,4 @@ where
     fn config(&self) -> &Self::C {
         T::config(self)
     }
-}
-
-pub(crate) mod sealed {
-    pub trait Sealed {}
-
-    impl<'a, T> Sealed for &'a mut T where T: Sealed {}
 }

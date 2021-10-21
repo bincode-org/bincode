@@ -32,6 +32,7 @@ extern crate alloc;
 extern crate std;
 
 mod features;
+pub(crate) mod utils;
 pub(crate) mod varint;
 
 pub use features::*;

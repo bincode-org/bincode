@@ -1,15 +1,16 @@
 //! Decoder-based structs and traits.
 
-use crate::{config::Config, error::DecodeError};
-
 mod decoder;
 mod impl_core;
 mod impl_tuples;
 mod impls;
 
-pub mod read;
-pub use self::decoder::DecoderImpl;
 use self::read::{BorrowReader, Reader};
+use crate::{config::Config, error::DecodeError, utils::Sealed};
+
+pub mod read;
+
+pub use self::decoder::DecoderImpl;
 
 /// Trait that makes a type able to be decoded, akin to serde's `DeserializeOwned` trait.
 ///
@@ -36,7 +37,7 @@ impl<'de, T: Decode> BorrowDecode<'de> for T {
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
-pub trait Decoder: sealed::Sealed {
+pub trait Decoder: Sealed {
     /// The concrete [Reader] type
     type R: Reader;
 
@@ -87,10 +88,4 @@ where
     fn borrow_reader(&mut self) -> &mut Self::BR {
         T::borrow_reader(self)
     }
-}
-
-pub(crate) mod sealed {
-    pub trait Sealed {}
-
-    impl<'a, T> Sealed for &'a mut T where T: Sealed {}
 }
