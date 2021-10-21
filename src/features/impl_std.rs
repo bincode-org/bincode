@@ -145,7 +145,7 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         let t = self.read().map_err(|_| EncodeError::LockFailed {
-            type_name: core::any::type_name::<Mutex<T>>(),
+            type_name: core::any::type_name::<RwLock<T>>(),
         })?;
         t.encode(encoder)
     }
