@@ -3,6 +3,7 @@
 use crate::{config::Config, error::DecodeError};
 
 mod decoder;
+mod impl_core;
 mod impl_tuples;
 mod impls;
 
