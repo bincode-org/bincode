@@ -15,11 +15,11 @@
 //!
 //! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
 //! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
-//! |std   | Yes    ||`decode_from[_with_config]` and `encode_into_write[_with_config]`|
-//! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec[_with_config]`|
+//! |std   | Yes    ||`decode_from_reader` and `encode_into_writer`|
+//! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    |||Enables the `Encode` and `Decode` derive macro|
-//! |serde | No     ||`serde_decode_from[_with_config]`, `serde_encode_into[_with_config]`|Also enables `_to_vec` when `alloc` is enabled|
+//! |serde | No     |TODO|TODO|TODO|
 
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.0")]
 #![crate_name = "bincode"]
@@ -45,20 +45,10 @@ use config::Config;
 
 /// Encode the given value into the given slice. Returns the amount of bytes that have been written.
 ///
-/// Will take the [standard] configuration. See the [config] module for more information.
-///
-/// [standard]: config/struct.Configuration.html#method.standard
-pub fn encode_into_slice<E: enc::Encode>(
-    val: E,
-    dst: &mut [u8],
-) -> Result<usize, error::EncodeError> {
-    encode_into_slice_with_config(val, dst, config::Configuration::standard())
-}
-
-/// Encode the given value into the given slice. Returns the amount of bytes that have been written.
-///
 /// See the [config] module for more information on configurations.
-pub fn encode_into_slice_with_config<E: enc::Encode, C: Config>(
+///
+/// [config]: config/index.html
+pub fn encode_into_slice<E: enc::Encode, C: Config>(
     val: E,
     dst: &mut [u8],
     config: C,
@@ -71,20 +61,11 @@ pub fn encode_into_slice_with_config<E: enc::Encode, C: Config>(
 
 /// Attempt to decode a given type `D` from the given slice.
 ///
-/// Will take the [Default] configuration. See the [config] module for more information.
-///
-/// [Default]: config/struct.Default.html
-pub fn decode<'__de, D: de::BorrowDecode<'__de>>(
-    src: &'__de [u8],
-) -> Result<D, error::DecodeError> {
-    decode_with_config(src, config::Configuration::standard())
-}
-
-/// Attempt to decode a given type `D` from the given slice.
-///
 /// See the [config] module for more information on configurations.
-pub fn decode_with_config<'__de, D: de::BorrowDecode<'__de>, C: Config>(
-    src: &'__de [u8],
+///
+/// [config]: config/index.html
+pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
+    src: &'a [u8],
     _config: C,
 ) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);

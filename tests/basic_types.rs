@@ -1,5 +1,6 @@
 mod utils;
 
+use bincode::config::Configuration;
 use core::cell::{Cell, RefCell};
 use core::ops::Bound;
 use core::time::Duration;
@@ -119,7 +120,7 @@ fn test_refcell_already_borrowed() {
     let _mutable_guard = cell.borrow_mut();
     // now try to encode it
     let mut slice = [0u8; 10];
-    let result = bincode::encode_into_slice(&cell, &mut slice)
+    let result = bincode::encode_into_slice(&cell, &mut slice, Configuration::standard())
         .expect_err("Encoding a borrowed refcell should fail");
 
     match result {
@@ -132,10 +133,11 @@ fn test_refcell_already_borrowed() {
 fn test_slice() {
     let mut buffer = [0u8; 32];
     let input: &[u8] = &[1, 2, 3, 4, 5, 6, 7];
-    bincode::encode_into_slice(input, &mut buffer).unwrap();
+    bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
     assert_eq!(&buffer[..8], &[7, 1, 2, 3, 4, 5, 6, 7]);
 
-    let output: &[u8] = bincode::decode(&mut buffer[..8]).unwrap();
+    let output: &[u8] =
+        bincode::decode_from_slice(&mut buffer[..8], Configuration::standard()).unwrap();
     assert_eq!(input, output);
 }
 
@@ -143,13 +145,14 @@ fn test_slice() {
 fn test_str() {
     let mut buffer = [0u8; 32];
     let input: &str = "Hello world";
-    bincode::encode_into_slice(input, &mut buffer).unwrap();
+    bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
     assert_eq!(
         &buffer[..12],
         &[11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
     );
 
-    let output: &str = bincode::decode(&mut buffer[..12]).unwrap();
+    let output: &str =
+        bincode::decode_from_slice(&mut buffer[..12], Configuration::standard()).unwrap();
     assert_eq!(input, output);
 }
 
@@ -157,9 +160,10 @@ fn test_str() {
 fn test_array() {
     let mut buffer = [0u8; 32];
     let input: [u8; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-    bincode::encode_into_slice(input, &mut buffer).unwrap();
+    bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
     assert_eq!(&buffer[..10], &[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
 
-    let output: [u8; 10] = bincode::decode(&mut buffer[..10]).unwrap();
+    let output: [u8; 10] =
+        bincode::decode_from_slice(&mut buffer[..10], Configuration::standard()).unwrap();
     assert_eq!(input, output);
 }

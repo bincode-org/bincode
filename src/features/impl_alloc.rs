@@ -1,5 +1,4 @@
 use crate::{
-    config,
     de::{Decode, Decoder},
     enc::{self, Encode, Encoder},
     error::{DecodeError, EncodeError},
@@ -21,18 +20,11 @@ impl enc::write::Writer for VecWriter {
     }
 }
 
-/// Encode the given value into a `Vec<u8>`.
-#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
-pub fn encode_to_vec<E: enc::Encode>(val: E) -> Result<Vec<u8>, EncodeError> {
-    encode_to_vec_with_config(val, config::Configuration::standard())
-}
-
 /// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.
+///
+/// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
-pub fn encode_to_vec_with_config<E: enc::Encode, C: Config>(
-    val: E,
-    config: C,
-) -> Result<Vec<u8>, EncodeError> {
+pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec<u8>, EncodeError> {
     let writer = VecWriter::default();
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;

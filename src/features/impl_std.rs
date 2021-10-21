@@ -1,5 +1,5 @@
 use crate::{
-    config::{self, Config},
+    config::Config,
     de::{read::Reader, BorrowDecode, BorrowDecoder, Decode, Decoder, DecoderImpl},
     enc::{write::Writer, Encode, Encoder, EncoderImpl},
     error::{DecodeError, EncodeError},
@@ -13,17 +13,13 @@ use std::{
     time::SystemTime,
 };
 
-/// Decode type `D` from the given reader. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from<D: Decode, R: std::io::Read>(src: &mut R) -> Result<D, DecodeError> {
-    decode_from_with_config(src, config::Configuration::standard())
-}
-
 /// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
 ///
 /// See the [config] module for more information about config options.
+///
+/// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_with_config<D: Decode, C: Config, R: std::io::Read>(
+pub fn decode_from_reader<D: Decode, C: Config, R: std::io::Read>(
     src: &mut R,
     _config: C,
 ) -> Result<D, DecodeError> {
@@ -41,18 +37,12 @@ impl<R: std::io::Read> Reader for R {
     }
 }
 
-/// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`.
+/// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
+/// See the [config] module for more information.
+///
+/// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn encode_into_write<E: Encode, W: std::io::Write>(
-    val: E,
-    dst: &mut W,
-) -> Result<usize, EncodeError> {
-    encode_into_write_with_config(val, dst, config::Configuration::standard())
-}
-
-/// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`. See the [config] module for more information.
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn encode_into_write_with_config<E: Encode, C: Config, W: std::io::Write>(
+pub fn encode_into_writer<E: Encode, C: Config, W: std::io::Write>(
     val: E,
     dst: &mut W,
     config: C,

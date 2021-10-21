@@ -8,14 +8,14 @@ where
     CMP: Fn(&V, &V) -> bool,
 {
     let mut buffer = [0u8; 2048];
-    let len = bincode::encode_into_slice_with_config(&element, &mut buffer, config).unwrap();
+    let len = bincode::encode_into_slice(&element, &mut buffer, config).unwrap();
     println!(
         "{:?}: {:?} ({:?})",
         element,
         &buffer[..len],
         core::any::type_name::<C>()
     );
-    let decoded: V = bincode::decode_with_config(&mut buffer, config).unwrap();
+    let decoded: V = bincode::decode_from_slice(&mut buffer, config).unwrap();
 
     assert!(
         cmp(&element, &decoded),

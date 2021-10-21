@@ -21,7 +21,7 @@ All tuples have no additional bytes, and are encoded in their specified order, e
 use bincode::config::Configuration;
 
 let tuple = (u32::min_value(), i32::max_value()); // 8 bytes
-let encoded = bincode::encode_to_vec_with_config(tuple, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(tuple, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0,   0,   0,   0,  // 4 bytes for first type:  u32
     255, 255, 255, 127 // 4 bytes for second type: i32
@@ -69,21 +69,21 @@ pub enum SomeEnum {
 }
 
 // SomeEnum::A
-let encoded = bincode::encode_to_vec_with_config(SomeEnum::A, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(SomeEnum::A, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0, 0, 0, 0, // first variant, A
     // no extra bytes because A has no fields
 ]);
 
 // SomeEnum::B(0)
-let encoded = bincode::encode_to_vec_with_config(SomeEnum::B(0), Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(SomeEnum::B(0), Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     1, 0, 0, 0, // first variant, B
     0, 0, 0, 0  // B has 1 unnamed field, which is an u32, so 4 bytes
 ]);
 
 // SomeEnum::C { value: 0u32 }
-let encoded = bincode::encode_to_vec_with_config(SomeEnum::C { value: 0u32 }, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(SomeEnum::C { value: 0u32 }, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     2, 0, 0, 0, // first variant, C
     0, 0, 0, 0  // C has 1 named field which is a u32, so 4 bytes
@@ -104,7 +104,7 @@ let list = vec![
     2u8
 ];
 
-let encoded = bincode::encode_to_vec_with_config(list, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(list, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     3, 0, 0, 0, 0, 0, 0, 0, // length of 3u64
     0, // entry 0
@@ -124,7 +124,7 @@ use bincode::config::Configuration;
 
 let str = "Hello"; // Could also be `String::new(...)`
 
-let encoded = bincode::encode_to_vec_with_config(str, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(str, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     5, 0, 0, 0, 0, 0, 0, 0, // length of the string, 5 bytes
     b'H', b'e', b'l', b'l', b'o'
@@ -139,7 +139,7 @@ Arrays are encoded *with* a length by default.
 use bincode::config::Configuration;
 
 let arr: [u8; 5] = [10, 20, 30, 40, 50];
-let encoded = bincode::encode_to_vec_with_config(arr, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(arr, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     5, 0, 0, 0, 0, 0, 0, 0, // The length, as a u64
     10, 20, 30, 40, 50, // the bytes
@@ -168,7 +168,7 @@ let arr: [Foo; 2] = [
     },
 ];
 
-let encoded = bincode::encode_to_vec_with_config(arr, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(arr, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     2, 0, 0, 0, 0, 0, 0, 0, // Length of the array
     10, 20, // First Foo

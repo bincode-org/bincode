@@ -10,11 +10,11 @@ fn slice_varint_u8(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u8", |b| {
         b.iter(|| {
-            let _: Vec<u8> = bincode::decode_with_config(&bytes, config).unwrap();
+            let _: Vec<u8> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -26,11 +26,11 @@ fn slice_varint_u16(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u16", |b| {
         b.iter(|| {
-            let _: Vec<u16> = bincode::decode_with_config(&bytes, config).unwrap();
+            let _: Vec<u16> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -42,11 +42,11 @@ fn slice_varint_u32(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u32", |b| {
         b.iter(|| {
-            let _: Vec<u32> = bincode::decode_with_config(&bytes, config).unwrap();
+            let _: Vec<u32> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -58,11 +58,11 @@ fn slice_varint_u64(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u64", |b| {
         b.iter(|| {
-            let _: Vec<u64> = bincode::decode_with_config(&bytes, config).unwrap();
+            let _: Vec<u64> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -74,12 +74,12 @@ fn bufreader_varint_u8(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u8", |b| {
         b.iter(|| {
             let _: Vec<u8> =
-                bincode::decode_from_with_config(&mut std::io::BufReader::new(&bytes[..]), config)
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
                     .unwrap();
         })
     });
@@ -92,12 +92,12 @@ fn bufreader_varint_u16(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u16", |b| {
         b.iter(|| {
             let _: Vec<u16> =
-                bincode::decode_from_with_config(&mut std::io::BufReader::new(&bytes[..]), config)
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
                     .unwrap();
         })
     });
@@ -110,12 +110,12 @@ fn bufreader_varint_u32(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u32", |b| {
         b.iter(|| {
             let _: Vec<u32> =
-                bincode::decode_from_with_config(&mut std::io::BufReader::new(&bytes[..]), config)
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
                     .unwrap();
         })
     });
@@ -128,12 +128,12 @@ fn bufreader_varint_u64(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = Configuration::standard();
-    let bytes = bincode::encode_to_vec_with_config(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u64", |b| {
         b.iter(|| {
             let _: Vec<u64> =
-                bincode::decode_from_with_config(&mut std::io::BufReader::new(&bytes[..]), config)
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
                     .unwrap();
         })
     });

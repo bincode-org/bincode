@@ -9,6 +9,7 @@ use alloc::collections::*;
 use alloc::rc::Rc;
 #[cfg(feature = "atomic")]
 use alloc::sync::Arc;
+use bincode::config::Configuration;
 use utils::{the_same, the_same_with_comparer};
 
 struct Foo {
@@ -40,10 +41,10 @@ impl bincode::de::Decode for Foo {
 
 #[test]
 fn test_vec() {
-    let vec = bincode::encode_to_vec(Foo { a: 5, b: 10 }).unwrap();
+    let vec = bincode::encode_to_vec(Foo { a: 5, b: 10 }, Configuration::standard()).unwrap();
     assert_eq!(vec, &[5, 10]);
 
-    let foo: Foo = bincode::decode(&vec).unwrap();
+    let foo: Foo = bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
 }

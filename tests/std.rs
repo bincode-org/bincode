@@ -2,6 +2,7 @@
 
 mod utils;
 
+use bincode::config::Configuration;
 use std::{
     ffi::{CStr, CString},
     io::{Cursor, Seek, SeekFrom},
@@ -43,7 +44,7 @@ impl bincode::de::Decode for Foo {
 #[test]
 fn test_std_cursor() {
     let mut cursor = Cursor::<&[u8]>::new(&[5, 10]);
-    let foo: Foo = bincode::decode_from(&mut cursor).unwrap();
+    let foo: Foo = bincode::decode_from_reader(&mut cursor, Configuration::standard()).unwrap();
 
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
@@ -53,11 +54,13 @@ fn test_std_cursor() {
 fn test_std_file() {
     let mut file = tempfile::tempfile().expect("Could not create temp file");
 
-    let bytes_written = bincode::encode_into_write(Foo { a: 30, b: 50 }, &mut file).unwrap();
+    let bytes_written =
+        bincode::encode_into_writer(Foo { a: 30, b: 50 }, &mut file, Configuration::standard())
+            .unwrap();
     assert_eq!(bytes_written, 2);
     file.seek(SeekFrom::Start(0)).unwrap();
 
-    let foo: Foo = bincode::decode_from(&mut file).unwrap();
+    let foo: Foo = bincode::decode_from_reader(&mut file, Configuration::standard()).unwrap();
 
     assert_eq!(foo.a, 30);
     assert_eq!(foo.b, 50);
@@ -96,13 +99,13 @@ fn test_std_commons() {
 
     // &CStr
     let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
-    let len = bincode::encode_into_slice_with_config(cstr, &mut buffer, config).unwrap();
-    let decoded: &CStr = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
+    let len = bincode::encode_into_slice(cstr, &mut buffer, config).unwrap();
+    let decoded: &CStr = bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
     assert_eq!(cstr, decoded);
 
     // Path
     let path = Path::new("C:/Program Files/Foo");
-    let len = bincode::encode_into_slice_with_config(path, &mut buffer, config).unwrap();
-    let decoded: &Path = bincode::decode_with_config(&mut buffer[..len], config).unwrap();
+    let len = bincode::encode_into_slice(path, &mut buffer, config).unwrap();
+    let decoded: &Path = bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
     assert_eq!(path, decoded);
 }
