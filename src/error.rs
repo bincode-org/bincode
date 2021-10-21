@@ -18,6 +18,10 @@ pub enum EncodeError {
     /// An uncommon error occured, see the inner text for more information
     Other(&'static str),
 
+    /// A `std::path::Path` was being encoded but did not contain a valid `&str` representation
+    #[cfg(feature = "std")]
+    InvalidPathCharacters,
+
     /// The targetted writer encountered an `std::io::Error`
     #[cfg(feature = "std")]
     Io {

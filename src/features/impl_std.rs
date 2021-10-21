@@ -184,7 +184,7 @@ impl Encode for &'_ Path {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
         match self.to_str() {
             Some(str) => str.encode(encoder),
-            None => Err(EncodeError::Other("Path contains invalid UTF-8 characters")),
+            None => Err(EncodeError::InvalidPathCharacters),
         }
     }
 }

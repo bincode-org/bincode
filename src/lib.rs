@@ -45,9 +45,9 @@ use config::Config;
 
 /// Encode the given value into the given slice. Returns the amount of bytes that have been written.
 ///
-/// Will take the [Default] configuration. See the [config] module for more information.
+/// Will take the [standard] configuration. See the [config] module for more information.
 ///
-/// [Default]: config/struct.Default.html
+/// [standard]: config/struct.Configuration.html#method.standard
 pub fn encode_into_slice<E: enc::Encode>(
     val: E,
     dst: &mut [u8],
