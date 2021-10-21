@@ -1,5 +1,3 @@
-//! Contains
-
 use super::{write::Writer, Encoder};
 use crate::{config::Config, utils::Sealed};
 

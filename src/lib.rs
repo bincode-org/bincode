@@ -20,6 +20,39 @@
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    |||Enables the `Encode` and `Decode` derive macro|
 //! |serde | No     |TODO|TODO|TODO|
+//!
+//! # Example
+//!
+//! ```rust
+//! use bincode::config::Configuration;
+//!
+//! let mut slice = [0u8; 100];
+//!
+//!     // You can encode any type that implements `enc::Encode`.
+//!     // You can automatically implement this trait on custom types with the `derive` feature.
+//! let input = (
+//!     0u8,
+//!     10u32,
+//!     10000i128,
+//!     'a',
+//!     [0u8, 1u8, 2u8, 3u8]
+//! );
+//!
+//! let length = bincode::encode_into_slice(
+//!     input,
+//!     &mut slice,
+//!     Configuration::standard()
+//! ).unwrap();
+//!
+//! let slice = &slice[..length];
+//! println!("Bytes written: {:?}", slice);
+//!
+//! // Decoding works the same as encoding.
+//! // The trait used is `de::Decode`, and can also be automatically implemented with the `derive` feature.
+//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, Configuration::standard()).unwrap();
+//!
+//! assert_eq!(decoded, input);
+//! ```
 
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.0")]
 #![crate_name = "bincode"]

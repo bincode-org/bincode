@@ -11,9 +11,9 @@ pub mod write;
 
 pub use self::encoder::EncoderImpl;
 
-/// Any source that can encode types. This type is most notably implemented for [Encoder].
+/// Any source that can be encoded. This trait should be implemented for all types that you want to be able to use with any of the `encode_with` methods.
 ///
-/// [Encoder]: ../struct.Encoder.html
+/// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Encode)]` to your trait.
 pub trait Encode {
     /// Encode a given type.
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError>;

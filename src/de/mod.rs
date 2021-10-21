@@ -17,6 +17,8 @@ pub use self::decoder::DecoderImpl;
 /// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [BorrowDecode] instead.
 ///
 /// Whenever you implement `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
+///
+/// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
 pub trait Decode: for<'de> BorrowDecode<'de> {
     /// Attempt to decode this type with the given [Decode].
     fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError>;
@@ -25,6 +27,8 @@ pub trait Decode: for<'de> BorrowDecode<'de> {
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
 ///
 /// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing [Decode] instead.
+///
+/// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to a type with a lifetime.
 pub trait BorrowDecode<'de>: Sized {
     /// Attempt to decode this type with the given [BorrowDecode].
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError>;
