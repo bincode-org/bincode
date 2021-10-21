@@ -20,7 +20,7 @@ keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 license = "MIT"
 description = "A binary serialization / deserialization strategy for transforming structs into bytes and vice versa!"
 
-edition = "2018"
+edition = "2021"
 
 [features]
 default = ["std", "derive", "atomic"]
