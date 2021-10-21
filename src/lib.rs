@@ -21,7 +21,7 @@
 //! |derive| Yes    |||Enables the `Encode` and `Decode` derive macro|
 //! |serde | No     ||`serde_decode_from[_with_config]`, `serde_encode_into[_with_config]`|Also enables `_to_vec` when `alloc` is enabled|
 
-#![doc(html_root_url = "https://docs.rs/bincode/2.0.0-dev")]
+#![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.0")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
