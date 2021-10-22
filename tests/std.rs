@@ -44,7 +44,7 @@ impl bincode::de::Decode for Foo {
 #[test]
 fn test_std_cursor() {
     let mut cursor = Cursor::<&[u8]>::new(&[5, 10]);
-    let foo: Foo = bincode::decode_from_reader(&mut cursor, Configuration::standard()).unwrap();
+    let foo: Foo = bincode::decode_from_std_read(&mut cursor, Configuration::standard()).unwrap();
 
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
@@ -55,12 +55,12 @@ fn test_std_file() {
     let mut file = tempfile::tempfile().expect("Could not create temp file");
 
     let bytes_written =
-        bincode::encode_into_writer(Foo { a: 30, b: 50 }, &mut file, Configuration::standard())
+        bincode::encode_into_std_write(Foo { a: 30, b: 50 }, &mut file, Configuration::standard())
             .unwrap();
     assert_eq!(bytes_written, 2);
     file.seek(SeekFrom::Start(0)).unwrap();
 
-    let foo: Foo = bincode::decode_from_reader(&mut file, Configuration::standard()).unwrap();
+    let foo: Foo = bincode::decode_from_std_read(&mut file, Configuration::standard()).unwrap();
 
     assert_eq!(foo.a, 30);
     assert_eq!(foo.b, 50);

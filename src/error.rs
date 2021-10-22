@@ -144,6 +144,8 @@ pub enum IntegerType {
     I64,
     I128,
     Isize,
+
+    Reserved,
 }
 
 impl IntegerType {

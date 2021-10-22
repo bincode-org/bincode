@@ -7,6 +7,7 @@ use crate::{
 use core::time::Duration;
 use std::{
     ffi::{CStr, CString},
+    io::Read,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     path::{Path, PathBuf},
     sync::{Mutex, RwLock},
@@ -19,21 +20,51 @@ use std::{
 ///
 /// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_reader<D: Decode, C: Config, R: std::io::Read>(
+pub fn decode_from_std_read<D: Decode, C: Config, R: std::io::Read>(
     src: &mut R,
     _config: C,
 ) -> Result<D, DecodeError> {
-    let mut decoder = DecoderImpl::<_, C>::new(src, _config);
+    let reader = IoReader { reader: src };
+    let mut decoder = DecoderImpl::<_, C>::new(reader, _config);
     D::decode(&mut decoder)
 }
 
-impl<R: std::io::Read> Reader for R {
+struct IoReader<R> {
+    reader: R,
+}
+
+impl<R> Reader for IoReader<R>
+where
+    R: std::io::Read,
+{
     #[inline(always)]
+    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
+        match self.reader.read_exact(bytes) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(DecodeError::UnexpectedEnd),
+        }
+    }
+}
+
+impl<R> Reader for std::io::BufReader<R>
+where
+    R: std::io::Read,
+{
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         match self.read_exact(bytes) {
             Ok(_) => Ok(()),
             Err(_) => Err(DecodeError::UnexpectedEnd),
         }
+    }
+
+    #[inline]
+    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+        self.buffer().get(..n)
+    }
+
+    #[inline]
+    fn consume(&mut self, n: usize) {
+        <Self as std::io::BufRead>::consume(self, n);
     }
 }
 
@@ -42,7 +73,7 @@ impl<R: std::io::Read> Reader for R {
 ///
 /// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn encode_into_writer<E: Encode, C: Config, W: std::io::Write>(
+pub fn encode_into_std_write<E: Encode, C: Config, W: std::io::Write>(
     val: E,
     dst: &mut W,
     config: C,
@@ -62,6 +93,7 @@ struct IoWriter<'a, W: std::io::Write> {
 }
 
 impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
+    #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.writer
             .write_all(bytes)
