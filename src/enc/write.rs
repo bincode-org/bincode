@@ -26,33 +26,35 @@ pub trait Writer {
 /// ```
 pub struct SliceWriter<'storage> {
     slice: &'storage mut [u8],
-    idx: usize,
+    original_length: usize,
 }
 
 impl<'storage> SliceWriter<'storage> {
     /// Create a new instance of `SliceWriter` with the given byte array.
     pub fn new(bytes: &'storage mut [u8]) -> SliceWriter<'storage> {
+        let original = bytes.len();
         SliceWriter {
             slice: bytes,
-            idx: 0,
+            original_length: original,
         }
     }
 
     /// Return the amount of bytes written so far.
     pub fn bytes_written(&self) -> usize {
-        self.idx
+        self.original_length - self.slice.len()
     }
 }
 
 impl<'storage> Writer for SliceWriter<'storage> {
+    #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
-        let remaining = &mut self.slice[self.idx..];
-        if bytes.len() > remaining.len() {
+        if bytes.len() > self.slice.len() {
             return Err(EncodeError::UnexpectedEnd);
         }
-        self.idx += bytes.len();
-        let write_slice = &mut remaining[..bytes.len()];
-        write_slice.copy_from_slice(bytes);
+        let (a, b) = core::mem::replace(&mut self.slice, &mut []).split_at_mut(bytes.len());
+        a.copy_from_slice(&bytes[..]);
+        self.slice = b;
+
         Ok(())
     }
 }
