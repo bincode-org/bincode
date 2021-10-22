@@ -10,6 +10,7 @@ use crate::{
     error::{DecodeError, IntegerType},
 };
 use core::{
+    any::TypeId,
     cell::{Cell, RefCell},
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
@@ -384,7 +385,7 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
 
 impl<T, const N: usize> Decode for [T; N]
 where
-    T: Decode + Sized,
+    T: Decode + Sized + 'static,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         if !D::C::SKIP_FIXED_ARRAY_LENGTH {
@@ -397,12 +398,24 @@ where
             }
         }
 
-        let result =
-            super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(&mut decoder)));
+        if TypeId::of::<u8>() == TypeId::of::<T>() {
+            let mut buf = [0u8; N];
+            decoder.reader().read(&mut buf)?;
+            let ptr = &mut buf as *mut _ as *mut [T; N];
 
-        // result is only None if N does not match the values of `(0..N)`, which it always should
-        // So this unsafe should never occur
-        result.unwrap()
+            // Safety: we know that T is a u8, so it is perfectly safe to
+            // translate an array of u8 into an array of T
+            let res = unsafe { ptr.read() };
+            core::mem::forget(buf);
+            Ok(res)
+        } else {
+            let result =
+                super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(&mut decoder)));
+
+            // result is only None if N does not match the values of `(0..N)`, which it always should
+            // So this unsafe should never occur
+            result.unwrap()
+        }
     }
 }
 
