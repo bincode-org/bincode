@@ -69,16 +69,6 @@ impl<'storage> SliceReader<'storage> {
     pub fn new(bytes: &'storage [u8]) -> SliceReader<'storage> {
         SliceReader { slice: bytes }
     }
-
-    #[inline(always)]
-    fn get_byte_slice(&mut self, length: usize) -> Result<&'storage [u8], DecodeError> {
-        if length > self.slice.len() {
-            return Err(DecodeError::UnexpectedEnd);
-        }
-        let (read_slice, remaining) = self.slice.split_at(length);
-        self.slice = remaining;
-        Ok(read_slice)
-    }
 }
 
 impl<'storage> Reader for SliceReader<'storage> {
@@ -108,6 +98,11 @@ impl<'storage> Reader for SliceReader<'storage> {
 impl<'storage> BorrowReader<'storage> for SliceReader<'storage> {
     #[inline(always)]
     fn take_bytes(&mut self, length: usize) -> Result<&'storage [u8], DecodeError> {
-        self.get_byte_slice(length)
+        if length > self.slice.len() {
+            return Err(DecodeError::UnexpectedEnd);
+        }
+        let (read_slice, remaining) = self.slice.split_at(length);
+        self.slice = remaining;
+        Ok(read_slice)
     }
 }

@@ -52,7 +52,7 @@ impl<'storage> Writer for SliceWriter<'storage> {
             return Err(EncodeError::UnexpectedEnd);
         }
         let (a, b) = core::mem::replace(&mut self.slice, &mut []).split_at_mut(bytes.len());
-        a.copy_from_slice(&bytes[..]);
+        a.copy_from_slice(bytes);
         self.slice = b;
 
         Ok(())

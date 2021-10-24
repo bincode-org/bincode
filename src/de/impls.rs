@@ -413,7 +413,6 @@ where
             // Safety: we know that T is a u8, so it is perfectly safe to
             // translate an array of u8 into an array of T
             let res = unsafe { ptr.read() };
-            core::mem::forget(buf);
             Ok(res)
         } else {
             let result =
