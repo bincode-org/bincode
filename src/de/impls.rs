@@ -31,10 +31,17 @@ impl Decode for bool {
 }
 
 impl Decode for u8 {
+    #[inline]
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let mut bytes = [0u8; 1];
-        decoder.reader().read(&mut bytes)?;
-        Ok(bytes[0])
+        if let Some(buf) = decoder.reader().peek_read(1) {
+            let byte = buf[0];
+            decoder.reader().consume(1);
+            Ok(byte)
+        } else {
+            let mut bytes = [0u8; 1];
+            decoder.reader().read(&mut bytes)?;
+            Ok(bytes[0])
+        }
     }
 }
 

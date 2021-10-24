@@ -65,7 +65,7 @@ fn test_decode() {
     };
     let slice = [5, 10, 251, 0, 4];
     let result: Test2<u32> =
-        bincode::decode_from_reader(&mut slice.as_ref(), Configuration::standard()).unwrap();
+        bincode::decode_from_std_read(&mut slice.as_ref(), Configuration::standard()).unwrap();
     assert_eq!(result, start);
 }
 

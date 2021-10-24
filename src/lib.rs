@@ -68,6 +68,8 @@ mod features;
 pub(crate) mod utils;
 pub(crate) mod varint;
 
+use de::read::Reader;
+use enc::write::Writer;
 pub use features::*;
 
 pub mod config;
@@ -93,6 +95,21 @@ pub fn encode_into_slice<E: enc::Encode, C: Config>(
     Ok(encoder.into_writer().bytes_written())
 }
 
+/// Encode the given value into a custom [Writer].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
+    val: E,
+    writer: W,
+    config: C,
+) -> Result<(), error::EncodeError> {
+    let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
+    val.encode(&mut encoder)?;
+    Ok(())
+}
+
 /// Attempt to decode a given type `D` from the given slice.
 ///
 /// See the [config] module for more information on configurations.
@@ -105,6 +122,19 @@ pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
     let reader = de::read::SliceReader::new(src);
     let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
     D::borrow_decode(&mut decoder)
+}
+
+/// Attempt to decode a given type `D` from the given [Reader].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
+    reader: R,
+    _config: C,
+) -> Result<D, error::DecodeError> {
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
+    D::decode(&mut decoder)
 }
 
 // TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
