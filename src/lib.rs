@@ -1,131 +1,145 @@
-#![deny(missing_docs)]
+#![no_std]
+#![warn(missing_docs, unused_lifetimes)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
 //! an object in memory, quickly serialize it to bytes, and then
 //! deserialize it back just as fast!
 //!
-//! ### Using Basic Functions
+//! # Serde
 //!
-//! ```edition2018
-//! fn main() {
-//!     // The object that we will serialize.
-//!     let target: Option<String>  = Some("hello world".to_string());
+//! Starting from bincode 2, serde is now an optional dependency. If you want to use serde, please enable the `serde` feature. See [Features](#features) for more information.
 //!
-//!     let encoded: Vec<u8> = bincode::serialize(&target).unwrap();
-//!     let decoded: Option<String> = bincode::deserialize(&encoded[..]).unwrap();
-//!     assert_eq!(target, decoded);
-//! }
+//! # Features
+//!
+//! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
+//! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
+//! |std   | Yes    ||`decode_from_reader` and `encode_into_writer`|
+//! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
+//! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
+//! |derive| Yes    |||Enables the `Encode` and `Decode` derive macro|
+//! |serde | No     |TODO|TODO|TODO|
+//!
+//! # Example
+//!
+//! ```rust
+//! use bincode::config::Configuration;
+//!
+//! let mut slice = [0u8; 100];
+//!
+//!     // You can encode any type that implements `enc::Encode`.
+//!     // You can automatically implement this trait on custom types with the `derive` feature.
+//! let input = (
+//!     0u8,
+//!     10u32,
+//!     10000i128,
+//!     'a',
+//!     [0u8, 1u8, 2u8, 3u8]
+//! );
+//!
+//! let length = bincode::encode_into_slice(
+//!     input,
+//!     &mut slice,
+//!     Configuration::standard()
+//! ).unwrap();
+//!
+//! let slice = &slice[..length];
+//! println!("Bytes written: {:?}", slice);
+//!
+//! // Decoding works the same as encoding.
+//! // The trait used is `de::Decode`, and can also be automatically implemented with the `derive` feature.
+//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, Configuration::standard()).unwrap();
+//!
+//! assert_eq!(decoded, input);
 //! ```
-//!
-//! ### 128bit numbers
-//!
-//! Support for `i128` and `u128` is automatically enabled on Rust toolchains
-//! greater than or equal to `1.26.0` and disabled for targets which do not support it
 
-#![doc(html_root_url = "https://docs.rs/bincode/2.0.0-dev")]
+#![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.0")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 
-extern crate byteorder;
-#[macro_use]
-extern crate serde;
+#[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(any(feature = "std", test))]
+extern crate std;
+
+mod features;
+pub(crate) mod utils;
+pub(crate) mod varint;
+
+use de::read::Reader;
+use enc::write::Writer;
+pub use features::*;
 
 pub mod config;
-/// Deserialize bincode data to a Rust data structure.
 pub mod de;
+pub mod enc;
+pub mod error;
 
-mod error;
-mod internal;
-mod ser;
+use config::Config;
 
-pub use crate::config::{DefaultOptions, Options};
-pub use crate::de::read::BincodeRead;
-pub use crate::de::Deserializer;
-pub use crate::error::{Error, ErrorKind, Result};
-pub use crate::ser::Serializer;
-
-/// Get a default configuration object.
+/// Encode the given value into the given slice. Returns the amount of bytes that have been written.
 ///
-/// ### Default Configuration:
+/// See the [config] module for more information on configurations.
 ///
-/// | Byte limit | Endianness | Int Encoding | Trailing Behavior |
-/// |------------|------------|--------------|-------------------|
-/// | Unlimited  | Little     | Varint       | Reject            |
-#[inline(always)]
-pub fn options() -> DefaultOptions {
-    DefaultOptions::new()
+/// [config]: config/index.html
+pub fn encode_into_slice<E: enc::Encode, C: Config>(
+    val: E,
+    dst: &mut [u8],
+    config: C,
+) -> Result<usize, error::EncodeError> {
+    let writer = enc::write::SliceWriter::new(dst);
+    let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
+    val.encode(&mut encoder)?;
+    Ok(encoder.into_writer().bytes_written())
 }
 
-/// Serializes an object directly into a `Writer` using the default configuration.
+/// Encode the given value into a custom [Writer].
 ///
-/// If the serialization would take more bytes than allowed by the size limit, an error
-/// is returned and *no bytes* will be written into the `Writer`.
-pub fn serialize_into<W, T: ?Sized>(writer: W, value: &T) -> Result<()>
-where
-    W: std::io::Write,
-    T: serde::Serialize,
-{
-    DefaultOptions::new().serialize_into(writer, value)
-}
-
-/// Serializes a serializable object into a `Vec` of bytes using the default configuration.
-pub fn serialize<T: ?Sized>(value: &T) -> Result<Vec<u8>>
-where
-    T: serde::Serialize,
-{
-    DefaultOptions::new().serialize(value)
-}
-
-/// Deserializes an object directly from a `Read`er using the default configuration.
+/// See the [config] module for more information on configurations.
 ///
-/// If this returns an `Error`, `reader` may be in an invalid state.
-pub fn deserialize_from<R, T>(reader: R) -> Result<T>
-where
-    R: std::io::Read,
-    T: serde::de::DeserializeOwned,
-{
-    DefaultOptions::new().deserialize_from(reader)
+/// [config]: config/index.html
+pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
+    val: E,
+    writer: W,
+    config: C,
+) -> Result<(), error::EncodeError> {
+    let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
+    val.encode(&mut encoder)?;
+    Ok(())
 }
 
-/// Deserializes an object from a custom `BincodeRead`er using the default configuration.
-/// It is highly recommended to use `deserialize_from` unless you need to implement
-/// `BincodeRead` for performance reasons.
+/// Attempt to decode a given type `D` from the given slice.
 ///
-/// If this returns an `Error`, `reader` may be in an invalid state.
-pub fn deserialize_from_custom<'a, R, T>(reader: R) -> Result<T>
-where
-    R: de::read::BincodeRead<'a>,
-    T: serde::de::DeserializeOwned,
-{
-    DefaultOptions::new().deserialize_from_custom(reader)
-}
-
-/// Only use this if you know what you're doing.
+/// See the [config] module for more information on configurations.
 ///
-/// This is part of the public API.
-#[doc(hidden)]
-pub fn deserialize_in_place<'a, R, T>(reader: R, place: &mut T) -> Result<()>
-where
-    T: serde::de::Deserialize<'a>,
-    R: BincodeRead<'a>,
-{
-    DefaultOptions::new().deserialize_in_place(reader, place)
+/// [config]: config/index.html
+pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
+    src: &'a [u8],
+    _config: C,
+) -> Result<D, error::DecodeError> {
+    let reader = de::read::SliceReader::new(src);
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
+    D::borrow_decode(&mut decoder)
 }
 
-/// Deserializes a slice of bytes into an instance of `T` using the default configuration.
-pub fn deserialize<'a, T>(bytes: &'a [u8]) -> Result<T>
-where
-    T: serde::de::Deserialize<'a>,
-{
-    DefaultOptions::new().deserialize(bytes)
+/// Attempt to decode a given type `D` from the given [Reader].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
+    reader: R,
+    _config: C,
+) -> Result<D, error::DecodeError> {
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
+    D::decode(&mut decoder)
 }
 
-/// Returns the size that an object would be if serialized using Bincode with the default configuration.
-pub fn serialized_size<T: ?Sized>(value: &T) -> Result<u64>
-where
-    T: serde::Serialize,
-{
-    DefaultOptions::new().serialized_size(value)
+// TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
+// But we want to have the specs in the docs always
+#[cfg(all(feature = "alloc", feature = "derive"))]
+pub mod spec {
+    #![doc = include_str!("../docs/spec.md")]
 }

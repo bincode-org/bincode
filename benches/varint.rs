@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use bincode::Options;
+use bincode::config::Configuration;
 use rand::distributions::Distribution;
 
 fn slice_varint_u8(c: &mut Criterion) {
@@ -9,12 +9,12 @@ fn slice_varint_u8(c: &mut Criterion) {
     let input: Vec<u8> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u8", |b| {
         b.iter(|| {
-            let _: Vec<u8> = options.deserialize(&bytes).unwrap();
+            let _: Vec<u8> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -25,12 +25,12 @@ fn slice_varint_u16(c: &mut Criterion) {
     let input: Vec<u16> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u16", |b| {
         b.iter(|| {
-            let _: Vec<u16> = options.deserialize(&bytes).unwrap();
+            let _: Vec<u16> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -41,12 +41,12 @@ fn slice_varint_u32(c: &mut Criterion) {
     let input: Vec<u32> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u32", |b| {
         b.iter(|| {
-            let _: Vec<u32> = options.deserialize(&bytes).unwrap();
+            let _: Vec<u32> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -57,12 +57,12 @@ fn slice_varint_u64(c: &mut Criterion) {
     let input: Vec<u64> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u64", |b| {
         b.iter(|| {
-            let _: Vec<u64> = options.deserialize(&bytes).unwrap();
+            let _: Vec<u64> = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -73,14 +73,14 @@ fn bufreader_varint_u8(c: &mut Criterion) {
     let input: Vec<u8> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u8", |b| {
         b.iter(|| {
-            let _: Vec<u8> = options
-                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
-                .unwrap();
+            let _: Vec<u8> =
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
+                    .unwrap();
         })
     });
 }
@@ -91,14 +91,14 @@ fn bufreader_varint_u16(c: &mut Criterion) {
     let input: Vec<u16> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u16", |b| {
         b.iter(|| {
-            let _: Vec<u16> = options
-                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
-                .unwrap();
+            let _: Vec<u16> =
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
+                    .unwrap();
         })
     });
 }
@@ -109,14 +109,14 @@ fn bufreader_varint_u32(c: &mut Criterion) {
     let input: Vec<u32> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u32", |b| {
         b.iter(|| {
-            let _: Vec<u32> = options
-                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
-                .unwrap();
+            let _: Vec<u32> =
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
+                    .unwrap();
         })
     });
 }
@@ -127,14 +127,14 @@ fn bufreader_varint_u64(c: &mut Criterion) {
     let input: Vec<u64> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let options = bincode::options();
-    let bytes = options.serialize(&input).unwrap();
+    let config = Configuration::standard();
+    let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u64", |b| {
         b.iter(|| {
-            let _: Vec<u64> = options
-                .deserialize_from_custom(&mut std::io::BufReader::new(&bytes[..]))
-                .unwrap();
+            let _: Vec<u64> =
+                bincode::decode_from_reader(&mut std::io::BufReader::new(&bytes[..]), config)
+                    .unwrap();
         })
     });
 }

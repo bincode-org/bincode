@@ -1,0 +1,17 @@
+[package]
+name = "bincode_derive"
+version = "2.0.0-alpha.0" # remember to update bincode
+authors = ["Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
+edition = "2021"
+
+repository = "https://github.com/bincode-org/bincode"
+documentation = "https://docs.rs/bincode_derive"
+readme = "./readme.md"
+categories = ["encoding", "network-programming"]
+keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
+
+[lib]
+proc-macro = true
+
+[dev-dependencies]
+proc-macro2 = "1.0"
