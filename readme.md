@@ -2,8 +2,8 @@
 
 <img align="right" src="./logo.svg" />
 
-![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)
-[![](https://meritbadge.herokuapp.com/bincode)](https://crates.io/crates/bincode)
+[![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)](https://github.com/bincode-org/bincode/actions)
+[![](https://img.shields.io/crates/v/bincode.svg)](https://crates.io/crates/bincode)
 [![](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <!-- [![](https://img.shields.io/badge/bincode-rustc_1.41.1+-lightgray.svg)](https://blog.rust-lang.org/2020/02/27/Rust-1.41.1.html) -->
 [![Matrix](https://img.shields.io/matrix/bincode:matrix.org?label=Matrix%20Chat)](https://matrix.to/#/#bincode:matrix.org)
@@ -30,26 +30,30 @@ library.
 ## Example
 
 ```rust
-use serde::{Serialize, Deserialize};
+use bincode::{config::Configuration, Decode, Encode};
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Encode, Decode, PartialEq, Debug)]
 struct Entity {
     x: f32,
     y: f32,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Encode, Decode, PartialEq, Debug)]
 struct World(Vec<Entity>);
 
 fn main() {
+    let config = Configuration::standard();
+
     let world = World(vec![Entity { x: 0.0, y: 4.0 }, Entity { x: 10.0, y: 20.5 }]);
 
-    let encoded: Vec<u8> = bincode::serialize(&world).unwrap();
+    let encoded: Vec<u8> = bincode::encode_to_vec(&world, config).unwrap();
 
-    // 8 bytes for the length of the vector, 4 bytes per float.
-    assert_eq!(encoded.len(), 8 + 4 * 4);
+    // The length of the vector is encoded as a varint u64, which in this case gets collapsed to a single byte
+    // See the documentation on varint for more info for that.
+    // The 4 floats are encoded in 4 bytes each.
+    assert_eq!(encoded.len(), 1 + 4 * 4);
 
-    let decoded: World = bincode::deserialize(&encoded[..]).unwrap();
+    let decoded: World = bincode::decode_from_slice(&encoded[..], config).unwrap();
 
     assert_eq!(world, decoded);
 }
