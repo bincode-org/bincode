@@ -143,3 +143,9 @@ pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
 pub mod spec {
     #![doc = include_str!("../docs/spec.md")]
 }
+
+// Test the examples in readme.md
+#[cfg(all(feature = "alloc", feature = "derive", doctest))]
+mod readme {
+    #![doc = include_str!("../readme.md")]
+}
