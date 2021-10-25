@@ -108,7 +108,10 @@ impl<E, I, A> Configuration<E, I, A> {
     /// fn zigzag(v: Signed) -> Unsigned {
     ///     match v {
     ///         0 => 0,
-    ///         v if v < 0 => v.unsigned_abs() * 2 - 1,
+    ///         // To avoid the edge case of Signed::min_value()
+    ///         // !n is equal to `-n - 1`, so this is:
+    ///         // !n * 2 + 1 = 2(-n - 1) + 1 = -2n - 2 + 1 = -2n - 1
+    ///         v if v < 0 => !(v as Unsigned) * 2 - 1,
     ///         v if v > 0 => (v as Unsigned) * 2,
     /// #       _ => unreachable!()
     ///     }
