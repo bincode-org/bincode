@@ -4,7 +4,6 @@
     "push": {
       "branches": [
         "trunk",
-        "bincode2/ci_matrix", # Temporary, don't merge this
         "v*.x"
       ]
     },
