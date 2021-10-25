@@ -10,7 +10,7 @@ By default `bincode` will serialize values in little endian encoding. This can b
 
 ## Basic types
 
-Boolean types are encoded with 1 byte for each boolean type, with `0` being `false`, `1` being true. Whilst deserilizing every other value will throw an error.
+Boolean types are encoded with 1 byte for each boolean type, with `0` being `false`, `1` being true. Whilst deserializing every other value will throw an error.
 
 All basic numeric types will be encoded based on the configured [IntEncoding](#IntEncoding).
 
@@ -54,7 +54,7 @@ See the documentation of [FixintEncoding](https://docs.rs/bincode/latest/bincode
 
 ## Enums
 
-Enums are encoded with their variant first, followed by optionally the variant fields. The variant index is based on the `IntEncoding` during serilization.
+Enums are encoded with their variant first, followed by optionally the variant fields. The variant index is based on the `IntEncoding` during serialization.
 
 Both named and unnamed fields are serialized with their values only, and therefor encode to the same value.
 
@@ -146,7 +146,7 @@ assert_eq!(encoded.as_slice(), &[
 ]);
 ```
 
-This applies to any type `T` that implements `Encodabl`/`Decodabl`
+This applies to any type `T` that implements `Encode`/`Decode`
 
 ```rust
 use bincode::config::Configuration;
