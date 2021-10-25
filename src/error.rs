@@ -18,6 +18,10 @@ pub enum EncodeError {
     /// An uncommon error occured, see the inner text for more information
     Other(&'static str),
 
+    /// An uncommon error occured, see the inner text for more information
+    #[cfg(feature = "alloc")]
+    OtherString(alloc::string::String),
+
     /// A `std::path::Path` was being encoded but did not contain a valid `&str` representation
     #[cfg(feature = "std")]
     InvalidPathCharacters,
@@ -46,6 +50,17 @@ pub enum EncodeError {
         /// The SystemTime that caused the error
         time: std::time::SystemTime,
     },
+
+    /// Serde provided bincode with a sequence without a length, which is not supported in bincode
+    #[cfg(feature = "serde")]
+    SequenceMustHaveLength,
+}
+
+impl core::fmt::Display for EncodeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // TODO: Improve this?
+        write!(f, "{:?}", self)
+    }
 }
 
 /// Errors that can be encounted by decoding a type
@@ -104,6 +119,33 @@ pub enum DecodeError {
         /// The inner exception
         inner: std::ffi::FromBytesWithNulError,
     },
+
+    /// An uncommon error occured, see the inner text for more information
+    #[cfg(feature = "alloc")]
+    OtherString(alloc::string::String),
+
+    /// Bincode does not support serde's `any` decoding feature
+    #[cfg(feature = "serde")]
+    SerdeAnyNotSupported,
+
+    /// Bincode does not support serde identifiers
+    #[cfg(feature = "serde")]
+    SerdeIdentifierNotSupported,
+
+    /// Bincode does not support serde's `ignored_any`
+    #[cfg(feature = "serde")]
+    SerdeIgnoredAnyNotSupported,
+
+    /// Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead
+    #[cfg(feature = "serde")]
+    CannotBorrowOwnedData,
+}
+
+impl core::fmt::Display for DecodeError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // TODO: Improve this?
+        write!(f, "{:?}", self)
+    }
 }
 
 impl DecodeError {

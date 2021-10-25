@@ -425,6 +425,12 @@ where
     }
 }
 
+impl Decode for () {
+    fn decode<D: Decoder>(_: D) -> Result<Self, DecodeError> {
+        Ok(())
+    }
+}
+
 impl<T> Decode for core::marker::PhantomData<T> {
     fn decode<D: Decoder>(_: D) -> Result<Self, DecodeError> {
         Ok(core::marker::PhantomData)

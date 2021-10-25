@@ -16,8 +16,16 @@ use alloc::{
 };
 
 #[derive(Default)]
-struct VecWriter {
+pub(crate) struct VecWriter {
     inner: Vec<u8>,
+}
+
+impl VecWriter {
+    // May not be used in all feature combinations
+    #[allow(dead_code)]
+    pub(crate) fn collect(self) -> Vec<u8> {
+        self.inner
+    }
 }
 
 impl enc::write::Writer for VecWriter {

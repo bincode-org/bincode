@@ -37,7 +37,7 @@ impl<W: Writer, C: Config> EncoderImpl<W, C> {
     }
 }
 
-impl<'a, W: Writer, C: Config> Encoder for &'a mut EncoderImpl<W, C> {
+impl<W: Writer, C: Config> Encoder for EncoderImpl<W, C> {
     type W = W;
 
     type C = C;
@@ -51,4 +51,4 @@ impl<'a, W: Writer, C: Config> Encoder for &'a mut EncoderImpl<W, C> {
     }
 }
 
-impl<'a, W: Writer, C: Config> Sealed for &'a mut EncoderImpl<W, C> {}
+impl<W: Writer, C: Config> Sealed for EncoderImpl<W, C> {}

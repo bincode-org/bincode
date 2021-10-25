@@ -8,6 +8,7 @@ use crate::{
 };
 use core::{
     cell::{Cell, RefCell},
+    marker::PhantomData,
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize,
@@ -15,6 +16,18 @@ use core::{
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
+
+impl Encode for () {
+    fn encode<E: Encoder>(&self, _: E) -> Result<(), EncodeError> {
+        Ok(())
+    }
+}
+
+impl<T> Encode for PhantomData<T> {
+    fn encode<E: Encoder>(&self, _: E) -> Result<(), EncodeError> {
+        Ok(())
+    }
+}
 
 impl Encode for bool {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
