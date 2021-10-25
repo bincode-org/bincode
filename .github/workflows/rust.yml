@@ -47,7 +47,8 @@
         {
           "uses": "actions-rs/cargo@v1",
           "with": {
-            "command": "check"
+            "command": "check",
+            "args": "--all-features"
           },
           "name": "Run `cargo check`"
         },
@@ -68,8 +69,6 @@
         "matrix": {
           "rust": [
             "stable",
-            "beta",
-            "nightly"
             # "1.55.0" TODO: Pick latest stable version when we release 2.0
           ],
           "features": [
