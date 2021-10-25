@@ -102,24 +102,39 @@ impl<E, I, A> Configuration<E, I, A> {
     ///
     /// The zigzag algorithm is defined as follows:
     ///
-    /// ```ignore
+    /// ```rust
+    /// # type Signed = i32;
+    /// # type Unsigned = u32;
     /// fn zigzag(v: Signed) -> Unsigned {
     ///     match v {
     ///         0 => 0,
-    ///         v if v < 0 => |v| * 2 - 1
-    ///         v if v > 0 => v * 2
+    ///         // To avoid the edge case of Signed::min_value()
+    ///         // !n is equal to `-n - 1`, so this is:
+    ///         // !n * 2 + 1 = 2(-n - 1) + 1 = -2n - 2 + 1 = -2n - 1
+    ///         v if v < 0 => !(v as Unsigned) * 2 - 1,
+    ///         v if v > 0 => (v as Unsigned) * 2,
+    /// #       _ => unreachable!()
     ///     }
     /// }
     /// ```
     ///
     /// And works such that:
     ///
-    /// ```ignore
+    /// ```rust
+    /// # let zigzag = |n: i64| -> u64 {
+    /// #     match n {
+    /// #         0 => 0,
+    /// #         v if v < 0 => !(v as u64) * 2 + 1,
+    /// #         v if v > 0 => (v as u64) * 2,
+    /// #         _ => unreachable!(),
+    /// #     }
+    /// # };
     /// assert_eq!(zigzag(0), 0);
     /// assert_eq!(zigzag(-1), 1);
     /// assert_eq!(zigzag(1), 2);
     /// assert_eq!(zigzag(-2), 3);
     /// assert_eq!(zigzag(2), 4);
+    /// // etc
     /// assert_eq!(zigzag(i64::min_value()), u64::max_value());
     /// ```
     ///
