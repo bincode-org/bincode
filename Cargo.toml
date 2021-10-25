@@ -6,7 +6,7 @@ members = [
 [package]
 name = "bincode"
 version = "2.0.0-alpha.0" # remember to update html_root_url and bincode_derive
-authors = ["Ty Overby <ty@pre-alpha.com>", "Francesco Mazzoli <f@mazzo.li>", "Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
+authors = ["Ty Overby <ty@pre-alpha.com>", "Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
 
 publish =  true
