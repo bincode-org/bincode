@@ -4,7 +4,6 @@
     "push": {
       "branches": [
         "trunk",
-        "feature/deserde*", # Temporary while we work on deserde
         "v*.x"
       ]
     },
@@ -47,20 +46,19 @@
         {
           "uses": "actions-rs/cargo@v1",
           "with": {
-            "command": "check"
+            "command": "check",
+            "args": "--all-features"
           },
           "name": "Run `cargo check`"
+        },
+        {
+          "uses": "actions-rs/cargo@v1",
+          "with": {
+            "command": "check",
+            "args": "--examples"
+          },
+          "name": "Check examples"
         }
-        # ,
-        # {
-        #   "uses": "actions-rs/cargo@v1",
-        #   "with": {
-        #     "command": "check",
-        #     "args": "--examples"
-        #   },
-        #   "name": "Check examples",
-        #   "if": "matrix.rust != '1.41.0'"
-        # }
       ]
     },
     "test": {
@@ -70,9 +68,16 @@
         "matrix": {
           "rust": [
             "stable",
-            "beta",
-            "nightly"
             # "1.55.0" TODO: Pick latest stable version when we release 2.0
+          ],
+          "features": [
+            "",
+            "alloc",
+            "alloc,derive",
+            "std",
+            "std,derive",
+            "serde",
+            "serde,derive"
           ]
         }
       },
@@ -91,15 +96,12 @@
           "name": "Install Rust ${{ matrix.rust }}"
         },
         {
-          "uses": "actions-rs/install@v0.1",
-          "with": {
-            "crate": "cargo-all-features",
-            "version": "1.6.0"
-          },
-          "name": "Install cargo-all-features"
-        },
-        {
-          "run": "cargo test-all-features",
+          "run": "if [ -z \"${{ matrix.features }}\" ]\n
+then\n
+  cargo test --no-default-features\n
+else\n
+  cargo test --no-default-features --features ${{ matrix.features }}\n
+fi",
           "name": "Run `cargo test` on all features",
           "env": {
             "RUSTFLAGS": "-D warnings"
