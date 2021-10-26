@@ -125,12 +125,6 @@ impl StreamBuilder {
             .extend([TokenTree::Literal(Literal::string(str.as_ref()))]);
     }
 
-    /// Add an `u32` value to the stream.
-    pub fn lit_u32(&mut self, val: u32) {
-        self.stream
-            .extend([TokenTree::Literal(Literal::u32_unsuffixed(val))]);
-    }
-
     /// Add an `usize` value to the stream.
     pub fn lit_usize(&mut self, val: usize) {
         self.stream

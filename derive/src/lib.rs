@@ -31,7 +31,7 @@ pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
-    let _attributes = parse::Attributes::try_take(source)?;
+    let _attributes = parse::Attribute::try_take(source)?;
     let _visibility = parse::Visibility::try_take(source)?;
     let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;
@@ -72,7 +72,7 @@ pub fn derive_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
-    let _attributes = parse::Attributes::try_take(source)?;
+    let _attributes = parse::Attribute::try_take(source)?;
     let _visibility = parse::Visibility::try_take(source)?;
     let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;

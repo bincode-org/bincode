@@ -125,7 +125,7 @@ impl Generics {
 enum Generic {
     Lifetime(Lifetime),
     Generic(SimpleGeneric),
-    ConstGeneric(ConstGeneric),
+    Const(ConstGeneric),
 }
 
 impl Generic {
@@ -137,7 +137,7 @@ impl Generic {
         match self {
             Self::Lifetime(lt) => lt.ident.clone(),
             Self::Generic(gen) => gen.ident.clone(),
-            Self::ConstGeneric(gen) => gen.ident.clone(),
+            Self::Const(gen) => gen.ident.clone(),
         }
     }
 
@@ -152,7 +152,7 @@ impl Generic {
         match self {
             Self::Lifetime(lt) => !lt.constraint.is_empty(),
             Self::Generic(gen) => !gen.constraints.is_empty(),
-            Self::ConstGeneric(_) => true, // const generics always have a constraint
+            Self::Const(_) => true, // const generics always have a constraint
         }
     }
 
@@ -160,7 +160,7 @@ impl Generic {
         match self {
             Self::Lifetime(lt) => lt.constraint.clone(),
             Self::Generic(gen) => gen.constraints.clone(),
-            Self::ConstGeneric(gen) => gen.constraints.clone(),
+            Self::Const(gen) => gen.constraints.clone(),
         }
     }
 
@@ -170,7 +170,7 @@ impl Generic {
             Self::Generic(gen) => {
                 builder.ident(gen.ident.clone());
             }
-            Self::ConstGeneric(gen) => {
+            Self::Const(gen) => {
                 builder.ident(gen.const_token.clone());
                 builder.ident(gen.ident.clone());
             }
@@ -196,7 +196,7 @@ impl From<SimpleGeneric> for Generic {
 
 impl From<ConstGeneric> for Generic {
     fn from(gen: ConstGeneric) -> Self {
-        Self::ConstGeneric(gen)
+        Self::Const(gen)
     }
 }
 

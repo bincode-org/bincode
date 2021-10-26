@@ -5,7 +5,7 @@ use crate::{Error, Result};
 use std::iter::Peekable;
 
 #[derive(Debug)]
-pub struct Attributes {
+pub struct Attribute {
     // we don't use these fields yet
     #[allow(dead_code)]
     punct: Punct,
@@ -13,14 +13,14 @@ pub struct Attributes {
     tokens: Option<Group>,
 }
 
-impl Attributes {
+impl Attribute {
     pub fn try_take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
         let mut result = Vec::new();
 
         while let Some(punct) = consume_punct_if(input, '#') {
             match input.peek() {
                 Some(TokenTree::Group(g)) if g.delimiter() == Delimiter::Bracket => {
-                    result.push(Attributes {
+                    result.push(Attribute {
                         punct,
                         tokens: Some(assume_group(input.next())),
                     });
@@ -34,7 +34,7 @@ impl Attributes {
                 Some(TokenTree::Punct(p)) if p.as_char() == '#' => {
                     // sometimes with empty lines of doc comments, we get two #'s in a row
                     // add an empty attributes and continue to the next loop
-                    result.push(Attributes {
+                    result.push(Attribute {
                         punct: assume_punct(input.next(), '#'),
                         tokens: None,
                     })
@@ -51,14 +51,14 @@ fn test_attributes_try_take() {
     use crate::token_stream;
 
     let stream = &mut token_stream("struct Foo;");
-    assert!(Attributes::try_take(stream).unwrap().is_empty());
+    assert!(Attribute::try_take(stream).unwrap().is_empty());
     match stream.next().unwrap() {
         TokenTree::Ident(i) => assert_eq!(i, "struct"),
         x => panic!("Expected ident, found {:?}", x),
     }
 
     let stream = &mut token_stream("#[cfg(test)] struct Foo;");
-    assert!(!Attributes::try_take(stream).unwrap().is_empty());
+    assert!(!Attribute::try_take(stream).unwrap().is_empty());
     match stream.next().unwrap() {
         TokenTree::Ident(i) => assert_eq!(i, "struct"),
         x => panic!("Expected ident, found {:?}", x),

@@ -1,6 +1,8 @@
-use super::{assume_group, assume_ident, read_tokens_until_punct, Attributes, Visibility};
+use super::{
+    assume_group, assume_ident, assume_punct, read_tokens_until_punct, Attribute, Visibility,
+};
 use crate::parse::consume_punct_if;
-use crate::prelude::{Delimiter, Ident, Span, TokenTree};
+use crate::prelude::{Delimiter, Ident, Literal, Span, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
@@ -130,7 +132,7 @@ impl EnumBody {
         let mut variants = Vec::new();
         let stream = &mut group.stream().into_iter().peekable();
         while stream.peek().is_some() {
-            let attributes = Attributes::try_take(stream)?;
+            let attributes = Attribute::try_take(stream)?;
             let ident = match stream.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
                 token => return Error::wrong_token(token, "ident"),
@@ -138,22 +140,43 @@ impl EnumBody {
 
             let mut fields = Fields::Unit;
 
-            if let Some(TokenTree::Group(_)) = stream.peek() {
-                let group = assume_group(stream.next());
-                let stream = &mut group.stream().into_iter().peekable();
-                match group.delimiter() {
-                    Delimiter::Brace => {
-                        fields = Fields::Struct(UnnamedField::parse_with_name(stream)?)
-                    }
-                    Delimiter::Parenthesis => fields = Fields::Tuple(UnnamedField::parse(stream)?),
-                    delim => {
-                        return Err(Error::InvalidRustSyntax {
-                            span: group.span(),
-                            expected: format!("Brace or parenthesis, found {:?}", delim),
-                        })
+            match stream.peek() {
+                Some(TokenTree::Group(_)) => {
+                    let group = assume_group(stream.next());
+                    let stream = &mut group.stream().into_iter().peekable();
+                    match group.delimiter() {
+                        Delimiter::Brace => {
+                            fields = Fields::Struct(UnnamedField::parse_with_name(stream)?)
+                        }
+                        Delimiter::Parenthesis => {
+                            fields = Fields::Tuple(UnnamedField::parse(stream)?)
+                        }
+                        delim => {
+                            return Err(Error::InvalidRustSyntax {
+                                span: group.span(),
+                                expected: format!("Brace or parenthesis, found {:?}", delim),
+                            })
+                        }
                     }
                 }
+                Some(TokenTree::Punct(p)) if p.as_char() == '=' => {
+                    assume_punct(stream.next(), '=');
+                    match stream.next() {
+                        Some(TokenTree::Literal(lit)) => {
+                            fields = Fields::Integer(lit);
+                        }
+                        token => return Error::wrong_token(token.as_ref(), "literal"),
+                    }
+                }
+                Some(TokenTree::Punct(p)) if p.as_char() == ',' => {
+                    // next field
+                }
+                None => {
+                    // group done
+                }
+                token => return Error::wrong_token(token, "group, comma or ="),
             }
+
             consume_punct_if(stream, ',');
 
             variants.push(EnumVariant {
@@ -208,7 +231,13 @@ fn test_enum_body_take() {
 pub struct EnumVariant {
     pub name: Ident,
     pub fields: Fields,
-    pub attributes: Vec<Attributes>,
+    pub attributes: Vec<Attribute>,
+}
+
+impl EnumVariant {
+    pub fn has_fixed_value(&self) -> bool {
+        matches!(&self.fields, Fields::Integer(_))
+    }
 }
 
 #[derive(Debug)]
@@ -221,6 +250,14 @@ pub enum Fields {
     /// struct Bar { }
     /// ```
     Unit,
+
+    /// Variant with an integer value.
+    /// ```rs
+    /// enum Foo {
+    ///     Baz = 5,
+    /// }
+    /// ```
+    Integer(Literal),
 
     /// Tuple-like variant
     /// ```rs
@@ -257,7 +294,7 @@ impl Fields {
                 .iter()
                 .map(|(ident, _)| IdentOrIndex::Ident(ident))
                 .collect(),
-            Self::Unit => Vec::new(),
+            Self::Unit | Self::Integer(_) => Vec::new(),
         }
     }
 
@@ -265,7 +302,7 @@ impl Fields {
         match self {
             Self::Tuple(_) => Some(Delimiter::Parenthesis),
             Self::Struct(_) => Some(Delimiter::Brace),
-            Self::Unit => None,
+            Self::Unit | Self::Integer(_) => None,
         }
     }
 }
@@ -281,6 +318,7 @@ impl Fields {
             Self::Tuple(fields) => fields.len(),
             Self::Struct(fields) => fields.len(),
             Self::Unit => 0,
+            Self::Integer(_) => 0,
         }
     }
 
@@ -289,6 +327,7 @@ impl Fields {
             Self::Tuple(fields) => fields.get(index).map(|f| (None, f)),
             Self::Struct(fields) => fields.get(index).map(|(ident, field)| (Some(ident), field)),
             Self::Unit => None,
+            Self::Integer(_) => None,
         }
     }
 }
@@ -297,7 +336,7 @@ impl Fields {
 pub struct UnnamedField {
     pub vis: Visibility,
     pub r#type: Vec<TokenTree>,
-    pub attributes: Vec<Attributes>,
+    pub attributes: Vec<Attribute>,
 }
 
 impl UnnamedField {
@@ -306,7 +345,7 @@ impl UnnamedField {
     ) -> Result<Vec<(Ident, Self)>> {
         let mut result = Vec::new();
         loop {
-            let attributes = Attributes::try_take(input)?;
+            let attributes = Attribute::try_take(input)?;
             let vis = Visibility::try_take(input)?;
 
             let ident = match input.peek() {
@@ -342,7 +381,7 @@ impl UnnamedField {
     pub fn parse(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
         let mut result = Vec::new();
         while input.peek().is_some() {
-            let attributes = Attributes::try_take(input)?;
+            let attributes = Attribute::try_take(input)?;
             let vis = Visibility::try_take(input)?;
 
             let r#type = read_tokens_until_punct(input, &[','])?;
