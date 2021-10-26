@@ -1,4 +1,4 @@
-use crate::prelude::{Ident, Span, TokenTree};
+use crate::prelude::{Ident, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
@@ -10,24 +10,19 @@ pub enum DataType {
 
 impl DataType {
     pub fn take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<(Self, Ident)> {
-        if let Some(TokenTree::Ident(ident)) = input.peek() {
+        if let Some(TokenTree::Ident(_)) = input.peek() {
+            let ident = super::assume_ident(input.next());
             let result = match ident.to_string().as_str() {
                 "struct" => DataType::Struct,
                 "enum" => DataType::Enum,
                 _ => return Err(Error::UnknownDataType(ident.span())),
             };
-            let ident = super::assume_ident(input.next());
             return match input.next() {
                 Some(TokenTree::Ident(ident)) => Ok((result, ident)),
-                Some(t) => Err(Error::InvalidRustSyntax(t.span())),
-                None => Err(Error::InvalidRustSyntax(ident.span())),
+                token => Error::wrong_token(token.as_ref(), "ident"),
             };
         }
-        let span = input
-            .peek()
-            .map(|t| t.span())
-            .unwrap_or_else(Span::call_site);
-        Err(Error::InvalidRustSyntax(span))
+        Error::wrong_token(input.peek(), "ident")
     }
 }
 

@@ -18,19 +18,19 @@ impl StructBody {
                     fields: Fields::Unit,
                 })
             }
-            Some(t) => {
-                return Err(Error::InvalidRustSyntax(t.span()));
-            }
-            _ => {
-                return Err(Error::InvalidRustSyntax(Span::call_site()));
-            }
+            token => return Error::wrong_token(token, "group or punct"),
         }
         let group = assume_group(input.next());
         let mut stream = group.stream().into_iter().peekable();
         let fields = match group.delimiter() {
             Delimiter::Brace => Fields::Struct(UnnamedField::parse_with_name(&mut stream)?),
             Delimiter::Parenthesis => Fields::Tuple(UnnamedField::parse(&mut stream)?),
-            _ => return Err(Error::InvalidRustSyntax(group.span())),
+            found => {
+                return Err(Error::InvalidRustSyntax {
+                    span: group.span(),
+                    expected: format!("brace or parenthesis, found {:?}", found),
+                })
+            }
         };
         Ok(StructBody { fields })
     }
@@ -124,12 +124,7 @@ impl EnumBody {
                     variants: Vec::new(),
                 })
             }
-            Some(t) => {
-                return Err(Error::InvalidRustSyntax(t.span()));
-            }
-            _ => {
-                return Err(Error::InvalidRustSyntax(Span::call_site()));
-            }
+            token => return Error::wrong_token(token, "group or ;"),
         }
         let group = assume_group(input.next());
         let mut variants = Vec::new();
@@ -138,8 +133,7 @@ impl EnumBody {
             let attributes = Attributes::try_take(stream)?;
             let ident = match stream.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
-                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
-                None => return Err(Error::InvalidRustSyntax(Span::call_site())),
+                token => return Error::wrong_token(token, "ident"),
             };
 
             let mut fields = Fields::Unit;
@@ -152,7 +146,12 @@ impl EnumBody {
                         fields = Fields::Struct(UnnamedField::parse_with_name(stream)?)
                     }
                     Delimiter::Parenthesis => fields = Fields::Tuple(UnnamedField::parse(stream)?),
-                    _ => return Err(Error::InvalidRustSyntax(group.span())),
+                    delim => {
+                        return Err(Error::InvalidRustSyntax {
+                            span: group.span(),
+                            expected: format!("Brace or parenthesis, found {:?}", delim),
+                        })
+                    }
                 }
             }
             consume_punct_if(stream, ',');
@@ -209,7 +208,7 @@ fn test_enum_body_take() {
 pub struct EnumVariant {
     pub name: Ident,
     pub fields: Fields,
-    pub attributes: Option<Attributes>,
+    pub attributes: Vec<Attributes>,
 }
 
 #[derive(Debug)]
@@ -298,7 +297,7 @@ impl Fields {
 pub struct UnnamedField {
     pub vis: Visibility,
     pub r#type: Vec<TokenTree>,
-    pub attributes: Option<Attributes>,
+    pub attributes: Vec<Attributes>,
 }
 
 impl UnnamedField {
@@ -312,15 +311,19 @@ impl UnnamedField {
 
             let ident = match input.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(input.next()),
-                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
+                Some(x) => {
+                    return Err(Error::InvalidRustSyntax {
+                        span: x.span(),
+                        expected: format!("ident or end of group, got {:?}", x),
+                    })
+                }
                 None => break,
             };
             match input.peek() {
                 Some(TokenTree::Punct(p)) if p.as_char() == ':' => {
                     input.next();
                 }
-                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
-                None => return Err(Error::InvalidRustSyntax(Span::call_site())),
+                token => return Error::wrong_token(token, ":"),
             }
             let r#type = read_tokens_until_punct(input, &[','])?;
             consume_punct_if(input, ',');

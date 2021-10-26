@@ -4,8 +4,17 @@ use std::fmt;
 #[derive(Debug)]
 pub enum Error {
     UnknownDataType(Span),
-    InvalidRustSyntax(Span),
+    InvalidRustSyntax { span: Span, expected: String },
     ExpectedIdent(Span),
+}
+
+impl Error {
+    pub fn wrong_token<T>(token: Option<&TokenTree>, expected: &'static str) -> Result<T, Self> {
+        Err(Self::InvalidRustSyntax {
+            span: token.map(|t| t.span()).unwrap_or_else(Span::call_site),
+            expected: format!("{}, got {:?}", expected, token),
+        })
+    }
 }
 
 // helper functions for the unit tests
@@ -16,7 +25,7 @@ impl Error {
     }
 
     pub fn is_invalid_rust_syntax(&self) -> bool {
-        matches!(self, Error::InvalidRustSyntax(_))
+        matches!(self, Error::InvalidRustSyntax { .. })
     }
 }
 
@@ -26,7 +35,9 @@ impl fmt::Display for Error {
             Self::UnknownDataType(_) => {
                 write!(fmt, "Unknown data type, only enum and struct are supported")
             }
-            Self::InvalidRustSyntax(_) => write!(fmt, "Invalid rust syntax"),
+            Self::InvalidRustSyntax { expected, .. } => {
+                write!(fmt, "Invalid rust syntax, expected {}", expected)
+            }
             Self::ExpectedIdent(_) => write!(fmt, "Expected ident"),
         }
     }
@@ -37,7 +48,7 @@ impl Error {
         let maybe_span = match &self {
             Error::UnknownDataType(span)
             | Error::ExpectedIdent(span)
-            | Error::InvalidRustSyntax(span) => Some(*span),
+            | Error::InvalidRustSyntax { span, .. } => Some(*span),
         };
         self.throw_with_span(maybe_span.unwrap_or_else(Span::call_site))
     }

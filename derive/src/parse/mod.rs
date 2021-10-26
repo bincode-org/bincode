@@ -103,7 +103,14 @@ pub(self) fn read_tokens_until_punct(
                             if expected_puncts.contains(&punct.as_char()) {
                                 break;
                             }
-                            return Err(Error::InvalidRustSyntax(punct.span()));
+                            return Err(Error::InvalidRustSyntax {
+                                span: punct.span(),
+                                expected: format!(
+                                    "one of {:?}, got '{}'",
+                                    expected_puncts,
+                                    punct.as_char()
+                                ),
+                            });
                         }
                     };
                     let expected = OPEN_BRACKETS[index];

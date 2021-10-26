@@ -38,9 +38,10 @@ impl Generics {
                             super::consume_punct_if(input, ',');
                         }
                         x => {
-                            return Err(Error::InvalidRustSyntax(
-                                x.map(|x| x.span()).unwrap_or_else(|| punct.span()),
-                            ));
+                            return Err(Error::InvalidRustSyntax {
+                                span: x.map(|x| x.span()).unwrap_or_else(|| punct.span()),
+                                expected: format!("', > or an ident, got {:?}", x),
+                            });
                         }
                     }
                 }
