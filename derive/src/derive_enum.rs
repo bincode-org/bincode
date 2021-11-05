@@ -97,7 +97,7 @@ impl DeriveEnum {
                 .generate_fn("borrow_decode")
                 .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
                 .with_arg("mut decoder", "D")
-                .with_return_type("Result<Self, bincode::error::DecodeError>")
+                .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
                 .body(|fn_builder| {
                     fn_builder
                         .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();
@@ -147,7 +147,7 @@ impl DeriveEnum {
                 .generate_fn("decode")
                 .with_generic("D", ["bincode::de::Decoder"])
                 .with_arg("mut decoder", "D")
-                .with_return_type("Result<Self, bincode::error::DecodeError>")
+                .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
                 .body(|fn_builder| {
                     fn_builder
                         .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();

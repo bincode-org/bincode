@@ -18,7 +18,7 @@ impl DeriveStruct {
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(crate::generate::FnSelfArg::RefSelf)
             .with_arg("mut encoder", "E")
-            .with_return_type("Result<(), bincode::error::EncodeError>")
+            .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
             .body(|fn_body| {
                 for field in fields.names() {
                     fn_body
@@ -47,7 +47,7 @@ impl DeriveStruct {
                 .generate_fn("borrow_decode")
                 .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
                 .with_arg("mut decoder", "D")
-                .with_return_type("Result<Self, bincode::error::DecodeError>")
+                .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
                 .body(|fn_body| {
                     // Ok(Self {
                     fn_body.ident_str("Ok");
@@ -77,7 +77,7 @@ impl DeriveStruct {
                 .generate_fn("decode")
                 .with_generic("D", ["bincode::de::Decoder"])
                 .with_arg("mut decoder", "D")
-                .with_return_type("Result<Self, bincode::error::DecodeError>")
+                .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
                 .body(|fn_body| {
                     // Ok(Self {
                     fn_body.ident_str("Ok");
