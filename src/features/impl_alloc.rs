@@ -6,7 +6,14 @@ use crate::{
 };
 #[cfg(feature = "atomic")]
 use alloc::sync::Arc;
-use alloc::{borrow::Cow, boxed::Box, collections::*, rc::Rc, string::String, vec::Vec};
+use alloc::{
+    borrow::{Cow, ToOwned},
+    boxed::Box,
+    collections::*,
+    rc::Rc,
+    string::String,
+    vec::Vec,
+};
 
 #[derive(Default)]
 struct VecWriter {
@@ -229,12 +236,27 @@ where
     }
 }
 
+// BlockedTODO: https://github.com/rust-lang/rust/issues/31844
+// Cow should be able to decode a borrowed value
+// Currently this conflicts with the owned `Decode` implementation below
+
+// impl<'cow, T> BorrowDecode<'cow> for Cow<'cow, T>
+// where
+//     T: BorrowDecode<'cow>,
+// {
+//     fn borrow_decode<D: crate::de::BorrowDecoder<'cow>>(decoder: D) -> Result<Self, DecodeError> {
+//         let t = T::borrow_decode(decoder)?;
+//         Ok(Cow::Borrowed(t))
+//     }
+// }
+
 impl<'cow, T> Decode for Cow<'cow, T>
 where
-    T: Decode + Clone,
+    T: ToOwned,
+    <T as ToOwned>::Owned: Decode,
 {
     fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
-        let t = T::decode(decoder)?;
+        let t = <T as ToOwned>::Owned::decode(decoder)?;
         Ok(Cow::Owned(t))
     }
 }
