@@ -90,7 +90,6 @@ impl DeriveEnum {
         let DeriveEnum { variants } = self;
         let enum_name = generator.target_name().to_string();
 
-        // enum has no lifetimes, implement Decode
         generator.impl_for("bincode::Decode")
         .unwrap()
             .generate_fn("decode")

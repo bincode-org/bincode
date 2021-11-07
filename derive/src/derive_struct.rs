@@ -39,8 +39,6 @@ impl DeriveStruct {
         // Remember to keep this mostly in sync with generate_borrow_decode
         let DeriveStruct { fields } = self;
 
-        // struct has no lifetimes, implement Decode
-
         generator
             .impl_for("bincode::Decode")
             .unwrap()
