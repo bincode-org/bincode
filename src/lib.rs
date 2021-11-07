@@ -18,7 +18,7 @@
 //! |std   | Yes    ||`decode_from_reader` and `encode_into_writer`|
 //! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
-//! |derive| Yes    |||Enables the `Encode` and `Decode` derive macro|
+//! |derive| Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
 //! |serde | No     |TODO|TODO|TODO|
 //!
 //! # Example
@@ -76,6 +76,9 @@ pub mod config;
 pub mod de;
 pub mod enc;
 pub mod error;
+
+pub use de::{BorrowDecode, Decode};
+pub use enc::Encode;
 
 use config::Config;
 

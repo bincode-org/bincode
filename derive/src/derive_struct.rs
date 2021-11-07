@@ -42,7 +42,7 @@ impl DeriveStruct {
         // struct has no lifetimes, implement Decode
 
         generator
-            .impl_for("bincode::de::Decode")
+            .impl_for("bincode::Decode")
             .unwrap()
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
@@ -56,14 +56,14 @@ impl DeriveStruct {
                     ok_group.group(Delimiter::Brace, |struct_body| {
                         // Fields
                         // {
-                        //      a: bincode::de::Decode::decode(&mut decoder)?,
-                        //      b: bincode::de::Decode::decode(&mut decoder)?,
+                        //      a: bincode::Decode::decode(&mut decoder)?,
+                        //      b: bincode::Decode::decode(&mut decoder)?,
                         //      ...
                         // }
                         for field in fields.names() {
                             struct_body
                                 .push_parsed(format!(
-                                    "{}: bincode::de::Decode::decode(&mut decoder)?,",
+                                    "{}: bincode::Decode::decode(&mut decoder)?,",
                                     field.to_string()
                                 ))
                                 .unwrap();

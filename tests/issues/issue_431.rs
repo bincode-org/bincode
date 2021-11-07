@@ -1,6 +1,6 @@
 #![cfg(all(feature = "std", feature = "derive"))]
 
-use bincode::{config::Configuration, de::Decode, enc::Encode, Decode, Encode};
+use bincode::{config::Configuration, Decode, Encode};
 use std::borrow::Cow;
 
 #[derive(Encode, Decode, PartialEq, Debug)]

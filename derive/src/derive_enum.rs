@@ -91,7 +91,7 @@ impl DeriveEnum {
         let enum_name = generator.target_name().to_string();
 
         // enum has no lifetimes, implement Decode
-        generator.impl_for("bincode::de::Decode")
+        generator.impl_for("bincode::Decode")
         .unwrap()
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
@@ -99,7 +99,7 @@ impl DeriveEnum {
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_builder| {
                 fn_builder
-                    .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();
+                    .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;").unwrap();
                 fn_builder.push_parsed("match variant_index").unwrap();
                 fn_builder.group(Delimiter::Brace, |variant_case| {
                 for (idx, variant) in variants.iter().enumerate() {
@@ -124,7 +124,7 @@ impl DeriveEnum {
                                     variant_body.ident(field.unwrap_ident().clone());
                                 }
                                 variant_body.punct(':');
-                                variant_body.push_parsed("bincode::de::Decode::decode(&mut decoder)?,").unwrap();
+                                variant_body.push_parsed("bincode::Decode::decode(&mut decoder)?,").unwrap();
                             }
                         });
                     });
@@ -156,7 +156,7 @@ impl DeriveEnum {
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_builder| {
                 fn_builder
-                    .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();
+                    .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;").unwrap();
                 fn_builder.push_parsed("match variant_index").unwrap();
                 fn_builder.group(Delimiter::Brace, |variant_case| {
                 for (idx, variant) in variants.iter().enumerate() {
