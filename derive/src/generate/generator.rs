@@ -43,14 +43,6 @@ impl Generator {
         ImplFor::new_with_de_lifetime(self, trait_name)
     }
 
-    /// Returns `true` if the struct or enum has lifetimes.
-    pub fn has_lifetimes(&self) -> bool {
-        self.generics
-            .as_ref()
-            .map(|g| g.has_lifetime())
-            .unwrap_or(false)
-    }
-
     /// Consume the contents of this generator. This *must* be called, or else the generator will panic on drop.
     pub fn take_stream(mut self) -> TokenStream {
         std::mem::take(&mut self.stream).stream

@@ -102,6 +102,47 @@ fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
     Ok(stream)
 }
 
+#[proc_macro_derive(BorrowDecode)]
+pub fn derive_brrow_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    #[allow(clippy::useless_conversion)]
+    derive_borrow_decode_inner(input.into())
+        .unwrap_or_else(|e| e.into_token_stream())
+        .into()
+}
+
+fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
+    let source = &mut input.into_iter().peekable();
+
+    let _attributes = parse::Attributes::try_take(source)?;
+    let _visibility = parse::Visibility::try_take(source)?;
+    let (datatype, name) = parse::DataType::take(source)?;
+    let generics = parse::Generics::try_take(source)?;
+    let generic_constraints = parse::GenericConstraints::try_take(source)?;
+
+    let mut generator = generate::Generator::new(name.clone(), generics, generic_constraints);
+
+    match datatype {
+        parse::DataType::Struct => {
+            let body = parse::StructBody::take(source)?;
+            derive_struct::DeriveStruct {
+                fields: body.fields,
+            }
+            .generate_borrow_decode(&mut generator)?;
+        }
+        parse::DataType::Enum => {
+            let body = parse::EnumBody::take(source)?;
+            derive_enum::DeriveEnum {
+                variants: body.variants,
+            }
+            .generate_borrow_decode(&mut generator)?;
+        }
+    }
+
+    let stream = generator.take_stream();
+    dump_output(name, "BorrowDecode", &stream);
+    Ok(stream)
+}
+
 fn dump_output(name: crate::prelude::Ident, derive: &str, stream: &crate::prelude::TokenStream) {
     use std::io::Write;
 
