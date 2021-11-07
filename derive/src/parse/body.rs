@@ -1,6 +1,8 @@
-use super::{assume_group, assume_ident, read_tokens_until_punct, Attributes, Visibility};
+use super::{
+    assume_group, assume_ident, assume_punct, read_tokens_until_punct, Attribute, Visibility,
+};
 use crate::parse::consume_punct_if;
-use crate::prelude::{Delimiter, Ident, Span, TokenTree};
+use crate::prelude::{Delimiter, Ident, Literal, Span, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
@@ -18,19 +20,19 @@ impl StructBody {
                     fields: Fields::Unit,
                 })
             }
-            Some(t) => {
-                return Err(Error::InvalidRustSyntax(t.span()));
-            }
-            _ => {
-                return Err(Error::InvalidRustSyntax(Span::call_site()));
-            }
+            token => return Error::wrong_token(token, "group or punct"),
         }
         let group = assume_group(input.next());
         let mut stream = group.stream().into_iter().peekable();
         let fields = match group.delimiter() {
             Delimiter::Brace => Fields::Struct(UnnamedField::parse_with_name(&mut stream)?),
             Delimiter::Parenthesis => Fields::Tuple(UnnamedField::parse(&mut stream)?),
-            _ => return Err(Error::InvalidRustSyntax(group.span())),
+            found => {
+                return Err(Error::InvalidRustSyntax {
+                    span: group.span(),
+                    expected: format!("brace or parenthesis, found {:?}", found),
+                })
+            }
         };
         Ok(StructBody { fields })
     }
@@ -124,37 +126,57 @@ impl EnumBody {
                     variants: Vec::new(),
                 })
             }
-            Some(t) => {
-                return Err(Error::InvalidRustSyntax(t.span()));
-            }
-            _ => {
-                return Err(Error::InvalidRustSyntax(Span::call_site()));
-            }
+            token => return Error::wrong_token(token, "group or ;"),
         }
         let group = assume_group(input.next());
         let mut variants = Vec::new();
         let stream = &mut group.stream().into_iter().peekable();
         while stream.peek().is_some() {
-            let attributes = Attributes::try_take(stream)?;
+            let attributes = Attribute::try_take(stream)?;
             let ident = match stream.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
-                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
-                None => return Err(Error::InvalidRustSyntax(Span::call_site())),
+                token => return Error::wrong_token(token, "ident"),
             };
 
             let mut fields = Fields::Unit;
 
-            if let Some(TokenTree::Group(_)) = stream.peek() {
-                let group = assume_group(stream.next());
-                let stream = &mut group.stream().into_iter().peekable();
-                match group.delimiter() {
-                    Delimiter::Brace => {
-                        fields = Fields::Struct(UnnamedField::parse_with_name(stream)?)
+            match stream.peek() {
+                Some(TokenTree::Group(_)) => {
+                    let group = assume_group(stream.next());
+                    let stream = &mut group.stream().into_iter().peekable();
+                    match group.delimiter() {
+                        Delimiter::Brace => {
+                            fields = Fields::Struct(UnnamedField::parse_with_name(stream)?)
+                        }
+                        Delimiter::Parenthesis => {
+                            fields = Fields::Tuple(UnnamedField::parse(stream)?)
+                        }
+                        delim => {
+                            return Err(Error::InvalidRustSyntax {
+                                span: group.span(),
+                                expected: format!("Brace or parenthesis, found {:?}", delim),
+                            })
+                        }
                     }
-                    Delimiter::Parenthesis => fields = Fields::Tuple(UnnamedField::parse(stream)?),
-                    _ => return Err(Error::InvalidRustSyntax(group.span())),
                 }
+                Some(TokenTree::Punct(p)) if p.as_char() == '=' => {
+                    assume_punct(stream.next(), '=');
+                    match stream.next() {
+                        Some(TokenTree::Literal(lit)) => {
+                            fields = Fields::Integer(lit);
+                        }
+                        token => return Error::wrong_token(token.as_ref(), "literal"),
+                    }
+                }
+                Some(TokenTree::Punct(p)) if p.as_char() == ',' => {
+                    // next field
+                }
+                None => {
+                    // group done
+                }
+                token => return Error::wrong_token(token, "group, comma or ="),
             }
+
             consume_punct_if(stream, ',');
 
             variants.push(EnumVariant {
@@ -209,7 +231,13 @@ fn test_enum_body_take() {
 pub struct EnumVariant {
     pub name: Ident,
     pub fields: Fields,
-    pub attributes: Option<Attributes>,
+    pub attributes: Vec<Attribute>,
+}
+
+impl EnumVariant {
+    pub fn has_fixed_value(&self) -> bool {
+        matches!(&self.fields, Fields::Integer(_))
+    }
 }
 
 #[derive(Debug)]
@@ -222,6 +250,14 @@ pub enum Fields {
     /// struct Bar { }
     /// ```
     Unit,
+
+    /// Variant with an integer value.
+    /// ```rs
+    /// enum Foo {
+    ///     Baz = 5,
+    /// }
+    /// ```
+    Integer(Literal),
 
     /// Tuple-like variant
     /// ```rs
@@ -258,7 +294,7 @@ impl Fields {
                 .iter()
                 .map(|(ident, _)| IdentOrIndex::Ident(ident))
                 .collect(),
-            Self::Unit => Vec::new(),
+            Self::Unit | Self::Integer(_) => Vec::new(),
         }
     }
 
@@ -266,7 +302,7 @@ impl Fields {
         match self {
             Self::Tuple(_) => Some(Delimiter::Parenthesis),
             Self::Struct(_) => Some(Delimiter::Brace),
-            Self::Unit => None,
+            Self::Unit | Self::Integer(_) => None,
         }
     }
 }
@@ -282,6 +318,7 @@ impl Fields {
             Self::Tuple(fields) => fields.len(),
             Self::Struct(fields) => fields.len(),
             Self::Unit => 0,
+            Self::Integer(_) => 0,
         }
     }
 
@@ -290,6 +327,7 @@ impl Fields {
             Self::Tuple(fields) => fields.get(index).map(|f| (None, f)),
             Self::Struct(fields) => fields.get(index).map(|(ident, field)| (Some(ident), field)),
             Self::Unit => None,
+            Self::Integer(_) => None,
         }
     }
 }
@@ -298,7 +336,7 @@ impl Fields {
 pub struct UnnamedField {
     pub vis: Visibility,
     pub r#type: Vec<TokenTree>,
-    pub attributes: Option<Attributes>,
+    pub attributes: Vec<Attribute>,
 }
 
 impl UnnamedField {
@@ -307,20 +345,24 @@ impl UnnamedField {
     ) -> Result<Vec<(Ident, Self)>> {
         let mut result = Vec::new();
         loop {
-            let attributes = Attributes::try_take(input)?;
+            let attributes = Attribute::try_take(input)?;
             let vis = Visibility::try_take(input)?;
 
             let ident = match input.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(input.next()),
-                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
+                Some(x) => {
+                    return Err(Error::InvalidRustSyntax {
+                        span: x.span(),
+                        expected: format!("ident or end of group, got {:?}", x),
+                    })
+                }
                 None => break,
             };
             match input.peek() {
                 Some(TokenTree::Punct(p)) if p.as_char() == ':' => {
                     input.next();
                 }
-                Some(x) => return Err(Error::InvalidRustSyntax(x.span())),
-                None => return Err(Error::InvalidRustSyntax(Span::call_site())),
+                token => return Error::wrong_token(token, ":"),
             }
             let r#type = read_tokens_until_punct(input, &[','])?;
             consume_punct_if(input, ',');
@@ -339,7 +381,7 @@ impl UnnamedField {
     pub fn parse(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
         let mut result = Vec::new();
         while input.peek().is_some() {
-            let attributes = Attributes::try_take(input)?;
+            let attributes = Attribute::try_take(input)?;
             let vis = Visibility::try_take(input)?;
 
             let r#type = read_tokens_until_punct(input, &[','])?;

@@ -1,38 +1,48 @@
-use super::assume_group;
+use super::{assume_group, assume_punct};
 use crate::parse::consume_punct_if;
 use crate::prelude::{Delimiter, Group, Punct, TokenTree};
 use crate::{Error, Result};
 use std::iter::Peekable;
 
 #[derive(Debug)]
-pub struct Attributes {
+pub struct Attribute {
     // we don't use these fields yet
     #[allow(dead_code)]
     punct: Punct,
     #[allow(dead_code)]
-    tokens: Group,
+    tokens: Option<Group>,
 }
 
-impl Attributes {
-    pub fn try_take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Option<Self>> {
-        if let Some(punct) = consume_punct_if(input, '#') {
-            // found attributes, next token should be a [] group
-            if let Some(TokenTree::Group(g)) = input.peek() {
-                if g.delimiter() != Delimiter::Bracket {
-                    return Err(Error::InvalidRustSyntax(g.span()));
+impl Attribute {
+    pub fn try_take(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
+        let mut result = Vec::new();
+
+        while let Some(punct) = consume_punct_if(input, '#') {
+            match input.peek() {
+                Some(TokenTree::Group(g)) if g.delimiter() == Delimiter::Bracket => {
+                    result.push(Attribute {
+                        punct,
+                        tokens: Some(assume_group(input.next())),
+                    });
                 }
-                return Ok(Some(Attributes {
-                    punct,
-                    tokens: assume_group(input.next()),
-                }));
+                Some(TokenTree::Group(g)) => {
+                    return Err(Error::InvalidRustSyntax {
+                        span: g.span(),
+                        expected: format!("[] bracket, got {:?}", g.delimiter()),
+                    });
+                }
+                Some(TokenTree::Punct(p)) if p.as_char() == '#' => {
+                    // sometimes with empty lines of doc comments, we get two #'s in a row
+                    // add an empty attributes and continue to the next loop
+                    result.push(Attribute {
+                        punct: assume_punct(input.next(), '#'),
+                        tokens: None,
+                    })
+                }
+                token => return Error::wrong_token(token, "[] group or next # attribute"),
             }
-            // expected [] group, found something else
-            return Err(Error::InvalidRustSyntax(match input.peek() {
-                Some(next_token) => next_token.span(),
-                None => punct.span(),
-            }));
         }
-        Ok(None)
+        Ok(result)
     }
 }
 
@@ -41,14 +51,14 @@ fn test_attributes_try_take() {
     use crate::token_stream;
 
     let stream = &mut token_stream("struct Foo;");
-    assert!(Attributes::try_take(stream).unwrap().is_none());
+    assert!(Attribute::try_take(stream).unwrap().is_empty());
     match stream.next().unwrap() {
         TokenTree::Ident(i) => assert_eq!(i, "struct"),
         x => panic!("Expected ident, found {:?}", x),
     }
 
     let stream = &mut token_stream("#[cfg(test)] struct Foo;");
-    assert!(Attributes::try_take(stream).unwrap().is_some());
+    assert!(!Attribute::try_take(stream).unwrap().is_empty());
     match stream.next().unwrap() {
         TokenTree::Ident(i) => assert_eq!(i, "struct"),
         x => panic!("Expected ident, found {:?}", x),
