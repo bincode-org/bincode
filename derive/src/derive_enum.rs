@@ -168,7 +168,7 @@ impl DeriveEnum {
         let enum_name = generator.target_name().to_string();
 
         generator
-            .impl_for("bincode::de::Decode")
+            .impl_for("bincode::Decode")
             .unwrap()
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
@@ -177,7 +177,7 @@ impl DeriveEnum {
             .body(|fn_builder| {
                 fn_builder
                     .push_parsed(
-                        "let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;",
+                        "let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;",
                     )
                     .unwrap();
                 fn_builder.push_parsed("match variant_index").unwrap();
@@ -210,7 +210,7 @@ impl DeriveEnum {
                                     }
                                     variant_body.punct(':');
                                     variant_body
-                                        .push_parsed("bincode::de::Decode::decode(&mut decoder)?,")
+                                        .push_parsed("bincode::Decode::decode(&mut decoder)?,")
                                         .unwrap();
                                 }
                             });
@@ -239,7 +239,7 @@ impl DeriveEnum {
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_builder| {
                 fn_builder
-                    .push_parsed("let variant_index = <u32 as bincode::de::Decode>::decode(&mut decoder)?;").unwrap();
+                    .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;").unwrap();
                 fn_builder.push_parsed("match variant_index").unwrap();
                 fn_builder.group(Delimiter::Brace, |variant_case| {
                     for (mut variant_index, variant) in self.iter_fields() {
