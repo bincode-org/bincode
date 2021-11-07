@@ -17,7 +17,7 @@ pub struct Test2<T: Decode> {
     c: u32,
 }
 
-#[derive(bincode::Decode, PartialEq, Debug, Eq)]
+#[derive(bincode::BorrowDecode, PartialEq, Debug, Eq)]
 pub struct Test3<'a> {
     a: &'a str,
     b: u32,
@@ -34,7 +34,7 @@ pub enum TestEnum {
     Baz(u32, u32, u32),
 }
 
-#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
+#[derive(bincode::Encode, bincode::BorrowDecode, PartialEq, Debug, Eq)]
 pub enum TestEnum2<'a> {
     Foo,
     Bar { name: &'a str },

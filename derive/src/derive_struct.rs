@@ -36,74 +36,74 @@ impl DeriveStruct {
     }
 
     pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
+        // Remember to keep this mostly in sync with generate_borrow_decode
         let DeriveStruct { fields } = self;
 
-        if generator.has_lifetimes() {
-            // struct has a lifetime, implement BorrowDecode
+        generator
+            .impl_for("bincode::Decode")
+            .unwrap()
+            .generate_fn("decode")
+            .with_generic("D", ["bincode::de::Decoder"])
+            .with_arg("mut decoder", "D")
+            .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
+            .body(|fn_body| {
+                // Ok(Self {
+                fn_body.ident_str("Ok");
+                fn_body.group(Delimiter::Parenthesis, |ok_group| {
+                    ok_group.ident_str("Self");
+                    ok_group.group(Delimiter::Brace, |struct_body| {
+                        // Fields
+                        // {
+                        //      a: bincode::Decode::decode(&mut decoder)?,
+                        //      b: bincode::Decode::decode(&mut decoder)?,
+                        //      ...
+                        // }
+                        for field in fields.names() {
+                            struct_body
+                                .push_parsed(format!(
+                                    "{}: bincode::Decode::decode(&mut decoder)?,",
+                                    field.to_string()
+                                ))
+                                .unwrap();
+                        }
+                    });
+                });
+            })
+            .unwrap();
 
-            generator
-                .impl_for_with_de_lifetime("bincode::de::BorrowDecode<'__de>")
-                .unwrap()
-                .generate_fn("borrow_decode")
-                .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
-                .with_arg("mut decoder", "D")
-                .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
-                .body(|fn_body| {
-                    // Ok(Self {
-                    fn_body.ident_str("Ok");
-                    fn_body.group(Delimiter::Parenthesis, |ok_group| {
-                        ok_group.ident_str("Self");
-                        ok_group.group(Delimiter::Brace, |struct_body| {
-                            for field in fields.names() {
-                                struct_body
-                                    .push_parsed(format!(
+        Ok(())
+    }
+
+    pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
+        // Remember to keep this mostly in sync with generate_decode
+        let DeriveStruct { fields } = self;
+
+        generator
+            .impl_for_with_de_lifetime("bincode::de::BorrowDecode<'__de>")
+            .unwrap()
+            .generate_fn("borrow_decode")
+            .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
+            .with_arg("mut decoder", "D")
+            .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
+            .body(|fn_body| {
+                // Ok(Self {
+                fn_body.ident_str("Ok");
+                fn_body.group(Delimiter::Parenthesis, |ok_group| {
+                    ok_group.ident_str("Self");
+                    ok_group.group(Delimiter::Brace, |struct_body| {
+                        for field in fields.names() {
+                            struct_body
+                                .push_parsed(format!(
                                     "{}: bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,",
                                     field.to_string()
                                 ))
-                                    .unwrap();
-                            }
-                        });
+                                .unwrap();
+                        }
                     });
-                })
-                .unwrap();
+                });
+            })
+            .unwrap();
 
-            Ok(())
-        } else {
-            // struct has no lifetimes, implement Decode
-
-            generator
-                .impl_for("bincode::de::Decode")
-                .unwrap()
-                .generate_fn("decode")
-                .with_generic("D", ["bincode::de::Decoder"])
-                .with_arg("mut decoder", "D")
-                .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
-                .body(|fn_body| {
-                    // Ok(Self {
-                    fn_body.ident_str("Ok");
-                    fn_body.group(Delimiter::Parenthesis, |ok_group| {
-                        ok_group.ident_str("Self");
-                        ok_group.group(Delimiter::Brace, |struct_body| {
-                            // Fields
-                            // {
-                            //      a: bincode::de::Decode::decode(&mut decoder)?,
-                            //      b: bincode::de::Decode::decode(&mut decoder)?,
-                            //      ...
-                            // }
-                            for field in fields.names() {
-                                struct_body
-                                    .push_parsed(format!(
-                                        "{}: bincode::de::Decode::decode(&mut decoder)?,",
-                                        field.to_string()
-                                    ))
-                                    .unwrap();
-                            }
-                        });
-                    });
-                })
-                .unwrap();
-
-            Ok(())
-        }
+        Ok(())
     }
 }
