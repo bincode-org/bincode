@@ -1,7 +1,10 @@
 #![cfg(all(feature = "std", feature = "derive"))]
 
+extern crate std;
+
 use bincode::{config::Configuration, Decode, Encode};
 use std::borrow::Cow;
+use std::string::String;
 
 #[derive(Encode, Decode, PartialEq, Debug)]
 struct T<'a, A: Clone + Encode + Decode> {

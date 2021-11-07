@@ -50,7 +50,7 @@ pub enum EncodeError {
 
 /// Errors that can be encounted by decoding a type
 #[non_exhaustive]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DecodeError {
     /// The reader reached its end but more bytes were expected.
     UnexpectedEnd,
@@ -74,11 +74,8 @@ pub enum DecodeError {
         /// The type name that was being decoded.
         type_name: &'static str,
 
-        /// The min index of the enum. Usually this is `0`.
-        min: u32,
-
-        /// the max index of the enum.
-        max: u32,
+        /// The variants that are allowed
+        allowed: AllowedEnumVariants,
 
         /// The index of the enum that the decoder encountered
         found: u32,
@@ -126,9 +123,20 @@ impl DecodeError {
     }
 }
 
+/// Indicates which enum variants are allowed
+#[non_exhaustive]
+#[derive(Debug, PartialEq)]
+pub enum AllowedEnumVariants {
+    /// All values between `min` and `max` (inclusive) are allowed
+    #[allow(missing_docs)]
+    Range { min: u32, max: u32 },
+    /// Each one of these values is allowed
+    Allowed(&'static [u32]),
+}
+
 /// Integer types. Used by [DecodeError]. These types have no purpose other than being shown in errors.
 #[non_exhaustive]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum IntegerType {
     U8,
