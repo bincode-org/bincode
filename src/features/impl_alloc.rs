@@ -51,7 +51,7 @@ where
     T: Decode + Ord,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = usize::decode(&mut decoder)?;
+        let len = crate::de::decode_slice_len(&mut decoder)?;
         let mut map = BinaryHeap::with_capacity(len);
         for _ in 0..len {
             let key = T::decode(&mut decoder)?;
@@ -66,7 +66,7 @@ where
     T: Encode + Ord,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
         for val in self.iter() {
             val.encode(&mut encoder)?;
         }
@@ -80,7 +80,7 @@ where
     V: Decode,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = usize::decode(&mut decoder)?;
+        let len = crate::de::decode_slice_len(&mut decoder)?;
         let mut map = BTreeMap::new();
         for _ in 0..len {
             let key = K::decode(&mut decoder)?;
@@ -97,7 +97,7 @@ where
     V: Encode,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
         for (key, val) in self.iter() {
             key.encode(&mut encoder)?;
             val.encode(&mut encoder)?;
@@ -111,7 +111,7 @@ where
     T: Decode + Ord,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = usize::decode(&mut decoder)?;
+        let len = crate::de::decode_slice_len(&mut decoder)?;
         let mut map = BTreeSet::new();
         for _ in 0..len {
             let key = T::decode(&mut decoder)?;
@@ -126,7 +126,7 @@ where
     T: Encode + Ord,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
         }
@@ -139,7 +139,7 @@ where
     T: Decode,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = usize::decode(&mut decoder)?;
+        let len = crate::de::decode_slice_len(&mut decoder)?;
         let mut map = VecDeque::with_capacity(len);
         for _ in 0..len {
             let key = T::decode(&mut decoder)?;
@@ -154,7 +154,7 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
         }
@@ -167,7 +167,7 @@ where
     T: Decode,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = usize::decode(&mut decoder)?;
+        let len = crate::de::decode_slice_len(&mut decoder)?;
         let mut vec = Vec::with_capacity(len);
         for _ in 0..len {
             vec.push(T::decode(&mut decoder)?);
@@ -181,7 +181,7 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
         }
@@ -236,7 +236,7 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
         for item in self.iter() {
             item.encode(&mut encoder)?;
         }

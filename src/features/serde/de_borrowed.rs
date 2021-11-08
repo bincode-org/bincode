@@ -157,8 +157,8 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        let val = Option::<()>::decode(&mut self.de)?;
-        if val.is_some() {
+        let variant = crate::de::decode_option_variant(&mut self.de, "Option<T>")?;
+        if variant.is_some() {
             visitor.visit_some(self)
         } else {
             visitor.visit_none()

@@ -285,7 +285,7 @@ impl Encode for char {
 
 impl Encode for &'_ [u8] {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        super::encode_slice_len(&mut encoder, self.len())?;
         encoder.writer().write(self)
     }
 }
@@ -357,7 +357,7 @@ where
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         if !E::C::SKIP_FIXED_ARRAY_LENGTH {
-            N.encode(&mut encoder)?;
+            super::encode_slice_len(&mut encoder, N)?;
         }
         for item in self.iter() {
             item.encode(&mut encoder)?;
@@ -371,12 +371,11 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        super::encode_option_variant(&mut encoder, self)?;
         if let Some(val) = self {
-            1u8.encode(&mut encoder)?;
-            val.encode(encoder)
-        } else {
-            0u8.encode(encoder)
+            val.encode(encoder)?;
         }
+        Ok(())
     }
 }
 

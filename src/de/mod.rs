@@ -93,3 +93,27 @@ where
         T::borrow_reader(self)
     }
 }
+
+/// Decodes only the option variant from the decoder. Will not read any more data than that.
+#[inline]
+pub(crate) fn decode_option_variant<D: Decoder>(
+    decoder: D,
+    type_name: &'static str,
+) -> Result<Option<()>, DecodeError> {
+    let is_some = u8::decode(decoder)?;
+    match is_some {
+        0 => Ok(None),
+        1 => Ok(Some(())),
+        x => Err(DecodeError::UnexpectedVariant {
+            found: x as u32,
+            allowed: crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+            type_name,
+        }),
+    }
+}
+
+/// Decodes the length of any slice, container, etc from the decoder
+#[inline]
+pub(crate) fn decode_slice_len<D: Decoder>(decoder: D) -> Result<usize, DecodeError> {
+    u64::decode(decoder).map(|v| v as usize)
+}
