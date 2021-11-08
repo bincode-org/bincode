@@ -23,7 +23,7 @@ description = "A binary serialization / deserialization strategy for transformin
 edition = "2021"
 
 [features]
-default = ["std", "derive", "atomic", "serde"] # If you see this in a PR, I've forgotten to remove it
+default = ["std", "derive", "atomic"]
 std = ["alloc"]
 alloc = []
 atomic = []
