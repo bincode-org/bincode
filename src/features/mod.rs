@@ -17,3 +17,8 @@ pub use self::impl_std::*;
 mod derive;
 #[cfg(feature = "derive")]
 pub use self::derive::*;
+
+#[cfg(feature = "serde")]
+mod serde;
+#[cfg(feature = "serde")]
+pub use self::serde::*;

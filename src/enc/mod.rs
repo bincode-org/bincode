@@ -50,3 +50,21 @@ where
         T::config(self)
     }
 }
+
+/// Encode the variant of the given option. Will not encode the option itself.
+#[inline]
+pub(crate) fn encode_option_variant<E: Encoder, T>(
+    encoder: E,
+    value: &Option<T>,
+) -> Result<(), EncodeError> {
+    match value {
+        None => 0u8.encode(encoder),
+        Some(_) => 1u8.encode(encoder),
+    }
+}
+
+/// Encodes the length of any slice, container, etc into the given encoder
+#[inline]
+pub(crate) fn encode_slice_len<E: Encoder>(encoder: E, len: usize) -> Result<(), EncodeError> {
+    (len as u64).encode(encoder)
+}

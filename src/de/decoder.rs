@@ -33,9 +33,9 @@ impl<R: Reader, C: Config> DecoderImpl<R, C> {
     }
 }
 
-impl<'a, R, C: Config> Sealed for &'a mut DecoderImpl<R, C> {}
+impl<R, C: Config> Sealed for DecoderImpl<R, C> {}
 
-impl<'a, 'de, R: BorrowReader<'de>, C: Config> BorrowDecoder<'de> for &'a mut DecoderImpl<R, C> {
+impl<'de, R: BorrowReader<'de>, C: Config> BorrowDecoder<'de> for DecoderImpl<R, C> {
     type BR = R;
 
     fn borrow_reader(&mut self) -> &mut Self::BR {
@@ -43,7 +43,7 @@ impl<'a, 'de, R: BorrowReader<'de>, C: Config> BorrowDecoder<'de> for &'a mut De
     }
 }
 
-impl<'a, R: Reader, C: Config> Decoder for &'a mut DecoderImpl<R, C> {
+impl<R: Reader, C: Config> Decoder for DecoderImpl<R, C> {
     type R = R;
 
     type C = C;

@@ -120,10 +120,10 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 /// [config]: config/index.html
 pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
     src: &'a [u8],
-    _config: C,
+    config: C,
 ) -> Result<D, error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
-    let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
     D::borrow_decode(&mut decoder)
 }
 

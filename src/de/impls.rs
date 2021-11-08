@@ -378,7 +378,7 @@ impl Decode for char {
 
 impl<'a, 'de: 'a> BorrowDecode<'de> for &'a [u8] {
     fn borrow_decode<D: BorrowDecoder<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = usize::decode(&mut decoder)?;
+        let len = super::decode_slice_len(&mut decoder)?;
         decoder.borrow_reader().take_bytes(len)
     }
 }
@@ -396,7 +396,7 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         if !D::C::SKIP_FIXED_ARRAY_LENGTH {
-            let length = usize::decode(&mut decoder)?;
+            let length = super::decode_slice_len(&mut decoder)?;
             if length != N {
                 return Err(DecodeError::ArrayLengthMismatch {
                     found: length,
@@ -419,9 +419,15 @@ where
                 super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(&mut decoder)));
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
-            // So this unsafe should never occur
+            // So this unwrap should never occur
             result.unwrap()
         }
+    }
+}
+
+impl Decode for () {
+    fn decode<D: Decoder>(_: D) -> Result<Self, DecodeError> {
+        Ok(())
     }
 }
 
@@ -436,18 +442,12 @@ where
     T: Decode,
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let is_some = u8::decode(&mut decoder)?;
-        match is_some {
-            0 => Ok(None),
-            1 => {
+        match super::decode_option_variant(&mut decoder, core::any::type_name::<Option<T>>())? {
+            Some(_) => {
                 let val = T::decode(decoder)?;
                 Ok(Some(val))
             }
-            x => Err(DecodeError::UnexpectedVariant {
-                found: x as u32,
-                allowed: crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
-                type_name: core::any::type_name::<Option<T>>(),
-            }),
+            None => Ok(None),
         }
     }
 }

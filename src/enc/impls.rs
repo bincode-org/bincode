@@ -8,6 +8,7 @@ use crate::{
 };
 use core::{
     cell::{Cell, RefCell},
+    marker::PhantomData,
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize,
@@ -15,6 +16,18 @@ use core::{
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
+
+impl Encode for () {
+    fn encode<E: Encoder>(&self, _: E) -> Result<(), EncodeError> {
+        Ok(())
+    }
+}
+
+impl<T> Encode for PhantomData<T> {
+    fn encode<E: Encoder>(&self, _: E) -> Result<(), EncodeError> {
+        Ok(())
+    }
+}
 
 impl Encode for bool {
     fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
@@ -272,7 +285,7 @@ impl Encode for char {
 
 impl Encode for &'_ [u8] {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.len().encode(&mut encoder)?;
+        super::encode_slice_len(&mut encoder, self.len())?;
         encoder.writer().write(self)
     }
 }
@@ -344,7 +357,7 @@ where
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
         if !E::C::SKIP_FIXED_ARRAY_LENGTH {
-            N.encode(&mut encoder)?;
+            super::encode_slice_len(&mut encoder, N)?;
         }
         for item in self.iter() {
             item.encode(&mut encoder)?;
@@ -358,12 +371,11 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        super::encode_option_variant(&mut encoder, self)?;
         if let Some(val) = self {
-            1u8.encode(&mut encoder)?;
-            val.encode(encoder)
-        } else {
-            0u8.encode(encoder)
+            val.encode(encoder)?;
         }
+        Ok(())
     }
 }
 

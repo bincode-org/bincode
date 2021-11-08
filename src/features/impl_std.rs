@@ -342,3 +342,6 @@ impl Decode for SocketAddrV6 {
         Ok(Self::new(ip, port, 0, 0))
     }
 }
+
+impl std::error::Error for EncodeError {}
+impl std::error::Error for DecodeError {}

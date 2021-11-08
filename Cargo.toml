@@ -29,9 +29,14 @@ alloc = []
 atomic = []
 derive = ["bincode_derive"]
 
+# BlockedTODO: https://github.com/rust-lang/cargo/issues/8832
+# We really want these features to automatically be enabled when both "serde" and either "alloc"/"std" is enabled
+# But this is currently not possible
+serde = ["std", "serde_incl", "serde_incl/std"]
+
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-alpha.0", optional = true }
-serde = { version = "1.0.130", optional = true }
+serde_incl = { package = "serde", version = "1.0.130", optional = true }
 
 # Used for tests
 [dev-dependencies]
