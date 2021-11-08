@@ -1,5 +1,7 @@
+use super::attributes::AttributeLocation;
 use super::{
-    assume_group, assume_ident, assume_punct, read_tokens_until_punct, Attribute, Visibility,
+    assume_group, assume_ident, assume_punct, read_tokens_until_punct, Attribute, FieldAttribute,
+    Visibility,
 };
 use crate::parse::consume_punct_if;
 use crate::prelude::{Delimiter, Ident, Literal, Span, TokenTree};
@@ -132,7 +134,7 @@ impl EnumBody {
         let mut variants = Vec::new();
         let stream = &mut group.stream().into_iter().peekable();
         while stream.peek().is_some() {
-            let attributes = Attribute::try_take(stream)?;
+            let attributes = Attribute::try_take(AttributeLocation::Variant, stream)?;
             let ident = match stream.peek() {
                 Some(TokenTree::Ident(_)) => assume_ident(stream.next()),
                 token => return Error::wrong_token(token, "ident"),
@@ -288,11 +290,18 @@ impl Fields {
             Self::Tuple(fields) => fields
                 .iter()
                 .enumerate()
-                .map(|(idx, field)| IdentOrIndex::Index(idx, field.span()))
+                .map(|(index, field)| IdentOrIndex::Index {
+                    index,
+                    span: field.span(),
+                    attributes: &field.attributes,
+                })
                 .collect(),
             Self::Struct(fields) => fields
                 .iter()
-                .map(|(ident, _)| IdentOrIndex::Ident(ident))
+                .map(|(ident, field)| IdentOrIndex::Ident {
+                    ident,
+                    attributes: &field.attributes,
+                })
                 .collect(),
             Self::Unit | Self::Integer(_) => Vec::new(),
         }
@@ -345,7 +354,7 @@ impl UnnamedField {
     ) -> Result<Vec<(Ident, Self)>> {
         let mut result = Vec::new();
         loop {
-            let attributes = Attribute::try_take(input)?;
+            let attributes = Attribute::try_take(AttributeLocation::Field, input)?;
             let vis = Visibility::try_take(input)?;
 
             let ident = match input.peek() {
@@ -381,7 +390,7 @@ impl UnnamedField {
     pub fn parse(input: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Result<Vec<Self>> {
         let mut result = Vec::new();
         while input.peek().is_some() {
-            let attributes = Attribute::try_take(input)?;
+            let attributes = Attribute::try_take(AttributeLocation::Field, input)?;
             let vis = Visibility::try_take(input)?;
 
             let r#type = read_tokens_until_punct(input, &[','])?;
@@ -422,42 +431,63 @@ impl UnnamedField {
 
 #[derive(Debug)]
 pub enum IdentOrIndex<'a> {
-    Ident(&'a Ident),
-    Index(usize, Span),
+    Ident {
+        ident: &'a Ident,
+        attributes: &'a Vec<Attribute>,
+    },
+    Index {
+        index: usize,
+        span: Span,
+        attributes: &'a Vec<Attribute>,
+    },
 }
 
 impl<'a> IdentOrIndex<'a> {
     pub fn unwrap_ident(&self) -> &'a Ident {
         match self {
-            Self::Ident(i) => i,
+            Self::Ident { ident, .. } => ident,
             x => panic!("Expected ident, found {:?}", x),
         }
     }
 
     pub fn to_token_tree_with_prefix(&self, prefix: &str) -> TokenTree {
         TokenTree::Ident(match self {
-            IdentOrIndex::Ident(i) => (*i).clone(),
-            IdentOrIndex::Index(idx, span) => {
-                let name = format!("{}{}", prefix, idx);
+            IdentOrIndex::Ident { ident, .. } => (*ident).clone(),
+            IdentOrIndex::Index { index, span, .. } => {
+                let name = format!("{}{}", prefix, index);
                 Ident::new(&name, *span)
             }
         })
     }
     pub fn to_string_with_prefix(&self, prefix: &str) -> String {
         match self {
-            IdentOrIndex::Ident(i) => i.to_string(),
-            IdentOrIndex::Index(idx, _) => {
-                format!("{}{}", prefix, idx)
+            IdentOrIndex::Ident { ident, .. } => ident.to_string(),
+            IdentOrIndex::Index { index, .. } => {
+                format!("{}{}", prefix, index)
             }
         }
+    }
+
+    pub fn has_field_attribute(&self, attribute: FieldAttribute) -> bool {
+        let attributes = match self {
+            IdentOrIndex::Ident { attributes, .. } => attributes,
+            IdentOrIndex::Index { attributes, .. } => attributes,
+        };
+        attributes.iter().any(|a| {
+            if let Attribute::Field(field_attribute) = a {
+                field_attribute == &attribute
+            } else {
+                false
+            }
+        })
     }
 }
 
 impl std::fmt::Display for IdentOrIndex<'_> {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            IdentOrIndex::Ident(i) => write!(fmt, "{}", i),
-            IdentOrIndex::Index(idx, _) => write!(fmt, "{}", idx),
+            IdentOrIndex::Ident { ident, .. } => write!(fmt, "{}", ident),
+            IdentOrIndex::Index { index, .. } => write!(fmt, "{}", index),
         }
     }
 }

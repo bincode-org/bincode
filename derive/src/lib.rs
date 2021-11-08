@@ -16,11 +16,12 @@ pub(crate) mod prelude {
 }
 
 use error::Error;
+use parse::AttributeLocation;
 use prelude::TokenStream;
 
 type Result<T = ()> = std::result::Result<T, Error>;
 
-#[proc_macro_derive(Encode)]
+#[proc_macro_derive(Encode, attributes(bincode))]
 pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     #[allow(clippy::useless_conversion)]
     derive_encode_inner(input.into())
@@ -31,7 +32,7 @@ pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
-    let _attributes = parse::Attribute::try_take(source)?;
+    let _attributes = parse::Attribute::try_take(AttributeLocation::Container, source)?;
     let _visibility = parse::Visibility::try_take(source)?;
     let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;
@@ -61,7 +62,7 @@ fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
     Ok(stream)
 }
 
-#[proc_macro_derive(Decode)]
+#[proc_macro_derive(Decode, attributes(bincode))]
 pub fn derive_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     #[allow(clippy::useless_conversion)]
     derive_decode_inner(input.into())
@@ -72,7 +73,7 @@ pub fn derive_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
-    let _attributes = parse::Attribute::try_take(source)?;
+    let _attributes = parse::Attribute::try_take(AttributeLocation::Container, source)?;
     let _visibility = parse::Visibility::try_take(source)?;
     let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;
@@ -102,7 +103,7 @@ fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
     Ok(stream)
 }
 
-#[proc_macro_derive(BorrowDecode)]
+#[proc_macro_derive(BorrowDecode, attributes(bincode))]
 pub fn derive_brrow_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     #[allow(clippy::useless_conversion)]
     derive_borrow_decode_inner(input.into())
@@ -113,7 +114,7 @@ pub fn derive_brrow_decode(input: proc_macro::TokenStream) -> proc_macro::TokenS
 fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
     let source = &mut input.into_iter().peekable();
 
-    let _attributes = parse::Attribute::try_take(source)?;
+    let _attributes = parse::Attribute::try_take(AttributeLocation::Container, source)?;
     let _visibility = parse::Visibility::try_take(source)?;
     let (datatype, name) = parse::DataType::take(source)?;
     let generics = parse::Generics::try_take(source)?;

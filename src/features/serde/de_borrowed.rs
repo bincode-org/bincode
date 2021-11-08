@@ -24,9 +24,9 @@ where
     T::deserialize(serde_decoder)
 }
 
-struct SerdeDecoder<'a, 'de, DE: BorrowDecoder<'de>> {
-    de: &'a mut DE,
-    pd: PhantomData<&'de ()>,
+pub(super) struct SerdeDecoder<'a, 'de, DE: BorrowDecoder<'de>> {
+    pub(super) de: &'a mut DE,
+    pub(super) pd: PhantomData<&'de ()>,
 }
 
 impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de, DE> {

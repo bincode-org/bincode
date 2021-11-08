@@ -125,3 +125,36 @@ fn test_serialize_deserialize_owned_data() {
         output
     );
 }
+
+#[cfg(feature = "derive")]
+mod derive {
+    use bincode::{config::Configuration, Decode, Encode};
+    use serde_derive::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[serde(crate = "serde_incl")]
+    pub struct SerdeType {
+        pub a: u32,
+    }
+
+    #[derive(Decode, Encode, PartialEq, Debug)]
+    pub struct BincodeWithSerde {
+        #[bincode(with_serde)]
+        pub serde: SerdeType,
+    }
+
+    #[test]
+    fn test_serde_derive() {
+        let start = BincodeWithSerde {
+            serde: SerdeType { a: 5 },
+        };
+        let mut slice = [0u8; 100];
+        let len =
+            bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
+        let slice = &slice[..len];
+        let result: BincodeWithSerde =
+            bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
+
+        assert_eq!(start, result);
+    }
+}

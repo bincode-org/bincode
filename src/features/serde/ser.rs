@@ -33,8 +33,8 @@ where
     Ok(encoder.into_writer().bytes_written())
 }
 
-struct SerdeEncoder<'a, ENC: Encoder> {
-    enc: &'a mut ENC,
+pub(super) struct SerdeEncoder<'a, ENC: Encoder> {
+    pub(super) enc: &'a mut ENC,
 }
 
 impl<'a, ENC> Serializer for SerdeEncoder<'a, ENC>

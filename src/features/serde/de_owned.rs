@@ -19,8 +19,8 @@ where
     T::deserialize(serde_decoder)
 }
 
-struct SerdeDecoder<'a, DE: Decoder> {
-    de: &'a mut DE,
+pub(crate) struct SerdeDecoder<'a, DE: Decoder> {
+    pub(crate) de: &'a mut DE,
 }
 
 impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
