@@ -1,47 +1,56 @@
 //! Support for serde integration. Enable this with the `serde` feature.
-//! 
+//!
 //! To encode/decode type that implement serde's trait, you can use:
 //! - [decode_borrowed_from_slice]
 //! - [decode_from_slice]
 //! - [encode_to_slice]
 //! - [encode_to_vec]
-//! 
+//!
 //! For interop with bincode's [Decode]/[Encode], you can use:
 //! - [Compat]
 //! - [BorrowCompat]
-//! 
+//!
 //! For interop with bincode's `derive` feature, you can use the `#[bincode(with_serde)]` attribute on each field that implements serde's traits.
-//! 
+//!
 //! ```
 //! # use bincode::{Decode, Encode};
 //! # use serde_derive::{Deserialize, Serialize};
 //! #[derive(Serialize, Deserialize)]
 //! # #[serde(crate = "serde_incl")]
 //! pub struct SerdeType {
-//!     // ... 
+//!     // ...
 //! }
 //!
 //! #[derive(Decode, Encode)]
-//! pub struct BincodeWithSerde {
+//! pub struct StructWithSerde {
 //!     #[bincode(with_serde)]
 //!     pub serde: SerdeType,
+//! }
+//!
+//! #[derive(Decode, Encode)]
+//! pub enum EnumWithSerde {
+//!     Unit(#[bincode(with_serde)] SerdeType),
+//!     Struct {
+//!         #[bincode(with_serde)]
+//!         serde: SerdeType,
+//!     },
 //! }
 //! ```
 //!
 //! # Known issues
 //!
 //! Currently the `serde` feature will automatically enable the `alloc` and `std` feature. If you're running in a `#[no_std]` environment consider using bincode's own derive macros.
-//! 
+//!
 //! Because bincode is a format without meta data, there are several known issues with serde's `skip` attributes. Please do not use `skip` attributes if you plan on using bincode, or use bincode's own `derive` macros.
-//! 
+//!
 //! This includes:
 //! - `#[serde(skip)]`
 //! - `#[serde(skip_serializing)]`
 //! - `#[serde(skip_deserializing)]`
 //! - `#[serde(skip_serializing_if = "path")]`
-//! 
+//!
 //! **Using any of the above attributes can and will cause issues with bincode and will result in lost data**. Consider using bincode's own derive macro instead.
-//! 
+//!
 //! [Decode]: ../de/trait.Decode.html
 //! [Encode]: ../enc/trait.Encode.html
 

@@ -138,23 +138,40 @@ mod derive {
     }
 
     #[derive(Decode, Encode, PartialEq, Debug)]
-    pub struct BincodeWithSerde {
+    pub struct StructWithSerde {
         #[bincode(with_serde)]
         pub serde: SerdeType,
     }
 
+    #[derive(Decode, Encode, PartialEq, Debug)]
+    pub enum EnumWithSerde {
+        Unit(#[bincode(with_serde)] SerdeType),
+        Struct {
+            #[bincode(with_serde)]
+            serde: SerdeType,
+        },
+    }
+
     #[test]
     fn test_serde_derive() {
-        let start = BincodeWithSerde {
-            serde: SerdeType { a: 5 },
-        };
-        let mut slice = [0u8; 100];
-        let len =
-            bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
-        let slice = &slice[..len];
-        let result: BincodeWithSerde =
-            bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
+        fn test_encode_decode<T>(start: T)
+        where
+            T: bincode::Encode + bincode::Decode + PartialEq + core::fmt::Debug,
+        {
+            let mut slice = [0u8; 100];
+            let len =
+                bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
+            let slice = &slice[..len];
+            let result: T = bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
 
-        assert_eq!(start, result);
+            assert_eq!(start, result);
+        }
+        test_encode_decode(StructWithSerde {
+            serde: SerdeType { a: 5 },
+        });
+        test_encode_decode(EnumWithSerde::Unit(SerdeType { a: 5 }));
+        test_encode_decode(EnumWithSerde::Struct {
+            serde: SerdeType { a: 5 },
+        });
     }
 }
