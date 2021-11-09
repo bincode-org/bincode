@@ -61,16 +61,16 @@ fn test_serialize_deserialize_borrowed_data() {
 
     let mut result = [0u8; 20];
     let len =
-        bincode::serde_encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
+        bincode::serde::encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
-    let result = bincode::serde_encode_to_vec(&input, Configuration::standard()).unwrap();
+    let result = bincode::serde::encode_to_vec(&input, Configuration::standard()).unwrap();
 
     assert_eq!(result, expected);
 
     let output: SerdeWithBorrowedData =
-        bincode::serde_decode_borrowed_from_slice(&result, Configuration::standard()).unwrap();
+        bincode::serde::decode_borrowed_from_slice(&result, Configuration::standard()).unwrap();
     assert_eq!(
         SerdeWithBorrowedData {
             b: 0, // remember: b is skipped
@@ -107,16 +107,16 @@ fn test_serialize_deserialize_owned_data() {
 
     let mut result = [0u8; 20];
     let len =
-        bincode::serde_encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
+        bincode::serde::encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
-    let result = bincode::serde_encode_to_vec(&input, Configuration::standard()).unwrap();
+    let result = bincode::serde::encode_to_vec(&input, Configuration::standard()).unwrap();
 
     assert_eq!(result, expected);
 
     let output: SerdeWithOwnedData =
-        bincode::serde_decode_from_slice(&result, Configuration::standard()).unwrap();
+        bincode::serde::decode_from_slice(&result, Configuration::standard()).unwrap();
     assert_eq!(
         SerdeWithOwnedData {
             b: 0, // remember: b is skipped

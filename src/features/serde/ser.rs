@@ -9,7 +9,8 @@ use serde_incl::ser::*;
 
 #[cfg(feature = "alloc")]
 /// Encode a `serde` `Serialize` type into a `Vec<u8>` with the bincode algorithm
-pub fn serde_encode_to_vec<T, C>(t: T, config: C) -> Result<Vec<u8>, EncodeError>
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+pub fn encode_to_vec<T, C>(t: T, config: C) -> Result<Vec<u8>, EncodeError>
 where
     T: Serialize,
     C: Config,
@@ -21,7 +22,7 @@ where
 }
 
 /// Encode a `serde` `Serialize` type into a given byte slice with the bincode algorithm
-pub fn serde_encode_to_slice<T, C>(t: T, slice: &mut [u8], config: C) -> Result<usize, EncodeError>
+pub fn encode_to_slice<T, C>(t: T, slice: &mut [u8], config: C) -> Result<usize, EncodeError>
 where
     T: Serialize,
     C: Config,

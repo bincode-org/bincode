@@ -7,10 +7,7 @@ use core::marker::PhantomData;
 use serde_incl::de::*;
 
 /// Decode a borrowed type from the given slice. Some parts of the decoded type are expected to be referring to the given slice
-pub fn serde_decode_borrowed_from_slice<'de, T, C>(
-    slice: &'de [u8],
-    config: C,
-) -> Result<T, DecodeError>
+pub fn decode_borrowed_from_slice<'de, T, C>(slice: &'de [u8], config: C) -> Result<T, DecodeError>
 where
     T: Deserialize<'de>,
     C: Config,

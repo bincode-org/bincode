@@ -19,6 +19,5 @@ mod derive;
 pub use self::derive::*;
 
 #[cfg(feature = "serde")]
-mod serde;
-#[cfg(feature = "serde")]
-pub use self::serde::*;
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+pub mod serde;
