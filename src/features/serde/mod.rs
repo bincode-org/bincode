@@ -13,6 +13,8 @@
 //! For interop with bincode's `derive` feature, you can use the `#[bincode(with_serde)]` attribute on each field that implements serde's traits.
 //!
 //! ```
+//! # #[cfg(feature = "derive")]
+//! # mod foo {
 //! # use bincode::{Decode, Encode};
 //! # use serde_derive::{Deserialize, Serialize};
 //! #[derive(Serialize, Deserialize)]
@@ -35,6 +37,7 @@
 //!         serde: SerdeType,
 //!     },
 //! }
+//! # }
 //! ```
 //!
 //! # Known issues

@@ -19,7 +19,7 @@
 //! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
-//! |serde | No     |TODO|TODO|TODO|
+//! |serde | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
 //!
 //! # Example
 //!
