@@ -51,6 +51,7 @@
 //! - `#[serde(skip_serializing)]`
 //! - `#[serde(skip_deserializing)]`
 //! - `#[serde(skip_serializing_if = "path")]`
+//! - `#[serde(flatten)]`
 //!
 //! **Using any of the above attributes can and will cause issues with bincode and will result in lost data**. Consider using bincode's own derive macro instead.
 //!
