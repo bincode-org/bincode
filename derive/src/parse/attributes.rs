@@ -83,16 +83,20 @@ impl Attribute {
         loc: AttributeLocation,
         stream: &mut Peekable<impl Iterator<Item = TokenTree>>,
     ) -> Result<Self> {
-        match stream.next() {
-            Some(TokenTree::Ident(i))
-                if ident_eq(&i, "with_serde") && loc == AttributeLocation::Field =>
+        match (stream.next(), loc) {
+            (Some(TokenTree::Ident(ident)), AttributeLocation::Field)
+                if ident_eq(&ident, "with_serde") =>
             {
                 Ok(Self::Field(FieldAttribute::WithSerde))
             }
-            ident @ Some(TokenTree::Ident(_)) => {
-                Error::wrong_token(ident.as_ref(), "one of: `with_serde`")
+            (token @ Some(TokenTree::Ident(_)), AttributeLocation::Field) => {
+                Error::wrong_token(token.as_ref(), "one of: `with_serde`")
             }
-            token => Error::wrong_token(token.as_ref(), "ident"),
+            (token @ Some(TokenTree::Ident(_)), loc) => Error::wrong_token(
+                token.as_ref(),
+                &format!("{:?} attributes not supported", loc),
+            ),
+            (token, _) => Error::wrong_token(token.as_ref(), "ident"),
         }
     }
 }
