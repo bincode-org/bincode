@@ -9,7 +9,7 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn wrong_token<T>(token: Option<&TokenTree>, expected: &'static str) -> Result<T, Self> {
+    pub fn wrong_token<T>(token: Option<&TokenTree>, expected: &str) -> Result<T, Self> {
         Err(Self::InvalidRustSyntax {
             span: token.map(|t| t.span()).unwrap_or_else(Span::call_site),
             expected: format!("{}, got {:?}", expected, token),

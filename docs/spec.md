@@ -12,7 +12,7 @@ By default `bincode` will serialize values in little endian encoding. This can b
 
 Boolean types are encoded with 1 byte for each boolean type, with `0` being `false`, `1` being true. Whilst deserializing every other value will throw an error.
 
-All basic numeric types will be encoded based on the configured [IntEncoding](#IntEncoding).
+All basic numeric types will be encoded based on the configured [IntEncoding](#intencoding).
 
 All floating point types will take up exactly 4 (for `f32`) or 8 (for `f64`) bytes.
 

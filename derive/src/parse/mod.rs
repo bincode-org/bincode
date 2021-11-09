@@ -8,7 +8,7 @@ mod data_type;
 mod generics;
 mod visibility;
 
-pub use self::attributes::Attribute;
+pub use self::attributes::{Attribute, AttributeLocation, FieldAttribute};
 pub use self::body::{EnumBody, EnumVariant, Fields, StructBody, UnnamedField};
 pub use self::data_type::DataType;
 pub use self::generics::{GenericConstraints, Generics, Lifetime, SimpleGeneric};

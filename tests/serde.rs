@@ -61,16 +61,16 @@ fn test_serialize_deserialize_borrowed_data() {
 
     let mut result = [0u8; 20];
     let len =
-        bincode::serde_encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
+        bincode::serde::encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
-    let result = bincode::serde_encode_to_vec(&input, Configuration::standard()).unwrap();
+    let result = bincode::serde::encode_to_vec(&input, Configuration::standard()).unwrap();
 
     assert_eq!(result, expected);
 
     let output: SerdeWithBorrowedData =
-        bincode::serde_decode_borrowed_from_slice(&result, Configuration::standard()).unwrap();
+        bincode::serde::decode_borrowed_from_slice(&result, Configuration::standard()).unwrap();
     assert_eq!(
         SerdeWithBorrowedData {
             b: 0, // remember: b is skipped
@@ -107,16 +107,16 @@ fn test_serialize_deserialize_owned_data() {
 
     let mut result = [0u8; 20];
     let len =
-        bincode::serde_encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
+        bincode::serde::encode_to_slice(&input, &mut result, Configuration::standard()).unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
-    let result = bincode::serde_encode_to_vec(&input, Configuration::standard()).unwrap();
+    let result = bincode::serde::encode_to_vec(&input, Configuration::standard()).unwrap();
 
     assert_eq!(result, expected);
 
     let output: SerdeWithOwnedData =
-        bincode::serde_decode_from_slice(&result, Configuration::standard()).unwrap();
+        bincode::serde::decode_from_slice(&result, Configuration::standard()).unwrap();
     assert_eq!(
         SerdeWithOwnedData {
             b: 0, // remember: b is skipped
@@ -124,4 +124,54 @@ fn test_serialize_deserialize_owned_data() {
         },
         output
     );
+}
+
+#[cfg(feature = "derive")]
+mod derive {
+    use bincode::{config::Configuration, Decode, Encode};
+    use serde_derive::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[serde(crate = "serde_incl")]
+    pub struct SerdeType {
+        pub a: u32,
+    }
+
+    #[derive(Decode, Encode, PartialEq, Debug)]
+    pub struct StructWithSerde {
+        #[bincode(with_serde)]
+        pub serde: SerdeType,
+    }
+
+    #[derive(Decode, Encode, PartialEq, Debug)]
+    pub enum EnumWithSerde {
+        Unit(#[bincode(with_serde)] SerdeType),
+        Struct {
+            #[bincode(with_serde)]
+            serde: SerdeType,
+        },
+    }
+
+    #[test]
+    fn test_serde_derive() {
+        fn test_encode_decode<T>(start: T)
+        where
+            T: bincode::Encode + bincode::Decode + PartialEq + core::fmt::Debug,
+        {
+            let mut slice = [0u8; 100];
+            let len =
+                bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
+            let slice = &slice[..len];
+            let result: T = bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
+
+            assert_eq!(start, result);
+        }
+        test_encode_decode(StructWithSerde {
+            serde: SerdeType { a: 5 },
+        });
+        test_encode_decode(EnumWithSerde::Unit(SerdeType { a: 5 }));
+        test_encode_decode(EnumWithSerde::Struct {
+            serde: SerdeType { a: 5 },
+        });
+    }
 }

@@ -7,8 +7,10 @@ use serde_incl::de::*;
 
 /// Decode an owned type from the given slice.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [serde_decode_borrowed_from_slice].
-pub fn serde_decode_from_slice<T, C>(slice: &[u8], config: C) -> Result<T, DecodeError>
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [decode_borrowed_from_slice].
+///
+/// [decode_borrowed_from_slice]: fn.decode_borrowed_from_slice.html
+pub fn decode_from_slice<T, C>(slice: &[u8], config: C) -> Result<T, DecodeError>
 where
     T: DeserializeOwned,
     C: Config,
@@ -19,8 +21,8 @@ where
     T::deserialize(serde_decoder)
 }
 
-struct SerdeDecoder<'a, DE: Decoder> {
-    de: &'a mut DE,
+pub(crate) struct SerdeDecoder<'a, DE: Decoder> {
+    pub(crate) de: &'a mut DE,
 }
 
 impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
