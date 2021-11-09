@@ -24,7 +24,7 @@ impl DeriveStruct {
                     if field.has_field_attribute(FieldAttribute::WithSerde) {
                         fn_body
                             .push_parsed(format!(
-                                "bincode::__serde_encode_field(&self.{}, &mut encoder)?;",
+                                "bincode::Encode::encode(&bincode::serde::Compat(&self.{}), &mut encoder)?;",
                                 field.to_string()
                             ))
                             .unwrap();
@@ -71,7 +71,7 @@ impl DeriveStruct {
                             if field.has_field_attribute(FieldAttribute::WithSerde) {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::__serde_decode_field(&mut decoder)?,",
+                                        "{}: (<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?).0,",
                                         field.to_string()
                                     ))
                                     .unwrap();
@@ -113,7 +113,7 @@ impl DeriveStruct {
                             if field.has_field_attribute(FieldAttribute::WithSerde) {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::__serde_decode_borrowed_field(&mut decoder)?,",
+                                        "{}: (<bincode::serde::BorrowCompat<_> as bincode::de::BorrowDecode>::borrow_decode(&mut decoder)?).0,",
                                         field.to_string()
                                     ))
                                     .unwrap();
