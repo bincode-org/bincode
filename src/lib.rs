@@ -15,7 +15,7 @@
 //!
 //! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
 //! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
-//! |std   | Yes    ||`decode_from_reader` and `encode_into_writer`|
+//! |std   | Yes    |`HashMap`|`decode_from_reader` and `encode_into_writer`|
 //! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
