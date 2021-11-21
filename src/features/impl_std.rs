@@ -6,6 +6,7 @@ use crate::{
 };
 use core::time::Duration;
 use std::{
+    collections::HashMap,
     ffi::{CStr, CString},
     io::Read,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
@@ -345,3 +346,35 @@ impl Decode for SocketAddrV6 {
 
 impl std::error::Error for EncodeError {}
 impl std::error::Error for DecodeError {}
+
+impl<K, V> Encode for HashMap<K, V>
+where
+    K: Encode,
+    V: Encode,
+{
+    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+        for (k, v) in self.iter() {
+            Encode::encode(k, &mut encoder)?;
+            Encode::encode(v, &mut encoder)?;
+        }
+        Ok(())
+    }
+}
+
+impl<K, V> Decode for HashMap<K, V>
+where
+    K: Decode + Eq + std::hash::Hash,
+    V: Decode,
+{
+    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(&mut decoder)?;
+        let mut map = HashMap::with_capacity(len);
+        for _ in 0..len {
+            let k = K::decode(&mut decoder)?;
+            let v = V::decode(&mut decoder)?;
+            map.insert(k, v);
+        }
+        Ok(map)
+    }
+}
