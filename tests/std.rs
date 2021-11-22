@@ -93,6 +93,12 @@ fn test_std_commons() {
         &*a.read().unwrap() == &*b.read().unwrap()
     });
 
+    let mut map = std::collections::HashMap::new();
+    map.insert("Hello".to_owned(), "world".to_owned());
+    map.insert("How".to_owned(), "are".to_owned());
+    map.insert("you".to_owned(), "doing?".to_owned());
+    the_same(map);
+
     // Borrowed values
     let config = bincode::config::Configuration::standard();
     let mut buffer = [0u8; 1024];
