@@ -40,10 +40,11 @@ use core::marker::PhantomData;
 /// [skip_fixed_array_length]: #method.skip_fixed_array_length
 /// [write_fixed_array_length]: #method.write_fixed_array_length
 #[derive(Copy, Clone)]
-pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength> {
+pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength, L = NoLimit> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
     _a: PhantomData<A>,
+    _l: PhantomData<L>,
 }
 
 impl Configuration {
@@ -59,17 +60,18 @@ impl Configuration {
     /// - Little endian
     /// - Fixed int length encoding
     /// - Write array lengths
-    pub fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength> {
+    pub fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
         Self::generate()
     }
 }
 
-impl<E, I, A> Configuration<E, I, A> {
-    fn generate<_E, _I, _A>() -> Configuration<_E, _I, _A> {
+impl<E, I, A, L> Configuration<E, I, A, L> {
+    fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
         Configuration {
             _e: PhantomData,
             _i: PhantomData,
             _a: PhantomData,
+            _l: PhantomData,
         }
     }
 
@@ -162,16 +164,36 @@ impl<E, I, A> Configuration<E, I, A> {
     pub fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength> {
         Self::generate()
     }
+
+    /// Sets the byte limit to `limit`.
+    pub fn with_limit<const N: usize>(self) -> Configuration<E, I, A, Limit<N>> {
+        Self::generate()
+    }
+
+    /// Clear the byte limit.
+    pub fn with_no_limit(self) -> Configuration<E, I, A, NoLimit> {
+        Self::generate()
+    }
 }
 
 /// Indicates a type is valid for controlling the bincode configuration
 pub trait Config:
-    InternalEndianConfig + InternalArrayLengthConfig + InternalIntEncodingConfig + Copy + Clone
+    InternalEndianConfig
+    + InternalArrayLengthConfig
+    + InternalIntEncodingConfig
+    + InternalLimitConfig
+    + Copy
+    + Clone
 {
 }
 
 impl<T> Config for T where
-    T: InternalEndianConfig + InternalArrayLengthConfig + InternalIntEncodingConfig + Copy + Clone
+    T: InternalEndianConfig
+        + InternalArrayLengthConfig
+        + InternalIntEncodingConfig
+        + InternalLimitConfig
+        + Copy
+        + Clone
 {
 }
 
@@ -223,6 +245,20 @@ impl InternalArrayLengthConfig for WriteFixedArrayLength {
     const SKIP_FIXED_ARRAY_LENGTH: bool = false;
 }
 
+#[doc(hidden)]
+#[derive(Copy, Clone)]
+pub struct NoLimit {}
+impl InternalLimitConfig for NoLimit {
+    const LIMIT: Option<usize> = None;
+}
+
+#[doc(hidden)]
+#[derive(Copy, Clone)]
+pub struct Limit<const N: usize> {}
+impl<const N: usize> InternalLimitConfig for Limit<N> {
+    const LIMIT: Option<usize> = Some(N);
+}
+
 mod internal {
     use super::Configuration;
 
@@ -260,5 +296,13 @@ mod internal {
 
     impl<E, I, A: InternalArrayLengthConfig> InternalArrayLengthConfig for Configuration<E, I, A> {
         const SKIP_FIXED_ARRAY_LENGTH: bool = A::SKIP_FIXED_ARRAY_LENGTH;
+    }
+
+    pub trait InternalLimitConfig {
+        const LIMIT: Option<usize>;
+    }
+
+    impl<E, I, A, L: InternalLimitConfig> InternalLimitConfig for Configuration<E, I, A, L> {
+        const LIMIT: Option<usize> = L::LIMIT;
     }
 }
