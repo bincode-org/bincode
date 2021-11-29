@@ -369,12 +369,12 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
-        decoder.claim_bytes_read(len * (core::mem::size_of::<K>() + core::mem::size_of::<V>()))?;
+        decoder.claim_container_read::<(K, V)>(len)?;
 
         let mut map = HashMap::with_capacity(len);
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<K>() + core::mem::size_of::<V>());
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
 
             let k = K::decode(&mut decoder)?;
             let v = V::decode(&mut decoder)?;

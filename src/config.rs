@@ -266,7 +266,7 @@ mod internal {
         const ENDIAN: Endian;
     }
 
-    impl<E: InternalEndianConfig, I, A> InternalEndianConfig for Configuration<E, I, A> {
+    impl<E: InternalEndianConfig, I, A, L> InternalEndianConfig for Configuration<E, I, A, L> {
         const ENDIAN: Endian = E::ENDIAN;
     }
 
@@ -280,7 +280,9 @@ mod internal {
         const INT_ENCODING: IntEncoding;
     }
 
-    impl<E, I: InternalIntEncodingConfig, A> InternalIntEncodingConfig for Configuration<E, I, A> {
+    impl<E, I: InternalIntEncodingConfig, A, L> InternalIntEncodingConfig
+        for Configuration<E, I, A, L>
+    {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
     }
 
@@ -294,7 +296,9 @@ mod internal {
         const SKIP_FIXED_ARRAY_LENGTH: bool;
     }
 
-    impl<E, I, A: InternalArrayLengthConfig> InternalArrayLengthConfig for Configuration<E, I, A> {
+    impl<E, I, A: InternalArrayLengthConfig, L> InternalArrayLengthConfig
+        for Configuration<E, I, A, L>
+    {
         const SKIP_FIXED_ARRAY_LENGTH: bool = A::SKIP_FIXED_ARRAY_LENGTH;
     }
 

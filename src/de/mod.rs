@@ -6,7 +6,11 @@ mod impl_tuples;
 mod impls;
 
 use self::read::{BorrowReader, Reader};
-use crate::{config::Config, error::DecodeError, utils::Sealed};
+use crate::{
+    config::{Config, InternalLimitConfig},
+    error::DecodeError,
+    utils::Sealed,
+};
 
 pub mod read;
 
@@ -57,6 +61,19 @@ pub trait Decoder: Sealed {
     /// Claim that `n` bytes are going to be read from the decoder.
     /// This can be used to validate `Configuration::Limit<N>()`.
     fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError>;
+
+    /// Claim that we're going to read a container which contains `len` entries of `T`.
+    /// This will correctly handle overflowing if `len * size_of::<T>() > usize::max_value`
+    fn claim_container_read<T>(&mut self, len: usize) -> Result<(), DecodeError> {
+        if <Self::C as InternalLimitConfig>::LIMIT.is_some() {
+            match len.checked_mul(core::mem::size_of::<T>()) {
+                Some(val) => self.claim_bytes_read(val),
+                None => Err(DecodeError::LimitExceeded),
+            }
+        } else {
+            Ok(())
+        }
+    }
 
     /// Notify the decoder that `n` bytes are being reclaimed.
     ///

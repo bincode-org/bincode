@@ -89,3 +89,41 @@ fn test_alloc_commons() {
         set
     });
 }
+
+#[test]
+fn test_container_limits() {
+    use bincode::{error::DecodeError, Decode};
+
+    const DECODE_LIMIT: usize = 100_000;
+
+    // for this test we'll create a malformed package of a lot of bytes
+    let test_cases = &[
+        // u64::max_value(), should overflow
+        bincode::encode_to_vec(u64::max_value(), Configuration::standard()).unwrap(),
+        // A high value which doesn't overflow, but exceeds the decode limit
+        bincode::encode_to_vec(DECODE_LIMIT as u64, Configuration::standard()).unwrap(),
+    ];
+
+    fn validate_fail<T: Decode + core::fmt::Debug>(slice: &[u8]) {
+        let result = bincode::decode_from_slice::<T, _>(
+            slice,
+            Configuration::standard().with_limit::<DECODE_LIMIT>(),
+        );
+
+        assert_eq!(result.unwrap_err(), DecodeError::LimitExceeded);
+    }
+
+    for slice in test_cases {
+        validate_fail::<BinaryHeap<i32>>(slice);
+        validate_fail::<BTreeMap<i32, i32>>(slice);
+        validate_fail::<BTreeSet<i32>>(slice);
+        validate_fail::<VecDeque<i32>>(slice);
+        validate_fail::<Vec<i32>>(slice);
+        validate_fail::<String>(slice);
+        validate_fail::<Box<[u8]>>(slice);
+        #[cfg(feature = "std")]
+        {
+            validate_fail::<std::collections::HashMap<i32, i32>>(slice);
+        }
+    }
+}

@@ -52,7 +52,7 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
-        decoder.claim_bytes_read(len * core::mem::size_of::<T>())?;
+        decoder.claim_container_read::<T>(len)?;
 
         let mut map = BinaryHeap::with_capacity(len);
         for _ in 0..len {
@@ -86,12 +86,12 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
-        decoder.claim_bytes_read(len * (core::mem::size_of::<K>() + core::mem::size_of::<V>()))?;
+        decoder.claim_container_read::<(K, V)>(len)?;
 
         let mut map = BTreeMap::new();
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<K>() + core::mem::size_of::<V>());
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
 
             let key = K::decode(&mut decoder)?;
             let value = V::decode(&mut decoder)?;
@@ -122,7 +122,7 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
-        decoder.claim_bytes_read(len)?;
+        decoder.claim_container_read::<T>(len)?;
 
         let mut map = BTreeSet::new();
         for _ in 0..len {
@@ -155,7 +155,7 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
-        decoder.claim_bytes_read(len)?;
+        decoder.claim_container_read::<T>(len)?;
 
         let mut map = VecDeque::with_capacity(len);
         for _ in 0..len {
@@ -188,7 +188,7 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
-        decoder.claim_bytes_read(len)?;
+        decoder.claim_container_read::<T>(len)?;
 
         let mut vec = Vec::with_capacity(len);
         for _ in 0..len {
