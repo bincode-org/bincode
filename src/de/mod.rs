@@ -70,7 +70,8 @@ pub trait Decoder: Sealed {
     /// a nested container (e.g. `Vec<Vec<T>>`), it does not know how much memory is already claimed, and could easily
     /// allocate much more than the user intends.
     /// ```
-    /// # use bincode::de::{Decode, Decoder, DecodeError};
+    /// # use bincode::de::{Decode, Decoder};
+    /// # use bincode::error::DecodeError;
     /// # struct Container<T>(Vec<T>);
     /// # impl<T> Container<T> {
     /// #     fn with_capacity(cap: usize) -> Self {
@@ -82,17 +83,18 @@ pub trait Decoder: Sealed {
     /// #     }
     /// # }
     /// impl<T: Decode> Decode for Container<T> {
-    ///     fn decode<D: Decoder>(&mut self, mut decoder: D) -> Result<(), DecodeError> {
-    ///         let len = crate::de::decode_slice_len(&mut decoder)?
+    ///     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+    ///         let len = u64::decode(&mut decoder)? as usize;
     ///         // Make sure we don't allocate too much memory
-    ///         d.notify_bytes_read(len * core::mem::size_of::<T>());
+    ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
     ///
     ///         let mut result = Container::with_capacity(len);
     ///         for _ in 0..len {
     ///             // un-claim the memory
-    ///             d.unclaim_bytes_read(core::mem::size_of::<T>());
+    ///             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
     ///             result.push(T::decode(&mut decoder)?)
     ///         }
+    ///         Ok(result)
     ///     }
     /// }
     /// ```
