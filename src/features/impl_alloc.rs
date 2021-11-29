@@ -52,8 +52,13 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
+        decoder.claim_bytes_read(len * core::mem::size_of::<T>())?;
+
         let mut map = BinaryHeap::with_capacity(len);
         for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
             let key = T::decode(&mut decoder)?;
             map.push(key);
         }
@@ -81,8 +86,13 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
+        decoder.claim_bytes_read(len * (core::mem::size_of::<K>() + core::mem::size_of::<V>()))?;
+
         let mut map = BTreeMap::new();
         for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<K>() + core::mem::size_of::<V>());
+
             let key = K::decode(&mut decoder)?;
             let value = V::decode(&mut decoder)?;
             map.insert(key, value);
@@ -112,8 +122,13 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
+        decoder.claim_bytes_read(len)?;
+
         let mut map = BTreeSet::new();
         for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
             let key = T::decode(&mut decoder)?;
             map.insert(key);
         }
@@ -140,8 +155,13 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
+        decoder.claim_bytes_read(len)?;
+
         let mut map = VecDeque::with_capacity(len);
         for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
             let key = T::decode(&mut decoder)?;
             map.push_back(key);
         }
@@ -168,8 +188,13 @@ where
 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(&mut decoder)?;
+        decoder.claim_bytes_read(len)?;
+
         let mut vec = Vec::with_capacity(len);
         for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
             vec.push(T::decode(&mut decoder)?);
         }
         Ok(vec)

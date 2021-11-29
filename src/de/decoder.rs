@@ -2,7 +2,7 @@ use super::{
     read::{BorrowReader, Reader},
     BorrowDecoder, Decoder,
 };
-use crate::{config::Config, utils::Sealed};
+use crate::{config::Config, error::DecodeError, utils::Sealed};
 
 /// A Decoder that reads bytes from a given reader `R`.
 ///
@@ -24,12 +24,17 @@ use crate::{config::Config, utils::Sealed};
 pub struct DecoderImpl<R, C: Config> {
     reader: R,
     config: C,
+    bytes_read: usize,
 }
 
 impl<R: Reader, C: Config> DecoderImpl<R, C> {
     /// Construct a new Decoder
     pub fn new(reader: R, config: C) -> DecoderImpl<R, C> {
-        DecoderImpl { reader, config }
+        DecoderImpl {
+            reader,
+            config,
+            bytes_read: 0,
+        }
     }
 }
 
@@ -54,5 +59,31 @@ impl<R: Reader, C: Config> Decoder for DecoderImpl<R, C> {
 
     fn config(&self) -> &Self::C {
         &self.config
+    }
+
+    fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
+        // C::LIMIT is a const so this check should get compiled away
+        if let Some(limit) = C::LIMIT {
+            // Make sure we don't accidentally overflow `bytes_read`
+            self.bytes_read = self
+                .bytes_read
+                .checked_add(n)
+                .ok_or(DecodeError::LimitExceeded)?;
+            if self.bytes_read > limit {
+                Err(DecodeError::LimitExceeded)
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    fn unclaim_bytes_read(&mut self, n: usize) {
+        // C::LIMIT is a const so this check should get compiled away
+        if C::LIMIT.is_some() {
+            // We should always be claiming more than we unclaim, so this should never underflow
+            self.bytes_read -= n;
+        }
     }
 }
