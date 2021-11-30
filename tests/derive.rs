@@ -17,7 +17,7 @@ pub struct Test2<T: Decode> {
     c: u32,
 }
 
-#[derive(bincode::BorrowDecode, PartialEq, Debug, Eq)]
+#[derive(bincode::BorrowDecode, bincode::Encode, PartialEq, Debug, Eq)]
 pub struct Test3<'a> {
     a: &'a str,
     b: u32,
@@ -55,7 +55,6 @@ fn test_encode() {
     assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn test_decode() {
     let start = Test2 {
@@ -64,9 +63,22 @@ fn test_decode() {
         c: 1024u32,
     };
     let slice = [5, 10, 251, 0, 4];
-    let result: Test2<u32> =
-        bincode::decode_from_std_read(&mut slice.as_ref(), Configuration::standard()).unwrap();
+    let result: Test2<u32> = bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
     assert_eq!(result, start);
+}
+
+#[test]
+fn test_encode_decode_str() {
+    let start = Test3 {
+        a: "Foo bar",
+        b: 10u32,
+        c: 1024u32,
+    };
+    let mut slice = [0u8; 100];
+
+    let len = bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
+    let end: Test3 = bincode::decode_from_slice(&slice[..len], Configuration::standard()).unwrap();
+    assert_eq!(end, start);
 }
 
 #[test]
