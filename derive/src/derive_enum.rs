@@ -1,7 +1,7 @@
-use crate::generate::{FnSelfArg, Generator, StreamBuilder};
-use crate::parse::{EnumVariant, FieldAttribute, Fields};
-use crate::prelude::*;
-use crate::Result;
+use super::FieldAttribute;
+use virtue::generate::{FnSelfArg, Generator, StreamBuilder};
+use virtue::parse::{EnumVariant, Fields};
+use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";
 
@@ -245,7 +245,7 @@ impl DeriveEnum {
 
         let enum_name = generator.target_name().to_string();
 
-        generator.impl_for_with_de_lifetime("bincode::de::BorrowDecode<'__de>")
+        generator.impl_for_with_lifetimes("bincode::de::BorrowDecode", &["__de"])
             .unwrap()
             .generate_fn("borrow_decode")
             .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
