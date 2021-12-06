@@ -114,31 +114,18 @@ enum FieldAttribute {
 }
 
 impl FromAttribute for FieldAttribute {
-    fn parse(group: &Group) -> Option<Self> {
-        let stream = &mut group.stream().into_iter();
-        let mut tmp_stream;
-        let stream = if let Some(TokenTree::Ident(attribute_ident)) = stream.next() {
-            if attribute_ident.to_string() != "bincode" {
-                return None;
-            }
-            if let Some(TokenTree::Group(group)) = stream.next() {
-                tmp_stream = group.stream().into_iter().peekable();
-                &mut tmp_stream
-            } else {
-                return None;
-            }
-        } else {
-            return None;
-        };
-
-        if let Some(TokenTree::Ident(ident)) = stream.next() {
-            if ident.to_string() == "with_serde" {
-                Some(Self::WithSerde)
-            } else {
-                None
-            }
-        } else {
-            None
+    fn parse(group: &Group) -> Result<Option<Self>> {
+        match virtue::utils::parse_tagged_attribute(group, "bincode") {
+            Some(body) => match body.into_iter().next() {
+                Some(TokenTree::Ident(ident)) if ident.to_string() == "with_serde" => {
+                    Ok(Some(Self::WithSerde))
+                }
+                token => Err(virtue::Error::custom_at_opt_token(
+                    "Unknown attribute, expected one of: \"with_serde\"",
+                    token,
+                )),
+            },
+            None => Ok(None),
         }
     }
 }
