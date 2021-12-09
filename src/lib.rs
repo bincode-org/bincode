@@ -49,7 +49,7 @@
 //!
 //! // Decoding works the same as encoding.
 //! // The trait used is `de::Decode`, and can also be automatically implemented with the `derive` feature.
-//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, Configuration::standard()).unwrap();
+//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, Configuration::standard()).unwrap().0;
 //!
 //! assert_eq!(decoded, input);
 //! ```
@@ -67,7 +67,7 @@ mod features;
 pub(crate) mod utils;
 pub(crate) mod varint;
 
-use de::read::Reader;
+use de::{read::Reader, Decoder};
 use enc::write::Writer;
 pub use features::*;
 
@@ -120,10 +120,12 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
     src: &'a [u8],
     config: C,
-) -> Result<D, error::DecodeError> {
+) -> Result<(D, usize), error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
     let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
-    D::borrow_decode(&mut decoder)
+    let result = D::borrow_decode(&mut decoder)?;
+    let bytes_read = src.len() - decoder.reader().slice.len();
+    Ok((result, bytes_read))
 }
 
 /// Attempt to decode a given type `D` from the given [Reader].

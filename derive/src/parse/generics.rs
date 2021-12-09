@@ -122,6 +122,7 @@ impl Generics {
 }
 
 #[derive(Debug)]
+#[allow(clippy::enum_variant_names)]
 enum Generic {
     Lifetime(Lifetime),
     Simple(SimpleGeneric),

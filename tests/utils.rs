@@ -15,7 +15,8 @@ where
         &buffer[..len],
         core::any::type_name::<C>()
     );
-    let decoded: V = bincode::decode_from_slice(&mut buffer, config).unwrap();
+    let (decoded, decoded_len): (V, usize) =
+        bincode::decode_from_slice(&mut buffer, config).unwrap();
 
     assert!(
         cmp(&element, &decoded),
@@ -24,6 +25,7 @@ where
         element,
         &buffer[..len],
     );
+    assert_eq!(len, decoded_len);
 }
 
 pub fn the_same_with_comparer<V, CMP>(element: V, cmp: CMP)

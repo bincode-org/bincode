@@ -53,9 +53,10 @@ fn main() {
     // The 4 floats are encoded in 4 bytes each.
     assert_eq!(encoded.len(), 1 + 4 * 4);
 
-    let decoded: World = bincode::decode_from_slice(&encoded[..], config).unwrap();
+    let (decoded, len): (World, usize) = bincode::decode_from_slice(&encoded[..], config).unwrap();
 
     assert_eq!(world, decoded);
+    assert_eq!(len, encoded.len()); // read all bytes
 }
 ```
 
