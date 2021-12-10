@@ -25,14 +25,14 @@ impl DeriveStruct {
                         fn_body
                             .push_parsed(format!(
                                 "bincode::Encode::encode(&bincode::serde::Compat(&self.{}), &mut encoder)?;",
-                                field.to_string()
+                                field
                             ))
                             .unwrap();
                     } else {
                         fn_body
                             .push_parsed(format!(
                                 "bincode::enc::Encode::encode(&self.{}, &mut encoder)?;",
-                                field.to_string()
+                                field
                             ))
                             .unwrap();
                     }
@@ -72,14 +72,14 @@ impl DeriveStruct {
                                 struct_body
                                     .push_parsed(format!(
                                         "{}: (<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?).0,",
-                                        field.to_string()
+                                        field
                                     ))
                                     .unwrap();
                             } else {
                                 struct_body
                                     .push_parsed(format!(
                                         "{}: bincode::Decode::decode(&mut decoder)?,",
-                                        field.to_string()
+                                        field
                                     ))
                                     .unwrap();
                             }
@@ -114,14 +114,14 @@ impl DeriveStruct {
                                 struct_body
                                     .push_parsed(format!(
                                         "{}: (<bincode::serde::BorrowCompat<_> as bincode::de::BorrowDecode>::borrow_decode(&mut decoder)?).0,",
-                                        field.to_string()
+                                        field
                                     ))
                                     .unwrap();
                             } else {
                                 struct_body
                                     .push_parsed(format!(
                                         "{}: bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,",
-                                        field.to_string()
+                                        field
                                     ))
                                     .unwrap();
                                 }
