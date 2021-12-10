@@ -142,6 +142,27 @@ fn test_slice() {
 }
 
 #[test]
+fn test_option_slice() {
+    let mut buffer = [0u8; 32];
+    let input: Option<&[u8]> = Some(&[1, 2, 3, 4, 5, 6, 7]);
+    let n = bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
+    assert_eq!(&buffer[..n], &[1, 7, 1, 2, 3, 4, 5, 6, 7]);
+
+    let output: Option<&[u8]> =
+        bincode::decode_from_slice(&buffer[..n], Configuration::standard()).unwrap();
+    assert_eq!(input, output);
+
+    let mut buffer = [0u8; 32];
+    let input: Option<&[u8]> = None;
+    let n = bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
+    assert_eq!(&buffer[..n], &[0]);
+
+    let output: Option<&[u8]> =
+        bincode::decode_from_slice(&buffer[..n], Configuration::standard()).unwrap();
+    assert_eq!(input, output);
+}
+
+#[test]
 fn test_str() {
     let mut buffer = [0u8; 32];
     let input: &str = "Hello world";
@@ -153,6 +174,30 @@ fn test_str() {
 
     let output: &str =
         bincode::decode_from_slice(&mut buffer[..12], Configuration::standard()).unwrap();
+    assert_eq!(input, output);
+}
+
+#[test]
+fn test_option_str() {
+    let mut buffer = [0u8; 32];
+    let input: Option<&str> = Some("Hello world");
+    let n = bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
+    assert_eq!(
+        &buffer[..n],
+        &[1, 11, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
+    );
+
+    let output: Option<&str> =
+        bincode::decode_from_slice(&buffer[..n], Configuration::standard()).unwrap();
+    assert_eq!(input, output);
+
+    let mut buffer = [0u8; 32];
+    let input: Option<&str> = None;
+    let n = bincode::encode_into_slice(input, &mut buffer, Configuration::standard()).unwrap();
+    assert_eq!(&buffer[..n], &[0]);
+
+    let output: Option<&str> =
+        bincode::decode_from_slice(&buffer[..n], Configuration::standard()).unwrap();
     assert_eq!(input, output);
 }
 

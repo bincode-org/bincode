@@ -22,6 +22,7 @@ pub struct Test3<'a> {
     a: &'a str,
     b: u32,
     c: u32,
+    d: Option<&'a [u8]>,
 }
 
 #[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
@@ -73,6 +74,7 @@ fn test_encode_decode_str() {
         a: "Foo bar",
         b: 10u32,
         c: 1024u32,
+        d: Some(b"Foo bar"),
     };
     let mut slice = [0u8; 100];
 
