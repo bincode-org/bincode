@@ -124,7 +124,7 @@ impl Generics {
 #[derive(Debug)]
 enum Generic {
     Lifetime(Lifetime),
-    Generic(SimpleGeneric),
+    Simple(SimpleGeneric),
     Const(ConstGeneric),
 }
 
@@ -136,7 +136,7 @@ impl Generic {
     fn ident(&self) -> Ident {
         match self {
             Self::Lifetime(lt) => lt.ident.clone(),
-            Self::Generic(gen) => gen.ident.clone(),
+            Self::Simple(gen) => gen.ident.clone(),
             Self::Const(gen) => gen.ident.clone(),
         }
     }
@@ -151,7 +151,7 @@ impl Generic {
     fn has_constraints(&self) -> bool {
         match self {
             Self::Lifetime(lt) => !lt.constraint.is_empty(),
-            Self::Generic(gen) => !gen.constraints.is_empty(),
+            Self::Simple(gen) => !gen.constraints.is_empty(),
             Self::Const(_) => true, // const generics always have a constraint
         }
     }
@@ -159,7 +159,7 @@ impl Generic {
     fn constraints(&self) -> Vec<TokenTree> {
         match self {
             Self::Lifetime(lt) => lt.constraint.clone(),
-            Self::Generic(gen) => gen.constraints.clone(),
+            Self::Simple(gen) => gen.constraints.clone(),
             Self::Const(gen) => gen.constraints.clone(),
         }
     }
@@ -167,7 +167,7 @@ impl Generic {
     fn append_to_result_with_constraints(&self, builder: &mut StreamBuilder) {
         match self {
             Self::Lifetime(lt) => builder.lifetime(lt.ident.clone()),
-            Self::Generic(gen) => {
+            Self::Simple(gen) => {
                 builder.ident(gen.ident.clone());
             }
             Self::Const(gen) => {
@@ -190,7 +190,7 @@ impl From<Lifetime> for Generic {
 
 impl From<SimpleGeneric> for Generic {
     fn from(gen: SimpleGeneric) -> Self {
-        Self::Generic(gen)
+        Self::Simple(gen)
     }
 }
 

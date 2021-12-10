@@ -57,7 +57,6 @@
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.1")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
-#![crate_type = "dylib"]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

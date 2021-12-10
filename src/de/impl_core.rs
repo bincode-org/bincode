@@ -40,7 +40,7 @@ where
             // SAFETY: this slice will contain only initialized objects.
             unsafe {
                 core::ptr::drop_in_place(slice_assume_init_mut(
-                    &mut self.array_mut.get_unchecked_mut(..self.initialized),
+                    self.array_mut.get_unchecked_mut(..self.initialized),
                 ));
             }
         }
