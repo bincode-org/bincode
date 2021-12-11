@@ -145,10 +145,12 @@ where
         T::config(self)
     }
 
+    #[inline]
     fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
         T::claim_bytes_read(self, n)
     }
 
+    #[inline]
     fn unclaim_bytes_read(&mut self, n: usize) {
         T::unclaim_bytes_read(self, n)
     }

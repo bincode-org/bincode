@@ -61,6 +61,7 @@ impl<R: Reader, C: Config> Decoder for DecoderImpl<R, C> {
         &self.config
     }
 
+    #[inline]
     fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
         // C::LIMIT is a const so this check should get compiled away
         if let Some(limit) = C::LIMIT {
@@ -79,6 +80,7 @@ impl<R: Reader, C: Config> Decoder for DecoderImpl<R, C> {
         }
     }
 
+    #[inline]
     fn unclaim_bytes_read(&mut self, n: usize) {
         // C::LIMIT is a const so this check should get compiled away
         if C::LIMIT.is_some() {
