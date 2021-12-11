@@ -1,55 +1,25 @@
-extern crate proc_macro;
-
 mod derive_enum;
 mod derive_struct;
-mod error;
-mod generate;
-mod parse;
 
-#[cfg(test)]
-pub(crate) mod prelude {
-    pub use proc_macro2::*;
-}
-#[cfg(not(test))]
-pub(crate) mod prelude {
-    pub use proc_macro::*;
-}
-
-use error::Error;
-use parse::AttributeLocation;
-use prelude::TokenStream;
-
-type Result<T = ()> = std::result::Result<T, Error>;
+use virtue::prelude::*;
 
 #[proc_macro_derive(Encode, attributes(bincode))]
 pub fn derive_encode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    #[allow(clippy::useless_conversion)]
-    derive_encode_inner(input.into())
-        .unwrap_or_else(|e| e.into_token_stream())
-        .into()
+    derive_encode_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
 fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
-    let source = &mut input.into_iter().peekable();
+    let parse = Parse::new(input)?;
+    let (mut generator, body) = parse.into_generator();
 
-    let _attributes = parse::Attribute::try_take(AttributeLocation::Container, source)?;
-    let _visibility = parse::Visibility::try_take(source)?;
-    let (datatype, name) = parse::DataType::take(source)?;
-    let generics = parse::Generics::try_take(source)?;
-    let generic_constraints = parse::GenericConstraints::try_take(source)?;
-
-    let mut generator = generate::Generator::new(name.clone(), generics, generic_constraints);
-
-    match datatype {
-        parse::DataType::Struct => {
-            let body = parse::StructBody::take(source)?;
+    match body {
+        Body::Struct(body) => {
             derive_struct::DeriveStruct {
                 fields: body.fields,
             }
             .generate_encode(&mut generator)?;
         }
-        parse::DataType::Enum => {
-            let body = parse::EnumBody::take(source)?;
+        Body::Enum(body) => {
             derive_enum::DeriveEnum {
                 variants: body.variants,
             }
@@ -57,40 +27,29 @@ fn derive_encode_inner(input: TokenStream) -> Result<TokenStream> {
         }
     }
 
-    let stream = generator.take_stream();
+    let name = generator.target_name().clone();
+    let stream = generator.finish()?;
     dump_output(name, "Encode", &stream);
     Ok(stream)
 }
 
 #[proc_macro_derive(Decode, attributes(bincode))]
 pub fn derive_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    #[allow(clippy::useless_conversion)]
-    derive_decode_inner(input.into())
-        .unwrap_or_else(|e| e.into_token_stream())
-        .into()
+    derive_decode_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
 fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
-    let source = &mut input.into_iter().peekable();
+    let parse = Parse::new(input)?;
+    let (mut generator, body) = parse.into_generator();
 
-    let _attributes = parse::Attribute::try_take(AttributeLocation::Container, source)?;
-    let _visibility = parse::Visibility::try_take(source)?;
-    let (datatype, name) = parse::DataType::take(source)?;
-    let generics = parse::Generics::try_take(source)?;
-    let generic_constraints = parse::GenericConstraints::try_take(source)?;
-
-    let mut generator = generate::Generator::new(name.clone(), generics, generic_constraints);
-
-    match datatype {
-        parse::DataType::Struct => {
-            let body = parse::StructBody::take(source)?;
+    match body {
+        Body::Struct(body) => {
             derive_struct::DeriveStruct {
                 fields: body.fields,
             }
             .generate_decode(&mut generator)?;
         }
-        parse::DataType::Enum => {
-            let body = parse::EnumBody::take(source)?;
+        Body::Enum(body) => {
             derive_enum::DeriveEnum {
                 variants: body.variants,
             }
@@ -98,40 +57,29 @@ fn derive_decode_inner(input: TokenStream) -> Result<TokenStream> {
         }
     }
 
-    let stream = generator.take_stream();
+    let name = generator.target_name().clone();
+    let stream = generator.finish()?;
     dump_output(name, "Decode", &stream);
     Ok(stream)
 }
 
 #[proc_macro_derive(BorrowDecode, attributes(bincode))]
 pub fn derive_brrow_decode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    #[allow(clippy::useless_conversion)]
-    derive_borrow_decode_inner(input.into())
-        .unwrap_or_else(|e| e.into_token_stream())
-        .into()
+    derive_borrow_decode_inner(input).unwrap_or_else(|e| e.into_token_stream())
 }
 
 fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
-    let source = &mut input.into_iter().peekable();
+    let parse = Parse::new(input)?;
+    let (mut generator, body) = parse.into_generator();
 
-    let _attributes = parse::Attribute::try_take(AttributeLocation::Container, source)?;
-    let _visibility = parse::Visibility::try_take(source)?;
-    let (datatype, name) = parse::DataType::take(source)?;
-    let generics = parse::Generics::try_take(source)?;
-    let generic_constraints = parse::GenericConstraints::try_take(source)?;
-
-    let mut generator = generate::Generator::new(name.clone(), generics, generic_constraints);
-
-    match datatype {
-        parse::DataType::Struct => {
-            let body = parse::StructBody::take(source)?;
+    match body {
+        Body::Struct(body) => {
             derive_struct::DeriveStruct {
                 fields: body.fields,
             }
             .generate_borrow_decode(&mut generator)?;
         }
-        parse::DataType::Enum => {
-            let body = parse::EnumBody::take(source)?;
+        Body::Enum(body) => {
             derive_enum::DeriveEnum {
                 variants: body.variants,
             }
@@ -139,12 +87,13 @@ fn derive_borrow_decode_inner(input: TokenStream) -> Result<TokenStream> {
         }
     }
 
-    let stream = generator.take_stream();
+    let name = generator.target_name().clone();
+    let stream = generator.finish()?;
     dump_output(name, "BorrowDecode", &stream);
     Ok(stream)
 }
 
-fn dump_output(name: crate::prelude::Ident, derive: &str, stream: &crate::prelude::TokenStream) {
+fn dump_output(name: Ident, derive: &str, stream: &TokenStream) {
     use std::io::Write;
 
     if let Ok(var) = std::env::var("CARGO_MANIFEST_DIR") {
@@ -159,13 +108,25 @@ fn dump_output(name: crate::prelude::Ident, derive: &str, stream: &crate::prelud
     }
 }
 
-#[cfg(test)]
-pub(crate) fn token_stream(
-    s: &str,
-) -> std::iter::Peekable<impl Iterator<Item = proc_macro2::TokenTree>> {
-    use std::str::FromStr;
+#[derive(Debug, Copy, Clone, PartialEq)]
+enum FieldAttribute {
+    WithSerde,
+}
 
-    let stream = proc_macro2::TokenStream::from_str(s)
-        .unwrap_or_else(|e| panic!("Could not parse code: {:?}\n{:?}", s, e));
-    stream.into_iter().peekable()
+impl FromAttribute for FieldAttribute {
+    fn parse(group: &Group) -> Result<Option<Self>> {
+        let body = match virtue::utils::parse_tagged_attribute(group, "bincode") {
+            Some(body) => body,
+            None => return Ok(None),
+        };
+        match body.into_iter().next() {
+            Some(TokenTree::Ident(ident)) if ident.to_string() == "with_serde" => {
+                Ok(Some(Self::WithSerde))
+            }
+            token => Err(virtue::Error::custom_at_opt_token(
+                "Unknown attribute, expected one of: \"with_serde\"",
+                token,
+            )),
+        }
+    }
 }

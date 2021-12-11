@@ -1,7 +1,7 @@
-use crate::generate::{FnSelfArg, Generator, StreamBuilder};
-use crate::parse::{EnumVariant, FieldAttribute, Fields};
-use crate::prelude::*;
-use crate::Result;
+use super::FieldAttribute;
+use virtue::generate::{FnSelfArg, Generator, StreamBuilder};
+use virtue::parse::{EnumVariant, Fields};
+use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";
 
@@ -20,8 +20,7 @@ impl DeriveEnum {
 
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
         generator
-            .impl_for("bincode::enc::Encode")
-            .unwrap()
+            .impl_for("bincode::enc::Encode")?
             .generate_fn("encode")
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(FnSelfArg::RefSelf)
@@ -51,7 +50,8 @@ impl DeriveEnum {
                                         field_name.to_token_tree_with_prefix(TUPLE_FIELD_PREFIX),
                                     );
                                 }
-                            });
+                                Ok(())
+                            })?;
                         }
 
                         // Arrow
@@ -68,44 +68,48 @@ impl DeriveEnum {
                         // }
                         match_body.group(Delimiter::Brace, |body| {
                             // variant index
-                            body.push_parsed("<u32 as bincode::enc::Encode>::encode")
-                                .unwrap();
+                            body.push_parsed("<u32 as bincode::enc::Encode>::encode")?;
                             body.group(Delimiter::Parenthesis, |args| {
                                 args.punct('&');
-                                args.group(Delimiter::Parenthesis, |num| num.extend(variant_index));
+                                args.group(Delimiter::Parenthesis, |num| {
+                                    num.extend(variant_index);
+                                    Ok(())
+                                })?;
                                 args.punct(',');
-                                args.push_parsed("&mut encoder").unwrap();
-                            });
+                                args.push_parsed("&mut encoder")?;
+                                Ok(())
+                            })?;
                             body.punct('?');
                             body.punct(';');
                             // If we have any fields, encode them all one by one
                             for field_name in variant.fields.names() {
-                                if field_name.has_field_attribute(FieldAttribute::WithSerde) {
+                                if field_name.has_attribute(FieldAttribute::WithSerde)? {
                                     body.push_parsed(format!(
                                         "bincode::enc::Encode::encode(&bincode::serde::Compat({}), &mut encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
-                                    ))
-                                    .unwrap();
+                                    ))?;
                                 } else {
                                     body.push_parsed(format!(
                                         "bincode::enc::Encode::encode({}, &mut encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                     ))
-                                    .unwrap();
+                                    ?;
                                 }
                             }
-                        });
+                            Ok(())
+                        })?;
                         match_body.punct(',');
                     }
-                });
-                fn_body.push_parsed("Ok(())").unwrap();
-            })
-            .unwrap();
+                    Ok(())
+                })?;
+                fn_body.push_parsed("Ok(())")?;
+                Ok(())
+            })?;
         Ok(())
     }
 
     /// Build the catch-all case for an int-to-enum decode implementation
-    fn invalid_variant_case(&self, enum_name: &str, result: &mut StreamBuilder) {
+    fn invalid_variant_case(&self, enum_name: &str, result: &mut StreamBuilder) -> Result {
         // we'll be generating:
         // variant => Err(
         //    bincode::error::DecodeError::UnexpectedVariant {
@@ -124,9 +128,7 @@ impl DeriveEnum {
         result.puncts("=>");
         result.ident_str("Err");
         result.group(Delimiter::Parenthesis, |err_inner| {
-            err_inner
-                .push_parsed("bincode::error::DecodeError::UnexpectedVariant")
-                .unwrap();
+            err_inner.push_parsed("bincode::error::DecodeError::UnexpectedVariant")?;
             err_inner.group(Delimiter::Brace, |variant_inner| {
                 variant_inner.ident_str("found");
                 variant_inner.punct(':');
@@ -143,9 +145,7 @@ impl DeriveEnum {
 
                 if self.variants.iter().any(|i| i.has_fixed_value()) {
                     // we have fixed values, implement AllowedEnumVariants::Allowed
-                    variant_inner
-                        .push_parsed("bincode::error::AllowedEnumVariants::Allowed")
-                        .unwrap();
+                    variant_inner.push_parsed("bincode::error::AllowedEnumVariants::Allowed")?;
                     variant_inner.group(Delimiter::Parenthesis, |allowed_inner| {
                         allowed_inner.punct('&');
                         allowed_inner.group(Delimiter::Bracket, |allowed_slice| {
@@ -155,19 +155,22 @@ impl DeriveEnum {
                                 }
                                 allowed_slice.extend(ident);
                             }
-                        });
-                    });
+                            Ok(())
+                        })?;
+                        Ok(())
+                    })?;
                 } else {
                     // no fixed values, implement a range
-                    variant_inner
-                        .push_parsed(format!(
-                            "bincode::error::AllowedEnumVariants::Range {{ min: 0, max: {} }}",
-                            self.variants.len() - 1
-                        ))
-                        .unwrap();
+                    variant_inner.push_parsed(format!(
+                        "bincode::error::AllowedEnumVariants::Range {{ min: 0, max: {} }}",
+                        self.variants.len() - 1
+                    ))?;
                 }
-            })
-        });
+                Ok(())
+            })?;
+            Ok(())
+        })?;
+        Ok(())
     }
 
     pub fn generate_decode(&self, generator: &mut Generator) -> Result<()> {
@@ -176,8 +179,7 @@ impl DeriveEnum {
         let enum_name = generator.target_name().to_string();
 
         generator
-            .impl_for("bincode::Decode")
-            .unwrap()
+            .impl_for("bincode::Decode")?
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
             .with_arg("mut decoder", "D")
@@ -186,14 +188,13 @@ impl DeriveEnum {
                 fn_builder
                     .push_parsed(
                         "let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;",
-                    )
-                    .unwrap();
-                fn_builder.push_parsed("match variant_index").unwrap();
+                    )?;
+                fn_builder.push_parsed("match variant_index")?;
                 fn_builder.group(Delimiter::Brace, |variant_case| {
                     for (mut variant_index, variant) in self.iter_fields() {
                         // idx => Ok(..)
                         if variant_index.len() > 1 {
-                            variant_case.push_parsed("x if x == ").unwrap();
+                            variant_case.push_parsed("x if x == ")?;
                             variant_case.extend(variant_index);
                         } else {
                             variant_case.push(variant_index.remove(0));
@@ -217,26 +218,26 @@ impl DeriveEnum {
                                         variant_body.ident(field.unwrap_ident().clone());
                                     }
                                     variant_body.punct(':');
-                                    if field.has_field_attribute(FieldAttribute::WithSerde) {
+                                    if field.has_attribute(FieldAttribute::WithSerde)? {
                                         variant_body
-                                            .push_parsed("<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?.0,")
-                                            .unwrap();
+                                            .push_parsed("<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?.0,")?;
                                     } else {
                                         variant_body
-                                            .push_parsed("bincode::Decode::decode(&mut decoder)?,")
-                                            .unwrap();
+                                            .push_parsed("bincode::Decode::decode(&mut decoder)?,")?;
                                     }
                                 }
-                            });
-                        });
+                                Ok(())
+                            })?;
+                            Ok(())
+                        })?;
                         variant_case.punct(',');
                     }
 
                     // invalid idx
-                    self.invalid_variant_case(&enum_name, variant_case);
-                });
-            })
-            .unwrap();
+                    self.invalid_variant_case(&enum_name, variant_case)
+                })?;
+                Ok(())
+            })?;
         Ok(())
     }
 
@@ -245,21 +246,20 @@ impl DeriveEnum {
 
         let enum_name = generator.target_name().to_string();
 
-        generator.impl_for_with_de_lifetime("bincode::de::BorrowDecode<'__de>")
-            .unwrap()
+        generator.impl_for_with_lifetimes("bincode::de::BorrowDecode", &["__de"])?
             .generate_fn("borrow_decode")
             .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
             .with_arg("mut decoder", "D")
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_builder| {
                 fn_builder
-                    .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;").unwrap();
-                fn_builder.push_parsed("match variant_index").unwrap();
+                    .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;")?;
+                fn_builder.push_parsed("match variant_index")?;
                 fn_builder.group(Delimiter::Brace, |variant_case| {
                     for (mut variant_index, variant) in self.iter_fields() {
                         // idx => Ok(..)
                         if variant_index.len() > 1 {
-                            variant_case.push_parsed("x if x == ").unwrap();
+                            variant_case.push_parsed("x if x == ")?;
                             variant_case.extend(variant_index);
                         } else {
                             variant_case.push(variant_index.remove(0));
@@ -283,23 +283,25 @@ impl DeriveEnum {
                                         variant_body.ident(field.unwrap_ident().clone());
                                     }
                                     variant_body.punct(':');
-                                    if field.has_field_attribute(FieldAttribute::WithSerde) {
+                                    if field.has_attribute(FieldAttribute::WithSerde)? {
                                         variant_body
-                                            .push_parsed("<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(&mut decoder)?.0,")
-                                            .unwrap();
+                                            .push_parsed("<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(&mut decoder)?.0,")?;
                                     } else {
-                                        variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,").unwrap();
+                                        variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,")?;
                                     }
                                 }
-                            });
-                        });
+                                Ok(())
+                            })?;
+                            Ok(())
+                        })?;
                         variant_case.punct(',');
                     }
 
                     // invalid idx
-                    self.invalid_variant_case(&enum_name, variant_case);
-                });
-            }).unwrap();
+                    self.invalid_variant_case(&enum_name, variant_case)
+                })?;
+                Ok(())
+            })?;
         Ok(())
     }
 }
