@@ -4,7 +4,8 @@
     "push": {
       "branches": [
         "trunk",
-        "v*.x"
+        "v*.x",
+        "ci/*"
       ]
     },
     "pull_request": {
@@ -50,6 +51,14 @@
             "args": "--all-features"
           },
           "name": "Run `cargo check`"
+        },
+        {
+          "uses": "actions-rs/cargo@v1",
+          "with": {
+            "command": "check",
+            "args": "--bench *"
+          },
+          "name": "Run `cargo check` on benches"
         },
         {
           "uses": "actions-rs/cargo@v1",
