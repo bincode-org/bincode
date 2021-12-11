@@ -81,11 +81,11 @@ fn test_encode_decode_str() {
     let mut slice = [0u8; 100];
 
     let len = bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
-    assert_eq!(len, 12);
+    assert_eq!(len, 21);
     let (end, len): (Test3, usize) =
         bincode::decode_from_slice(&slice[..len], Configuration::standard()).unwrap();
     assert_eq!(end, start);
-    assert_eq!(len, 12);
+    assert_eq!(len, 21);
 }
 
 #[test]
