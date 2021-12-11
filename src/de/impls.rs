@@ -448,7 +448,7 @@ where
             }
         }
 
-        decoder.claim_bytes_read(N * core::mem::size_of::<T>())?;
+        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
         // Optimize for `[u8; N]`
         if TypeId::of::<u8>() == TypeId::of::<T>() {
