@@ -61,7 +61,7 @@ pub trait BorrowReader<'storage>: Reader {
 
 /// A reader type for `&[u8]` slices. Implements both [Reader] and [BorrowReader], and thus can be used for borrowed data.
 pub struct SliceReader<'storage> {
-    slice: &'storage [u8],
+    pub(crate) slice: &'storage [u8],
 }
 
 impl<'storage> SliceReader<'storage> {

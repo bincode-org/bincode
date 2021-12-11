@@ -64,8 +64,10 @@ fn test_decode() {
         c: 1024u32,
     };
     let slice = [5, 10, 251, 0, 4];
-    let result: Test2<u32> = bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
+    let (result, len): (Test2<u32>, usize) =
+        bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
     assert_eq!(result, start);
+    assert_eq!(len, 5);
 }
 
 #[test]
@@ -79,8 +81,11 @@ fn test_encode_decode_str() {
     let mut slice = [0u8; 100];
 
     let len = bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
-    let end: Test3 = bincode::decode_from_slice(&slice[..len], Configuration::standard()).unwrap();
+    assert_eq!(len, 21);
+    let (end, len): (Test3, usize) =
+        bincode::decode_from_slice(&slice[..len], Configuration::standard()).unwrap();
     assert_eq!(end, start);
+    assert_eq!(len, 21);
 }
 
 #[test]
@@ -97,9 +102,10 @@ fn test_encode_tuple() {
 fn test_decode_tuple() {
     let start = TestTupleStruct(5, 10, 1024);
     let mut slice = [5, 10, 251, 0, 4];
-    let result: TestTupleStruct =
+    let (result, len): (TestTupleStruct, usize) =
         bincode::decode_from_slice(&mut slice, Configuration::standard()).unwrap();
     assert_eq!(result, start);
+    assert_eq!(len, 5);
 }
 
 #[test]
@@ -116,9 +122,10 @@ fn test_encode_enum_struct_variant() {
 fn test_decode_enum_struct_variant() {
     let start = TestEnum::Bar { name: 5u32 };
     let mut slice = [1, 5];
-    let result: TestEnum =
+    let (result, len): (TestEnum, usize) =
         bincode::decode_from_slice(&mut slice, Configuration::standard()).unwrap();
     assert_eq!(result, start);
+    assert_eq!(len, 2);
 }
 
 #[test]
@@ -135,9 +142,10 @@ fn test_encode_enum_tuple_variant() {
 fn test_decode_enum_unit_variant() {
     let start = TestEnum::Foo;
     let mut slice = [0];
-    let result: TestEnum =
+    let (result, len): (TestEnum, usize) =
         bincode::decode_from_slice(&mut slice, Configuration::standard()).unwrap();
     assert_eq!(result, start);
+    assert_eq!(len, 1);
 }
 
 #[test]
@@ -154,9 +162,10 @@ fn test_encode_enum_unit_variant() {
 fn test_decode_enum_tuple_variant() {
     let start = TestEnum::Baz(5, 10, 1024);
     let mut slice = [2, 5, 10, 251, 0, 4];
-    let result: TestEnum =
+    let (result, len): (TestEnum, usize) =
         bincode::decode_from_slice(&mut slice, Configuration::standard()).unwrap();
     assert_eq!(result, start);
+    assert_eq!(len, 6);
 }
 
 #[derive(bincode::Decode, bincode::Encode, PartialEq, Eq, Debug)]
@@ -185,7 +194,9 @@ fn test_c_style_enum() {
     assert_eq!(ser(CStyleEnum::E), 6);
 
     fn de(num: u8) -> Result<CStyleEnum, bincode::error::DecodeError> {
-        bincode::decode_from_slice(&[num], Configuration::standard())
+        let (result, len) = bincode::decode_from_slice(&[num], Configuration::standard())?;
+        assert_eq!(len, 1);
+        Ok(result)
     }
 
     fn expected_err(idx: u32) -> Result<CStyleEnum, bincode::error::DecodeError> {

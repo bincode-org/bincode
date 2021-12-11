@@ -44,9 +44,11 @@ fn test_vec() {
     let vec = bincode::encode_to_vec(Foo { a: 5, b: 10 }, Configuration::standard()).unwrap();
     assert_eq!(vec, &[5, 10]);
 
-    let foo: Foo = bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
+    let (foo, len): (Foo, usize) =
+        bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
+    assert_eq!(len, 2);
 }
 
 #[test]

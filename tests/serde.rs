@@ -28,10 +28,11 @@ fn test_serde_round_trip() {
     let bytes =
         bincode::encode_to_vec(SerdeRoundtrip { a: 15, b: 15 }, Configuration::standard()).unwrap();
     assert_eq!(bytes, &[15, 15]);
-    let result: SerdeRoundtrip =
+    let (result, len): (SerdeRoundtrip, usize) =
         bincode::decode_from_slice(&bytes, Configuration::standard()).unwrap();
     assert_eq!(result.a, 15);
     assert_eq!(result.b, 15);
+    assert_eq!(len, 2);
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -115,7 +116,7 @@ fn test_serialize_deserialize_owned_data() {
 
     assert_eq!(result, expected);
 
-    let output: SerdeWithOwnedData =
+    let (output, len): (SerdeWithOwnedData, usize) =
         bincode::serde::decode_from_slice(&result, Configuration::standard()).unwrap();
     assert_eq!(
         SerdeWithOwnedData {
@@ -124,6 +125,7 @@ fn test_serialize_deserialize_owned_data() {
         },
         output
     );
+    assert_eq!(len, 13);
 }
 
 #[cfg(feature = "derive")]
@@ -154,24 +156,33 @@ mod derive {
 
     #[test]
     fn test_serde_derive() {
-        fn test_encode_decode<T>(start: T)
+        fn test_encode_decode<T>(start: T, expected_len: usize)
         where
             T: bincode::Encode + bincode::Decode + PartialEq + core::fmt::Debug,
         {
             let mut slice = [0u8; 100];
             let len =
                 bincode::encode_into_slice(&start, &mut slice, Configuration::standard()).unwrap();
+            assert_eq!(len, expected_len);
             let slice = &slice[..len];
-            let result: T = bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
+            let (result, len): (T, usize) =
+                bincode::decode_from_slice(&slice, Configuration::standard()).unwrap();
 
             assert_eq!(start, result);
+            assert_eq!(len, expected_len);
         }
-        test_encode_decode(StructWithSerde {
-            serde: SerdeType { a: 5 },
-        });
-        test_encode_decode(EnumWithSerde::Unit(SerdeType { a: 5 }));
-        test_encode_decode(EnumWithSerde::Struct {
-            serde: SerdeType { a: 5 },
-        });
+        test_encode_decode(
+            StructWithSerde {
+                serde: SerdeType { a: 5 },
+            },
+            1,
+        );
+        test_encode_decode(EnumWithSerde::Unit(SerdeType { a: 5 }), 2);
+        test_encode_decode(
+            EnumWithSerde::Struct {
+                serde: SerdeType { a: 5 },
+            },
+            2,
+        );
     }
 }

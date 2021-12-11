@@ -26,7 +26,9 @@ fn test() {
     };
     let vec = bincode::encode_to_vec(&t, Configuration::standard()).unwrap();
 
-    let decoded: T<String> = bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
+    let (decoded, len): (T<String>, usize) =
+        bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
 
     assert_eq!(t, decoded);
+    assert_eq!(len, 12);
 }

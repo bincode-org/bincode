@@ -5,12 +5,12 @@ use crate::{
 };
 use serde_incl::de::*;
 
-/// Decode an owned type from the given slice.
+/// Decode an owned type from the given slice. Will return the decoded type `T` as well as the amount of bytes that were read.
 ///
 /// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [decode_borrowed_from_slice].
 ///
 /// [decode_borrowed_from_slice]: fn.decode_borrowed_from_slice.html
-pub fn decode_from_slice<T, C>(slice: &[u8], config: C) -> Result<T, DecodeError>
+pub fn decode_from_slice<T, C>(slice: &[u8], config: C) -> Result<(T, usize), DecodeError>
 where
     T: DeserializeOwned,
     C: Config,
@@ -18,7 +18,9 @@ where
     let reader = crate::de::read::SliceReader::new(slice);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder { de: &mut decoder };
-    T::deserialize(serde_decoder)
+    let result = T::deserialize(serde_decoder)?;
+    let bytes_read = slice.len() - decoder.reader().slice.len();
+    Ok((result, bytes_read))
 }
 
 pub(crate) struct SerdeDecoder<'a, DE: Decoder> {

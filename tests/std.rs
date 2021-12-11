@@ -106,12 +106,16 @@ fn test_std_commons() {
     // &CStr
     let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
     let len = bincode::encode_into_slice(cstr, &mut buffer, config).unwrap();
-    let decoded: &CStr = bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
+    let (decoded, len): (&CStr, usize) =
+        bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
     assert_eq!(cstr, decoded);
+    assert_eq!(len, 13);
 
     // Path
     let path = Path::new("C:/Program Files/Foo");
     let len = bincode::encode_into_slice(path, &mut buffer, config).unwrap();
-    let decoded: &Path = bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
+    let (decoded, len): (&Path, usize) =
+        bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
     assert_eq!(path, decoded);
+    assert_eq!(len, 21);
 }
