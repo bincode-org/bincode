@@ -1,5 +1,4 @@
 #![allow(unused_unsafe)]
-#![allow(clippy::needless_borrow)]
 
 //! Contains implementations for rust core that have not been stabilized
 //!
