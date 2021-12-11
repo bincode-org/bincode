@@ -33,6 +33,7 @@ impl Decode for bool {
 impl Decode for u8 {
     #[inline]
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(1)?;
         if let Some(buf) = decoder.reader().peek_read(1) {
             let byte = buf[0];
             decoder.reader().consume(1);
@@ -55,6 +56,7 @@ impl Decode for NonZeroU8 {
 
 impl Decode for u16 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(2)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u16(decoder.reader(), D::C::ENDIAN)
@@ -81,6 +83,7 @@ impl Decode for NonZeroU16 {
 
 impl Decode for u32 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(4)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u32(decoder.reader(), D::C::ENDIAN)
@@ -107,6 +110,7 @@ impl Decode for NonZeroU32 {
 
 impl Decode for u64 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u64(decoder.reader(), D::C::ENDIAN)
@@ -133,6 +137,7 @@ impl Decode for NonZeroU64 {
 
 impl Decode for u128 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(16)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_u128(decoder.reader(), D::C::ENDIAN)
@@ -159,6 +164,7 @@ impl Decode for NonZeroU128 {
 
 impl Decode for usize {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_usize(decoder.reader(), D::C::ENDIAN)
@@ -185,6 +191,7 @@ impl Decode for NonZeroUsize {
 
 impl Decode for i8 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(1)?;
         let mut bytes = [0u8; 1];
         decoder.reader().read(&mut bytes)?;
         Ok(bytes[0] as i8)
@@ -201,6 +208,7 @@ impl Decode for NonZeroI8 {
 
 impl Decode for i16 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(2)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i16(decoder.reader(), D::C::ENDIAN)
@@ -227,6 +235,7 @@ impl Decode for NonZeroI16 {
 
 impl Decode for i32 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(4)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i32(decoder.reader(), D::C::ENDIAN)
@@ -253,6 +262,7 @@ impl Decode for NonZeroI32 {
 
 impl Decode for i64 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i64(decoder.reader(), D::C::ENDIAN)
@@ -279,6 +289,7 @@ impl Decode for NonZeroI64 {
 
 impl Decode for i128 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(16)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_i128(decoder.reader(), D::C::ENDIAN)
@@ -305,6 +316,7 @@ impl Decode for NonZeroI128 {
 
 impl Decode for isize {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_decode_isize(decoder.reader(), D::C::ENDIAN)
@@ -331,6 +343,7 @@ impl Decode for NonZeroIsize {
 
 impl Decode for f32 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(4)?;
         let mut bytes = [0u8; 4];
         decoder.reader().read(&mut bytes)?;
         Ok(match D::C::ENDIAN {
@@ -342,6 +355,7 @@ impl Decode for f32 {
 
 impl Decode for f64 {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+        decoder.claim_bytes_read(8)?;
         let mut bytes = [0u8; 8];
         decoder.reader().read(&mut bytes)?;
         Ok(match D::C::ENDIAN {
@@ -362,6 +376,10 @@ impl Decode for char {
         if width == 0 {
             return Err(DecodeError::InvalidCharEncoding(array));
         }
+        // Normally we have to `.claim_bytes_read` before reading, however in this
+        // case the amount of bytes read from `char` can vary wildly, and it should
+        // only read up to 4 bytes too much.
+        decoder.claim_bytes_read(width)?;
         if width == 1 {
             return Ok(array[0] as char);
         }
@@ -379,6 +397,7 @@ impl Decode for char {
 impl<'a, 'de: 'a> BorrowDecode<'de> for &'a [u8] {
     fn borrow_decode<D: BorrowDecoder<'de>>(mut decoder: D) -> Result<Self, DecodeError> {
         let len = super::decode_slice_len(&mut decoder)?;
+        decoder.claim_bytes_read(len)?;
         decoder.borrow_reader().take_bytes(len)
     }
 }
@@ -397,7 +416,7 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a [u8]> {
 
 impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError> {
-        let slice: &[u8] = BorrowDecode::borrow_decode(decoder)?;
+        let slice = <&[u8]>::borrow_decode(decoder)?;
         core::str::from_utf8(slice).map_err(DecodeError::Utf8)
     }
 }
@@ -429,6 +448,9 @@ where
             }
         }
 
+        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
+
+        // Optimize for `[u8; N]`
         if TypeId::of::<u8>() == TypeId::of::<T>() {
             let mut buf = [0u8; N];
             decoder.reader().read(&mut buf)?;
@@ -439,8 +461,11 @@ where
             let res = unsafe { ptr.read() };
             Ok(res)
         } else {
-            let result =
-                super::impl_core::collect_into_array(&mut (0..N).map(|_| T::decode(&mut decoder)));
+            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+                T::decode(&mut decoder)
+            }));
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
             // So this unwrap should never occur

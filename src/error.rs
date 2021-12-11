@@ -70,6 +70,9 @@ pub enum DecodeError {
     /// The reader reached its end but more bytes were expected.
     UnexpectedEnd,
 
+    /// The given configuration limit was exceeded
+    LimitExceeded,
+
     /// Invalid type was found. The decoder tried to read type `expected`, but found type `found` instead.
     InvalidIntegerType {
         /// The type that was being read from the reader

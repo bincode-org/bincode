@@ -6,7 +6,11 @@ mod impl_tuples;
 mod impls;
 
 use self::read::{BorrowReader, Reader};
-use crate::{config::Config, error::DecodeError, utils::Sealed};
+use crate::{
+    config::{Config, InternalLimitConfig},
+    error::DecodeError,
+    utils::Sealed,
+};
 
 pub mod read;
 
@@ -53,6 +57,65 @@ pub trait Decoder: Sealed {
 
     /// Returns a mutable reference to the config
     fn config(&self) -> &Self::C;
+
+    /// Claim that `n` bytes are going to be read from the decoder.
+    /// This can be used to validate `Configuration::Limit<N>()`.
+    fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError>;
+
+    /// Claim that we're going to read a container which contains `len` entries of `T`.
+    /// This will correctly handle overflowing if `len * size_of::<T>() > usize::max_value`
+    fn claim_container_read<T>(&mut self, len: usize) -> Result<(), DecodeError> {
+        if <Self::C as InternalLimitConfig>::LIMIT.is_some() {
+            match len.checked_mul(core::mem::size_of::<T>()) {
+                Some(val) => self.claim_bytes_read(val),
+                None => Err(DecodeError::LimitExceeded),
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Notify the decoder that `n` bytes are being reclaimed.
+    ///
+    /// When decoding container types, a typical implementation would claim to read `len * size_of::<T>()` bytes.
+    /// This is to ensure that bincode won't allocate several GB of memory while constructing the container.
+    ///
+    /// Because the implementation claims `len * size_of::<T>()`, but then has to decode each `T`, this would be marked
+    /// as double. This function allows us to un-claim each `T` that gets decoded.
+    ///
+    /// We cannot check if `len * size_of::<T>()` is valid without claiming it, because this would mean that if you have
+    /// a nested container (e.g. `Vec<Vec<T>>`), it does not know how much memory is already claimed, and could easily
+    /// allocate much more than the user intends.
+    /// ```
+    /// # use bincode::de::{Decode, Decoder};
+    /// # use bincode::error::DecodeError;
+    /// # struct Container<T>(Vec<T>);
+    /// # impl<T> Container<T> {
+    /// #     fn with_capacity(cap: usize) -> Self {
+    /// #         Self(Vec::with_capacity(cap))
+    /// #     }
+    /// #     
+    /// #     fn push(&mut self, t: T) {
+    /// #         self.0.push(t);
+    /// #     }
+    /// # }
+    /// impl<T: Decode> Decode for Container<T> {
+    ///     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
+    ///         let len = u64::decode(&mut decoder)? as usize;
+    ///         // Make sure we don't allocate too much memory
+    ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
+    ///
+    ///         let mut result = Container::with_capacity(len);
+    ///         for _ in 0..len {
+    ///             // un-claim the memory
+    ///             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+    ///             result.push(T::decode(&mut decoder)?)
+    ///         }
+    ///         Ok(result)
+    ///     }
+    /// }
+    /// ```
+    fn unclaim_bytes_read(&mut self, n: usize);
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
@@ -80,6 +143,16 @@ where
 
     fn config(&self) -> &Self::C {
         T::config(self)
+    }
+
+    #[inline]
+    fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
+        T::claim_bytes_read(self, n)
+    }
+
+    #[inline]
+    fn unclaim_bytes_read(&mut self, n: usize) {
+        T::unclaim_bytes_read(self, n)
     }
 }
 

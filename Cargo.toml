@@ -50,6 +50,10 @@ rand = "0.8"
 name = "varint"
 harness = false
 
+[[bench]]
+name = "inline"
+harness = false
+
 [profile.bench]
 codegen-units = 1
 debug = 1
