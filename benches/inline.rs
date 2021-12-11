@@ -8,7 +8,7 @@ fn inline_decoder_claim_bytes_read(c: &mut Criterion) {
 
     c.bench_function("inline_decoder_claim_bytes_read", |b| {
         b.iter(|| {
-            let _: Vec<String> =
+            let _: (Vec<String>, usize) =
                 black_box(bincode::decode_from_slice(black_box(&slice), config).unwrap());
         })
     });
