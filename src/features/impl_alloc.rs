@@ -11,7 +11,6 @@ use crate::{
 use alloc::{
     borrow::{Cow, ToOwned},
     boxed::Box,
-    collections::*,
     rc::Rc,
     string::String,
     vec::Vec,
@@ -42,7 +41,21 @@ impl VecWriter {
 impl enc::write::Writer for VecWriter {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
-        self.inner.extend_from_slice(bytes);
+        self.inner.try_reserve(bytes.len())?;
+
+        let start = self.inner.len();
+
+        // Get a slice of `&mut [MaybeUninit<u8>]` of the remaining capacity
+        let remaining = &mut self.inner.spare_capacity_mut()[..bytes.len()];
+        for (i, b) in bytes.iter().copied().enumerate() {
+            // TODO: is there a better way to copy from `&mut [MaybeUninit<u8>]` to `&[u8]`?
+            remaining[i].write(b);
+        }
+
+        unsafe {
+            // Safety: We reserved enough bytes, and the bytes have values written to them
+            self.inner.set_len(start + bytes.len());
+        }
         Ok(())
     }
 }
@@ -63,188 +76,195 @@ pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec
     Ok(encoder.into_writer().inner)
 }
 
-impl<T> Decode for BinaryHeap<T>
-where
-    T: Decode + Ord,
-{
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Vec::<T>::decode(decoder)?.into())
-    }
-}
-impl<'de, T> BorrowDecode<'de> for BinaryHeap<T>
-where
-    T: BorrowDecode<'de> + Ord,
-{
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Vec::<T>::borrow_decode(decoder)?.into())
-    }
-}
+// TODO: these collections straight up don't exist with `no_global_oom_handling`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
+mod collections {
+    use super::*;
+    use alloc::collections::{BTreeMap, BTreeSet, BinaryHeap, VecDeque};
 
-impl<T> Encode for BinaryHeap<T>
-where
-    T: Encode + Ord,
-{
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        // BLOCKEDTODO(https://github.com/rust-lang/rust/issues/83659): we can u8 optimize this with `.as_slice()`
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for val in self.iter() {
-            val.encode(encoder)?;
+    impl<T> Decode for BinaryHeap<T>
+    where
+        T: Decode + Ord,
+    {
+        fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+            Ok(Vec::<T>::decode(decoder)?.into())
         }
-        Ok(())
     }
-}
-
-impl<K, V> Decode for BTreeMap<K, V>
-where
-    K: Decode + Ord,
-    V: Decode,
-{
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<(K, V)>(len)?;
-
-        let mut map = BTreeMap::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
-            let key = K::decode(decoder)?;
-            let value = V::decode(decoder)?;
-            map.insert(key, value);
+    impl<'de, T> BorrowDecode<'de> for BinaryHeap<T>
+    where
+        T: BorrowDecode<'de> + Ord,
+    {
+        fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+            Ok(Vec::<T>::borrow_decode(decoder)?.into())
         }
-        Ok(map)
     }
-}
-impl<'de, K, V> BorrowDecode<'de> for BTreeMap<K, V>
-where
-    K: BorrowDecode<'de> + Ord,
-    V: BorrowDecode<'de>,
-{
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<(K, V)>(len)?;
 
-        let mut map = BTreeMap::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
-            let key = K::borrow_decode(decoder)?;
-            let value = V::borrow_decode(decoder)?;
-            map.insert(key, value);
+    impl<T> Encode for BinaryHeap<T>
+    where
+        T: Encode + Ord,
+    {
+        fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+            // BLOCKEDTODO(https://github.com/rust-lang/rust/issues/83659): we can u8 optimize this with `.as_slice()`
+            crate::enc::encode_slice_len(encoder, self.len())?;
+            for val in self.iter() {
+                val.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(map)
     }
-}
 
-impl<K, V> Encode for BTreeMap<K, V>
-where
-    K: Encode + Ord,
-    V: Encode,
-{
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for (key, val) in self.iter() {
-            key.encode(encoder)?;
-            val.encode(encoder)?;
+    impl<K, V> Decode for BTreeMap<K, V>
+    where
+        K: Decode + Ord,
+        V: Decode,
+    {
+        fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+            let len = crate::de::decode_slice_len(decoder)?;
+            decoder.claim_container_read::<(K, V)>(len)?;
+
+            let mut map = BTreeMap::new();
+            for _ in 0..len {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
+
+                let key = K::decode(decoder)?;
+                let value = V::decode(decoder)?;
+                map.insert(key, value);
+            }
+            Ok(map)
         }
-        Ok(())
     }
-}
+    impl<'de, K, V> BorrowDecode<'de> for BTreeMap<K, V>
+    where
+        K: BorrowDecode<'de> + Ord,
+        V: BorrowDecode<'de>,
+    {
+        fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+            let len = crate::de::decode_slice_len(decoder)?;
+            decoder.claim_container_read::<(K, V)>(len)?;
 
-impl<T> Decode for BTreeSet<T>
-where
-    T: Decode + Ord,
-{
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
+            let mut map = BTreeMap::new();
+            for _ in 0..len {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
 
-        let mut map = BTreeSet::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::decode(decoder)?;
-            map.insert(key);
+                let key = K::borrow_decode(decoder)?;
+                let value = V::borrow_decode(decoder)?;
+                map.insert(key, value);
+            }
+            Ok(map)
         }
-        Ok(map)
     }
-}
-impl<'de, T> BorrowDecode<'de> for BTreeSet<T>
-where
-    T: BorrowDecode<'de> + Ord,
-{
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
 
-        let mut map = BTreeSet::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::borrow_decode(decoder)?;
-            map.insert(key);
+    impl<K, V> Encode for BTreeMap<K, V>
+    where
+        K: Encode + Ord,
+        V: Encode,
+    {
+        fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+            crate::enc::encode_slice_len(encoder, self.len())?;
+            for (key, val) in self.iter() {
+                key.encode(encoder)?;
+                val.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(map)
     }
-}
 
-impl<T> Encode for BTreeSet<T>
-where
-    T: Encode + Ord,
-{
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self.iter() {
-            item.encode(encoder)?;
+    impl<T> Decode for BTreeSet<T>
+    where
+        T: Decode + Ord,
+    {
+        fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+            let len = crate::de::decode_slice_len(decoder)?;
+            decoder.claim_container_read::<T>(len)?;
+
+            let mut map = BTreeSet::new();
+            for _ in 0..len {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+                let key = T::decode(decoder)?;
+                map.insert(key);
+            }
+            Ok(map)
         }
-        Ok(())
     }
-}
+    impl<'de, T> BorrowDecode<'de> for BTreeSet<T>
+    where
+        T: BorrowDecode<'de> + Ord,
+    {
+        fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+            let len = crate::de::decode_slice_len(decoder)?;
+            decoder.claim_container_read::<T>(len)?;
 
-impl<T> Decode for VecDeque<T>
-where
-    T: Decode,
-{
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Vec::<T>::decode(decoder)?.into())
+            let mut map = BTreeSet::new();
+            for _ in 0..len {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+                let key = T::borrow_decode(decoder)?;
+                map.insert(key);
+            }
+            Ok(map)
+        }
     }
-}
-impl<'de, T> BorrowDecode<'de> for VecDeque<T>
-where
-    T: BorrowDecode<'de>,
-{
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Vec::<T>::borrow_decode(decoder)?.into())
-    }
-}
 
-impl<T> Encode for VecDeque<T>
-where
-    T: Encode,
-{
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        if unty::type_equal::<T, u8>() {
-            let slices: (&[T], &[T]) = self.as_slices();
-            // Safety: T is u8 so turning this into `&[u8]` is okay
-            let slices: (&[u8], &[u8]) = unsafe {
-                (
-                    core::slice::from_raw_parts(slices.0.as_ptr().cast(), slices.0.len()),
-                    core::slice::from_raw_parts(slices.1.as_ptr().cast(), slices.1.len()),
-                )
-            };
-
-            encoder.writer().write(slices.0)?;
-            encoder.writer().write(slices.1)?;
-        } else {
+    impl<T> Encode for BTreeSet<T>
+    where
+        T: Encode + Ord,
+    {
+        fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+            crate::enc::encode_slice_len(encoder, self.len())?;
             for item in self.iter() {
                 item.encode(encoder)?;
             }
+            Ok(())
         }
-        Ok(())
+    }
+
+    impl<T> Decode for VecDeque<T>
+    where
+        T: Decode,
+    {
+        fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+            Ok(Vec::<T>::decode(decoder)?.into())
+        }
+    }
+    impl<'de, T> BorrowDecode<'de> for VecDeque<T>
+    where
+        T: BorrowDecode<'de>,
+    {
+        fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+            Ok(Vec::<T>::borrow_decode(decoder)?.into())
+        }
+    }
+
+    impl<T> Encode for VecDeque<T>
+    where
+        T: Encode,
+    {
+        fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+            crate::enc::encode_slice_len(encoder, self.len())?;
+            if unty::type_equal::<T, u8>() {
+                let slices: (&[T], &[T]) = self.as_slices();
+                // Safety: T is u8 so turning this into `&[u8]` is okay
+                let slices: (&[u8], &[u8]) = unsafe {
+                    (
+                        core::slice::from_raw_parts(slices.0.as_ptr().cast(), slices.0.len()),
+                        core::slice::from_raw_parts(slices.1.as_ptr().cast(), slices.1.len()),
+                    )
+                };
+
+                encoder.writer().write(slices.0)?;
+                encoder.writer().write(slices.1)?;
+            } else {
+                for item in self.iter() {
+                    item.encode(encoder)?;
+                }
+            }
+            Ok(())
+        }
     }
 }
 
@@ -336,11 +356,20 @@ impl Decode for String {
 }
 impl_borrow_decode!(String);
 
+// TODO
+// String does not implement Into for Box<str> because it allocates again
+// we could do this manually with `Box::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl Decode for Box<str> {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         String::decode(decoder).map(String::into_boxed_str)
     }
 }
+
+// TODO
+// String does not implement Into for Box<str> because it allocates again
+// we could do this manually with `Box::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl_borrow_decode!(Box<str>);
 
 impl Encode for String {
@@ -355,7 +384,11 @@ where
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
-        Ok(Box::new(t))
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let b = Box::try_new(t)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let b = Box::new(t);
+        Ok(b)
     }
 }
 impl<'de, T> BorrowDecode<'de> for Box<T>
@@ -364,7 +397,11 @@ where
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
-        Ok(Box::new(t))
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let b = Box::try_new(t)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let b = Box::new(t);
+        Ok(b)
     }
 }
 
@@ -377,16 +414,52 @@ where
     }
 }
 
+#[cfg(feature = "unstable-strict-oom-checks")]
 impl<T> Decode for Box<[T]>
 where
     T: Decode + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let vec = Vec::decode(decoder)?;
-        Ok(vec.into_boxed_slice())
+        let len = decode_slice_len(decoder)?;
+        decoder.claim_container_read::<T>(len)?;
+
+        unsafe {
+            let mut result = Box::try_new_uninit_slice(len)?;
+
+            let mut guard = DropGuard {
+                slice: &mut result,
+                idx: 0,
+            };
+
+            while guard.idx < len {
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+                let t = T::decode(decoder)?;
+
+                guard.slice.get_unchecked_mut(guard.idx).write(t);
+                guard.idx += 1;
+            }
+
+            core::mem::forget(guard);
+            Ok(result.assume_init())
+        }
     }
 }
 
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
+impl<T> Decode for Box<[T]>
+where
+    T: Decode,
+{
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::<T>::decode(decoder)?;
+        Ok(vec.into())
+    }
+}
+
+// TODO
+// Vec does not implement Into for Box<[T]> because it allocates again
+// we could do this manually with `Box::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl<'de, T> BorrowDecode<'de> for Box<[T]>
 where
     T: BorrowDecode<'de> + 'de,
@@ -447,7 +520,11 @@ where
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
-        Ok(Rc::new(t))
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let rc = Rc::try_new(t)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let rc = Rc::new(t);
+        Ok(rc)
     }
 }
 
@@ -457,7 +534,11 @@ where
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
-        Ok(Rc::new(t))
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let rc = Rc::try_new(t)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let rc = Rc::new(t);
+        Ok(rc)
     }
 }
 
@@ -470,6 +551,10 @@ where
     }
 }
 
+// TODO
+// Vec does not implement Into for Rc<[T]> because it allocates again
+// we could do this manually with `Rc::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl<T> Decode for Rc<[T]>
 where
     T: Decode + 'static,
@@ -480,6 +565,10 @@ where
     }
 }
 
+// TODO
+// Vec does not implement Into for Rc<[T]> because it allocates again
+// we could do this manually with `Rc::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl<'de, T> BorrowDecode<'de> for Rc<[T]>
 where
     T: BorrowDecode<'de> + 'de,
@@ -497,10 +586,18 @@ where
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
-        Ok(Arc::new(t))
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let arc = Arc::try_new(t)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let arc = Arc::new(t);
+        Ok(arc)
     }
 }
 
+// TODO
+// String does not implement Into for Arc<str> because it allocates again
+// we could do this manually with `Arc::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 #[cfg(target_has_atomic = "ptr")]
 impl Decode for Arc<str> {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -516,10 +613,18 @@ where
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
-        Ok(Arc::new(t))
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let arc = Arc::try_new(t)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let arc = Arc::new(t);
+        Ok(arc)
     }
 }
 
+// TODO
+// String does not implement Into for Arc<str> because it allocates again
+// we could do this manually with `Arc::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 #[cfg(target_has_atomic = "ptr")]
 impl<'de> BorrowDecode<'de> for Arc<str> {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -538,6 +643,10 @@ where
     }
 }
 
+// TODO
+// Vec<T> does not implement Into for Arc<[T]>
+// we could do this manually with `Arc::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 #[cfg(target_has_atomic = "ptr")]
 impl<T> Decode for Arc<[T]>
 where
@@ -549,6 +658,10 @@ where
     }
 }
 
+// TODO
+// Vec<T> does not implement Into for Arc<[T]>
+// we could do this manually with `Arc::try_new_uninit`
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 #[cfg(target_has_atomic = "ptr")]
 impl<'de, T> BorrowDecode<'de> for Arc<[T]>
 where
@@ -557,5 +670,22 @@ where
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::borrow_decode(decoder)?;
         Ok(vec.into())
+    }
+}
+
+/// A drop guard that will trigger when an item fails to decode.
+/// If an item at index n fails to decode, we have to properly drop the 0..(n-1) values that have been read.
+struct DropGuard<'a, T> {
+    slice: &'a mut [core::mem::MaybeUninit<T>],
+    idx: usize,
+}
+
+impl<'a, T> Drop for DropGuard<'a, T> {
+    fn drop(&mut self) {
+        unsafe {
+            for item in &mut self.slice[..self.idx] {
+                core::ptr::drop_in_place(item as *mut core::mem::MaybeUninit<T> as *mut T);
+            }
+        }
     }
 }

@@ -48,7 +48,7 @@
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "check",
-            "args": "--all-features"
+            "args": "--features std,derive"
           },
           "name": "Run `cargo check`"
         },
@@ -128,6 +128,32 @@ fi",
         }
       ]
     },
+    "no_oom": {
+      "name": "Strict OOM checks",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "nightly",
+            "components": "rust-src",
+            "override": true
+          },
+          "name": "Install Rust nightly"
+        },
+        {
+          "run": "cargo build --no-default-features --features unstable-strict-oom-checks -Z build-std=core,alloc --target x86_64-unknown-linux-gnu",
+          "env": {
+            "RUSTFLAGS": "--cfg no_global_oom_handling"
+          }
+        }
+      ]
+    },
     "lints": {
       "name": "Lints",
       "runs-on": "ubuntu-latest",
@@ -158,7 +184,7 @@ fi",
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "clippy",
-            "args": "--all-features -- -D warnings"
+            "args": "--features std,derive -- -D warnings"
           },
           "name": "Run `cargo clippy`"
         }
@@ -213,7 +239,7 @@ fi",
           "uses": "actions-rs/tarpaulin@v0.1",
           "with": {
             "version": "0.19.1",
-            "args": "--all --all-features"
+            "args": "--all --features std,derive"
           }
         },
         {

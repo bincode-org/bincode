@@ -1,5 +1,10 @@
 //! Errors that can be encounting by Encoding and Decoding.
 
+#[cfg(feature = "alloc")]
+use alloc::collections::TryReserveError;
+#[cfg(all(feature = "alloc", feature = "unstable-strict-oom-checks"))]
+use core::alloc::AllocError;
+
 /// Errors that can be encountered by encoding a type
 #[non_exhaustive]
 #[derive(Debug)]
@@ -50,6 +55,10 @@ pub enum EncodeError {
         /// The SystemTime that caused the error
         time: std::boxed::Box<std::time::SystemTime>,
     },
+
+    /// bincode failed to allocate enough memory
+    #[cfg(feature = "alloc")]
+    OutOfMemory(OutOfMemory),
 
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
@@ -188,6 +197,54 @@ pub enum DecodeError {
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
     Serde(crate::features::serde::DecodeError),
+
+    /// bincode failed to allocate enough memory
+    #[cfg(feature = "alloc")]
+    OutOfMemory(OutOfMemory),
+}
+
+/// A wrapper to make all the out of memory errors consistent
+#[cfg(feature = "alloc")]
+#[derive(Debug, PartialEq)]
+pub enum OutOfMemory {
+    /// Failed to reserve an entry
+    TryReserve(TryReserveError),
+    #[cfg(feature = "unstable-strict-oom-checks")]
+    /// Failed to allocate memory
+    Alloc(AllocError),
+}
+
+impl From<TryReserveError> for DecodeError {
+    fn from(e: TryReserveError) -> Self {
+        Self::OutOfMemory(OutOfMemory::TryReserve(e))
+    }
+}
+
+impl From<TryReserveError> for EncodeError {
+    fn from(e: TryReserveError) -> Self {
+        Self::OutOfMemory(OutOfMemory::TryReserve(e))
+    }
+}
+
+#[cfg(all(feature = "alloc", feature = "unstable-strict-oom-checks"))]
+impl From<AllocError> for DecodeError {
+    fn from(e: AllocError) -> Self {
+        Self::OutOfMemory(OutOfMemory::Alloc(e))
+    }
+}
+
+#[cfg(all(feature = "alloc", feature = "unstable-strict-oom-checks"))]
+impl From<AllocError> for EncodeError {
+    fn from(e: AllocError) -> Self {
+        Self::OutOfMemory(OutOfMemory::Alloc(e))
+    }
+}
+
+#[cfg(all(feature = "alloc", feature = "unstable-strict-oom-checks"))]
+impl From<AllocError> for DecodeError {
+    fn from(e: AllocError) -> Self {
+        Self::OutOfMemory(OutOfMemory::Alloc(e))
+    }
 }
 
 impl core::fmt::Display for DecodeError {
