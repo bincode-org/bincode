@@ -21,6 +21,11 @@ impl DeriveEnum {
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
         generator
             .impl_for("bincode::enc::Encode")?
+            .modify_generic_constraints(|generics, where_constraints| {
+                for g in generics.iter_generics() {
+                    where_constraints.push_constraint(g, "bincode::enc::Encode").unwrap();
+                }
+            })
             .generate_fn("encode")
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(FnSelfArg::RefSelf)
@@ -180,6 +185,11 @@ impl DeriveEnum {
 
         generator
             .impl_for("bincode::Decode")?
+            .modify_generic_constraints(|generics, where_constraints| {
+                for g in generics.iter_generics() {
+                    where_constraints.push_constraint(g, "bincode::enc::Decode").unwrap();
+                }
+            })
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
             .with_arg("mut decoder", "D")
@@ -247,6 +257,11 @@ impl DeriveEnum {
         let enum_name = generator.target_name().to_string();
 
         generator.impl_for_with_lifetimes("bincode::de::BorrowDecode", &["__de"])?
+            .modify_generic_constraints(|generics, where_constraints| {
+                for g in generics.iter_generics() {
+                    where_constraints.push_constraint(g, "bincode::enc::BorrowDecode").unwrap();
+                }
+            })
             .generate_fn("borrow_decode")
             .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
             .with_arg("mut decoder", "D")

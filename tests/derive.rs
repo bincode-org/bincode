@@ -1,17 +1,15 @@
 #![cfg(feature = "derive")]
 
 use bincode::config::Configuration;
-use bincode::{de::Decode, enc::Encode};
-
 #[derive(bincode::Encode, PartialEq, Debug)]
-pub(crate) struct Test<T: Encode> {
+pub(crate) struct Test<T> {
     a: T,
     b: u32,
     c: u8,
 }
 
 #[derive(bincode::Decode, PartialEq, Debug, Eq)]
-pub struct Test2<T: Decode> {
+pub struct Test2<T> {
     a: T,
     b: u32,
     c: u32,
