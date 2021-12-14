@@ -5,7 +5,7 @@ members = [
 
 [package]
 name = "bincode"
-version = "2.0.0-alpha.1" # remember to update html_root_url and bincode_derive
+version = "2.0.0-alpha.2" # remember to update html_root_url and bincode_derive
 authors = ["Ty Overby <ty@pre-alpha.com>", "Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
 
@@ -35,7 +35,7 @@ derive = ["bincode_derive"]
 serde = ["std", "serde_incl", "serde_incl/std"]
 
 [dependencies]
-bincode_derive = { path = "derive", version = "2.0.0-alpha.1", optional = true }
+bincode_derive = { path = "derive", version = "2.0.0-alpha.2", optional = true }
 serde_incl = { package = "serde", version = "1.0.130", optional = true }
 
 # Used for tests
