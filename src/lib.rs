@@ -54,7 +54,7 @@
 //! assert_eq!(decoded, input);
 //! ```
 
-#![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.1")]
+#![doc(html_root_url = "https://docs.rs/bincode/2.0.0-alpha.2")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 
