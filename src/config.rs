@@ -52,7 +52,7 @@ impl Configuration {
     /// - Little endian
     /// - Variable int encoding
     /// - Skip fixed array length
-    pub fn standard() -> Self {
+    pub const fn standard() -> Self {
         Self::generate()
     }
 
@@ -60,13 +60,13 @@ impl Configuration {
     /// - Little endian
     /// - Fixed int length encoding
     /// - Write array lengths
-    pub fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
+    pub const fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
         Self::generate()
     }
 }
 
 impl<E, I, A, L> Configuration<E, I, A, L> {
-    fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
+    const fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
         Configuration {
             _e: PhantomData,
             _i: PhantomData,
@@ -76,12 +76,12 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     }
 
     /// Makes bincode encode all integer types in big endian.
-    pub fn with_big_endian(self) -> Configuration<BigEndian, I, A> {
+    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, A> {
         Self::generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
-    pub fn with_little_endian(self) -> Configuration<LittleEndian, I, A> {
+    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, A> {
         Self::generate()
     }
 
@@ -142,7 +142,7 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     ///
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
-    pub fn with_variable_int_encoding(self) -> Configuration<E, Varint, A> {
+    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, A> {
         Self::generate()
     }
 
@@ -151,27 +151,27 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     /// * Fixed size integers are encoded directly
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
-    pub fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A> {
+    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A> {
         Self::generate()
     }
 
     /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
-    pub fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength> {
+    pub const fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength> {
         Self::generate()
     }
 
     /// Write the length of fixed size arrays (`[u8; N]`) before writing the array
-    pub fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength> {
+    pub const fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength> {
         Self::generate()
     }
 
     /// Sets the byte limit to `limit`.
-    pub fn with_limit<const N: usize>(self) -> Configuration<E, I, A, Limit<N>> {
+    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, A, Limit<N>> {
         Self::generate()
     }
 
     /// Clear the byte limit.
-    pub fn with_no_limit(self) -> Configuration<E, I, A, NoLimit> {
+    pub const fn with_no_limit(self) -> Configuration<E, I, A, NoLimit> {
         Self::generate()
     }
 }
