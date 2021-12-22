@@ -30,7 +30,7 @@ fn slice_varint_u16(c: &mut Criterion) {
 
     c.bench_function("slice_varint_u16", |b| {
         b.iter(|| {
-            let _: (Vec<u8>, usize) = bincode::decode_from_slice(&bytes, config).unwrap();
+            let _: (Vec<u16>, usize) = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
@@ -46,7 +46,7 @@ fn slice_varint_u32(c: &mut Criterion) {
 
     c.bench_function("slice_varint_u32", |b| {
         b.iter(|| {
-            let _: (Vec<u16>, usize) = bincode::decode_from_slice(&bytes, config).unwrap();
+            let _: (Vec<u32>, usize) = bincode::decode_from_slice(&bytes, config).unwrap();
         })
     });
 }
