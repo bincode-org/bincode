@@ -60,37 +60,21 @@ fn main() {
 }
 ```
 
-## Details
-
-The encoding (and thus decoding) proceeds unsurprisingly -- primitive
-types are encoded according to the underlying `Writer`, tuples and
-structs are encoded by encoding their fields one-by-one, and enums are
-encoded by first writing out the tag representing the variant and
-then the contents.
-
-However, there are some implementation details to be aware of:
-
-* `isize`/`usize` are encoded as `i64`/`u64`, for portability.
-* enums variants are encoded as a `u32` instead of a `usize`.
-  `u32` is enough for all practical uses.
-* `str` is encoded as `(u64, &[u8])`, where the `u64` is the number of
-  bytes contained in the encoded string.
-
 ## Specification
 
-Bincode's format will eventually be codified into a specification, along with
-its configuration options and default configuration. In the meantime, here are
-some frequently asked questions regarding use of the crate:
+Bincode's format is specified in [docs/spec.md](https://github.com/bincode-org/bincode/blob/trunk/docs/spec.md).
+
+## FAQ
 
 ### Is Bincode suitable for storage?
 
-The encoding format is stable across minor revisions, provided the same
-configuration is used. This should ensure that later versions can still read
-data produced by a previous versions of the library if no major version change
+The encoding format is stable, provided the same configuration is used.
+This should ensure that later versions can still read data produced by a previous versions of the library if no major version change
 has occured.
 
-Bincode is invariant over byte-order in the default configuration
-(`bincode::options::DefaultOptions`), making an exchange between different
+Bincode 1 and 2 are completely compatible if the same configuration is used.
+
+Bincode is invariant over byte-order, making an exchange between different
 architectures possible. It is also rather space efficient, as it stores no
 metadata like struct field names in the output format and writes long streams of
 binary data without needing any potentially size-increasing encoding.
@@ -102,7 +86,7 @@ features are outside the scope of this crate.
 ### Is Bincode suitable for untrusted inputs?
 
 Bincode attempts to protect against hostile data. There is a maximum size
-configuration available (`bincode::config::Bounded`), but not enabled in the
+configuration available (`Configuration::with_limit`), but not enabled in the
 default configuration. Enabling it causes pre-allocation size to be limited to
 prevent against memory exhaustion attacks.
 
@@ -116,3 +100,11 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
 Bincode 2.0 is still in development and does not yet have a targetted MSRV. Once 2.0 is fully released the MSRV will be locked. After this point any changes to the MSRV are considered a breaking change for semver purposes.
+
+### Why does bincode not respect `#[repr(u8)]`?
+
+Bincode will encode enum variants as a `u32`. If you're worried about storage size, we can recommend enabling `Configuration::with_varint_encoding()`. This option is enabled by default with the `standard` configuration. In this case enum variants will almost always be encoded as a `u8`.
+
+Currently we have not found a compelling case to respect `#[repr(...)]`. You're most likely trying to interop with a format that is similar-but-not-quite-bincode. We only support our own protocol ([spec](https://github.com/bincode-org/bincode/blob/trunk/docs/spec.md)).
+
+If you really want to use bincode to encode/decode a different protocol, consider implementing `Encode` and `Decode` yourself. `bincode-derive` will output the generated implementation in `target/<name>_Encode.rs` and `target/<name>_Decode.rs` which should get you started.
