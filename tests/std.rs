@@ -119,3 +119,18 @@ fn test_std_commons() {
     assert_eq!(path, decoded);
     assert_eq!(len, 21);
 }
+
+#[test]
+fn test_system_time_out_of_range() {
+    let mut input = [0xfd, 0x90, 0x0c, 0xfd, 0xfd, 0x90, 0x0c, 0xfd, 0x90, 0x90];
+
+    let result: Result<(std::time::SystemTime, usize), _> =
+        bincode::decode_from_slice(&mut input, Configuration::standard());
+
+    assert_eq!(
+        result.unwrap_err(),
+        bincode::error::DecodeError::InvalidSystemTime {
+            duration: std::time::Duration::new(10447520527445462160, 144),
+        }
+    );
+}

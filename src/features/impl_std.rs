@@ -199,7 +199,10 @@ impl Encode for SystemTime {
 impl Decode for SystemTime {
     fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
-        Ok(SystemTime::UNIX_EPOCH + duration)
+        match SystemTime::UNIX_EPOCH.checked_add(duration) {
+            Some(t) => Ok(t),
+            None => Err(DecodeError::InvalidSystemTime { duration }),
+        }
     }
 }
 
