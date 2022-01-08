@@ -88,7 +88,7 @@ impl DeriveEnum {
                             body.punct(';');
                             // If we have any fields, encode them all one by one
                             for field_name in variant.fields.names() {
-                                if field_name.has_attribute(FieldAttribute::WithSerde)? {
+                                if field_name.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                     body.push_parsed(format!(
                                         "bincode::enc::Encode::encode(&bincode::serde::Compat({}), &mut encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
@@ -228,7 +228,7 @@ impl DeriveEnum {
                                         variant_body.ident(field.unwrap_ident().clone());
                                     }
                                     variant_body.punct(':');
-                                    if field.has_attribute(FieldAttribute::WithSerde)? {
+                                    if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                         variant_body
                                             .push_parsed("<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?.0,")?;
                                     } else {
@@ -298,7 +298,7 @@ impl DeriveEnum {
                                         variant_body.ident(field.unwrap_ident().clone());
                                     }
                                     variant_body.punct(':');
-                                    if field.has_attribute(FieldAttribute::WithSerde)? {
+                                    if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                         variant_body
                                             .push_parsed("<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(&mut decoder)?.0,")?;
                                     } else {

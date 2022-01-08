@@ -25,7 +25,7 @@ impl DeriveStruct {
             .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
             .body(|fn_body| {
                 for field in fields.names() {
-                    if field.has_attribute(FieldAttribute::WithSerde)? {
+                    if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                         fn_body
                             .push_parsed(format!(
                                 "bincode::Encode::encode(&bincode::serde::Compat(&self.{}), &mut encoder)?;",
@@ -73,7 +73,7 @@ impl DeriveStruct {
                         //      ...
                         // }
                         for field in fields.names() {
-                            if field.has_attribute(FieldAttribute::WithSerde)? {
+                            if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                 struct_body
                                     .push_parsed(format!(
                                         "{}: (<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?).0,",
@@ -118,7 +118,7 @@ impl DeriveStruct {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
                         for field in fields.names() {
-                            if field.has_attribute(FieldAttribute::WithSerde)? {
+                            if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                 struct_body
                                     .push_parsed(format!(
                                         "{}: (<bincode::serde::BorrowCompat<_> as bincode::de::BorrowDecode>::borrow_decode(&mut decoder)?).0,",
