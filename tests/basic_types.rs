@@ -230,16 +230,13 @@ fn test_duration_out_of_range() {
     let result: Result<(std::time::Duration, usize), _> =
         bincode::decode_from_slice(&mut input, Configuration::standard());
 
-    match result {
-        Ok(d) => panic!("did not expect to deserialize {:?}", d),
-        Err(e) => assert_eq!(
-            e,
-            bincode::error::DecodeError::InvalidDuration {
-                secs: u64::MAX,
-                nanos: u32::MAX
-            }
-        ),
-    }
+    assert_eq!(
+        result.unwrap_err(),
+        bincode::error::DecodeError::InvalidDuration {
+            secs: u64::MAX,
+            nanos: u32::MAX
+        }
+    );
 }
 
 #[test]
