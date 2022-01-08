@@ -11,9 +11,8 @@ use std::net::*;
 use std::path::*;
 use std::time::*;
 
-#[derive(bincode::Decode)]
+#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug)]
 enum AllTypes {
-    BinaryHeap(BinaryHeap<u8>),
     BTreeMap(BTreeMap<u8, u8>),
     HashMap(HashMap<u8, u8>),
     BTreeSet(BTreeSet<u8>),
@@ -42,8 +41,15 @@ enum AllTypes {
 }
 
 fuzz_target!(|data: &[u8]| {
+    let config = bincode::config::Configuration::standard().with_limit::<1024>();
     let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(
         data,
-        bincode::config::Configuration::standard().with_limit::<1024>(),
+        config,
     );
+
+    if let Ok((before, _)) = result {
+        let encoded = bincode::encode_to_vec(&before, config).expect("round trip");
+        let (after, _) = bincode::decode_from_slice(&encoded, config).unwrap();
+        assert_eq!(before, after);
+    }
 });
