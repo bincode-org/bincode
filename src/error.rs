@@ -116,6 +116,12 @@ pub enum DecodeError {
         found: usize,
     },
 
+    /// Tried to decode an enum with no variants
+    EmptyEnum {
+        /// The type that was being decoded
+        type_name: &'static str,
+    },
+
     /// The decoder tried to decode a `CStr` or `CString`, but the incoming data contained a 0 byte
     #[cfg(feature = "std")]
     CStrNulError {
