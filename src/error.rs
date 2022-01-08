@@ -122,6 +122,16 @@ pub enum DecodeError {
         type_name: &'static str,
     },
 
+    /// The decoder tried to decode a Duration and overflowed the number of seconds.
+    InvalidDuration {
+        /// The number of seconds in the duration.
+        secs: u64,
+
+        /// The number of nanoseconds in the duration, which when converted to seconds and added to
+        /// `secs`, overflows a `u64`.
+        nanos: u32,
+    },
+
     /// The decoder tried to decode a `CStr` or `CString`, but the incoming data contained a 0 byte
     #[cfg(feature = "std")]
     CStrNulError {

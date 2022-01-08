@@ -219,3 +219,41 @@ fn test_array() {
     assert_eq!(input, output);
     assert_eq!(len, 10);
 }
+
+#[test]
+fn test_duration_out_of_range() {
+    let mut input = [0u8; 14];
+
+    bincode::encode_into_slice(&(u64::MAX, u32::MAX), &mut input, Configuration::standard())
+        .unwrap();
+
+    let result: Result<(std::time::Duration, usize), _> =
+        bincode::decode_from_slice(&mut input, Configuration::standard());
+
+    assert_eq!(
+        result.unwrap_err(),
+        bincode::error::DecodeError::InvalidDuration {
+            secs: u64::MAX,
+            nanos: u32::MAX
+        }
+    );
+}
+
+#[test]
+fn test_duration_wrapping() {
+    let mut input = [0u8; 14];
+
+    bincode::encode_into_slice(
+        &(u64::MAX - 4, u32::MAX),
+        &mut input,
+        Configuration::standard(),
+    )
+    .unwrap();
+
+    let (result, _): (std::time::Duration, _) =
+        bincode::decode_from_slice(&mut input, Configuration::standard()).unwrap();
+
+    assert_eq!(result.as_secs(), u64::MAX);
+
+    assert_eq!(result.subsec_nanos(), 294967295);
+}
