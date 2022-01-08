@@ -35,6 +35,9 @@ impl DeriveEnum {
                 fn_body.ident_str("match");
                 fn_body.ident_str("self");
                 fn_body.group(Delimiter::Brace, |match_body| {
+                    if self.variants.is_empty() {
+                        self.add_empty_variant_case(match_body)?;
+                    }
                     for (variant_index, variant) in self.iter_fields() {
                         // Self::Variant
                         match_body.ident_str("Self");
@@ -101,16 +104,22 @@ impl DeriveEnum {
                                     ?;
                                 }
                             }
+                            body.push_parsed("Ok(())")?;
                             Ok(())
                         })?;
                         match_body.punct(',');
                     }
                     Ok(())
                 })?;
-                fn_body.push_parsed("Ok(())")?;
                 Ok(())
             })?;
         Ok(())
+    }
+
+    /// If we're encoding an empty enum, we need to add an empty case in the form of:
+    /// `_ => core::unreachable!(),`
+    fn add_empty_variant_case(&self, builder: &mut StreamBuilder) -> Result {
+        builder.push_parsed("_ => core::unreachable!()").map(|_| ())
     }
 
     /// Build the catch-all case for an int-to-enum decode implementation
@@ -168,7 +177,7 @@ impl DeriveEnum {
                     // no fixed values, implement a range
                     variant_inner.push_parsed(format!(
                         "bincode::error::AllowedEnumVariants::Range {{ min: 0, max: {} }}",
-                        self.variants.len() - 1
+                        self.variants.len().saturating_sub(1)
                     ))?;
                 }
                 Ok(())

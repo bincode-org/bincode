@@ -251,3 +251,9 @@ fn test_macro_newtype() {
         assert_eq!(len, newtype_len);
     }
 }
+
+#[derive(bincode::Encode, bincode::Decode)]
+pub enum EmptyEnum {}
+
+#[derive(bincode::Encode, bincode::BorrowDecode)]
+pub enum BorrowedEmptyEnum {}
