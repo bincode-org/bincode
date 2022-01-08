@@ -548,8 +548,12 @@ where
 
 impl Decode for Duration {
     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let secs = Decode::decode(&mut decoder)?;
-        let nanos = Decode::decode(&mut decoder)?;
+        const NANOS_PER_SEC: u64 = 1_000_000_000;
+        let secs: u64 = Decode::decode(&mut decoder)?;
+        let nanos: u32 = Decode::decode(&mut decoder)?;
+        if secs.checked_add(u64::from(nanos) / NANOS_PER_SEC).is_none() {
+            return Err(DecodeError::InvalidDuration { secs, nanos });
+        }
         Ok(Duration::new(secs, nanos))
     }
 }
