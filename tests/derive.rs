@@ -214,3 +214,17 @@ fn test_c_style_enum() {
     assert_eq!(de(6).unwrap(), CStyleEnum::E);
     assert_eq!(de(7), expected_err(7));
 }
+
+macro_rules! macro_newtype {
+    ($name:ident) => {
+        #[derive(bincode::Encode, bincode::Decode)]
+        #[derive(PartialEq, Eq)]
+        pub struct $name(pub usize);
+    }
+}
+macro_newtype!(MacroNewtype);
+
+#[test]
+fn test_macro_newtype() {
+
+}
