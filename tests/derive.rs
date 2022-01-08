@@ -1,6 +1,7 @@
 #![cfg(feature = "derive")]
 
 use bincode::config::Configuration;
+
 #[derive(bincode::Encode, PartialEq, Debug)]
 pub(crate) struct Test<T> {
     a: T,
@@ -217,14 +218,36 @@ fn test_c_style_enum() {
 
 macro_rules! macro_newtype {
     ($name:ident) => {
-        #[derive(bincode::Encode, bincode::Decode)]
-        #[derive(PartialEq, Eq)]
+        #[derive(bincode::Encode, bincode::Decode, PartialEq, Eq, Debug)]
         pub struct $name(pub usize);
-    }
+    };
 }
-macro_newtype!(MacroNewtype);
+macro_newtype!(MacroNewType);
 
 #[test]
 fn test_macro_newtype() {
+    for val in [0, 100, usize::MAX] {
+        let mut usize_slice = [0u8; 10];
+        let usize_len =
+            bincode::encode_into_slice(val, &mut usize_slice, Configuration::standard()).unwrap();
 
+        let mut newtype_slice = [0u8; 10];
+        let newtype_len = bincode::encode_into_slice(
+            MacroNewType(val),
+            &mut newtype_slice,
+            Configuration::standard(),
+        )
+        .unwrap();
+
+        assert_eq!(usize_len, newtype_len);
+        assert_eq!(usize_slice, newtype_slice);
+
+        let (newtype, len) = bincode::decode_from_slice::<MacroNewType, _>(
+            &newtype_slice,
+            Configuration::standard(),
+        )
+        .unwrap();
+        assert_eq!(newtype, MacroNewType(val));
+        assert_eq!(len, newtype_len);
+    }
 }
