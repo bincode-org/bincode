@@ -251,3 +251,21 @@ fn test_macro_newtype() {
         assert_eq!(len, newtype_len);
     }
 }
+
+#[derive(bincode::Encode, bincode::Decode, Debug)]
+pub enum EmptyEnum {}
+
+#[derive(bincode::Encode, bincode::BorrowDecode, Debug)]
+pub enum BorrowedEmptyEnum {}
+
+#[test]
+fn test_empty_enum_decode() {
+    let err =
+        bincode::decode_from_slice::<EmptyEnum, _>(&[], Configuration::standard()).unwrap_err();
+    assert_eq!(
+        err,
+        bincode::error::DecodeError::EmptyEnum {
+            type_name: "derive::EmptyEnum"
+        }
+    );
+}
