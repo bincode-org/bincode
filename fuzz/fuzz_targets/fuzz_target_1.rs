@@ -1,15 +1,14 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use std::borrow::Cow;
-use std::collections::*;
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::ffi::CString;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::num::{NonZeroI128, NonZeroI32, NonZeroU128, NonZeroU32};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::ffi::CString;
-use std::num::*;
-use std::net::*;
-use std::path::*;
-use std::time::*;
+use std::time::{Duration, SystemTime};
 
 #[derive(bincode::Decode, bincode::Encode, PartialEq, Debug)]
 enum AllTypes {
@@ -17,7 +16,7 @@ enum AllTypes {
     HashMap(HashMap<u8, u8>),
     BTreeSet(BTreeSet<u8>),
     VecDeque(VecDeque<u8>),
-    Vec(VecDeque<u8>),
+    Vec(Vec<u8>),
     String(String),
     Box(Box<u8>),
     BoxSlice(Box<[u8]>),
@@ -42,10 +41,7 @@ enum AllTypes {
 
 fuzz_target!(|data: &[u8]| {
     let config = bincode::config::Configuration::standard().with_limit::<1024>();
-    let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(
-        data,
-        config,
-    );
+    let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
     if let Ok((before, _)) = result {
         let encoded = bincode::encode_to_vec(&before, config).expect("round trip");
