@@ -132,6 +132,13 @@ pub enum DecodeError {
         nanos: u32,
     },
 
+    /// The decoder tried to decode a SystemTime and overflowed
+    InvalidSystemTime {
+        /// The duration which could not have been added to
+        /// [`UNIX_EPOCH`](std::time::SystemTime::UNIX_EPOCH)
+        duration: core::time::Duration,
+    },
+
     /// The decoder tried to decode a `CStr` or `CString`, but the incoming data contained a 0 byte
     #[cfg(feature = "std")]
     CStrNulError {
