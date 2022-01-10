@@ -25,7 +25,7 @@ pub use self::decoder::DecoderImpl;
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
 pub trait Decode: for<'de> BorrowDecode<'de> {
     /// Attempt to decode this type with the given [Decode].
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError>;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
@@ -35,11 +35,11 @@ pub trait Decode: for<'de> BorrowDecode<'de> {
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to a type with a lifetime.
 pub trait BorrowDecode<'de>: Sized {
     /// Attempt to decode this type with the given [BorrowDecode].
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError>;
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 impl<'de, T: Decode> BorrowDecode<'de> for T {
-    fn borrow_decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         Decode::decode(decoder)
     }
 }
@@ -100,8 +100,8 @@ pub trait Decoder: Sealed {
     /// #     }
     /// # }
     /// impl<T: Decode> Decode for Container<T> {
-    ///     fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-    ///         let len = u64::decode(&mut decoder)? as usize;
+    ///     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    ///         let len = u64::decode(decoder)? as usize;
     ///         // Make sure we don't allocate too much memory
     ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
     ///
@@ -109,7 +109,7 @@ pub trait Decoder: Sealed {
     ///         for _ in 0..len {
     ///             // un-claim the memory
     ///             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-    ///             result.push(T::decode(&mut decoder)?)
+    ///             result.push(T::decode(decoder)?)
     ///         }
     ///         Ok(result)
     ///     }
@@ -170,7 +170,7 @@ where
 /// Decodes only the option variant from the decoder. Will not read any more data than that.
 #[inline]
 pub(crate) fn decode_option_variant<D: Decoder>(
-    decoder: D,
+    decoder: &mut D,
     type_name: &'static str,
 ) -> Result<Option<()>, DecodeError> {
     let is_some = u8::decode(decoder)?;
@@ -187,6 +187,6 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 
 /// Decodes the length of any slice, container, etc from the decoder
 #[inline]
-pub(crate) fn decode_slice_len<D: Decoder>(decoder: D) -> Result<usize, DecodeError> {
+pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
     u64::decode(decoder).map(|v| v as usize)
 }

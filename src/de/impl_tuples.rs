@@ -5,7 +5,7 @@ impl<A> Decode for (A,)
 where
     A: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((A::decode(&mut decoder)?,))
     }
 }
@@ -15,7 +15,7 @@ where
     A: Decode,
     B: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((A::decode(&mut decoder)?, B::decode(&mut decoder)?))
     }
 }
@@ -26,7 +26,7 @@ where
     B: Decode,
     C: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -42,7 +42,7 @@ where
     C: Decode,
     D: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -60,7 +60,7 @@ where
     D: Decode,
     E: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -80,7 +80,7 @@ where
     E: Decode,
     F: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -102,7 +102,7 @@ where
     F: Decode,
     G: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,
@@ -126,7 +126,7 @@ where
     G: Decode,
     H: Decode,
 {
-    fn decode<_D: Decoder>(mut decoder: _D) -> Result<Self, DecodeError> {
+    fn decode<_D: Decoder>(mut decoder: &mut _D) -> Result<Self, DecodeError> {
         Ok((
             A::decode(&mut decoder)?,
             B::decode(&mut decoder)?,

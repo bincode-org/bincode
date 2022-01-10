@@ -30,11 +30,11 @@ impl bincode::enc::Encode for Foo {
 
 impl bincode::Decode for Foo {
     fn decode<D: bincode::de::Decoder>(
-        mut decoder: D,
+        decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
         Ok(Self {
-            a: bincode::Decode::decode(&mut decoder)?,
-            b: bincode::Decode::decode(&mut decoder)?,
+            a: bincode::Decode::decode(decoder)?,
+            b: bincode::Decode::decode(decoder)?,
         })
     }
 }

@@ -101,8 +101,8 @@ impl<T> crate::Decode for Compat<T>
 where
     T: serde_incl::de::DeserializeOwned,
 {
-    fn decode<D: crate::de::Decoder>(mut decoder: D) -> Result<Self, crate::error::DecodeError> {
-        let serde_decoder = de_owned::SerdeDecoder { de: &mut decoder };
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
+        let serde_decoder = de_owned::SerdeDecoder { de: decoder };
         T::deserialize(serde_decoder).map(Compat)
     }
 }
@@ -134,10 +134,10 @@ where
     T: serde_incl::de::Deserialize<'de>,
 {
     fn borrow_decode<D: crate::de::BorrowDecoder<'de>>(
-        mut decoder: D,
+        decoder: &mut D,
     ) -> Result<Self, crate::error::DecodeError> {
         let serde_decoder = de_borrowed::SerdeDecoder {
-            de: &mut decoder,
+            de: decoder,
             pd: core::marker::PhantomData,
         };
         T::deserialize(serde_decoder).map(BorrowCompat)

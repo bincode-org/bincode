@@ -11,7 +11,7 @@ impl Encode for AtomicBool {
 }
 
 impl Decode for AtomicBool {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicBool::new(Decode::decode(decoder)?))
     }
 }
@@ -23,7 +23,7 @@ impl Encode for AtomicU8 {
 }
 
 impl Decode for AtomicU8 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU8::new(Decode::decode(decoder)?))
     }
 }
@@ -35,7 +35,7 @@ impl Encode for AtomicU16 {
 }
 
 impl Decode for AtomicU16 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU16::new(Decode::decode(decoder)?))
     }
 }
@@ -47,7 +47,7 @@ impl Encode for AtomicU32 {
 }
 
 impl Decode for AtomicU32 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU32::new(Decode::decode(decoder)?))
     }
 }
@@ -59,7 +59,7 @@ impl Encode for AtomicU64 {
 }
 
 impl Decode for AtomicU64 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU64::new(Decode::decode(decoder)?))
     }
 }
@@ -71,7 +71,7 @@ impl Encode for AtomicUsize {
 }
 
 impl Decode for AtomicUsize {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicUsize::new(Decode::decode(decoder)?))
     }
 }
@@ -83,7 +83,7 @@ impl Encode for AtomicI8 {
 }
 
 impl Decode for AtomicI8 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI8::new(Decode::decode(decoder)?))
     }
 }
@@ -95,7 +95,7 @@ impl Encode for AtomicI16 {
 }
 
 impl Decode for AtomicI16 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI16::new(Decode::decode(decoder)?))
     }
 }
@@ -107,7 +107,7 @@ impl Encode for AtomicI32 {
 }
 
 impl Decode for AtomicI32 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI32::new(Decode::decode(decoder)?))
     }
 }
@@ -119,7 +119,7 @@ impl Encode for AtomicI64 {
 }
 
 impl Decode for AtomicI64 {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI64::new(Decode::decode(decoder)?))
     }
 }
@@ -131,7 +131,7 @@ impl Encode for AtomicIsize {
 }
 
 impl Decode for AtomicIsize {
-    fn decode<D: crate::de::Decoder>(decoder: D) -> Result<Self, crate::error::DecodeError> {
+    fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicIsize::new(Decode::decode(decoder)?))
     }
 }
