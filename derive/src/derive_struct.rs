@@ -58,7 +58,7 @@ impl DeriveStruct {
             })
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
-            .with_arg("mut decoder", "D")
+            .with_arg("decoder", "&mut D")
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_body| {
                 // Ok(Self {
@@ -68,21 +68,21 @@ impl DeriveStruct {
                     ok_group.group(Delimiter::Brace, |struct_body| {
                         // Fields
                         // {
-                        //      a: bincode::Decode::decode(&mut decoder)?,
-                        //      b: bincode::Decode::decode(&mut decoder)?,
+                        //      a: bincode::Decode::decode(decoder)?,
+                        //      b: bincode::Decode::decode(decoder)?,
                         //      ...
                         // }
                         for field in fields.names() {
                             if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: (<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?).0,",
+                                        "{}: (<bincode::serde::Compat<_> as bincode::Decode>::decode(decoder)?).0,",
                                         field
                                     ))?;
                             } else {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::Decode::decode(&mut decoder)?,",
+                                        "{}: bincode::Decode::decode(decoder)?,",
                                         field
                                     ))?;
                             }
@@ -109,7 +109,7 @@ impl DeriveStruct {
             })
             .generate_fn("borrow_decode")
             .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
-            .with_arg("mut decoder", "D")
+            .with_arg("decoder", "&mut D")
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_body| {
                 // Ok(Self {
@@ -121,13 +121,13 @@ impl DeriveStruct {
                             if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: (<bincode::serde::BorrowCompat<_> as bincode::de::BorrowDecode>::borrow_decode(&mut decoder)?).0,",
+                                        "{}: (<bincode::serde::BorrowCompat<_> as bincode::de::BorrowDecode>::borrow_decode(decoder)?).0,",
                                         field
                                     ))?;
                             } else {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,",
+                                        "{}: bincode::de::BorrowDecode::borrow_decode(decoder)?,",
                                         field
                                     ))?;
                             }

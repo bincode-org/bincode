@@ -201,7 +201,7 @@ impl DeriveEnum {
             })
             .generate_fn("decode")
             .with_generic("D", ["bincode::de::Decoder"])
-            .with_arg("mut decoder", "D")
+            .with_arg("decoder", "&mut D")
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_builder| {
                 if self.variants.is_empty() {
@@ -209,7 +209,7 @@ impl DeriveEnum {
                 } else {
                     fn_builder
                         .push_parsed(
-                            "let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;",
+                            "let variant_index = <u32 as bincode::Decode>::decode(decoder)?;",
                         )?;
                     fn_builder.push_parsed("match variant_index")?;
                     fn_builder.group(Delimiter::Brace, |variant_case| {
@@ -242,10 +242,10 @@ impl DeriveEnum {
                                         variant_body.punct(':');
                                         if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                             variant_body
-                                                .push_parsed("<bincode::serde::Compat<_> as bincode::Decode>::decode(&mut decoder)?.0,")?;
+                                                .push_parsed("<bincode::serde::Compat<_> as bincode::Decode>::decode(decoder)?.0,")?;
                                         } else {
                                             variant_body
-                                                .push_parsed("bincode::Decode::decode(&mut decoder)?,")?;
+                                                .push_parsed("bincode::Decode::decode(decoder)?,")?;
                                         }
                                     }
                                     Ok(())
@@ -277,14 +277,14 @@ impl DeriveEnum {
             })
             .generate_fn("borrow_decode")
             .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
-            .with_arg("mut decoder", "D")
+            .with_arg("decoder", "&mut D")
             .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
             .body(|fn_builder| {
                 if self.variants.is_empty() {
                     fn_builder.push_parsed("core::result::Result::Err(bincode::error::DecodeError::EmptyEnum { type_name: core::any::type_name::<Self>() })")?;
                 } else {
                     fn_builder
-                        .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(&mut decoder)?;")?;
+                        .push_parsed("let variant_index = <u32 as bincode::Decode>::decode(decoder)?;")?;
                     fn_builder.push_parsed("match variant_index")?;
                     fn_builder.group(Delimiter::Brace, |variant_case| {
                         for (mut variant_index, variant) in self.iter_fields() {
@@ -316,9 +316,9 @@ impl DeriveEnum {
                                         variant_body.punct(':');
                                         if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                             variant_body
-                                                .push_parsed("<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(&mut decoder)?.0,")?;
+                                                .push_parsed("<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(decoder)?.0,")?;
                                         } else {
-                                            variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(&mut decoder)?,")?;
+                                            variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(decoder)?,")?;
                                         }
                                     }
                                     Ok(())

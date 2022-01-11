@@ -114,7 +114,7 @@ impl<'a> Encode for &'a CStr {
 }
 
 impl<'de> BorrowDecode<'de> for &'de CStr {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = <&[u8]>::borrow_decode(decoder)?;
         CStr::from_bytes_with_nul(bytes).map_err(|e| DecodeError::CStrNulError { inner: e })
     }
@@ -127,7 +127,7 @@ impl Encode for CString {
 }
 
 impl Decode for CString {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         // BlockedTODO: https://github.com/rust-lang/rust/issues/73179
         // use `from_vec_with_nul` instead, combined with:
         // let bytes = std::vec::Vec::<u8>::decode(decoder)?;
@@ -156,7 +156,7 @@ impl<T> Decode for Mutex<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Mutex::new(t))
     }
@@ -178,7 +178,7 @@ impl<T> Decode for RwLock<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RwLock::new(t))
     }
@@ -197,7 +197,7 @@ impl Encode for SystemTime {
 }
 
 impl Decode for SystemTime {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         match SystemTime::UNIX_EPOCH.checked_add(duration) {
             Some(t) => Ok(t),
@@ -216,7 +216,7 @@ impl Encode for &'_ Path {
 }
 
 impl<'de> BorrowDecode<'de> for &'de Path {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let str = <&'de str>::borrow_decode(decoder)?;
         Ok(Path::new(str))
     }
@@ -229,7 +229,7 @@ impl Encode for PathBuf {
 }
 
 impl Decode for PathBuf {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
     }
@@ -251,8 +251,8 @@ impl Encode for IpAddr {
 }
 
 impl Decode for IpAddr {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        match u32::decode(&mut decoder)? {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        match u32::decode(decoder)? {
             0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
             1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
             found => Err(DecodeError::UnexpectedVariant {
@@ -271,7 +271,7 @@ impl Encode for Ipv4Addr {
 }
 
 impl Decode for Ipv4Addr {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Self::from(<[u8; 4]>::decode(decoder)?))
     }
 }
@@ -283,7 +283,7 @@ impl Encode for Ipv6Addr {
 }
 
 impl Decode for Ipv6Addr {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Self::from(<[u8; 16]>::decode(decoder)?))
     }
 }
@@ -304,8 +304,8 @@ impl Encode for SocketAddr {
 }
 
 impl Decode for SocketAddr {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        match u32::decode(&mut decoder)? {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        match u32::decode(decoder)? {
             0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
             1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
             found => Err(DecodeError::UnexpectedVariant {
@@ -325,8 +325,8 @@ impl Encode for SocketAddrV4 {
 }
 
 impl Decode for SocketAddrV4 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let ip = Ipv4Addr::decode(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let ip = Ipv4Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port))
     }
@@ -340,8 +340,8 @@ impl Encode for SocketAddrV6 {
 }
 
 impl Decode for SocketAddrV6 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let ip = Ipv6Addr::decode(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port, 0, 0))
     }
@@ -370,8 +370,8 @@ where
     K: Decode + Eq + std::hash::Hash,
     V: Decode,
 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let mut map = HashMap::with_capacity(len);
@@ -379,8 +379,8 @@ where
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
 
-            let k = K::decode(&mut decoder)?;
-            let v = V::decode(&mut decoder)?;
+            let k = K::decode(decoder)?;
+            let v = V::decode(decoder)?;
             map.insert(k, v);
         }
         Ok(map)

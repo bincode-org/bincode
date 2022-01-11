@@ -50,8 +50,8 @@ impl<T> Decode for BinaryHeap<T>
 where
     T: Decode + Ord,
 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = BinaryHeap::with_capacity(len);
@@ -59,7 +59,7 @@ where
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
-            let key = T::decode(&mut decoder)?;
+            let key = T::decode(decoder)?;
             map.push(key);
         }
         Ok(map)
@@ -84,8 +84,8 @@ where
     K: Decode + Ord,
     V: Decode,
 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let mut map = BTreeMap::new();
@@ -93,8 +93,8 @@ where
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
 
-            let key = K::decode(&mut decoder)?;
-            let value = V::decode(&mut decoder)?;
+            let key = K::decode(decoder)?;
+            let value = V::decode(decoder)?;
             map.insert(key, value);
         }
         Ok(map)
@@ -120,8 +120,8 @@ impl<T> Decode for BTreeSet<T>
 where
     T: Decode + Ord,
 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = BTreeSet::new();
@@ -129,7 +129,7 @@ where
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
-            let key = T::decode(&mut decoder)?;
+            let key = T::decode(decoder)?;
             map.insert(key);
         }
         Ok(map)
@@ -153,8 +153,8 @@ impl<T> Decode for VecDeque<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
         let mut map = VecDeque::with_capacity(len);
@@ -162,7 +162,7 @@ where
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
-            let key = T::decode(&mut decoder)?;
+            let key = T::decode(decoder)?;
             map.push_back(key);
         }
         Ok(map)
@@ -186,8 +186,8 @@ impl<T> Decode for Vec<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(mut decoder: D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(&mut decoder)?;
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
         let mut vec = Vec::with_capacity(len);
@@ -195,7 +195,7 @@ where
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
-            vec.push(T::decode(&mut decoder)?);
+            vec.push(T::decode(decoder)?);
         }
         Ok(vec)
     }
@@ -215,7 +215,7 @@ where
 }
 
 impl Decode for String {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
         String::from_utf8(bytes).map_err(|e| DecodeError::Utf8(e.utf8_error()))
     }
@@ -231,7 +231,7 @@ impl<T> Decode for Box<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Box::new(t))
     }
@@ -250,7 +250,7 @@ impl<T> Decode for Box<[T]>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into_boxed_slice())
     }
@@ -277,7 +277,7 @@ where
 // where
 //     T: BorrowDecode<'cow>,
 // {
-//     fn borrow_decode<D: crate::de::BorrowDecoder<'cow>>(decoder: D) -> Result<Self, DecodeError> {
+//     fn borrow_decode<D: crate::de::BorrowDecoder<'cow>>(decoder: &mut D) -> Result<Self, DecodeError> {
 //         let t = T::borrow_decode(decoder)?;
 //         Ok(Cow::Borrowed(t))
 //     }
@@ -288,7 +288,7 @@ where
     T: ToOwned,
     <T as ToOwned>::Owned: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = <T as ToOwned>::Owned::decode(decoder)?;
         Ok(Cow::Owned(t))
     }
@@ -307,7 +307,7 @@ impl<T> Decode for Rc<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Rc::new(t))
     }
@@ -327,7 +327,7 @@ impl<T> Decode for Arc<T>
 where
     T: Decode,
 {
-    fn decode<D: Decoder>(decoder: D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Arc::new(t))
     }
