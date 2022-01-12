@@ -115,7 +115,7 @@ where
         &self,
         mut encoder: E,
     ) -> Result<(), crate::error::EncodeError> {
-        let serializer = ser::SerdeEncoder { enc: &mut encoder };
+        let serializer = ser::SerdeEncoder { enc: encoder };
         self.0.serialize(serializer)?;
         Ok(())
     }
@@ -152,7 +152,7 @@ where
         &self,
         mut encoder: E,
     ) -> Result<(), crate::error::EncodeError> {
-        let serializer = ser::SerdeEncoder { enc: &mut encoder };
+        let serializer = ser::SerdeEncoder { enc: encoder };
         self.0.serialize(serializer)?;
         Ok(())
     }

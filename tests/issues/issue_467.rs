@@ -4,7 +4,7 @@ extern crate std;
 
 use std::collections::BTreeMap;
 
-#[derive(bincode::Decode)]
+#[derive(bincode::Decode, bincode::Encode)]
 struct AllTypes(BTreeMap<u8, AllTypes>);
 
 #[test]

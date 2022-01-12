@@ -16,7 +16,7 @@ pub use self::encoder::EncoderImpl;
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Encode)]` to your trait.
 pub trait Encode {
     /// Encode a given type.
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError>;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError>;
 }
 
 /// Helper trait to encode basic types into.
@@ -54,7 +54,7 @@ where
 /// Encode the variant of the given option. Will not encode the option itself.
 #[inline]
 pub(crate) fn encode_option_variant<E: Encoder, T>(
-    encoder: E,
+    encoder: &mut E,
     value: &Option<T>,
 ) -> Result<(), EncodeError> {
     match value {
@@ -65,6 +65,6 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
 
 /// Encodes the length of any slice, container, etc into the given encoder
 #[inline]
-pub(crate) fn encode_slice_len<E: Encoder>(encoder: E, len: usize) -> Result<(), EncodeError> {
+pub(crate) fn encode_slice_len<E: Encoder>(encoder: &mut E, len: usize) -> Result<(), EncodeError> {
     (len as u64).encode(encoder)
 }

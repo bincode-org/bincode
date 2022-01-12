@@ -22,10 +22,10 @@ struct Foo {
 impl bincode::enc::Encode for Foo {
     fn encode<E: bincode::enc::Encoder>(
         &self,
-        mut encoder: E,
+        encoder: &mut E,
     ) -> Result<(), bincode::error::EncodeError> {
-        self.a.encode(&mut encoder)?;
-        self.b.encode(&mut encoder)?;
+        self.a.encode(encoder)?;
+        self.b.encode(encoder)?;
         Ok(())
     }
 }

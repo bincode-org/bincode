@@ -18,37 +18,37 @@ use core::{
 };
 
 impl Encode for () {
-    fn encode<E: Encoder>(&self, _: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, _: &mut E) -> Result<(), EncodeError> {
         Ok(())
     }
 }
 
 impl<T> Encode for PhantomData<T> {
-    fn encode<E: Encoder>(&self, _: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, _: &mut E) -> Result<(), EncodeError> {
         Ok(())
     }
 }
 
 impl Encode for bool {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         if *self { 1u8 } else { 0u8 }.encode(encoder)
     }
 }
 
 impl Encode for u8 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.writer().write(&[*self])
     }
 }
 
 impl Encode for NonZeroU8 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for u16 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u16(encoder.writer(), E::C::ENDIAN, *self)
@@ -62,13 +62,13 @@ impl Encode for u16 {
 }
 
 impl Encode for NonZeroU16 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for u32 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u32(encoder.writer(), E::C::ENDIAN, *self)
@@ -82,13 +82,13 @@ impl Encode for u32 {
 }
 
 impl Encode for NonZeroU32 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for u64 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u64(encoder.writer(), E::C::ENDIAN, *self)
@@ -102,13 +102,13 @@ impl Encode for u64 {
 }
 
 impl Encode for NonZeroU64 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for u128 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_u128(encoder.writer(), E::C::ENDIAN, *self)
@@ -122,13 +122,13 @@ impl Encode for u128 {
 }
 
 impl Encode for NonZeroU128 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for usize {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_usize(encoder.writer(), E::C::ENDIAN, *self)
@@ -142,25 +142,25 @@ impl Encode for usize {
 }
 
 impl Encode for NonZeroUsize {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for i8 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.writer().write(&[*self as u8])
     }
 }
 
 impl Encode for NonZeroI8 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for i16 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i16(encoder.writer(), E::C::ENDIAN, *self)
@@ -174,13 +174,13 @@ impl Encode for i16 {
 }
 
 impl Encode for NonZeroI16 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for i32 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i32(encoder.writer(), E::C::ENDIAN, *self)
@@ -194,13 +194,13 @@ impl Encode for i32 {
 }
 
 impl Encode for NonZeroI32 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for i64 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i64(encoder.writer(), E::C::ENDIAN, *self)
@@ -214,13 +214,13 @@ impl Encode for i64 {
 }
 
 impl Encode for NonZeroI64 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for i128 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_i128(encoder.writer(), E::C::ENDIAN, *self)
@@ -234,13 +234,13 @@ impl Encode for i128 {
 }
 
 impl Encode for NonZeroI128 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for isize {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::INT_ENCODING {
             IntEncoding::Variable => {
                 crate::varint::varint_encode_isize(encoder.writer(), E::C::ENDIAN, *self)
@@ -254,13 +254,13 @@ impl Encode for isize {
 }
 
 impl Encode for NonZeroIsize {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.get().encode(encoder)
     }
 }
 
 impl Encode for f32 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::ENDIAN {
             Endian::Big => encoder.writer().write(&self.to_be_bytes()),
             Endian::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -269,7 +269,7 @@ impl Encode for f32 {
 }
 
 impl Encode for f64 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::ENDIAN {
             Endian::Big => encoder.writer().write(&self.to_be_bytes()),
             Endian::Little => encoder.writer().write(&self.to_le_bytes()),
@@ -278,14 +278,14 @@ impl Encode for f64 {
 }
 
 impl Encode for char {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encode_utf8(encoder.writer(), *self)
     }
 }
 
 impl Encode for &'_ [u8] {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        super::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        super::encode_slice_len(encoder, self.len())?;
         encoder.writer().write(self)
     }
 }
@@ -330,23 +330,23 @@ fn encode_utf8(writer: &mut impl Writer, c: char) -> Result<(), EncodeError> {
 // but those implementations overlap because u8 also implements Encodeabl
 //
 // default impl Encode for &'_ [u8] {
-//     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
+//     fn encode<E: Encode>(&self, encoder: &mut E) -> Result<(), EncodeError> {
 //         encoder.encode_slice(*self)
 //     }
 // }
 //
 // impl<T: Encode> Encode for &'_ [T] {
-//     fn encode<E: Encode>(&self, mut encoder: E) -> Result<(), EncodeError> {
-//         self.len().encode(&mut encoder)?;
+//     fn encode<E: Encode>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+//         self.len().encode(encoder)?;
 //         for item in self.iter() {
-//             item.encode(&mut encoder)?;
+//             item.encode(encoder)?;
 //         }
 //         Ok(())
 //     }
 // }
 
 impl Encode for &'_ str {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
     }
 }
@@ -355,12 +355,12 @@ impl<T, const N: usize> Encode for [T; N]
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         if !E::C::SKIP_FIXED_ARRAY_LENGTH {
-            super::encode_slice_len(&mut encoder, N)?;
+            super::encode_slice_len(encoder, N)?;
         }
         for item in self.iter() {
-            item.encode(&mut encoder)?;
+            item.encode(encoder)?;
         }
         Ok(())
     }
@@ -370,8 +370,8 @@ impl<T> Encode for Option<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        super::encode_option_variant(&mut encoder, self)?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        super::encode_option_variant(encoder, self)?;
         if let Some(val) = self {
             val.encode(encoder)?;
         }
@@ -384,14 +384,14 @@ where
     T: Encode,
     U: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Ok(val) => {
-                0u8.encode(&mut encoder)?;
+                0u8.encode(encoder)?;
                 val.encode(encoder)
             }
             Err(err) => {
-                1u8.encode(&mut encoder)?;
+                1u8.encode(encoder)?;
                 err.encode(encoder)
             }
         }
@@ -402,7 +402,7 @@ impl<T> Encode for Cell<T>
 where
     T: Encode + Copy,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(&self.get(), encoder)
     }
 }
@@ -411,7 +411,7 @@ impl<T> Encode for RefCell<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let borrow_guard = self
             .try_borrow()
             .map_err(|e| EncodeError::RefCellAlreadyBorrowed {
@@ -423,9 +423,9 @@ where
 }
 
 impl Encode for Duration {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.as_secs().encode(&mut encoder)?;
-        self.subsec_nanos().encode(&mut encoder)?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.as_secs().encode(encoder)?;
+        self.subsec_nanos().encode(encoder)?;
         Ok(())
     }
 }
@@ -434,9 +434,9 @@ impl<T> Encode for Range<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.start.encode(&mut encoder)?;
-        self.end.encode(&mut encoder)?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.start.encode(encoder)?;
+        self.end.encode(encoder)?;
         Ok(())
     }
 }
@@ -445,9 +445,9 @@ impl<T> Encode for RangeInclusive<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.start().encode(&mut encoder)?;
-        self.end().encode(&mut encoder)?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.start().encode(encoder)?;
+        self.end().encode(encoder)?;
         Ok(())
     }
 }
@@ -456,17 +456,17 @@ impl<T> Encode for Bound<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Self::Unbounded => {
                 0u32.encode(encoder)?;
             }
             Self::Included(val) => {
-                1u32.encode(&mut encoder)?;
+                1u32.encode(encoder)?;
                 val.encode(encoder)?;
             }
             Self::Excluded(val) => {
-                2u32.encode(&mut encoder)?;
+                2u32.encode(encoder)?;
                 val.encode(encoder)?;
             }
         }
@@ -478,7 +478,7 @@ impl<'a, T> Encode for &'a T
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }

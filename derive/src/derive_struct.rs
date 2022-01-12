@@ -21,20 +21,20 @@ impl DeriveStruct {
             .generate_fn("encode")
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
-            .with_arg("mut encoder", "E")
+            .with_arg("encoder", "&mut E")
             .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
             .body(|fn_body| {
                 for field in fields.names() {
                     if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                         fn_body
                             .push_parsed(format!(
-                                "bincode::Encode::encode(&bincode::serde::Compat(&self.{}), &mut encoder)?;",
+                                "bincode::Encode::encode(&bincode::serde::Compat(&self.{}), encoder)?;",
                                 field
                             ))?;
                     } else {
                         fn_body
                             .push_parsed(format!(
-                                "bincode::enc::Encode::encode(&self.{}, &mut encoder)?;",
+                                "bincode::enc::Encode::encode(&self.{}, encoder)?;",
                                 field
                             ))?;
                     }

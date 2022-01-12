@@ -108,7 +108,7 @@ impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
 }
 
 impl<'a> Encode for &'a CStr {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.to_bytes_with_nul().encode(encoder)
     }
 }
@@ -121,7 +121,7 @@ impl<'de> BorrowDecode<'de> for &'de CStr {
 }
 
 impl Encode for CString {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes_with_nul().encode(encoder)
     }
 }
@@ -144,7 +144,7 @@ impl<T> Encode for Mutex<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let t = self.lock().map_err(|_| EncodeError::LockFailed {
             type_name: core::any::type_name::<Mutex<T>>(),
         })?;
@@ -166,7 +166,7 @@ impl<T> Encode for RwLock<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let t = self.read().map_err(|_| EncodeError::LockFailed {
             type_name: core::any::type_name::<RwLock<T>>(),
         })?;
@@ -185,7 +185,7 @@ where
 }
 
 impl Encode for SystemTime {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let duration = self.duration_since(SystemTime::UNIX_EPOCH).map_err(|e| {
             EncodeError::InvalidSystemTime {
                 inner: e,
@@ -207,7 +207,7 @@ impl Decode for SystemTime {
 }
 
 impl Encode for &'_ Path {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self.to_str() {
             Some(str) => str.encode(encoder),
             None => Err(EncodeError::InvalidPathCharacters),
@@ -223,7 +223,7 @@ impl<'de> BorrowDecode<'de> for &'de Path {
 }
 
 impl Encode for PathBuf {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_path().encode(encoder)
     }
 }
@@ -236,14 +236,14 @@ impl Decode for PathBuf {
 }
 
 impl Encode for IpAddr {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             IpAddr::V4(v4) => {
-                0u32.encode(&mut encoder)?;
+                0u32.encode(encoder)?;
                 v4.encode(encoder)
             }
             IpAddr::V6(v6) => {
-                1u32.encode(&mut encoder)?;
+                1u32.encode(encoder)?;
                 v6.encode(encoder)
             }
         }
@@ -265,7 +265,7 @@ impl Decode for IpAddr {
 }
 
 impl Encode for Ipv4Addr {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.octets().encode(encoder)
     }
 }
@@ -277,7 +277,7 @@ impl Decode for Ipv4Addr {
 }
 
 impl Encode for Ipv6Addr {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.octets().encode(encoder)
     }
 }
@@ -289,14 +289,14 @@ impl Decode for Ipv6Addr {
 }
 
 impl Encode for SocketAddr {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             SocketAddr::V4(v4) => {
-                0u32.encode(&mut encoder)?;
+                0u32.encode(encoder)?;
                 v4.encode(encoder)
             }
             SocketAddr::V6(v6) => {
-                1u32.encode(&mut encoder)?;
+                1u32.encode(encoder)?;
                 v6.encode(encoder)
             }
         }
@@ -318,8 +318,8 @@ impl Decode for SocketAddr {
 }
 
 impl Encode for SocketAddrV4 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.ip().encode(&mut encoder)?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.ip().encode(encoder)?;
         self.port().encode(encoder)
     }
 }
@@ -333,8 +333,8 @@ impl Decode for SocketAddrV4 {
 }
 
 impl Encode for SocketAddrV6 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        self.ip().encode(&mut encoder)?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.ip().encode(encoder)?;
         self.port().encode(encoder)
     }
 }
@@ -355,11 +355,11 @@ where
     K: Encode,
     V: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for (k, v) in self.iter() {
-            Encode::encode(k, &mut encoder)?;
-            Encode::encode(v, &mut encoder)?;
+            Encode::encode(k, encoder)?;
+            Encode::encode(v, encoder)?;
         }
         Ok(())
     }
