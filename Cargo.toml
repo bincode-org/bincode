@@ -51,6 +51,7 @@ criterion = "0.3"
 rand = "0.8"
 uuid = { version = "0.8", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+bincode1 = { version = "1.0", package = "bincode" }
 
 [[bench]]
 name = "varint"
