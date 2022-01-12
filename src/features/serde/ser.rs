@@ -16,7 +16,7 @@ where
     C: Config,
 {
     let mut encoder = crate::enc::EncoderImpl::new(crate::VecWriter::default(), config);
-    let serializer = SerdeEncoder { enc: encoder };
+    let serializer = SerdeEncoder { enc: &mut encoder };
     t.serialize(serializer)?;
     Ok(encoder.into_writer().collect())
 }
@@ -29,7 +29,7 @@ where
 {
     let mut encoder =
         crate::enc::EncoderImpl::new(crate::enc::write::SliceWriter::new(slice), config);
-    let serializer = SerdeEncoder { enc: encoder };
+    let serializer = SerdeEncoder { enc: &mut encoder };
     t.serialize(serializer)?;
     Ok(encoder.into_writer().bytes_written())
 }
