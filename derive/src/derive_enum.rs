@@ -29,7 +29,7 @@ impl DeriveEnum {
             .generate_fn("encode")
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(FnSelfArg::RefSelf)
-            .with_arg("mut encoder", "&mut E")
+            .with_arg("encoder", "&mut E")
             .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
             .body(|fn_body| {
                 fn_body.ident_str("match");
