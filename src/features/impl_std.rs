@@ -128,15 +128,8 @@ impl Encode for CString {
 
 impl Decode for CString {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        // BlockedTODO: https://github.com/rust-lang/rust/issues/73179
-        // use `from_vec_with_nul` instead, combined with:
-        // let bytes = std::vec::Vec::<u8>::decode(decoder)?;
-
-        // now we have to allocate twice unfortunately
-        let vec: std::vec::Vec<u8> = std::vec::Vec::decode(decoder)?;
-        let cstr =
-            CStr::from_bytes_with_nul(&vec).map_err(|e| DecodeError::CStrNulError { inner: e })?;
-        Ok(cstr.into())
+        let vec = std::vec::Vec::decode(decoder)?;
+        CString::from_vec_with_nul(vec).map_err(|inner| DecodeError::CStringNulError { inner })
     }
 }
 
