@@ -29,7 +29,7 @@ impl DeriveEnum {
             .generate_fn("encode")
             .with_generic("E", ["bincode::enc::Encoder"])
             .with_self_arg(FnSelfArg::RefSelf)
-            .with_arg("mut encoder", "E")
+            .with_arg("encoder", "&mut E")
             .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
             .body(|fn_body| {
                 fn_body.ident_str("match");
@@ -70,9 +70,9 @@ impl DeriveEnum {
                         // Note that the fields are available as locals because of the match destructuring above
                         // {
                         //      encoder.encode_u32(n)?;
-                        //      bincode::enc::Encode::encode(a, &mut encoder)?;
-                        //      bincode::enc::Encode::encode(b, &mut encoder)?;
-                        //      bincode::enc::Encode::encode(c, &mut encoder)?;
+                        //      bincode::enc::Encode::encode(a, encoder)?;
+                        //      bincode::enc::Encode::encode(b, encoder)?;
+                        //      bincode::enc::Encode::encode(c, encoder)?;
                         // }
                         match_body.group(Delimiter::Brace, |body| {
                             // variant index
@@ -84,7 +84,7 @@ impl DeriveEnum {
                                     Ok(())
                                 })?;
                                 args.punct(',');
-                                args.push_parsed("&mut encoder")?;
+                                args.push_parsed("encoder")?;
                                 Ok(())
                             })?;
                             body.punct('?');
@@ -93,12 +93,12 @@ impl DeriveEnum {
                             for field_name in variant.fields.names() {
                                 if field_name.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                     body.push_parsed(format!(
-                                        "bincode::enc::Encode::encode(&bincode::serde::Compat({}), &mut encoder)?;",
+                                        "bincode::enc::Encode::encode(&bincode::serde::Compat({}), encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                     ))?;
                                 } else {
                                     body.push_parsed(format!(
-                                        "bincode::enc::Encode::encode({}, &mut encoder)?;",
+                                        "bincode::enc::Encode::encode({}, encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                     ))
                                     ?;

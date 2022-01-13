@@ -5,7 +5,10 @@ use core::sync::atomic::{
 };
 
 impl Encode for AtomicBool {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -17,7 +20,10 @@ impl Decode for AtomicBool {
 }
 
 impl Encode for AtomicU8 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -29,7 +35,10 @@ impl Decode for AtomicU8 {
 }
 
 impl Encode for AtomicU16 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -41,7 +50,10 @@ impl Decode for AtomicU16 {
 }
 
 impl Encode for AtomicU32 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -53,7 +65,10 @@ impl Decode for AtomicU32 {
 }
 
 impl Encode for AtomicU64 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -65,7 +80,10 @@ impl Decode for AtomicU64 {
 }
 
 impl Encode for AtomicUsize {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -77,7 +95,10 @@ impl Decode for AtomicUsize {
 }
 
 impl Encode for AtomicI8 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -89,7 +110,10 @@ impl Decode for AtomicI8 {
 }
 
 impl Encode for AtomicI16 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -101,7 +125,10 @@ impl Decode for AtomicI16 {
 }
 
 impl Encode for AtomicI32 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -113,7 +140,10 @@ impl Decode for AtomicI32 {
 }
 
 impl Encode for AtomicI64 {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }
@@ -125,7 +155,10 @@ impl Decode for AtomicI64 {
 }
 
 impl Encode for AtomicIsize {
-    fn encode<E: crate::enc::Encoder>(&self, encoder: E) -> Result<(), crate::error::EncodeError> {
+    fn encode<E: crate::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
     }
 }

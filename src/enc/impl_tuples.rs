@@ -5,8 +5,8 @@ impl<A> Encode for (A,)
 where
     A: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
         Ok(())
     }
 }
@@ -16,9 +16,9 @@ where
     A: Encode,
     B: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
         Ok(())
     }
 }
@@ -29,10 +29,10 @@ where
     B: Encode,
     C: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
-        self.2.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
+        self.2.encode(encoder)?;
         Ok(())
     }
 }
@@ -44,11 +44,11 @@ where
     C: Encode,
     D: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
-        self.2.encode(&mut encoder)?;
-        self.3.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
+        self.2.encode(encoder)?;
+        self.3.encode(encoder)?;
         Ok(())
     }
 }
@@ -61,12 +61,12 @@ where
     D: Encode,
     E: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
-        self.2.encode(&mut encoder)?;
-        self.3.encode(&mut encoder)?;
-        self.4.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
+        self.2.encode(encoder)?;
+        self.3.encode(encoder)?;
+        self.4.encode(encoder)?;
         Ok(())
     }
 }
@@ -80,13 +80,13 @@ where
     E: Encode,
     F: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
-        self.2.encode(&mut encoder)?;
-        self.3.encode(&mut encoder)?;
-        self.4.encode(&mut encoder)?;
-        self.5.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
+        self.2.encode(encoder)?;
+        self.3.encode(encoder)?;
+        self.4.encode(encoder)?;
+        self.5.encode(encoder)?;
         Ok(())
     }
 }
@@ -101,14 +101,14 @@ where
     F: Encode,
     G: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
-        self.2.encode(&mut encoder)?;
-        self.3.encode(&mut encoder)?;
-        self.4.encode(&mut encoder)?;
-        self.5.encode(&mut encoder)?;
-        self.6.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
+        self.2.encode(encoder)?;
+        self.3.encode(encoder)?;
+        self.4.encode(encoder)?;
+        self.5.encode(encoder)?;
+        self.6.encode(encoder)?;
         Ok(())
     }
 }
@@ -124,15 +124,15 @@ where
     G: Encode,
     H: Encode,
 {
-    fn encode<_E: Encoder>(&self, mut encoder: _E) -> Result<(), EncodeError> {
-        self.0.encode(&mut encoder)?;
-        self.1.encode(&mut encoder)?;
-        self.2.encode(&mut encoder)?;
-        self.3.encode(&mut encoder)?;
-        self.4.encode(&mut encoder)?;
-        self.5.encode(&mut encoder)?;
-        self.6.encode(&mut encoder)?;
-        self.7.encode(&mut encoder)?;
+    fn encode<_E: Encoder>(&self, encoder: &mut _E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)?;
+        self.1.encode(encoder)?;
+        self.2.encode(encoder)?;
+        self.3.encode(encoder)?;
+        self.4.encode(encoder)?;
+        self.5.encode(encoder)?;
+        self.6.encode(encoder)?;
+        self.7.encode(encoder)?;
         Ok(())
     }
 }

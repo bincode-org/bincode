@@ -70,10 +70,10 @@ impl<T> Encode for BinaryHeap<T>
 where
     T: Encode + Ord,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for val in self.iter() {
-            val.encode(&mut encoder)?;
+            val.encode(encoder)?;
         }
         Ok(())
     }
@@ -106,11 +106,11 @@ where
     K: Encode + Ord,
     V: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for (key, val) in self.iter() {
-            key.encode(&mut encoder)?;
-            val.encode(&mut encoder)?;
+            key.encode(encoder)?;
+            val.encode(encoder)?;
         }
         Ok(())
     }
@@ -140,10 +140,10 @@ impl<T> Encode for BTreeSet<T>
 where
     T: Encode + Ord,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for item in self.iter() {
-            item.encode(&mut encoder)?;
+            item.encode(encoder)?;
         }
         Ok(())
     }
@@ -173,10 +173,10 @@ impl<T> Encode for VecDeque<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for item in self.iter() {
-            item.encode(&mut encoder)?;
+            item.encode(encoder)?;
         }
         Ok(())
     }
@@ -205,10 +205,10 @@ impl<T> Encode for Vec<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for item in self.iter() {
-            item.encode(&mut encoder)?;
+            item.encode(encoder)?;
         }
         Ok(())
     }
@@ -222,7 +222,7 @@ impl Decode for String {
 }
 
 impl Encode for String {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
     }
 }
@@ -241,7 +241,7 @@ impl<T> Encode for Box<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }
@@ -260,10 +260,10 @@ impl<T> Encode for Box<[T]>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, mut encoder: E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(&mut encoder, self.len())?;
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
         for item in self.iter() {
-            item.encode(&mut encoder)?;
+            item.encode(encoder)?;
         }
         Ok(())
     }
@@ -298,7 +298,7 @@ impl<'cow, T> Encode for Cow<'cow, T>
 where
     T: Encode + Clone,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_ref().encode(encoder)
     }
 }
@@ -317,7 +317,7 @@ impl<T> Encode for Rc<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }
@@ -338,7 +338,7 @@ impl<T> Encode for Arc<T>
 where
     T: Encode,
 {
-    fn encode<E: Encoder>(&self, encoder: E) -> Result<(), EncodeError> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }
