@@ -1,3 +1,4 @@
+use super::DecodeError as SerdeDecodeError;
 use crate::{
     config::Config,
     de::{Decode, Decoder},
@@ -34,7 +35,7 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::SerdeAnyNotSupported)
+        Err(SerdeDecodeError::AnyNotSupported.into())
     }
 
     fn deserialize_bool<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
@@ -130,18 +131,27 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
     }
 
     #[cfg(not(feature = "alloc"))]
-    fn deserialize_str<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_str<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::CannotBorrowOwnedData)
+        Err(SerdeDecodeError::CannotBorrowOwnedData.into())
     }
 
+    #[cfg(feature = "alloc")]
     fn deserialize_string<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
     {
         visitor.visit_string(Decode::decode(&mut self.de)?)
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn deserialize_string<V>(self, _: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde_incl::de::Visitor<'de>,
+    {
+        Err(SerdeDecodeError::CannotAllocate.into())
     }
 
     #[cfg(feature = "alloc")]
@@ -157,14 +167,22 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::CannotBorrowOwnedData)
+        Err(SerdeDecodeError::CannotBorrowOwnedData.into())
     }
 
+    #[cfg(feature = "alloc")]
     fn deserialize_byte_buf<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
     {
         visitor.visit_byte_buf(Decode::decode(&mut self.de)?)
+    }
+    #[cfg(not(feature = "alloc"))]
+    fn deserialize_byte_buf<V>(self, _: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde_incl::de::Visitor<'de>,
+    {
+        Err(SerdeDecodeError::CannotAllocate.into())
     }
 
     fn deserialize_option<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
@@ -353,14 +371,14 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::SerdeIdentifierNotSupported)
+        Err(SerdeDecodeError::IdentifierNotSupported.into())
     }
 
     fn deserialize_ignored_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::SerdeIgnoredAnyNotSupported)
+        Err(SerdeDecodeError::IgnoredAnyNotSupported.into())
     }
 }
 

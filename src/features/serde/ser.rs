@@ -1,3 +1,4 @@
+use super::EncodeError as SerdeEncodeError;
 use crate::{
     config::Config,
     enc::{Encode, Encoder},
@@ -165,7 +166,7 @@ where
     }
 
     fn serialize_seq(mut self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        let len = len.ok_or(EncodeError::SequenceMustHaveLength)?;
+        let len = len.ok_or_else(|| SerdeEncodeError::SequenceMustHaveLength.into())?;
         len.encode(&mut self.enc)?;
         Ok(Compound { enc: self.enc })
     }
@@ -196,7 +197,7 @@ where
     }
 
     fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        let len = len.ok_or(EncodeError::SequenceMustHaveLength)?;
+        let len = len.ok_or_else(|| SerdeEncodeError::SequenceMustHaveLength.into())?;
         len.encode(&mut self.enc)?;
         Ok(Compound { enc: self.enc })
     }
@@ -218,6 +219,14 @@ where
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
         variant_index.encode(&mut self.enc)?;
         Ok(Compound { enc: self.enc })
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn collect_str<T: ?Sized>(self, _: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: core::fmt::Display,
+    {
+        Err(SerdeEncodeError::CannotCollectStr.into())
     }
 }
 
