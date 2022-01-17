@@ -121,7 +121,16 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
         visitor.visit_char(Decode::decode(&mut self.de)?)
     }
 
-    fn deserialize_str<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    #[cfg(feature = "alloc")]
+    fn deserialize_str<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde_incl::de::Visitor<'de>,
+    {
+        visitor.visit_string(Decode::decode(&mut self.de)?)
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn deserialize_str<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
     {
@@ -135,6 +144,15 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
         visitor.visit_string(Decode::decode(&mut self.de)?)
     }
 
+    #[cfg(feature = "alloc")]
+    fn deserialize_bytes<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde_incl::de::Visitor<'de>,
+    {
+        visitor.visit_byte_buf(Decode::decode(&mut self.de)?)
+    }
+
+    #[cfg(not(feature = "alloc"))]
     fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
