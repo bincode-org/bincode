@@ -12,11 +12,11 @@ impl DeriveStruct {
         let DeriveStruct { fields } = self;
 
         generator
-            .impl_for("bincode::enc::Encode")?
+            .impl_for("bincode::Encode")?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints
-                        .push_constraint(g, "bincode::enc::Encode")
+                        .push_constraint(g, "bincode::Encode")
                         .unwrap();
                 }
             })
@@ -37,7 +37,7 @@ impl DeriveStruct {
                         ))?;
                     } else {
                         fn_body.push_parsed(format!(
-                            "bincode::enc::Encode::encode(&self.{}, encoder)?;",
+                            "bincode::Encode::encode(&self.{}, encoder)?;",
                             field
                         ))?;
                     }
@@ -56,7 +56,7 @@ impl DeriveStruct {
             .impl_for("bincode::Decode")?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, "bincode::de::Decode").unwrap();
+                    where_constraints.push_constraint(g, "bincode::Decode").unwrap();
                 }
             })
             .generate_fn("decode")
@@ -104,10 +104,10 @@ impl DeriveStruct {
         let DeriveStruct { fields } = self;
 
         generator
-            .impl_for_with_lifetimes("bincode::de::BorrowDecode", &["__de"])?
+            .impl_for_with_lifetimes("bincode::BorrowDecode", &["__de"])?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, "bincode::de::BorrowDecode").unwrap();
+                    where_constraints.push_constraint(g, "bincode::BorrowDecode").unwrap();
                 }
             })
             .generate_fn("borrow_decode")
@@ -124,13 +124,13 @@ impl DeriveStruct {
                             if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: (<bincode::serde::BorrowCompat<_> as bincode::de::BorrowDecode>::borrow_decode(decoder)?).0,",
+                                        "{}: (<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(decoder)?).0,",
                                         field
                                     ))?;
                             } else {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::de::BorrowDecode::borrow_decode(decoder)?,",
+                                        "{}: bincode::BorrowDecode::borrow_decode(decoder)?,",
                                         field
                                     ))?;
                             }

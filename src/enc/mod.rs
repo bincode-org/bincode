@@ -14,6 +14,40 @@ pub use self::encoder::EncoderImpl;
 /// Any source that can be encoded. This trait should be implemented for all types that you want to be able to use with any of the `encode_with` methods.
 ///
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Encode)]` to your trait.
+///
+/// # Implementing this trait manually
+///
+/// If you want to implement this trait for your type, the easiest way is to add a `#[derive(bincode::Encode)]`, build and check your `target/` folder. This should generate a `<Struct name>_Encode.rs` file.
+///
+/// For this struct:
+///
+/// ```
+/// struct Entity {
+///     pub x: f32,
+///     pub y: f32,
+/// }
+/// ```
+/// It will look something like:
+///
+/// ```
+/// # struct Entity {
+/// #     pub x: f32,
+/// #     pub y: f32,
+/// # }
+/// impl bincode::Encode for Entity {
+///     fn encode<E: bincode::Encoder>(
+///         &self,
+///         encoder: &mut E,
+///     ) -> core::result::Result<(), bincode::error::EncodeError> {
+///         bincode::Encode::encode(&self.x, encoder)?;
+///         bincode::Encode::encode(&self.y, encoder)?;
+///         Ok(())
+///     }
+/// }
+/// ```
+///
+/// From here you can add/remove fields, or add custom logic.
+
 pub trait Encode {
     /// Encode a given type.
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError>;

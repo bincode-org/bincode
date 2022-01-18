@@ -23,6 +23,54 @@ pub use self::decoder::DecoderImpl;
 /// Whenever you implement `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
 ///
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
+///
+/// # Implementing this trait manually
+///
+/// If you want to implement this trait for your type, the easiest way is to add a `#[derive(bincode::Decode)]`, build and check your `target/` folder. This should generate a `<Struct name>_Decode.rs` file.
+///
+/// For this struct:
+///
+/// ```
+/// struct Entity {
+///     pub x: f32,
+///     pub y: f32,
+/// }
+/// ```
+///
+/// It will look something like:
+///
+/// ```
+/// # struct Entity {
+/// #     pub x: f32,
+/// #     pub y: f32,
+/// # }
+/// impl bincode::Decode for Entity {
+///     fn decode<D: bincode::de::Decoder>(
+///         decoder: &mut D,
+///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
+///         Ok(Self {
+///             x: bincode::Decode::decode(decoder)?,
+///             y: bincode::Decode::decode(decoder)?,
+///         })
+///     }
+/// }
+/// ```
+///
+/// From here you can add/remove fields, or add custom logic.
+///
+/// To get specific integer types, you can use:
+/// ```
+/// # struct Foo;
+/// # impl bincode::Decode for Foo {
+/// #     fn decode<D: bincode::de::Decoder>(
+/// #         decoder: &mut D,
+/// #     ) -> core::result::Result<Self, bincode::error::DecodeError> {
+/// let x: u8 = bincode::Decode::decode(decoder)?;
+/// let x = <u8 as bincode::Decode>::decode(decoder)?;
+/// #         Ok(Foo)
+/// #     }
+/// # }
+/// ```
 pub trait Decode: for<'de> BorrowDecode<'de> {
     /// Attempt to decode this type with the given [Decode].
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError>;
@@ -55,7 +103,7 @@ pub trait Decoder: Sealed {
     /// Returns a mutable reference to the reader
     fn reader(&mut self) -> &mut Self::R;
 
-    /// Returns a mutable reference to the config
+    /// Returns a reference to the config
     fn config(&self) -> &Self::C;
 
     /// Claim that `n` bytes are going to be read from the decoder.
