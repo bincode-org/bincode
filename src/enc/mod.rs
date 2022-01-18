@@ -35,7 +35,7 @@ pub use self::encoder::EncoderImpl;
 /// #     pub y: f32,
 /// # }
 /// impl bincode::Encode for Entity {
-///     fn encode<E: bincode::Encoder>(
+///     fn encode<E: bincode::enc::Encoder>(
 ///         &self,
 ///         encoder: &mut E,
 ///     ) -> core::result::Result<(), bincode::error::EncodeError> {

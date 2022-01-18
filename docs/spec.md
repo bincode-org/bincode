@@ -94,7 +94,7 @@ assert_eq!(encoded.as_slice(), &[
 
 Collections are encoded with their length value first, following by each entry of the collection. The length value is based on your `IntEncoding`.
 
-**note**: fixed array length do not have their `len` encoded. See [Arrays](#arrays)
+**note**: fixed array length may not have their `len` encoded. See [Arrays](#arrays)
 
 ```rust
 use bincode::config::Configuration;
@@ -133,7 +133,10 @@ assert_eq!(encoded.as_slice(), &[
 
 # Arrays
 
-Arrays are encoded *with* a length by default.
+Array length is encoded based on the `.write_fixed_array_length` and `.skip_fixed_array_length()` config. When an array length is written, it will be encoded as a `u64`.
+
+Note that `&[T]` is encoded as a [Collection](#collections).
+
 
 ```rust
 use bincode::config::Configuration;
@@ -142,6 +145,12 @@ let arr: [u8; 5] = [10, 20, 30, 40, 50];
 let encoded = bincode::encode_to_vec(arr, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     5, 0, 0, 0, 0, 0, 0, 0, // The length, as a u64
+    10, 20, 30, 40, 50, // the bytes
+]);
+
+let encoded = bincode::encode_to_vec(arr, Configuration::legacy().skip_fixed_array_length()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    // no length
     10, 20, 30, 40, 50, // the bytes
 ]);
 ```
@@ -168,9 +177,16 @@ let arr: [Foo; 2] = [
     },
 ];
 
-let encoded = bincode::encode_to_vec(arr, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(&arr, Configuration::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     2, 0, 0, 0, 0, 0, 0, 0, // Length of the array
+    10, 20, // First Foo
+    30, 40, // Second Foo
+]);
+
+let encoded = bincode::encode_to_vec(&arr, Configuration::legacy().skip_fixed_array_length()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    // no length
     10, 20, // First Foo
     30, 40, // Second Foo
 ]);
