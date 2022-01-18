@@ -18,7 +18,7 @@
 //!     .write_fixed_array_length();
 //! ```
 //!
-//! See [Config] for more information on the configuration options.
+//! See [Configuration] for more information on the configuration options.
 
 pub(crate) use self::internal::*;
 use core::marker::PhantomData;

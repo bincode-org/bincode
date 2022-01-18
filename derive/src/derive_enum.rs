@@ -20,10 +20,10 @@ impl DeriveEnum {
 
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
         generator
-            .impl_for("bincode::enc::Encode")?
+            .impl_for("bincode::Encode")?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, "bincode::enc::Encode").unwrap();
+                    where_constraints.push_constraint(g, "bincode::Encode").unwrap();
                 }
             })
             .generate_fn("encode")
@@ -70,13 +70,13 @@ impl DeriveEnum {
                         // Note that the fields are available as locals because of the match destructuring above
                         // {
                         //      encoder.encode_u32(n)?;
-                        //      bincode::enc::Encode::encode(a, encoder)?;
-                        //      bincode::enc::Encode::encode(b, encoder)?;
-                        //      bincode::enc::Encode::encode(c, encoder)?;
+                        //      bincode::Encode::encode(a, encoder)?;
+                        //      bincode::Encode::encode(b, encoder)?;
+                        //      bincode::Encode::encode(c, encoder)?;
                         // }
                         match_body.group(Delimiter::Brace, |body| {
                             // variant index
-                            body.push_parsed("<u32 as bincode::enc::Encode>::encode")?;
+                            body.push_parsed("<u32 as bincode::Encode>::encode")?;
                             body.group(Delimiter::Parenthesis, |args| {
                                 args.punct('&');
                                 args.group(Delimiter::Parenthesis, |num| {
@@ -93,12 +93,12 @@ impl DeriveEnum {
                             for field_name in variant.fields.names() {
                                 if field_name.attributes().has_attribute(FieldAttribute::WithSerde)? {
                                     body.push_parsed(format!(
-                                        "bincode::enc::Encode::encode(&bincode::serde::Compat({}), encoder)?;",
+                                        "bincode::Encode::encode(&bincode::serde::Compat({}), encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                     ))?;
                                 } else {
                                     body.push_parsed(format!(
-                                        "bincode::enc::Encode::encode({}, encoder)?;",
+                                        "bincode::Encode::encode({}, encoder)?;",
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                     ))
                                     ?;
@@ -269,7 +269,7 @@ impl DeriveEnum {
 
         let enum_name = generator.target_name().to_string();
 
-        generator.impl_for_with_lifetimes("bincode::de::BorrowDecode", &["__de"])?
+        generator.impl_for_with_lifetimes("bincode::BorrowDecode", &["__de"])?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints.push_constraint(g, "bincode::enc::BorrowDecode").unwrap();
@@ -318,7 +318,7 @@ impl DeriveEnum {
                                             variant_body
                                                 .push_parsed("<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(decoder)?.0,")?;
                                         } else {
-                                            variant_body.push_parsed("bincode::de::BorrowDecode::borrow_decode(decoder)?,")?;
+                                            variant_body.push_parsed("bincode::BorrowDecode::borrow_decode(decoder)?,")?;
                                         }
                                     }
                                     Ok(())
