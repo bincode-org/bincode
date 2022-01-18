@@ -76,6 +76,7 @@ pub use self::ser::*;
 
 /// A serde-specific error that occured while decoding.
 #[derive(Debug, PartialEq)]
+#[non_exhaustive]
 pub enum DecodeError {
     /// Bincode does not support serde's `any` decoding feature
     AnyNotSupported,
@@ -96,35 +97,6 @@ pub enum DecodeError {
     /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
     #[cfg(not(feature = "alloc"))]
     CustomError,
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<crate::error::DecodeError> for DecodeError {
-    fn into(self) -> crate::error::DecodeError {
-        crate::error::DecodeError::Serde(self)
-    }
-}
-
-/// A serde-specific error that occured while encoding.
-#[derive(Debug, PartialEq)]
-pub enum EncodeError {
-    /// Serde provided bincode with a sequence without a length, which is not supported in bincode
-    SequenceMustHaveLength,
-
-    /// [Serializer::collect_str] got called but bincode was unable to allocate memory.
-    #[cfg(not(feature = "alloc"))]
-    CannotCollectStr,
-
-    /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
-    #[cfg(not(feature = "alloc"))]
-    CustomError,
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<crate::error::EncodeError> for EncodeError {
-    fn into(self) -> crate::error::EncodeError {
-        crate::error::EncodeError::Serde(self)
-    }
 }
 
 #[cfg(feature = "alloc")]
@@ -148,6 +120,36 @@ impl serde_incl::de::Error for crate::error::DecodeError {
         T: core::fmt::Display,
     {
         DecodeError::CustomError.into()
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<crate::error::DecodeError> for DecodeError {
+    fn into(self) -> crate::error::DecodeError {
+        crate::error::DecodeError::Serde(self)
+    }
+}
+
+/// A serde-specific error that occured while encoding.
+#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+pub enum EncodeError {
+    /// Serde provided bincode with a sequence without a length, which is not supported in bincode
+    SequenceMustHaveLength,
+
+    /// [Serializer::collect_str] got called but bincode was unable to allocate memory.
+    #[cfg(not(feature = "alloc"))]
+    CannotCollectStr,
+
+    /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
+    #[cfg(not(feature = "alloc"))]
+    CustomError,
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<crate::error::EncodeError> for EncodeError {
+    fn into(self) -> crate::error::EncodeError {
+        crate::error::EncodeError::Serde(self)
     }
 }
 
