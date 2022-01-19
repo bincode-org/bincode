@@ -192,7 +192,7 @@ fi",
           "uses": "actions/upload-artifact@v1",
           "with": {
             "name": "code-coverage-report",
-            "files": "cobertura.xml"
+            "path": "cobertura.xml"
           }
         }
       ]
