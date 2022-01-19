@@ -1,6 +1,5 @@
+use bincode::config;
 use criterion::{criterion_group, criterion_main, Criterion};
-
-use bincode::config::Configuration;
 use rand::distributions::Distribution;
 
 fn slice_varint_u8(c: &mut Criterion) {
@@ -9,7 +8,7 @@ fn slice_varint_u8(c: &mut Criterion) {
     let input: Vec<u8> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u8", |b| {
@@ -25,7 +24,7 @@ fn slice_varint_u16(c: &mut Criterion) {
     let input: Vec<u16> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u16", |b| {
@@ -41,7 +40,7 @@ fn slice_varint_u32(c: &mut Criterion) {
     let input: Vec<u32> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u32", |b| {
@@ -57,7 +56,7 @@ fn slice_varint_u64(c: &mut Criterion) {
     let input: Vec<u64> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("slice_varint_u64", |b| {
@@ -73,7 +72,7 @@ fn bufreader_varint_u8(c: &mut Criterion) {
     let input: Vec<u8> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u8", |b| {
@@ -91,7 +90,7 @@ fn bufreader_varint_u16(c: &mut Criterion) {
     let input: Vec<u16> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u16", |b| {
@@ -109,7 +108,7 @@ fn bufreader_varint_u32(c: &mut Criterion) {
     let input: Vec<u32> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u32", |b| {
@@ -127,7 +126,7 @@ fn bufreader_varint_u64(c: &mut Criterion) {
     let input: Vec<u64> = std::iter::from_fn(|| Some(dist.sample(&mut rng)))
         .take(10_000)
         .collect();
-    let config = Configuration::standard();
+    let config = config::standard();
     let bytes = bincode::encode_to_vec(&input, config).unwrap();
 
     c.bench_function("bufreader_varint_u64", |b| {

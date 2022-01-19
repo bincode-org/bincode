@@ -18,10 +18,8 @@ All floating point types will take up exactly 4 (for `f32`) or 8 (for `f64`) byt
 
 All tuples have no additional bytes, and are encoded in their specified order, e.g.
 ```rust
-use bincode::config::Configuration;
-
 let tuple = (u32::min_value(), i32::max_value()); // 8 bytes
-let encoded = bincode::encode_to_vec(tuple, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(tuple, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0,   0,   0,   0,  // 4 bytes for first type:  u32
     255, 255, 255, 127 // 4 bytes for second type: i32
@@ -59,8 +57,6 @@ Enums are encoded with their variant first, followed by optionally the variant f
 Both named and unnamed fields are serialized with their values only, and therefor encode to the same value.
 
 ```rust
-use bincode::config::Configuration;
-
 #[derive(bincode::Encode)]
 pub enum SomeEnum {
     A,
@@ -69,21 +65,21 @@ pub enum SomeEnum {
 }
 
 // SomeEnum::A
-let encoded = bincode::encode_to_vec(SomeEnum::A, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(SomeEnum::A, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     0, 0, 0, 0, // first variant, A
     // no extra bytes because A has no fields
 ]);
 
 // SomeEnum::B(0)
-let encoded = bincode::encode_to_vec(SomeEnum::B(0), Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(SomeEnum::B(0), bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     1, 0, 0, 0, // first variant, B
     0, 0, 0, 0  // B has 1 unnamed field, which is an u32, so 4 bytes
 ]);
 
 // SomeEnum::C { value: 0u32 }
-let encoded = bincode::encode_to_vec(SomeEnum::C { value: 0u32 }, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(SomeEnum::C { value: 0u32 }, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     2, 0, 0, 0, // first variant, C
     0, 0, 0, 0  // C has 1 named field which is a u32, so 4 bytes
@@ -97,14 +93,13 @@ Collections are encoded with their length value first, following by each entry o
 **note**: fixed array length may not have their `len` encoded. See [Arrays](#arrays)
 
 ```rust
-use bincode::config::Configuration;
 let list = vec![
     0u8,
     1u8,
     2u8
 ];
 
-let encoded = bincode::encode_to_vec(list, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(list, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     3, 0, 0, 0, 0, 0, 0, 0, // length of 3u64
     0, // entry 0
@@ -120,11 +115,9 @@ This also applies to e.g. `HashMap`, where each entry is a [tuple](#basic-types)
 Both `String` and `&str` are treated as a `Vec<u8>`. See [Collections](#collections) for more information.
 
 ```rust
-use bincode::config::Configuration;
-
 let str = "Hello"; // Could also be `String::new(...)`
 
-let encoded = bincode::encode_to_vec(str, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(str, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     5, 0, 0, 0, 0, 0, 0, 0, // length of the string, 5 bytes
     b'H', b'e', b'l', b'l', b'o'
@@ -139,16 +132,14 @@ Note that `&[T]` is encoded as a [Collection](#collections).
 
 
 ```rust
-use bincode::config::Configuration;
-
 let arr: [u8; 5] = [10, 20, 30, 40, 50];
-let encoded = bincode::encode_to_vec(arr, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(arr, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     5, 0, 0, 0, 0, 0, 0, 0, // The length, as a u64
     10, 20, 30, 40, 50, // the bytes
 ]);
 
-let encoded = bincode::encode_to_vec(arr, Configuration::legacy().skip_fixed_array_length()).unwrap();
+let encoded = bincode::encode_to_vec(arr, bincode::config::legacy().skip_fixed_array_length()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     // no length
     10, 20, 30, 40, 50, // the bytes
@@ -158,8 +149,6 @@ assert_eq!(encoded.as_slice(), &[
 This applies to any type `T` that implements `Encode`/`Decode`
 
 ```rust
-use bincode::config::Configuration;
-
 #[derive(bincode::Encode)]
 struct Foo {
     first: u8,
@@ -177,14 +166,14 @@ let arr: [Foo; 2] = [
     },
 ];
 
-let encoded = bincode::encode_to_vec(&arr, Configuration::legacy()).unwrap();
+let encoded = bincode::encode_to_vec(&arr, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     2, 0, 0, 0, 0, 0, 0, 0, // Length of the array
     10, 20, // First Foo
     30, 40, // Second Foo
 ]);
 
-let encoded = bincode::encode_to_vec(&arr, Configuration::legacy().skip_fixed_array_length()).unwrap();
+let encoded = bincode::encode_to_vec(&arr, bincode::config::legacy().skip_fixed_array_length()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     // no length
     10, 20, // First Foo

@@ -9,7 +9,6 @@ use alloc::collections::*;
 use alloc::rc::Rc;
 #[cfg(feature = "atomic")]
 use alloc::sync::Arc;
-use bincode::config::Configuration;
 use utils::{the_same, the_same_with_comparer};
 
 struct Foo {
@@ -41,11 +40,11 @@ impl bincode::Decode for Foo {
 
 #[test]
 fn test_vec() {
-    let vec = bincode::encode_to_vec(Foo { a: 5, b: 10 }, Configuration::standard()).unwrap();
+    let vec = bincode::encode_to_vec(Foo { a: 5, b: 10 }, bincode::config::standard()).unwrap();
     assert_eq!(vec, &[5, 10]);
 
     let (foo, len): (Foo, usize) =
-        bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
+        bincode::decode_from_slice(&vec, bincode::config::standard()).unwrap();
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
     assert_eq!(len, 2);
@@ -101,15 +100,15 @@ fn test_container_limits() {
     // for this test we'll create a malformed package of a lot of bytes
     let test_cases = &[
         // u64::max_value(), should overflow
-        bincode::encode_to_vec(u64::max_value(), Configuration::standard()).unwrap(),
+        bincode::encode_to_vec(u64::max_value(), bincode::config::standard()).unwrap(),
         // A high value which doesn't overflow, but exceeds the decode limit
-        bincode::encode_to_vec(DECODE_LIMIT as u64, Configuration::standard()).unwrap(),
+        bincode::encode_to_vec(DECODE_LIMIT as u64, bincode::config::standard()).unwrap(),
     ];
 
     fn validate_fail<T: Decode + core::fmt::Debug>(slice: &[u8]) {
         let result = bincode::decode_from_slice::<T, _>(
             slice,
-            Configuration::standard().with_limit::<DECODE_LIMIT>(),
+            bincode::config::standard().with_limit::<DECODE_LIMIT>(),
         );
 
         assert_eq!(result.unwrap_err(), DecodeError::LimitExceeded);

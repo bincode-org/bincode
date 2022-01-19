@@ -2,7 +2,7 @@
 
 extern crate std;
 
-use bincode::{config::Configuration, Decode, Encode};
+use bincode::{Decode, Encode};
 use std::borrow::Cow;
 use std::string::String;
 
@@ -24,10 +24,10 @@ fn test() {
     let t = T {
         t: Cow::Borrowed(&u),
     };
-    let vec = bincode::encode_to_vec(&t, Configuration::standard()).unwrap();
+    let vec = bincode::encode_to_vec(&t, bincode::config::standard()).unwrap();
 
     let (decoded, len): (T<String>, usize) =
-        bincode::decode_from_slice(&vec, Configuration::standard()).unwrap();
+        bincode::decode_from_slice(&vec, bincode::config::standard()).unwrap();
 
     assert_eq!(t, decoded);
     assert_eq!(len, 12);

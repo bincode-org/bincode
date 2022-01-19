@@ -2,7 +2,6 @@
 
 extern crate std;
 
-use bincode::config::Configuration;
 use chrono::{DateTime, Utc};
 use serde_incl::de::DeserializeOwned;
 use std::collections::HashMap;
@@ -63,7 +62,7 @@ impl MemCache {
     where
         T: Send + Sync + serde_incl::Serialize,
     {
-        let config = Configuration::standard();
+        let config = bincode::config::standard();
         let mut guard = self.cache.write().unwrap();
 
         let encoded = bincode::serde::encode_to_vec(&cache_data, config)?;
@@ -77,7 +76,7 @@ impl MemCache {
     where
         T: Send + Sync + DeserializeOwned,
     {
-        let config = Configuration::standard();
+        let config = bincode::config::standard();
         let guard = self.cache.read().unwrap();
         let cache_item = guard.get(key).unwrap();
         let (decoded, _len): (T, usize) =

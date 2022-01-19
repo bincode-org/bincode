@@ -30,7 +30,7 @@ library.
 ## Example
 
 ```rust
-use bincode::{config::Configuration, Decode, Encode};
+use bincode::{config, Decode, Encode};
 
 #[derive(Encode, Decode, PartialEq, Debug)]
 struct Entity {
@@ -42,7 +42,7 @@ struct Entity {
 struct World(Vec<Entity>);
 
 fn main() {
-    let config = Configuration::standard();
+    let config = config::standard();
 
     let world = World(vec![Entity { x: 0.0, y: 4.0 }, Entity { x: 10.0, y: 20.5 }]);
 
@@ -103,7 +103,7 @@ Bincode 2.0 is still in development and does not yet have a targetted MSRV. Once
 
 ### Why does bincode not respect `#[repr(u8)]`?
 
-Bincode will encode enum variants as a `u32`. If you're worried about storage size, we can recommend enabling `Configuration::with_varint_encoding()`. This option is enabled by default with the `standard` configuration. In this case enum variants will almost always be encoded as a `u8`.
+Bincode will encode enum variants as a `u32`. If you're worried about storage size, we can recommend enabling `Configuration::with_variable_int_encoding()`. This option is enabled by default with the `standard` configuration. In this case enum variants will almost always be encoded as a `u8`.
 
 Currently we have not found a compelling case to respect `#[repr(...)]`. You're most likely trying to interop with a format that is similar-but-not-quite-bincode. We only support our own protocol ([spec](https://github.com/bincode-org/bincode/blob/trunk/docs/spec.md)).
 
