@@ -133,9 +133,9 @@ pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
 /// [config]: config/index.html
 pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
     reader: R,
-    _config: C,
+    config: C,
 ) -> Result<D, error::DecodeError> {
-    let mut decoder = de::DecoderImpl::<_, C>::new(reader, _config);
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
     D::decode(&mut decoder)
 }
 

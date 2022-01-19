@@ -23,15 +23,21 @@ use std::{
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from_std_read<D: Decode, C: Config, R: std::io::Read>(
     src: &mut R,
-    _config: C,
+    config: C,
 ) -> Result<D, DecodeError> {
-    let reader = IoReader { reader: src };
-    let mut decoder = DecoderImpl::<_, C>::new(reader, _config);
+    let reader = IoReader::new(src);
+    let mut decoder = DecoderImpl::<_, C>::new(reader, config);
     D::decode(&mut decoder)
 }
 
-struct IoReader<R> {
+pub(crate) struct IoReader<R> {
     reader: R,
+}
+
+impl<R> IoReader<R> {
+    pub fn new(reader: R) -> Self {
+        Self { reader }
+    }
 }
 
 impl<R> Reader for IoReader<R>
@@ -79,18 +85,28 @@ pub fn encode_into_std_write<E: Encode, C: Config, W: std::io::Write>(
     dst: &mut W,
     config: C,
 ) -> Result<usize, EncodeError> {
-    let writer = IoWriter {
-        writer: dst,
-        bytes_written: 0,
-    };
+    let writer = IoWriter::new(dst);
     let mut encoder = EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
-    Ok(encoder.into_writer().bytes_written)
+    Ok(encoder.into_writer().bytes_written())
 }
 
-struct IoWriter<'a, W: std::io::Write> {
+pub(crate) struct IoWriter<'a, W: std::io::Write> {
     writer: &'a mut W,
     bytes_written: usize,
+}
+
+impl<'a, W: std::io::Write> IoWriter<'a, W> {
+    pub fn new(writer: &'a mut W) -> Self {
+        Self {
+            writer,
+            bytes_written: 0,
+        }
+    }
+
+    pub fn bytes_written(&self) -> usize {
+        self.bytes_written
+    }
 }
 
 impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {

@@ -1,7 +1,7 @@
 use super::EncodeError as SerdeEncodeError;
 use crate::{
     config::Config,
-    enc::{Encode, Encoder},
+    enc::{write::Writer, Encode, Encoder},
     error::EncodeError,
 };
 #[cfg(feature = "alloc")]
@@ -23,7 +23,7 @@ where
 }
 
 /// Encode a `serde` `Serialize` type into a given byte slice with the bincode algorithm
-pub fn encode_to_slice<T, C>(t: T, slice: &mut [u8], config: C) -> Result<usize, EncodeError>
+pub fn encode_into_slice<T, C>(t: T, slice: &mut [u8], config: C) -> Result<usize, EncodeError>
 where
     T: Serialize,
     C: Config,
@@ -32,6 +32,40 @@ where
         crate::enc::EncoderImpl::new(crate::enc::write::SliceWriter::new(slice), config);
     let serializer = SerdeEncoder { enc: &mut encoder };
     t.serialize(serializer)?;
+    Ok(encoder.into_writer().bytes_written())
+}
+
+/// Encode the given value into a custom [Writer].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn encode_into_writer<E: Serialize, W: Writer, C: Config>(
+    val: E,
+    writer: W,
+    config: C,
+) -> Result<(), EncodeError> {
+    let mut encoder = crate::enc::EncoderImpl::<_, C>::new(writer, config);
+    let serializer = SerdeEncoder { enc: &mut encoder };
+    val.serialize(serializer)?;
+    Ok(())
+}
+
+/// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
+/// See the [config] module for more information.
+///
+/// [config]: config/index.html
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[cfg(feature = "std")]
+pub fn encode_into_std_write<E: Serialize, C: Config, W: std::io::Write>(
+    val: E,
+    dst: &mut W,
+    config: C,
+) -> Result<usize, EncodeError> {
+    let writer = crate::IoWriter::new(dst);
+    let mut encoder = crate::enc::EncoderImpl::<_, C>::new(writer, config);
+    let serializer = SerdeEncoder { enc: &mut encoder };
+    val.serialize(serializer)?;
     Ok(encoder.into_writer().bytes_written())
 }
 
