@@ -7,6 +7,8 @@
 //! an object in memory, quickly serialize it to bytes, and then
 //! deserialize it back just as fast!
 //!
+//! If you're coming from bincode 1, check out our [migration guide](migration_guide/index.html)
+//!
 //! # Serde
 //!
 //! Starting from bincode 2, serde is now an optional dependency. If you want to use serde, please enable the `serde` feature. See [Features](#features) for more information.
@@ -141,9 +143,14 @@ pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
 
 // TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
 // But we want to have the specs in the docs always
-#[cfg(all(feature = "alloc", feature = "derive"))]
+#[cfg(all(feature = "alloc", feature = "derive", doc))]
 pub mod spec {
     #![doc = include_str!("../docs/spec.md")]
+}
+
+#[cfg(doc)]
+pub mod migration_guide {
+    #![doc = include_str!("../docs/migration_guide.md")]
 }
 
 // Test the examples in readme.md
