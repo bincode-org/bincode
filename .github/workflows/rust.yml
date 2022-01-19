@@ -179,20 +179,20 @@ fi",
           "name": "Run cargo-tarpaulin",
           "uses": "actions-rs/tarpaulin@v0.1",
           "with": {
-            "version": "0.18.2",
+            "version": "0.19.1",
             "args": "--all --all-features"
           }
         },
         {
           "name": "Upload to codecov.io",
-          "uses": "codecov/codecov-action@v1"
+          "uses": "codecov/codecov-action@v2"
         },
         {
           "name": "Archive code coverage results",
           "uses": "actions/upload-artifact@v1",
           "with": {
             "name": "code-coverage-report",
-            "path": "cobertura.xml"
+            "files": "cobertura.xml"
           }
         }
       ]
