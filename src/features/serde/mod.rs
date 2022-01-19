@@ -40,6 +40,14 @@
 //! # }
 //! ```
 //!
+//! # `alloc` and `no_std`
+//!
+//! The `serde` feature enables both `alloc` and `std` at this point in time.
+//! To use bincode and serde on no_std targets, try one of the following features:
+//!
+//! - `serde_alloc`: enables `serde` and `alloc`
+//! - `serde_no_std`: enables `serde` without `alloc` or `std`
+//!
 //! # Known issues
 //!
 //! Currently the `serde` feature will automatically enable the `alloc` and `std` feature. If you're running in a `#[no_std]` environment consider using bincode's own derive macros.
@@ -66,6 +74,32 @@ pub use self::de_borrowed::*;
 pub use self::de_owned::*;
 pub use self::ser::*;
 
+/// A serde-specific error that occured while decoding.
+#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+pub enum DecodeError {
+    /// Bincode does not support serde's `any` decoding feature
+    AnyNotSupported,
+
+    /// Bincode does not support serde identifiers
+    IdentifierNotSupported,
+
+    /// Bincode does not support serde's `ignored_any`
+    IgnoredAnyNotSupported,
+
+    /// Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead
+    CannotBorrowOwnedData,
+
+    /// Could not allocate data like `String` and `Vec<u8>`
+    #[cfg(not(feature = "alloc"))]
+    CannotAllocate,
+
+    /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
+    #[cfg(not(feature = "alloc"))]
+    CustomError,
+}
+
+#[cfg(feature = "alloc")]
 impl serde_incl::de::Error for crate::error::DecodeError {
     fn custom<T>(msg: T) -> Self
     where
@@ -76,6 +110,50 @@ impl serde_incl::de::Error for crate::error::DecodeError {
     }
 }
 
+#[cfg(not(feature = "std"))]
+impl serde_incl::de::StdError for crate::error::DecodeError {}
+
+#[cfg(not(feature = "alloc"))]
+impl serde_incl::de::Error for crate::error::DecodeError {
+    fn custom<T>(_: T) -> Self
+    where
+        T: core::fmt::Display,
+    {
+        DecodeError::CustomError.into()
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<crate::error::DecodeError> for DecodeError {
+    fn into(self) -> crate::error::DecodeError {
+        crate::error::DecodeError::Serde(self)
+    }
+}
+
+/// A serde-specific error that occured while encoding.
+#[derive(Debug, PartialEq)]
+#[non_exhaustive]
+pub enum EncodeError {
+    /// Serde provided bincode with a sequence without a length, which is not supported in bincode
+    SequenceMustHaveLength,
+
+    /// [Serializer::collect_str] got called but bincode was unable to allocate memory.
+    #[cfg(not(feature = "alloc"))]
+    CannotCollectStr,
+
+    /// Custom serde error but bincode is unable to allocate a string. Set a breakpoint where this is thrown for more information.
+    #[cfg(not(feature = "alloc"))]
+    CustomError,
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<crate::error::EncodeError> for EncodeError {
+    fn into(self) -> crate::error::EncodeError {
+        crate::error::EncodeError::Serde(self)
+    }
+}
+
+#[cfg(feature = "alloc")]
 impl serde_incl::ser::Error for crate::error::EncodeError {
     fn custom<T>(msg: T) -> Self
     where
@@ -84,6 +162,19 @@ impl serde_incl::ser::Error for crate::error::EncodeError {
         use alloc::string::ToString;
 
         Self::OtherString(msg.to_string())
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl serde_incl::de::StdError for crate::error::EncodeError {}
+
+#[cfg(not(feature = "alloc"))]
+impl serde_incl::ser::Error for crate::error::EncodeError {
+    fn custom<T>(_: T) -> Self
+    where
+        T: core::fmt::Display,
+    {
+        EncodeError::CustomError.into()
     }
 }
 

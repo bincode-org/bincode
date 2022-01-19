@@ -51,9 +51,9 @@ pub enum EncodeError {
         time: std::time::SystemTime,
     },
 
-    /// Serde provided bincode with a sequence without a length, which is not supported in bincode
     #[cfg(feature = "serde")]
-    SequenceMustHaveLength,
+    /// A serde-specific error that occured while decoding.
+    Serde(crate::features::serde::EncodeError),
 }
 
 impl core::fmt::Display for EncodeError {
@@ -157,21 +157,9 @@ pub enum DecodeError {
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
 
-    /// Bincode does not support serde's `any` decoding feature
     #[cfg(feature = "serde")]
-    SerdeAnyNotSupported,
-
-    /// Bincode does not support serde identifiers
-    #[cfg(feature = "serde")]
-    SerdeIdentifierNotSupported,
-
-    /// Bincode does not support serde's `ignored_any`
-    #[cfg(feature = "serde")]
-    SerdeIgnoredAnyNotSupported,
-
-    /// Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead
-    #[cfg(feature = "serde")]
-    CannotBorrowOwnedData,
+    /// A serde-specific error that occured while decoding.
+    Serde(crate::features::serde::DecodeError),
 }
 
 impl core::fmt::Display for DecodeError {

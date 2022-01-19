@@ -85,7 +85,11 @@
             "alloc,derive",
             "std",
             "std,derive",
+            "serde_no_std",
+            "serde_alloc",
             "serde",
+            "serde_no_std,derive",
+            "serde_alloc,derive",
             "serde,derive"
           ]
         }

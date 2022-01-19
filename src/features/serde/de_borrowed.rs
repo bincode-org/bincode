@@ -1,3 +1,4 @@
+use super::DecodeError as SerdeDecodeError;
 use crate::{
     config::Config,
     de::{BorrowDecode, BorrowDecoder, Decode},
@@ -33,7 +34,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::SerdeAnyNotSupported)
+        Err(SerdeDecodeError::AnyNotSupported.into())
     }
 
     fn deserialize_bool<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
@@ -128,6 +129,15 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor.visit_borrowed_str(str)
     }
 
+    #[cfg(not(feature = "alloc"))]
+    fn deserialize_string<V>(self, _: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde_incl::de::Visitor<'de>,
+    {
+        Err(SerdeDecodeError::CannotBorrowOwnedData.into())
+    }
+
+    #[cfg(feature = "alloc")]
     fn deserialize_string<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
@@ -143,6 +153,15 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor.visit_borrowed_bytes(bytes)
     }
 
+    #[cfg(not(feature = "alloc"))]
+    fn deserialize_byte_buf<V>(self, _: V) -> Result<V::Value, Self::Error>
+    where
+        V: serde_incl::de::Visitor<'de>,
+    {
+        Err(SerdeDecodeError::CannotBorrowOwnedData.into())
+    }
+
+    #[cfg(feature = "alloc")]
     fn deserialize_byte_buf<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
@@ -339,14 +358,14 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::SerdeIdentifierNotSupported)
+        Err(SerdeDecodeError::IdentifierNotSupported.into())
     }
 
     fn deserialize_ignored_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        Err(DecodeError::SerdeIgnoredAnyNotSupported)
+        Err(SerdeDecodeError::IgnoredAnyNotSupported.into())
     }
 }
 
