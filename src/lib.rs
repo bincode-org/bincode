@@ -24,8 +24,6 @@
 //! # Example
 //!
 //! ```rust
-//! use bincode::config::Configuration;
-//!
 //! let mut slice = [0u8; 100];
 //!
 //!     // You can encode any type that implements `enc::Encode`.
@@ -41,7 +39,7 @@
 //! let length = bincode::encode_into_slice(
 //!     input,
 //!     &mut slice,
-//!     Configuration::standard()
+//!     bincode::config::standard()
 //! ).unwrap();
 //!
 //! let slice = &slice[..length];
@@ -49,7 +47,7 @@
 //!
 //! // Decoding works the same as encoding.
 //! // The trait used is `de::Decode`, and can also be automatically implemented with the `derive` feature.
-//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, Configuration::standard()).unwrap().0;
+//! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, bincode::config::standard()).unwrap().0;
 //!
 //! assert_eq!(decoded, input);
 //! ```

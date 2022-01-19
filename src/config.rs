@@ -5,8 +5,7 @@
 //! To use a config, first create a type of [Configuration]. This type will implement trait [Config] for use with bincode.
 //!
 //! ```
-//! use bincode::config::{Config, Configuration};
-//! let config = Configuration::standard()
+//! let config = bincode::config::standard()
 //!     // pick one of:
 //!     .with_big_endian()
 //!     .with_little_endian()
@@ -47,42 +46,49 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength,
     _l: PhantomData<L>,
 }
 
-impl Configuration {
-    /// The default config for bincode 2.0. By default this will be:
-    /// - Little endian
-    /// - Variable int encoding
-    /// - Skip fixed array length
-    pub const fn standard() -> Self {
-        Self::generate()
-    }
+/// The default config for bincode 2.0. By default this will be:
+/// - Little endian
+/// - Variable int encoding
+/// - Skip fixed array length
+pub const fn standard() -> Configuration {
+    generate()
+}
 
-    /// Creates the "legacy" default config. This is the default config that was present in bincode 1.0
-    /// - Little endian
-    /// - Fixed int length encoding
-    /// - Write array lengths
-    pub const fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
-        Self::generate()
+/// Creates the "legacy" default config. This is the default config that was present in bincode 1.0
+/// - Little endian
+/// - Fixed int length encoding
+/// - Write array lengths
+pub const fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
+    generate()
+}
+
+const fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
+    Configuration {
+        _e: PhantomData,
+        _i: PhantomData,
+        _a: PhantomData,
+        _l: PhantomData,
     }
 }
 
-impl<E, I, A, L> Configuration<E, I, A, L> {
-    const fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
-        Configuration {
-            _e: PhantomData,
-            _i: PhantomData,
-            _a: PhantomData,
-            _l: PhantomData,
-        }
-    }
+// When adding more features to configuration, follow these steps:
+// - Create 2 or more structs that can be used as a type (e.g. Limit and NoLimit)
+// - Add an `Internal...Config` to the `internal` module
+// - Make sure `Config` and `impl<T> Config for T` extend from this new trait
+// - Add a generic to `Configuration`
+// - Add this generic to `const fn generate<...>()`
+// - Add this generic to _every_ function in `Configuration`
+// - Add your new methods
 
+impl<E, I, A, L> Configuration<E, I, A, L> {
     /// Makes bincode encode all integer types in big endian.
-    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, A> {
-        Self::generate()
+    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, A, L> {
+        generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
-    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, A> {
-        Self::generate()
+    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, A, L> {
+        generate()
     }
 
     /// Makes bincode encode all integer types with a variable integer encoding.
@@ -142,8 +148,8 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     ///
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
-    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, A> {
-        Self::generate()
+    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, A, L> {
+        generate()
     }
 
     /// Fixed-size integer encoding.
@@ -151,28 +157,28 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     /// * Fixed size integers are encoded directly
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
-    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A> {
-        Self::generate()
+    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A, L> {
+        generate()
     }
 
     /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
-    pub const fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength> {
-        Self::generate()
+    pub const fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength, L> {
+        generate()
     }
 
     /// Write the length of fixed size arrays (`[u8; N]`) before writing the array
-    pub const fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength> {
-        Self::generate()
+    pub const fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength, L> {
+        generate()
     }
 
     /// Sets the byte limit to `limit`.
     pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, A, Limit<N>> {
-        Self::generate()
+        generate()
     }
 
     /// Clear the byte limit.
     pub const fn with_no_limit(self) -> Configuration<E, I, A, NoLimit> {
-        Self::generate()
+        generate()
     }
 }
 

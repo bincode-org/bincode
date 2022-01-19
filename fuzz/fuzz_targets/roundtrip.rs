@@ -40,7 +40,7 @@ enum AllTypes {
 }
 
 fuzz_target!(|data: &[u8]| {
-    let config = bincode::config::Configuration::standard().with_limit::<1024>();
+    let config = bincode::config::standard().with_limit::<1024>();
     let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
     if let Ok((before, _)) = result {

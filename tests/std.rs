@@ -2,7 +2,6 @@
 
 mod utils;
 
-use bincode::config::Configuration;
 use std::{
     ffi::{CStr, CString},
     io::{Cursor, Seek, SeekFrom},
@@ -44,7 +43,7 @@ impl bincode::Decode for Foo {
 #[test]
 fn test_std_cursor() {
     let mut cursor = Cursor::<&[u8]>::new(&[5, 10]);
-    let foo: Foo = bincode::decode_from_std_read(&mut cursor, Configuration::standard()).unwrap();
+    let foo: Foo = bincode::decode_from_std_read(&mut cursor, bincode::config::standard()).unwrap();
 
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
@@ -54,13 +53,16 @@ fn test_std_cursor() {
 fn test_std_file() {
     let mut file = tempfile::tempfile().expect("Could not create temp file");
 
-    let bytes_written =
-        bincode::encode_into_std_write(Foo { a: 30, b: 50 }, &mut file, Configuration::standard())
-            .unwrap();
+    let bytes_written = bincode::encode_into_std_write(
+        Foo { a: 30, b: 50 },
+        &mut file,
+        bincode::config::standard(),
+    )
+    .unwrap();
     assert_eq!(bytes_written, 2);
     file.seek(SeekFrom::Start(0)).unwrap();
 
-    let foo: Foo = bincode::decode_from_std_read(&mut file, Configuration::standard()).unwrap();
+    let foo: Foo = bincode::decode_from_std_read(&mut file, bincode::config::standard()).unwrap();
 
     assert_eq!(foo.a, 30);
     assert_eq!(foo.b, 50);
@@ -100,7 +102,7 @@ fn test_std_commons() {
     the_same(map);
 
     // Borrowed values
-    let config = bincode::config::Configuration::standard();
+    let config = bincode::config::standard();
     let mut buffer = [0u8; 1024];
 
     // &CStr
@@ -125,7 +127,7 @@ fn test_system_time_out_of_range() {
     let mut input = [0xfd, 0x90, 0x0c, 0xfd, 0xfd, 0x90, 0x0c, 0xfd, 0x90, 0x90];
 
     let result: Result<(std::time::SystemTime, usize), _> =
-        bincode::decode_from_slice(&mut input, Configuration::standard());
+        bincode::decode_from_slice(&mut input, bincode::config::standard());
 
     assert_eq!(
         result.unwrap_err(),
