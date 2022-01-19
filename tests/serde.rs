@@ -61,8 +61,8 @@ fn test_serialize_deserialize_borrowed_data() {
     ];
 
     let mut result = [0u8; 20];
-    let len =
-        bincode::serde::encode_to_slice(&input, &mut result, bincode::config::standard()).unwrap();
+    let len = bincode::serde::encode_into_slice(&input, &mut result, bincode::config::standard())
+        .unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
@@ -107,8 +107,8 @@ fn test_serialize_deserialize_owned_data() {
     ];
 
     let mut result = [0u8; 20];
-    let len =
-        bincode::serde::encode_to_slice(&input, &mut result, bincode::config::standard()).unwrap();
+    let len = bincode::serde::encode_into_slice(&input, &mut result, bincode::config::standard())
+        .unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
