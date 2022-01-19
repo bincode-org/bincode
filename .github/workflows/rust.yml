@@ -180,7 +180,7 @@ fi",
           "uses": "actions-rs/tarpaulin@v0.1",
           "with": {
             "version": "0.18.2",
-            "args": "--all"
+            "args": "--all --all-features"
           }
         },
         {
