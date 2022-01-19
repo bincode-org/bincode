@@ -1,6 +1,6 @@
 [package]
 name = "bincode_derive"
-version = "2.0.0-beta.0" # remember to update bincode
+version = "2.0.0-beta.1" # remember to update bincode
 authors = ["Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
 edition = "2021"
 
