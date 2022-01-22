@@ -39,6 +39,12 @@ pub enum TestEnum2<'a> {
     Baz(u32, u32, u32),
 }
 
+#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
+pub enum TestWithGeneric<T> {
+    Foo,
+    Bar(T),
+}
+
 #[test]
 fn test_encode() {
     let start = Test {
