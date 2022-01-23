@@ -338,13 +338,19 @@ fn test_enum_with_generics_roundtrip() {
     let mut slice = [0u8; 10];
     let bytes_written =
         bincode::encode_into_slice(&start, &mut slice, bincode::config::standard()).unwrap();
-    assert_eq!(&slice[..bytes_written], &[
-        1, // variant 1
-        251, // u16
-        210, 4 // 1234
-    ]);
+    assert_eq!(
+        &slice[..bytes_written],
+        &[
+            1,   // variant 1
+            251, // u16
+            210, 4 // 1234
+        ]
+    );
 
-    let decoded: TestWithGeneric<u32> = bincode::decode_from_slice(&slice[..bytes_written], bincode::config::standard()).unwrap().0;
+    let decoded: TestWithGeneric<u32> =
+        bincode::decode_from_slice(&slice[..bytes_written], bincode::config::standard())
+            .unwrap()
+            .0;
     assert_eq!(start, decoded);
 
     let start = TestWithGeneric::<()>::Foo;
@@ -353,6 +359,9 @@ fn test_enum_with_generics_roundtrip() {
         bincode::encode_into_slice(&start, &mut slice, bincode::config::standard()).unwrap();
     assert_eq!(&slice[..bytes_written], &[0]);
 
-    let decoded: TestWithGeneric<()> = bincode::decode_from_slice(&slice[..bytes_written], bincode::config::standard()).unwrap().0;
+    let decoded: TestWithGeneric<()> =
+        bincode::decode_from_slice(&slice[..bytes_written], bincode::config::standard())
+            .unwrap()
+            .0;
     assert_eq!(start, decoded);
 }
