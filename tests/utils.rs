@@ -2,7 +2,7 @@ use core::fmt::Debug;
 
 fn the_same_with_config<V, C, CMP>(element: &V, config: C, cmp: CMP)
 where
-    V: bincode::enc::Encode + bincode::Decode + Debug + 'static,
+    V: bincode::Encode + bincode::Decode + Debug + 'static,
     C: bincode::config::Config,
     CMP: Fn(&V, &V) -> bool,
 {
@@ -29,7 +29,7 @@ where
 
 pub fn the_same_with_comparer<V, CMP>(element: V, cmp: CMP)
 where
-    V: bincode::enc::Encode + bincode::Decode + Debug + 'static,
+    V: bincode::Encode + bincode::Decode + Debug + 'static,
     CMP: Fn(&V, &V) -> bool,
 {
     // A matrix of each different config option possible
@@ -102,7 +102,7 @@ where
 #[allow(dead_code)] // This is not used in every test
 pub fn the_same<V>(element: V)
 where
-    V: bincode::enc::Encode + bincode::Decode + PartialEq + Debug + 'static,
+    V: bincode::Encode + bincode::Decode + PartialEq + Debug + 'static,
 {
     the_same_with_comparer(element, |a, b| a == b);
 }

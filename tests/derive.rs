@@ -7,38 +7,6 @@ pub(crate) struct Test<T> {
     c: u8,
 }
 
-#[derive(bincode::Decode, PartialEq, Debug, Eq)]
-pub struct Test2<T> {
-    a: T,
-    b: u32,
-    c: u32,
-}
-
-#[derive(bincode::BorrowDecode, bincode::Encode, PartialEq, Debug, Eq)]
-pub struct Test3<'a> {
-    a: &'a str,
-    b: u32,
-    c: u32,
-    d: Option<&'a [u8]>,
-}
-
-#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
-pub struct TestTupleStruct(u32, u32, u32);
-
-#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
-pub enum TestEnum {
-    Foo,
-    Bar { name: u32 },
-    Baz(u32, u32, u32),
-}
-
-#[derive(bincode::Encode, bincode::BorrowDecode, PartialEq, Debug, Eq)]
-pub enum TestEnum2<'a> {
-    Foo,
-    Bar { name: &'a str },
-    Baz(u32, u32, u32),
-}
-
 #[test]
 fn test_encode() {
     let start = Test {
@@ -51,6 +19,12 @@ fn test_encode() {
         bincode::encode_into_slice(start, &mut slice, bincode::config::standard()).unwrap();
     assert_eq!(bytes_written, 3);
     assert_eq!(&slice[..bytes_written], &[10, 10, 20]);
+}
+#[derive(bincode::Decode, PartialEq, Debug, Eq)]
+pub struct Test2<T> {
+    a: T,
+    b: u32,
+    c: u32,
 }
 
 #[test]
@@ -65,6 +39,14 @@ fn test_decode() {
         bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 5);
+}
+
+#[derive(bincode::BorrowDecode, bincode::Encode, PartialEq, Debug, Eq)]
+pub struct Test3<'a> {
+    a: &'a str,
+    b: u32,
+    c: u32,
+    d: Option<&'a [u8]>,
 }
 
 #[test]
@@ -84,6 +66,9 @@ fn test_encode_decode_str() {
     assert_eq!(end, start);
     assert_eq!(len, 21);
 }
+
+#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
+pub struct TestTupleStruct(u32, u32, u32);
 
 #[test]
 fn test_encode_tuple() {
@@ -105,6 +90,12 @@ fn test_decode_tuple() {
     assert_eq!(len, 5);
 }
 
+#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
+pub enum TestEnum {
+    Foo,
+    Bar { name: u32 },
+    Baz(u32, u32, u32),
+}
 #[test]
 fn test_encode_enum_struct_variant() {
     let start = TestEnum::Bar { name: 5u32 };
@@ -123,16 +114,6 @@ fn test_decode_enum_struct_variant() {
         bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 2);
-}
-
-#[test]
-fn test_encode_enum_tuple_variant() {
-    let start = TestEnum::Baz(5, 10, 1024);
-    let mut slice = [0u8; 1024];
-    let bytes_written =
-        bincode::encode_into_slice(start, &mut slice, bincode::config::standard()).unwrap();
-    assert_eq!(bytes_written, 6);
-    assert_eq!(&slice[..bytes_written], &[2, 5, 10, 251, 0, 4]);
 }
 
 #[test]
@@ -156,10 +137,87 @@ fn test_encode_enum_unit_variant() {
 }
 
 #[test]
+fn test_encode_enum_tuple_variant() {
+    let start = TestEnum::Baz(5, 10, 1024);
+    let mut slice = [0u8; 1024];
+    let bytes_written =
+        bincode::encode_into_slice(start, &mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(bytes_written, 6);
+    assert_eq!(&slice[..bytes_written], &[2, 5, 10, 251, 0, 4]);
+}
+
+#[test]
 fn test_decode_enum_tuple_variant() {
     let start = TestEnum::Baz(5, 10, 1024);
     let mut slice = [2, 5, 10, 251, 0, 4];
     let (result, len): (TestEnum, usize) =
+        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(result, start);
+    assert_eq!(len, 6);
+}
+
+#[derive(bincode::Encode, bincode::BorrowDecode, PartialEq, Debug, Eq)]
+pub enum TestEnum2<'a> {
+    Foo,
+    Bar { name: &'a str },
+    Baz(u32, u32, u32),
+}
+
+#[test]
+fn test_encode_borrowed_enum_struct_variant() {
+    let start = TestEnum2::Bar { name: "foo" };
+    let mut slice = [0u8; 1024];
+    let bytes_written =
+        bincode::encode_into_slice(start, &mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(bytes_written, 5);
+    assert_eq!(&slice[..bytes_written], &[1, 3, 102, 111, 111]);
+}
+
+#[test]
+fn test_decode_borrowed_enum_struct_variant() {
+    let start = TestEnum2::Bar { name: "foo" };
+    let mut slice = [1, 3, 102, 111, 111];
+    let (result, len): (TestEnum2, usize) =
+        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(result, start);
+    assert_eq!(len, 5);
+}
+
+#[test]
+fn test_decode_borrowed_enum_unit_variant() {
+    let start = TestEnum2::Foo;
+    let mut slice = [0];
+    let (result, len): (TestEnum2, usize) =
+        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(result, start);
+    assert_eq!(len, 1);
+}
+
+#[test]
+fn test_encode_borrowed_enum_unit_variant() {
+    let start = TestEnum2::Foo;
+    let mut slice = [0u8; 1024];
+    let bytes_written =
+        bincode::encode_into_slice(start, &mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(bytes_written, 1);
+    assert_eq!(&slice[..bytes_written], &[0]);
+}
+
+#[test]
+fn test_encode_borrowed_enum_tuple_variant() {
+    let start = TestEnum2::Baz(5, 10, 1024);
+    let mut slice = [0u8; 1024];
+    let bytes_written =
+        bincode::encode_into_slice(start, &mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(bytes_written, 6);
+    assert_eq!(&slice[..bytes_written], &[2, 5, 10, 251, 0, 4]);
+}
+
+#[test]
+fn test_decode_borrowed_enum_tuple_variant() {
+    let start = TestEnum2::Baz(5, 10, 1024);
+    let mut slice = [2, 5, 10, 251, 0, 4];
+    let (result, len): (TestEnum2, usize) =
         bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 6);
@@ -266,4 +324,44 @@ fn test_empty_enum_decode() {
             type_name: "derive::EmptyEnum"
         }
     );
+}
+
+#[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]
+pub enum TestWithGeneric<T> {
+    Foo,
+    Bar(T),
+}
+
+#[test]
+fn test_enum_with_generics_roundtrip() {
+    let start = TestWithGeneric::Bar(1234);
+    let mut slice = [0u8; 10];
+    let bytes_written =
+        bincode::encode_into_slice(&start, &mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(
+        &slice[..bytes_written],
+        &[
+            1,   // variant 1
+            251, // u16
+            210, 4 // 1234
+        ]
+    );
+
+    let decoded: TestWithGeneric<u32> =
+        bincode::decode_from_slice(&slice[..bytes_written], bincode::config::standard())
+            .unwrap()
+            .0;
+    assert_eq!(start, decoded);
+
+    let start = TestWithGeneric::<()>::Foo;
+    let mut slice = [0u8; 10];
+    let bytes_written =
+        bincode::encode_into_slice(&start, &mut slice, bincode::config::standard()).unwrap();
+    assert_eq!(&slice[..bytes_written], &[0]);
+
+    let decoded: TestWithGeneric<()> =
+        bincode::decode_from_slice(&slice[..bytes_written], bincode::config::standard())
+            .unwrap()
+            .0;
+    assert_eq!(start, decoded);
 }

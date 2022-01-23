@@ -196,7 +196,7 @@ impl DeriveEnum {
             .impl_for("bincode::Decode")?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, "bincode::enc::Decode").unwrap();
+                    where_constraints.push_constraint(g, "bincode::Decode").unwrap();
                 }
             })
             .generate_fn("decode")

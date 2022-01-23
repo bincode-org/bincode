@@ -18,7 +18,7 @@ struct Foo {
     pub b: u32,
 }
 
-impl bincode::enc::Encode for Foo {
+impl bincode::Encode for Foo {
     fn encode<E: bincode::enc::Encoder>(
         &self,
         encoder: &mut E,
