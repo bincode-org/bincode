@@ -3,7 +3,9 @@
 
 use rand::Rng;
 
-#[derive(Debug, bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, PartialEq,
+)]
 #[bincode(crate = "bincode_2")]
 pub struct Lcg64Xsh32 {
     state: u64,
@@ -13,7 +15,7 @@ pub struct Lcg64Xsh32 {
 #[test]
 pub fn test() {
     let mut rng = rand::thread_rng();
-    for _ in 0..100 {
+    for _ in 0..1000 {
         crate::test_same(Lcg64Xsh32 {
             state: rng.gen(),
             increment: rng.gen(),
