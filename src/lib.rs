@@ -24,19 +24,19 @@
 //! |serde | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
 //!
 //! # Which functions to use
-//! 
+//!
 //! Bincode has a couple of pairs of functions that are used in different situations.
-//! 
+//!
 //! |Situation|Encode|Decode|
 //! |---|---|---
 //! |You're working with [`fs::File`] or [`net::TcpStream`]|[`encode_into_std_write`]|[`decode_from_std_read`]|
 //! |you're working with in-memory buffers|[`encode_to_vec`]|[`decode_from_slice`]|
 //! |You're working with pre-allocated buffers or on embedded targets|[`encode_into_slice`]|[`decode_from_slice`]|
-//! 
+//!
 //! **Note:** If you're using `serde`, use `bincode::serde::...` instead of `bincode::...`
-//! 
+//!
 //! # Example
-//! 
+//!
 //! ```rust
 //! let mut slice = [0u8; 100];
 //!
@@ -65,10 +65,10 @@
 //!
 //! assert_eq!(decoded, input);
 //! ```
-//! 
+//!
 //! [`fs::File`]: std::fs::File
 //! [`net::TcpStream`]: std::net::TcpStream
-//! 
+//!
 
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-beta.2")]
 #![crate_name = "bincode"]
