@@ -7,7 +7,7 @@ mod impls;
 
 use self::read::{BorrowReader, Reader};
 use crate::{
-    config::{Config, InternalLimitConfig},
+    config::{Config, InternalLimitConfig, InternalSliceLenEncodingConfig, SliceLengthEncoding},
     error::DecodeError,
     utils::Sealed,
 };
@@ -237,7 +237,15 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 /// Decodes the length of any slice, container, etc from the decoder
 #[inline]
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
-    let v = u64::decode(decoder)?;
-
-    v.try_into().map_err(|_| DecodeError::OutsideUsizeRange(v))
+    match D::C::SLICE_LEN_ENCODING {
+        SliceLengthEncoding::U64 => {
+            let v = u64::decode(decoder)?;
+            v.try_into().map_err(|_| DecodeError::OutsideUsizeRange(v))
+        }
+        SliceLengthEncoding::U32 => {
+            let v = u32::decode(decoder)?;
+            v.try_into()
+                .map_err(|_| DecodeError::OutsideUsizeRange(v as u64))
+        }
+    }
 }

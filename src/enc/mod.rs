@@ -5,7 +5,11 @@ mod impl_tuples;
 mod impls;
 
 use self::write::Writer;
-use crate::{config::Config, error::EncodeError, utils::Sealed};
+use crate::{
+    config::{Config, InternalSliceLenEncodingConfig, SliceLengthEncoding},
+    error::EncodeError,
+    utils::Sealed,
+};
 
 pub mod write;
 
@@ -100,5 +104,11 @@ pub(crate) fn encode_option_variant<E: Encoder, T>(
 /// Encodes the length of any slice, container, etc into the given encoder
 #[inline]
 pub(crate) fn encode_slice_len<E: Encoder>(encoder: &mut E, len: usize) -> Result<(), EncodeError> {
-    (len as u64).encode(encoder)
+    match E::C::SLICE_LEN_ENCODING {
+        SliceLengthEncoding::U64 => (len as u64).encode(encoder),
+        SliceLengthEncoding::U32 => {
+            let len: u32 = len.try_into().map_err(|_| EncodeError::SliceLength(len))?;
+            len.encode(encoder)
+        }
+    }
 }

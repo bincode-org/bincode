@@ -142,6 +142,31 @@ fn test_slice() {
 }
 
 #[test]
+fn test_slice_u32_len() {
+    let mut buffer = [0u8; 32];
+    let input: &[u8] = &[1, 2, 3, 4, 5, 6, 7, 8];
+    bincode::encode_into_slice(
+        input,
+        &mut buffer,
+        bincode::config::standard()
+            .with_fixed_int_encoding()
+            .with_u32_slice_length_encoding(),
+    )
+    .unwrap();
+    assert_eq!(&buffer[..12], &[8, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+
+    let (output, len): (&[u8], usize) = bincode::decode_from_slice(
+        &buffer,
+        bincode::config::standard()
+            .with_u32_slice_length_encoding()
+            .with_fixed_int_encoding(),
+    )
+    .unwrap();
+    assert_eq!(input, output);
+    assert_eq!(len, 12);
+}
+
+#[test]
 fn test_option_slice() {
     let mut buffer = [0u8; 32];
     let input: Option<&[u8]> = Some(&[1, 2, 3, 4, 5, 6, 7]);

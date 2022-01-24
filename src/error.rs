@@ -15,6 +15,15 @@ pub enum EncodeError {
         type_name: &'static str,
     },
 
+    /// The slice length doesn't fit into the encoded slice length type.
+    ///
+    /// This error can happen if an u32 is used to encode slice lengths on a 64
+    /// bit architecture. This is only enabled if the [with_u32_slice_length_encoding]
+    /// config option is used.
+    ///
+    /// [with_u32_slice_length_encoding]: crate::config::Configuration::with_u32_slice_length_encoding
+    SliceLength(usize),
+
     /// An uncommon error occurred, see the inner text for more information
     Other(&'static str),
 
