@@ -17,19 +17,32 @@
 //!
 //! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
 //! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
-//! |std   | Yes    |`HashMap`|`decode_from_reader` and `encode_into_writer`|
+//! |std   | Yes    |`HashMap`|`decode_from_std_read` and `encode_into_std_write`|
 //! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
 //! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive| Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
 //! |serde | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//!
+//! # Which functions to use
+//!
+//! Bincode has a couple of pairs of functions that are used in different situations.
+//!
+//! |Situation|Encode|Decode|
+//! |---|---|---
+//! |You're working with [`fs::File`] or [`net::TcpStream`]|[`encode_into_std_write`]|[`decode_from_std_read`]|
+//! |you're working with in-memory buffers|[`encode_to_vec`]|[`decode_from_slice`]|
+//! |You want to use a custom [Reader](de::read::Reader) and [writer](enc::write::Writer)|[`encode_into_writer`]|[`decode_from_reader`]|
+//! |You're working with pre-allocated buffers or on embedded targets|[`encode_into_slice`]|[`decode_from_slice`]|
+//!
+//! **Note:** If you're using `serde`, use `bincode::serde::...` instead of `bincode::...`
 //!
 //! # Example
 //!
 //! ```rust
 //! let mut slice = [0u8; 100];
 //!
-//!     // You can encode any type that implements `enc::Encode`.
-//!     // You can automatically implement this trait on custom types with the `derive` feature.
+//! // You can encode any type that implements `Encode`.
+//! // You can automatically implement this trait on custom types with the `derive` feature.
 //! let input = (
 //!     0u8,
 //!     10u32,
@@ -48,11 +61,15 @@
 //! println!("Bytes written: {:?}", slice);
 //!
 //! // Decoding works the same as encoding.
-//! // The trait used is `de::Decode`, and can also be automatically implemented with the `derive` feature.
+//! // The trait used is `Decode`, and can also be automatically implemented with the `derive` feature.
 //! let decoded: (u8, u32, i128, char, [u8; 4]) = bincode::decode_from_slice(slice, bincode::config::standard()).unwrap().0;
 //!
 //! assert_eq!(decoded, input);
 //! ```
+//!
+//! [`fs::File`]: std::fs::File
+//! [`net::TcpStream`]: std::net::TcpStream
+//!
 
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-beta.2")]
 #![crate_name = "bincode"]
