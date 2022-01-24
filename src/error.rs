@@ -116,6 +116,9 @@ pub enum DecodeError {
         found: usize,
     },
 
+    /// The encoded slice length doesn't fit into the decoded usize type.
+    SliceLength(u64),
+
     /// Tried to decode an enum with no variants
     EmptyEnum {
         /// The type that was being decoded
