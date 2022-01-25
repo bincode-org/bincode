@@ -15,10 +15,10 @@ pub enum EncodeError {
         type_name: &'static str,
     },
 
-    /// An uncommon error occured, see the inner text for more information
+    /// An uncommon error occurred, see the inner text for more information
     Other(&'static str),
 
-    /// An uncommon error occured, see the inner text for more information
+    /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
 
@@ -26,12 +26,12 @@ pub enum EncodeError {
     #[cfg(feature = "std")]
     InvalidPathCharacters,
 
-    /// The targetted writer encountered an `std::io::Error`
+    /// The targeted writer encountered an `std::io::Error`
     #[cfg(feature = "std")]
     Io {
         /// The encountered error
         error: std::io::Error,
-        /// The amount of bytes that were written before the error occured
+        /// The amount of bytes that were written before the error occurred
         index: usize,
     },
 
@@ -52,7 +52,7 @@ pub enum EncodeError {
     },
 
     #[cfg(feature = "serde")]
-    /// A serde-specific error that occured while decoding.
+    /// A serde-specific error that occurred while decoding.
     Serde(crate::features::serde::EncodeError),
 }
 
@@ -63,7 +63,7 @@ impl core::fmt::Display for EncodeError {
     }
 }
 
-/// Errors that can be encounted by decoding a type
+/// Errors that can be encountered by decoding a type
 #[non_exhaustive]
 #[derive(Debug, PartialEq)]
 pub enum DecodeError {
@@ -153,12 +153,12 @@ pub enum DecodeError {
         inner: std::ffi::FromVecWithNulError,
     },
 
-    /// An uncommon error occured, see the inner text for more information
+    /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
 
     #[cfg(feature = "serde")]
-    /// A serde-specific error that occured while decoding.
+    /// A serde-specific error that occurred while decoding.
     Serde(crate::features::serde::DecodeError),
 }
 

@@ -73,7 +73,7 @@ pub use self::de_borrowed::*;
 pub use self::de_owned::*;
 pub use self::ser::*;
 
-/// A serde-specific error that occured while decoding.
+/// A serde-specific error that occurred while decoding.
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub enum DecodeError {
@@ -129,7 +129,7 @@ impl Into<crate::error::DecodeError> for DecodeError {
     }
 }
 
-/// A serde-specific error that occured while encoding.
+/// A serde-specific error that occurred while encoding.
 #[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub enum EncodeError {
