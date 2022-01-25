@@ -70,7 +70,7 @@ Bincode's format is specified in [docs/spec.md](https://github.com/bincode-org/b
 
 The encoding format is stable, provided the same configuration is used.
 This should ensure that later versions can still read data produced by a previous versions of the library if no major version change
-has occured.
+has occurred.
 
 Bincode 1 and 2 are completely compatible if the same configuration is used.
 
@@ -99,7 +99,7 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
-Bincode 2.0 is still in development and does not yet have a targetted MSRV. Once 2.0 is fully released the MSRV will be locked. After this point any changes to the MSRV are considered a breaking change for semver purposes.
+Bincode 2.0 is still in development and does not yet have a targeted MSRV. Once 2.0 is fully released the MSRV will be locked. After this point any changes to the MSRV are considered a breaking change for semver purposes.
 
 ### Why does bincode not respect `#[repr(u8)]`?
 
