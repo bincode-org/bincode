@@ -150,7 +150,7 @@ pub trait Decoder: Sealed {
     /// impl<T: Decode> Decode for Container<T> {
     ///     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
     ///         let len = u64::decode(decoder)?;
-    ///         let len: usize = len.try_into().map_err(|_| DecodeError::SliceLength(len))?;
+    ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
     ///         // Make sure we don't allocate too much memory
     ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
     ///
@@ -239,5 +239,5 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
     let v = u64::decode(decoder)?;
 
-    v.try_into().map_err(|_| DecodeError::SliceLength(v))
+    v.try_into().map_err(|_| DecodeError::OutsideUsizeRange(v))
 }

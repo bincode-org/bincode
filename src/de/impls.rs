@@ -180,7 +180,7 @@ impl Decode for usize {
 
                 value
                     .try_into()
-                    .map_err(|_| DecodeError::SliceLength(value))
+                    .map_err(|_| DecodeError::OutsideUsizeRange(value))
             }
         }
     }
