@@ -172,10 +172,15 @@ impl Decode for usize {
             IntEncoding::Fixed => {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
-                Ok(match D::C::ENDIAN {
+
+                let value = match D::C::ENDIAN {
                     Endian::Little => u64::from_le_bytes(bytes),
                     Endian::Big => u64::from_be_bytes(bytes),
-                } as usize)
+                };
+
+                value
+                    .try_into()
+                    .map_err(|_| DecodeError::OutsideUsizeRange(value))
             }
         }
     }

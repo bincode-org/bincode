@@ -116,6 +116,14 @@ pub enum DecodeError {
         found: usize,
     },
 
+    /// The encoded value is outside of the range of the target usize type.
+    ///
+    /// This can happen if an usize was encoded on an architecture with a larger
+    /// usize type and then decoded on an architecture with a smaller one. For
+    /// example going from a 64 bit architecture to a 32 or 16 bit one may
+    /// cause this error.
+    OutsideUsizeRange(u64),
+
     /// Tried to decode an enum with no variants
     EmptyEnum {
         /// The type that was being decoded
