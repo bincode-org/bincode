@@ -149,7 +149,8 @@ pub trait Decoder: Sealed {
     /// # }
     /// impl<T: Decode> Decode for Container<T> {
     ///     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-    ///         let len = u64::decode(decoder)? as usize;
+    ///         let len = u64::decode(decoder)?;
+    ///         let len: usize = len.try_into().map_err(|_| DecodeError::SliceLength(len))?;
     ///         // Make sure we don't allocate too much memory
     ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
     ///
