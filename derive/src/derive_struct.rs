@@ -11,7 +11,7 @@ pub(crate) struct DeriveStruct {
 impl DeriveStruct {
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
         let DeriveStruct { fields, attributes } = self;
-        let crate_name = attributes.get_crate_name();
+        let crate_name = attributes.crate_name;
 
         generator
             .impl_for(&format!("{}::Encode", crate_name))?
@@ -32,8 +32,11 @@ impl DeriveStruct {
             ))
             .body(|fn_body| {
                 for field in fields.names() {
-                    let attributes = field.attributes().get_attribute::<FieldAttributes>()?;
-                    if attributes.map(|a| a.has_with_serde()).unwrap_or(false) {
+                    let attributes = field
+                        .attributes()
+                        .get_attribute::<FieldAttributes>()?
+                        .unwrap_or_default();
+                    if attributes.with_serde {
                         fn_body.push_parsed(format!(
                             "{0}::Encode::encode(&{0}::serde::Compat(&self.{1}), encoder)?;",
                             crate_name, field
@@ -54,7 +57,7 @@ impl DeriveStruct {
     pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_borrow_decode
         let DeriveStruct { fields, attributes } = self;
-        let crate_name = attributes.get_crate_name();
+        let crate_name = attributes.crate_name;
 
         generator
             .impl_for(format!("{}::Decode", crate_name))?
@@ -80,8 +83,8 @@ impl DeriveStruct {
                         //      ...
                         // }
                         for field in fields.names() {
-                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?;
-                            if attributes.map(|a| a.has_with_serde()).unwrap_or(false) {
+                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                            if attributes.with_serde {
                                 struct_body
                                     .push_parsed(format!(
                                         "{1}: (<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?).0,",
@@ -109,7 +112,7 @@ impl DeriveStruct {
     pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_decode
         let DeriveStruct { fields, attributes } = self;
-        let crate_name = attributes.get_crate_name();
+        let crate_name = attributes.crate_name;
 
         generator
             .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])?
@@ -129,8 +132,8 @@ impl DeriveStruct {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
                         for field in fields.names() {
-                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?;
-                            if attributes.map(|a| a.has_with_serde()).unwrap_or(false) {
+                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                            if attributes.with_serde {
                                 struct_body
                                     .push_parsed(format!(
                                         "{1}: (<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?).0,",

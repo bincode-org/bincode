@@ -18,7 +18,7 @@ impl DeriveEnum {
     }
 
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
-        let crate_name = self.attributes.get_crate_name();
+        let crate_name = self.attributes.crate_name.as_str();
         generator
             .impl_for(format!("{}::Encode", crate_name))?
             .modify_generic_constraints(|generics, where_constraints| {
@@ -96,9 +96,11 @@ impl DeriveEnum {
                             body.punct(';');
                             // If we have any fields, encode them all one by one
                             for field_name in variant.fields.names() {
-                                let attributes =
-                                    field_name.attributes().get_attribute::<FieldAttributes>()?;
-                                if attributes.map(|a| a.has_with_serde()).unwrap_or(false) {
+                                let attributes = field_name
+                                    .attributes()
+                                    .get_attribute::<FieldAttributes>()?
+                                    .unwrap_or_default();
+                                if attributes.with_serde {
                                     body.push_parsed(format!(
                                         "{0}::Encode::encode(&{0}::serde::Compat({1}), encoder)?;",
                                         crate_name,
@@ -132,7 +134,7 @@ impl DeriveEnum {
 
     /// Build the catch-all case for an int-to-enum decode implementation
     fn invalid_variant_case(&self, enum_name: &str, result: &mut StreamBuilder) -> Result {
-        let crate_name = self.attributes.get_crate_name();
+        let crate_name = self.attributes.crate_name.as_str();
 
         // we'll be generating:
         // variant => Err(
@@ -205,7 +207,7 @@ impl DeriveEnum {
     }
 
     pub fn generate_decode(&self, generator: &mut Generator) -> Result<()> {
-        let crate_name = self.attributes.get_crate_name();
+        let crate_name = self.attributes.crate_name.as_str();
 
         // Remember to keep this mostly in sync with generate_borrow_decode
 
@@ -263,8 +265,8 @@ impl DeriveEnum {
                                             variant_body.ident(field.unwrap_ident().clone());
                                         }
                                         variant_body.punct(':');
-                                        let attributes = field.attributes().get_attribute::<FieldAttributes>()?;
-                                        if attributes.map(|a| a.has_with_serde()).unwrap_or(false) {
+                                        let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                        if attributes.with_serde {
                                             variant_body
                                                 .push_parsed(format!(
                                                     "<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?.0,",
@@ -295,7 +297,7 @@ impl DeriveEnum {
     }
 
     pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
-        let crate_name = self.attributes.get_crate_name();
+        let crate_name = self.attributes.crate_name.clone();
 
         // Remember to keep this mostly in sync with generate_decode
         let enum_name = generator.target_name().to_string();
@@ -348,8 +350,8 @@ impl DeriveEnum {
                                             variant_body.ident(field.unwrap_ident().clone());
                                         }
                                         variant_body.punct(':');
-                                        let attributes = field.attributes().get_attribute::<FieldAttributes>()?;
-                                        if attributes.map(|a| a.has_with_serde()).unwrap_or(false) {
+                                        let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                        if attributes.with_serde {
                                             variant_body
                                                 .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?.0,", crate_name))?;
                                         } else {
