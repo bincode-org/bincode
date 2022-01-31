@@ -1,44 +1,50 @@
-use super::FieldAttribute;
+use crate::attribute::{ContainerAttributes, FieldAttributes};
 use virtue::generate::Generator;
 use virtue::parse::Fields;
 use virtue::prelude::*;
 
-pub struct DeriveStruct {
+pub(crate) struct DeriveStruct {
     pub fields: Fields,
+    pub attributes: ContainerAttributes,
 }
 
 impl DeriveStruct {
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
-        let DeriveStruct { fields } = self;
+        let DeriveStruct { fields, attributes } = self;
+        let crate_name = attributes.crate_name;
 
         generator
-            .impl_for("bincode::Encode")?
+            .impl_for(&format!("{}::Encode", crate_name))?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints
-                        .push_constraint(g, "bincode::Encode")
+                        .push_constraint(g, format!("{}::Encode", crate_name))
                         .unwrap();
                 }
             })
             .generate_fn("encode")
-            .with_generic("E", ["bincode::enc::Encoder"])
+            .with_generic_deps("E", [format!("{}::enc::Encoder", crate_name)])
             .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
             .with_arg("encoder", "&mut E")
-            .with_return_type("core::result::Result<(), bincode::error::EncodeError>")
+            .with_return_type(format!(
+                "core::result::Result<(), {}::error::EncodeError>",
+                crate_name
+            ))
             .body(|fn_body| {
                 for field in fields.names() {
-                    if field
+                    let attributes = field
                         .attributes()
-                        .has_attribute(FieldAttribute::WithSerde)?
-                    {
+                        .get_attribute::<FieldAttributes>()?
+                        .unwrap_or_default();
+                    if attributes.with_serde {
                         fn_body.push_parsed(format!(
-                            "bincode::Encode::encode(&bincode::serde::Compat(&self.{}), encoder)?;",
-                            field
+                            "{0}::Encode::encode(&{0}::serde::Compat(&self.{1}), encoder)?;",
+                            crate_name, field
                         ))?;
                     } else {
                         fn_body.push_parsed(format!(
-                            "bincode::Encode::encode(&self.{}, encoder)?;",
-                            field
+                            "{}::Encode::encode(&self.{}, encoder)?;",
+                            crate_name, field
                         ))?;
                     }
                 }
@@ -50,19 +56,20 @@ impl DeriveStruct {
 
     pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_borrow_decode
-        let DeriveStruct { fields } = self;
+        let DeriveStruct { fields, attributes } = self;
+        let crate_name = attributes.crate_name;
 
         generator
-            .impl_for("bincode::Decode")?
+            .impl_for(format!("{}::Decode", crate_name))?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, "bincode::Decode").unwrap();
+                    where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
                 }
             })
             .generate_fn("decode")
-            .with_generic("D", ["bincode::de::Decoder"])
+            .with_generic_deps("D", [format!("{}::de::Decoder", crate_name)])
             .with_arg("decoder", "&mut D")
-            .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
+            .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
                 // Ok(Self {
                 fn_body.ident_str("Ok");
@@ -76,16 +83,19 @@ impl DeriveStruct {
                         //      ...
                         // }
                         for field in fields.names() {
-                            if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
+                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                            if attributes.with_serde {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: (<bincode::serde::Compat<_> as bincode::Decode>::decode(decoder)?).0,",
+                                        "{1}: (<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?).0,",
+                                        crate_name,
                                         field
                                     ))?;
                             } else {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::Decode::decode(decoder)?,",
+                                        "{1}: {0}::Decode::decode(decoder)?,",
+                                        crate_name,
                                         field
                                     ))?;
                             }
@@ -101,19 +111,20 @@ impl DeriveStruct {
 
     pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_decode
-        let DeriveStruct { fields } = self;
+        let DeriveStruct { fields, attributes } = self;
+        let crate_name = attributes.crate_name;
 
         generator
-            .impl_for_with_lifetimes("bincode::BorrowDecode", &["__de"])?
+            .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])?
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, "bincode::BorrowDecode").unwrap();
+                    where_constraints.push_constraint(g, format!("{}::BorrowDecode", crate_name)).unwrap();
                 }
             })
             .generate_fn("borrow_decode")
-            .with_generic("D", ["bincode::de::BorrowDecoder<'__de>"])
+            .with_generic_deps("D", [format!("{}::de::BorrowDecoder<'__de>", crate_name)])
             .with_arg("decoder", "&mut D")
-            .with_return_type("core::result::Result<Self, bincode::error::DecodeError>")
+            .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
                 // Ok(Self {
                 fn_body.ident_str("Ok");
@@ -121,16 +132,19 @@ impl DeriveStruct {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
                         for field in fields.names() {
-                            if field.attributes().has_attribute(FieldAttribute::WithSerde)? {
+                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                            if attributes.with_serde {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: (<bincode::serde::BorrowCompat<_> as bincode::BorrowDecode>::borrow_decode(decoder)?).0,",
+                                        "{1}: (<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?).0,",
+                                        crate_name,
                                         field
                                     ))?;
                             } else {
                                 struct_body
                                     .push_parsed(format!(
-                                        "{}: bincode::BorrowDecode::borrow_decode(decoder)?,",
+                                        "{1}: {0}::BorrowDecode::borrow_decode(decoder)?,",
+                                        crate_name,
                                         field
                                     ))?;
                             }
@@ -139,7 +153,7 @@ impl DeriveStruct {
                     })?;
                     Ok(())
                 })?;
-                    Ok(())
+                Ok(())
             })?;
         Ok(())
     }
