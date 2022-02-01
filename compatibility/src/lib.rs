@@ -52,10 +52,13 @@ where
 {
     test_same_with_config(
         &t,
+        // This is the config used internally by bincode 1
         bincode_1::options().with_fixint_encoding(),
+        // Should match `::legacy()`
         bincode_2::config::legacy(),
     );
 
+    // Check a bunch of different configs:
     test_same_with_config(
         &t,
         bincode_1::options()
