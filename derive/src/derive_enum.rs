@@ -20,7 +20,7 @@ impl DeriveEnum {
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
         generator
-            .impl_for(format!("{}::Encode", crate_name))?
+            .impl_for(format!("{}::Encode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints
@@ -214,7 +214,7 @@ impl DeriveEnum {
         let enum_name = generator.target_name().to_string();
 
         generator
-            .impl_for(format!("{}::Decode", crate_name))?
+            .impl_for(format!("{}::Decode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
@@ -302,7 +302,7 @@ impl DeriveEnum {
         // Remember to keep this mostly in sync with generate_decode
         let enum_name = generator.target_name().to_string();
 
-        generator.impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])?
+        generator.impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints.push_constraint(g, format!("{}::enc::BorrowDecode", crate_name)).unwrap();

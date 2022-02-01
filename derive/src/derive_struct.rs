@@ -14,7 +14,7 @@ impl DeriveStruct {
         let crate_name = attributes.crate_name;
 
         generator
-            .impl_for(&format!("{}::Encode", crate_name))?
+            .impl_for(&format!("{}::Encode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints
@@ -60,7 +60,7 @@ impl DeriveStruct {
         let crate_name = attributes.crate_name;
 
         generator
-            .impl_for(format!("{}::Decode", crate_name))?
+            .impl_for(format!("{}::Decode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
@@ -115,7 +115,7 @@ impl DeriveStruct {
         let crate_name = attributes.crate_name;
 
         generator
-            .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])?
+            .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
             .modify_generic_constraints(|generics, where_constraints| {
                 for g in generics.iter_generics() {
                     where_constraints.push_constraint(g, format!("{}::BorrowDecode", crate_name)).unwrap();
