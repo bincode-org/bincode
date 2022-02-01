@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "derive"
+    "derive",
+    "compatibility"
 ]
 
 [package]
