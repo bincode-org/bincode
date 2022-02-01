@@ -1,5 +1,6 @@
 // Simplified case, taken from:
 // https://github.com/rust-random/rand/blob/19404d68764ed08513131f82157e2ccad69dcf83/rand_pcg/src/pcg64.rs#L37-L40
+// Original license: MIT OR Apache-2.0
 
 use rand::Rng;
 

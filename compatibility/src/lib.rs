@@ -52,6 +52,12 @@ where
 {
     test_same_with_config(
         &t,
+        bincode_1::options().with_fixint_encoding(),
+        bincode_2::config::legacy(),
+    );
+
+    test_same_with_config(
+        &t,
         bincode_1::options()
             .with_big_endian()
             .with_varint_encoding(),
