@@ -466,15 +466,15 @@ where
             let res = unsafe { ptr.read() };
             Ok(res)
         } else {
-            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
+            let result = try_collect_into_array(&mut (0..N).map(|_| {
                 // See the documentation on `unclaim_bytes_read` as to why we're doing this here
                 decoder.unclaim_bytes_read(core::mem::size_of::<T>());
                 T::decode(decoder)
-            }));
+            }))?;
 
             // result is only None if N does not match the values of `(0..N)`, which it always should
             // So this unwrap should never occur
-            result.unwrap()
+            Ok(unsafe { result.unwrap_unchecked() })
         }
     }
 }
@@ -625,4 +625,71 @@ const UTF8_CHAR_WIDTH: [u8; 256] = [
 // This function is a copy of core::str::utf8_char_width
 const fn utf8_char_width(b: u8) -> usize {
     UTF8_CHAR_WIDTH[b as usize] as usize
+}
+
+// Taken from https://github.com/rust-lang/rust/blob/06a1c14d52a8482a33416c21b320970cab80cccc/library/core/src/array/mod.rs#L792
+// and slightly modified
+fn try_collect_into_array<I, E, T, const N: usize>(iter: &mut I) -> Result<Option<[T; N]>, E>
+where
+    I: Iterator<Item = Result<T, E>>,
+{
+    use core::mem::MaybeUninit;
+
+    if N == 0 {
+        // SAFETY: An empty array is always inhabited and has no validity invariants.
+        return unsafe { Ok(Some(core::mem::zeroed())) };
+    }
+
+    struct Guard<'a, T, const N: usize> {
+        array_mut: &'a mut [MaybeUninit<T>; N],
+        initialized: usize,
+    }
+
+    impl<T, const N: usize> Drop for Guard<'_, T, N> {
+        fn drop(&mut self) {
+            debug_assert!(self.initialized <= N);
+
+            // SAFETY: this slice will contain only initialized objects.
+            unsafe {
+                core::ptr::drop_in_place(MaybeUninit::slice_assume_init_mut(
+                    self.array_mut.get_unchecked_mut(..self.initialized),
+                ));
+            }
+        }
+    }
+
+    let mut array = MaybeUninit::uninit_array::<N>();
+    let mut guard = Guard {
+        array_mut: &mut array,
+        initialized: 0,
+    };
+
+    for item in iter {
+        let item = item?;
+        // SAFETY: `guard.initialized` starts at 0, is increased by one in the
+        // loop and the loop is aborted once it reaches N (which is
+        // `array.len()`).
+        unsafe {
+            guard
+                .array_mut
+                .get_unchecked_mut(guard.initialized)
+                .write(item);
+        }
+        guard.initialized += 1;
+
+        // Check if the whole array was initialized.
+        if guard.initialized == N {
+            core::mem::forget(guard);
+
+            // SAFETY: the condition above asserts that all elements are
+            // initialized.
+            let out = unsafe { MaybeUninit::array_assume_init(array) };
+            return Ok(Some(out));
+        }
+    }
+
+    // This is only reached if the iterator is exhausted before
+    // `guard.initialized` reaches `N`. Also note that `guard` is dropped here,
+    // dropping all already initialized elements.
+    Ok(None)
 }

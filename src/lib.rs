@@ -1,6 +1,11 @@
 #![no_std]
 #![warn(missing_docs, unused_lifetimes)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![feature(
+    maybe_uninit_slice,
+    maybe_uninit_uninit_array,
+    maybe_uninit_array_assume_init
+)]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
