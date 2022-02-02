@@ -6,11 +6,11 @@ use std::ffi::CString;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::num::{NonZeroI128, NonZeroI32, NonZeroU128, NonZeroU32};
 use std::path::PathBuf;
-use std::rc::Rc;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug)]
+use bincodev1::Options;
+
+#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 enum AllTypes {
     BTreeMap(BTreeMap<u8, u8>),
     HashMap(HashMap<u8, u8>),
@@ -20,8 +20,6 @@ enum AllTypes {
     String(String),
     Box(Box<u8>),
     BoxSlice(Box<[u8]>),
-    Rc(Rc<u8>),
-    Arc(Arc<u8>),
     CString(CString),
     SystemTime(SystemTime),
     Duration(Duration),
@@ -40,12 +38,23 @@ enum AllTypes {
 }
 
 fuzz_target!(|data: &[u8]| {
-    let config = bincode::config::standard().with_limit::<1024>();
+    let config = bincode::config::legacy().with_limit::<1024>();
+    let mut configv1 = bincodev1::config();
+    configv1.limit(1024);
     let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
     if let Ok((before, _)) = result {
         let encoded = bincode::encode_to_vec(&before, config).expect("round trip");
         let (after, _) = bincode::decode_from_slice(&encoded, config).unwrap();
+
         assert_eq!(before, after);
+
+        match configv1.deserialize(&data) {
+            Ok(v1_decoded) => assert_eq!(before, v1_decoded),
+            Err(e) => {
+                dbg!(before);
+                panic!("failed to deserialize: {:?}", e);
+            }
+        }
     }
 });
