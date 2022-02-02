@@ -1,10 +1,10 @@
 # Bincode compatibility test
 
-Hello! We are working on releasing bincode 2, and we want to make sure that bincode 2 produces the exact same output as bincode 1.3.
+Hello! We are working on releasing bincode 2, and we want to make sure that bincode 2 produces the same output as bincode 1.3.
 
-For this we need your help. Please read on if you're using bincode in one of your projects.
+For this, we need your help. Please read on if you're using bincode in one of your projects.
 
-We have created a test project that can be used to test compatibility between bincode 1 and 2. It encodes structs with a wide range of settings, checks if the outputs are the same, and then deserializes the struct and checks if the output is the same.
+We have created a test project that can be used to test the compatibility between bincode 1 and 2. It encodes structs with a wide range of settings, checks if the outputs are the same, and then deserializes the struct and checks if the output is the same.
 
 ## Adding a test case for your project
 
@@ -16,7 +16,7 @@ To add a test case for your project, please follow the following steps:
 - [ ] Add a `mod <name>;` in the `lib.rs`. Make sure it's alphabetically ordered (check the ordering in your file system).
 - [ ] Add your structs.
   - Adding references to libraries is not recommended. Libraries will not be implementing `bincode 2`'s encoding/decoding system.
-  - If you really need references to libraries, consider adding a test case for that library, and then referencing that test.
+  - If you need references to libraries, consider adding a test case for that library, and then referencing that test.
 - [ ] Make sure structs derive the following traits:
   - [ ] `serde::Serialize` and `serde::Deserialize`, like normal
   - [ ] `bincode_2::Encode` and `bincode_2::Decode`, for the bincode 2 encode/decode mechanic
