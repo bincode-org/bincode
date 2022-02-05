@@ -10,12 +10,11 @@ use std::time::{Duration, SystemTime};
 
 use bincodev1::Options;
 
-#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug, serde::Serialize, serde::Deserialize, Eq, PartialOrd, Ord)]
 enum AllTypes {
-    BTreeMap(BTreeMap<u8, u8>),
-    HashMap(HashMap<u8, u8>),
-    BTreeSet(BTreeSet<u8>),
-    VecDeque(VecDeque<u8>),
+    BTreeMap(BTreeMap<u8, AllTypes>),
+    BTreeSet(BTreeSet<AllTypes>),
+    VecDeque(VecDeque<AllTypes>),
     Vec(Vec<u8>),
     String(String),
     Box(Box<u8>),
