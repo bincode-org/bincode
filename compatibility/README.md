@@ -11,8 +11,8 @@ We have created a test project that can be used to test the compatibility betwee
 To add a test case for your project, please follow the following steps:
 - [X] Fork https://github.com/bincode-org/bincode
 - [X] create a new file `compatibility/src/<name>.rs`.
-- [ ] Add a link to your project
-- [ ] Add `Licence: MIT OR Apache-2.0` if you agree to distribute your code under this license
+- [X] Add a link to your project: https://github.com/ppamorim/openraft/tree/bincode-bug/example-raft-kv
+- [X] Add `Licence: MIT OR Apache-2.0` if you agree to distribute your code under this license
 - [X] Add a `mod <name>;` in the `lib.rs`. Make sure it's alphabetically ordered (check the ordering in your file system).
 - [X] Add your structs.
   - Adding references to libraries is not recommended. Libraries will not be implementing `bincode 2`'s encoding/decoding system.
