@@ -9,19 +9,19 @@ We have created a test project that can be used to test the compatibility betwee
 ## Adding a test case for your project
 
 To add a test case for your project, please follow the following steps:
-- [ ] Fork https://github.com/bincode-org/bincode
-- [ ] create a new file `compatibility/src/<name>.rs`.
+- [X] Fork https://github.com/bincode-org/bincode
+- [X] create a new file `compatibility/src/<name>.rs`.
 - [ ] Add a link to your project
 - [ ] Add `Licence: MIT OR Apache-2.0` if you agree to distribute your code under this license
-- [ ] Add a `mod <name>;` in the `lib.rs`. Make sure it's alphabetically ordered (check the ordering in your file system).
-- [ ] Add your structs.
+- [X] Add a `mod <name>;` in the `lib.rs`. Make sure it's alphabetically ordered (check the ordering in your file system).
+- [X] Add your structs.
   - Adding references to libraries is not recommended. Libraries will not be implementing `bincode 2`'s encoding/decoding system.
   - If you need references to libraries, consider adding a test case for that library, and then referencing that test.
-- [ ] Make sure structs derive the following traits:
-  - [ ] `serde::Serialize` and `serde::Deserialize`, like normal
-  - [ ] `bincode_2::Encode` and `bincode_2::Decode`, for the bincode 2 encode/decode mechanic
-  - [ ] Because the crate is renamed to `bincode_2`, you also need to add `#[bincode(crate = "bincode_2")]`
-  - [ ] `Debug, PartialEq`
+- [X] Make sure structs derive the following traits:
+  - [X] `serde::Serialize` and `serde::Deserialize`, like normal
+  - [X] `bincode_2::Encode` and `bincode_2::Decode`, for the bincode 2 encode/decode mechanic
+  - [X] Because the crate is renamed to `bincode_2`, you also need to add `#[bincode(crate = "bincode_2")]`
+  - [X] `Debug, PartialEq`
 
 ```rs
 #[derive(Serialize, Deserialize, bincode_2::Encode, bincode_2::Decode, Debug, PartialEq)]
@@ -30,9 +30,9 @@ pub struct YourStruct {
 }
 ```
 
-- [ ] Use `rand` to be able to generate a random test case for your project.
-  - [ ] For strings there is a helper function in `crate`: `gen_string(rng: &mut impl Rng) -> String`
-- [ ] Add the following code:
+- [X] Use `rand` to be able to generate a random test case for your project.
+- [X] For strings there is a helper function in `crate`: `gen_string(rng: &mut impl Rng) -> String`
+- [X] Add the following code:
 
 ```rs
 #[test]
