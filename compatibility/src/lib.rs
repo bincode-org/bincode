@@ -5,6 +5,7 @@ use bincode_1::Options;
 
 mod rand;
 mod sway;
+mod membership;
 
 pub fn test_same_with_config<T, C, O>(t: &T, bincode_1_options: O, bincode_2_config: C)
 where
