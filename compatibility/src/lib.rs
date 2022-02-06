@@ -3,6 +3,7 @@
 use ::rand::Rng;
 use bincode_1::Options;
 
+mod misc;
 mod rand;
 mod sway;
 
@@ -19,6 +20,8 @@ where
 {
     // This is what bincode 1 serializes to. This will be our comparison value.
     let encoded = bincode_1_options.serialize(t).unwrap();
+
+    println!("Encoded {:?} as {:?}", t, encoded);
 
     // Test bincode 2 encode
     let bincode_2_output = bincode_2::encode_to_vec(t, bincode_2_config).unwrap();
