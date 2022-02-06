@@ -43,7 +43,7 @@ fuzz_target!(|data: &[u8]| {
     #[allow(deprecated)]
     let mut configv1 = bincodev1::config();
     configv1.limit(1024);
-    let bincode_v1: Result<AllTypes, _> = configv1.deserialize(&data);
+    let bincode_v1: Result<AllTypes, _> = configv1.deserialize(data);
     let bincode_v2: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
     if bincode_v1.as_ref().ok() != bincode_v2.as_ref().ok().map(|x| &x.0) {
