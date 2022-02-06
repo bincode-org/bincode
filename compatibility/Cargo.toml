@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bincode_2 = { path = "..", package = "bincode" }
+bincode_2 = { path = "..", package = "bincode", features = ["serde"] }
 bincode_1 = { version = "1", package = "bincode" }
 serde = { version = "1", features = ["derive"] }
 rand = "0.8"

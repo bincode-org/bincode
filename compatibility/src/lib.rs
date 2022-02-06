@@ -18,25 +18,33 @@ where
     C: bincode_2::config::Config,
     O: bincode_1::Options + Copy,
 {
-    let bincode_1_output = bincode_1_options.serialize(t).unwrap();
-    let bincode_2_output = bincode_2::encode_to_vec(t, bincode_2_config).unwrap();
+    // This is what bincode 1 serializes to. This will be our comparison value.
+    let encoded = bincode_1_options.serialize(t).unwrap();
 
+    // Test bincode 2 encode
+    let bincode_2_output = bincode_2::encode_to_vec(t, bincode_2_config).unwrap();
+    assert_eq!(encoded, bincode_2_output, "{:?} serializes differently", t);
+
+    // Test bincode 2 serde serialize
+    let bincode_2_serde_output = bincode_2::serde::encode_to_vec(t, bincode_2_config).unwrap();
     assert_eq!(
-        bincode_1_output, bincode_2_output,
+        encoded, bincode_2_serde_output,
         "{:?} serializes differently",
         t
     );
 
-    let decoded: T = bincode_1_options.deserialize(&bincode_1_output).unwrap();
-    assert_eq!(&decoded, t);
-    let decoded: T = bincode_1_options.deserialize(&bincode_2_output).unwrap();
+    // Test bincode 1 deserialize
+    let decoded: T = bincode_1_options.deserialize(&encoded).unwrap();
     assert_eq!(&decoded, t);
 
-    let decoded: T = bincode_2::decode_from_slice(&bincode_1_output, bincode_2_config)
+    // Test bincode 2 decode
+    let decoded: T = bincode_2::decode_from_slice(&encoded, bincode_2_config)
         .unwrap()
         .0;
     assert_eq!(&decoded, t);
-    let decoded: T = bincode_2::decode_from_slice(&bincode_2_output, bincode_2_config)
+
+    // Test bincode 2 serde deserialize
+    let decoded: T = bincode_2::serde::decode_from_slice(&encoded, bincode_2_config)
         .unwrap()
         .0;
     assert_eq!(&decoded, t);
