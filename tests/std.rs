@@ -108,10 +108,10 @@ fn test_std_commons() {
     // &CStr
     let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
     let len = bincode::encode_into_slice(cstr, &mut buffer, config).unwrap();
-    let (decoded, len): (&CStr, usize) =
+    let (decoded, len): (CString, usize) =
         bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
-    assert_eq!(cstr, decoded);
-    assert_eq!(len, 13);
+    assert_eq!(cstr, decoded.as_c_str());
+    assert_eq!(len, 12);
 
     // Path
     let path = Path::new("C:/Program Files/Foo");
