@@ -257,7 +257,7 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        let len = u32::decode(&mut self.de)?;
+        let len = usize::decode(&mut self.de)?;
         self.deserialize_tuple(len as usize, visitor)
     }
 
