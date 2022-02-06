@@ -43,15 +43,13 @@ fuzz_target!(|data: &[u8]| {
     #[allow(deprecated)]
     let mut configv1 = bincodev1::config();
     configv1.limit(1024);
-    let result: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
+    let bincode_v1: Result<AllTypes, _> = configv1.deserialize(&data);
+    let bincode_v2: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
-    if let Ok((before, _)) = result {
-        let v1: Result<AllTypes, _> = configv1.deserialize(&data);
-        if v1.as_ref().ok() != Some(&before) {
-            println!("Bytes:      {:?}", data);
-            println!("Bincode V2: {:?}", before);
-            println!("Bincode V1: {:?}", v1);
-            panic!("failed round trip");
-        }
+    if bincode_v1.as_ref().ok() != bincode_v2.as_ref().ok().map(|x| &x.0) {
+        println!("Bytes:      {:?}", data);
+        println!("Bincode V1: {:?}", bincode_v1);
+        println!("Bincode V2: {:?}", bincode_v2);
+        panic!("failed equality check");
     }
 });
