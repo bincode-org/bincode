@@ -387,11 +387,11 @@ where
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             Ok(val) => {
-                0u8.encode(encoder)?;
+                0u32.encode(encoder)?;
                 val.encode(encoder)
             }
             Err(err) => {
-                1u8.encode(encoder)?;
+                1u32.encode(encoder)?;
                 err.encode(encoder)
             }
         }

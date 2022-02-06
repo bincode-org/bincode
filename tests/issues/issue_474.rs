@@ -62,7 +62,7 @@ impl MemCache {
     where
         T: Send + Sync + serde_incl::Serialize,
     {
-        let config = bincode::config::standard();
+        let config = bincode::config::standard().write_fixed_array_length();
         let mut guard = self.cache.write().unwrap();
 
         let encoded = bincode::serde::encode_to_vec(&cache_data, config)?;
@@ -76,7 +76,7 @@ impl MemCache {
     where
         T: Send + Sync + DeserializeOwned,
     {
-        let config = bincode::config::standard();
+        let config = bincode::config::standard().write_fixed_array_length();
         let guard = self.cache.read().unwrap();
         let cache_item = guard.get(key).unwrap();
         let (decoded, _len): (T, usize) =

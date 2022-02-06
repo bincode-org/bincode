@@ -48,6 +48,7 @@ fn test_numbers() {
 
     // arrays
     #[rustfmt::skip]
+    #[cfg(not(feature = "serde"))] // serde doesn't support arrays this big
     the_same([
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
         17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
@@ -217,6 +218,21 @@ fn test_array() {
         bincode::decode_from_slice(&mut buffer[..10], bincode::config::standard()).unwrap();
     assert_eq!(input, output);
     assert_eq!(len, 10);
+
+    let mut buffer = [0u8; 32];
+    let input: [u8; 1] = [1];
+    let config = bincode::config::standard()
+        .write_fixed_array_length()
+        .with_fixed_int_encoding()
+        .with_little_endian();
+    let len = bincode::encode_into_slice(input, &mut buffer, config).unwrap();
+    assert_eq!(len, 9);
+    assert_eq!(&buffer[..9], &[1, 0, 0, 0, 0, 0, 0, 0, 1]);
+
+    let (output, len): (&[u8], usize) =
+        bincode::decode_from_slice(&mut buffer[..9], config).unwrap();
+    assert_eq!(input, output);
+    assert_eq!(len, 9);
 }
 
 #[test]

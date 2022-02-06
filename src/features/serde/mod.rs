@@ -89,6 +89,9 @@ pub enum DecodeError {
     /// Serde tried decoding a borrowed value from an owned reader. Use `serde_decode_borrowed_from_*` instead
     CannotBorrowOwnedData,
 
+    /// Serde does not support skipping fixed array lengths
+    SkipFixedArrayLengthNotSupported,
+
     /// Could not allocate data like `String` and `Vec<u8>`
     #[cfg(not(feature = "alloc"))]
     CannotAllocate,
@@ -135,6 +138,9 @@ impl Into<crate::error::DecodeError> for DecodeError {
 pub enum EncodeError {
     /// Serde provided bincode with a sequence without a length, which is not supported in bincode
     SequenceMustHaveLength,
+
+    /// Serde does not support skipping fixed array lengths
+    SkipFixedArrayLengthNotSupported,
 
     /// [Serializer::collect_str] got called but bincode was unable to allocate memory.
     #[cfg(not(feature = "alloc"))]
