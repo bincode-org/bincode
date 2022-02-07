@@ -16,6 +16,9 @@ where
     T: Serialize,
     C: Config,
 {
+    if C::SKIP_FIXED_ARRAY_LENGTH {
+        return Err(SerdeEncodeError::SkipFixedArrayLengthNotSupported.into());
+    }
     let mut encoder = crate::enc::EncoderImpl::new(crate::VecWriter::default(), config);
     let serializer = SerdeEncoder { enc: &mut encoder };
     t.serialize(serializer)?;
@@ -28,6 +31,9 @@ where
     T: Serialize,
     C: Config,
 {
+    if C::SKIP_FIXED_ARRAY_LENGTH {
+        return Err(SerdeEncodeError::SkipFixedArrayLengthNotSupported.into());
+    }
     let mut encoder =
         crate::enc::EncoderImpl::new(crate::enc::write::SliceWriter::new(slice), config);
     let serializer = SerdeEncoder { enc: &mut encoder };
@@ -45,6 +51,9 @@ pub fn encode_into_writer<E: Serialize, W: Writer, C: Config>(
     writer: W,
     config: C,
 ) -> Result<(), EncodeError> {
+    if C::SKIP_FIXED_ARRAY_LENGTH {
+        return Err(SerdeEncodeError::SkipFixedArrayLengthNotSupported.into());
+    }
     let mut encoder = crate::enc::EncoderImpl::<_, C>::new(writer, config);
     let serializer = SerdeEncoder { enc: &mut encoder };
     val.serialize(serializer)?;
@@ -62,6 +71,9 @@ pub fn encode_into_std_write<E: Serialize, C: Config, W: std::io::Write>(
     dst: &mut W,
     config: C,
 ) -> Result<usize, EncodeError> {
+    if C::SKIP_FIXED_ARRAY_LENGTH {
+        return Err(SerdeEncodeError::SkipFixedArrayLengthNotSupported.into());
+    }
     let writer = crate::IoWriter::new(dst);
     let mut encoder = crate::enc::EncoderImpl::<_, C>::new(writer, config);
     let serializer = SerdeEncoder { enc: &mut encoder };
@@ -109,6 +121,12 @@ where
         v.encode(self.enc)
     }
 
+    serde_incl::serde_if_integer128! {
+        fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+            v.encode(self.enc)
+        }
+    }
+
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
         v.encode(self.enc)
     }
@@ -123,6 +141,12 @@ where
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
         v.encode(self.enc)
+    }
+
+    serde_incl::serde_if_integer128! {
+        fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
+            v.encode(self.enc)
+        }
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
@@ -205,8 +229,7 @@ where
         Ok(Compound { enc: self.enc })
     }
 
-    fn serialize_tuple(mut self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        len.encode(&mut self.enc)?;
+    fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
         Ok(self)
     }
 
@@ -261,6 +284,10 @@ where
         T: core::fmt::Display,
     {
         Err(SerdeEncodeError::CannotCollectStr.into())
+    }
+
+    fn is_human_readable(&self) -> bool {
+        false
     }
 }
 

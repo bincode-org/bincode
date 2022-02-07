@@ -13,6 +13,9 @@ where
     T: Deserialize<'de>,
     C: Config,
 {
+    if C::SKIP_FIXED_ARRAY_LENGTH {
+        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
+    }
     let reader = crate::de::read::SliceReader::new(slice);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder {
@@ -72,6 +75,15 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor.visit_i64(Decode::decode(&mut self.de)?)
     }
 
+    serde_incl::serde_if_integer128! {
+        fn deserialize_i128<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde_incl::de::Visitor<'de>,
+        {
+            visitor.visit_i128(Decode::decode(&mut self.de)?)
+        }
+    }
+
     fn deserialize_u8<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: serde_incl::de::Visitor<'de>,
@@ -98,6 +110,15 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         V: serde_incl::de::Visitor<'de>,
     {
         visitor.visit_u64(Decode::decode(&mut self.de)?)
+    }
+
+    serde_incl::serde_if_integer128! {
+        fn deserialize_u128<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: serde_incl::de::Visitor<'de>,
+        {
+            visitor.visit_u128(Decode::decode(&mut self.de)?)
+        }
     }
 
     fn deserialize_f32<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
@@ -214,8 +235,8 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        let len = u32::decode(&mut self.de)?;
-        self.deserialize_tuple(len as usize, visitor)
+        let len = usize::decode(&mut self.de)?;
+        self.deserialize_tuple(len, visitor)
     }
 
     fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -366,6 +387,10 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         V: serde_incl::de::Visitor<'de>,
     {
         Err(SerdeDecodeError::IgnoredAnyNotSupported.into())
+    }
+
+    fn is_human_readable(&self) -> bool {
+        false
     }
 }
 

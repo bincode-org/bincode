@@ -268,25 +268,29 @@ impl Decode for IpAddr {
 
 impl Encode for Ipv4Addr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.octets().encode(encoder)
+        encoder.writer().write(&self.octets())
     }
 }
 
 impl Decode for Ipv4Addr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Self::from(<[u8; 4]>::decode(decoder)?))
+        let mut buff = [0u8; 4];
+        decoder.reader().read(&mut buff)?;
+        Ok(Self::from(buff))
     }
 }
 
 impl Encode for Ipv6Addr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.octets().encode(encoder)
+        encoder.writer().write(&self.octets())
     }
 }
 
 impl Decode for Ipv6Addr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Self::from(<[u8; 16]>::decode(decoder)?))
+        let mut buff = [0u8; 16];
+        decoder.reader().read(&mut buff)?;
+        Ok(Self::from(buff))
     }
 }
 

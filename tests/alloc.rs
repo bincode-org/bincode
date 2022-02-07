@@ -6,8 +6,9 @@ mod utils;
 
 use alloc::borrow::Cow;
 use alloc::collections::*;
+#[cfg(not(feature = "serde"))]
 use alloc::rc::Rc;
-#[cfg(feature = "atomic")]
+#[cfg(all(feature = "atomic", not(feature = "serde")))]
 use alloc::sync::Arc;
 use utils::{the_same, the_same_with_comparer};
 
@@ -58,8 +59,11 @@ fn test_alloc_commons() {
     the_same(Box::<[u32]>::from(vec![1, 2, 3, 4, 5]));
     the_same(Cow::<u32>::Owned(5));
     the_same(Cow::<u32>::Borrowed(&5));
+    // Serde doesn't support Rc<u32>
+    #[cfg(not(feature = "serde"))]
     the_same(Rc::<u32>::new(5));
-    #[cfg(feature = "atomic")]
+    // serde doesn't support Arc<u32>
+    #[cfg(all(feature = "atomic", not(feature = "serde")))]
     the_same(Arc::<u32>::new(5));
     the_same_with_comparer(
         {

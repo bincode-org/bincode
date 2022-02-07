@@ -162,6 +162,8 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     }
 
     /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
+    ///
+    /// **NOTE:** This is not supported if you're using the `bincode::serde::*` functions, the `#[bincode(with_serde)]` attribute, or the `Compat` struct.
     pub const fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength, L> {
         generate()
     }
