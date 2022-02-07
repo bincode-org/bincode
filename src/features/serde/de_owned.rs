@@ -285,7 +285,7 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
         V: serde_incl::de::Visitor<'de>,
     {
         let len = usize::decode(&mut self.de)?;
-        self.deserialize_tuple(len as usize, visitor)
+        self.deserialize_tuple(len, visitor)
     }
 
     fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>

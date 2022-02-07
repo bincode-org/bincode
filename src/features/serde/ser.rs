@@ -230,7 +230,6 @@ where
     }
 
     fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        // len.encode(&mut self.enc)?;
         Ok(self)
     }
 

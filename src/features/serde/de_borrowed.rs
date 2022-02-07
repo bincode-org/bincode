@@ -235,8 +235,8 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     where
         V: serde_incl::de::Visitor<'de>,
     {
-        let len = u32::decode(&mut self.de)?;
-        self.deserialize_tuple(len as usize, visitor)
+        let len = usize::decode(&mut self.de)?;
+        self.deserialize_tuple(len, visitor)
     }
 
     fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
