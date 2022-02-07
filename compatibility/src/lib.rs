@@ -3,6 +3,7 @@
 use ::rand::Rng;
 use bincode_1::Options;
 
+mod membership;
 mod misc;
 mod rand;
 mod sway;
