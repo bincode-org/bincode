@@ -125,27 +125,20 @@ impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
 
 impl<'a> Encode for &'a CStr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.to_bytes_with_nul().encode(encoder)
-    }
-}
-
-impl<'de> BorrowDecode<'de> for &'de CStr {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let bytes = <&[u8]>::borrow_decode(decoder)?;
-        CStr::from_bytes_with_nul(bytes).map_err(|e| DecodeError::CStrNulError { inner: e })
+        self.to_bytes().encode(encoder)
     }
 }
 
 impl Encode for CString {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.as_bytes_with_nul().encode(encoder)
+        self.as_bytes().encode(encoder)
     }
 }
 
 impl Decode for CString {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
-        CString::from_vec_with_nul(vec).map_err(|inner| DecodeError::CStringNulError { inner })
+        CString::new(vec).map_err(|inner| DecodeError::CStringNulError { inner })
     }
 }
 
@@ -275,25 +268,29 @@ impl Decode for IpAddr {
 
 impl Encode for Ipv4Addr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.octets().encode(encoder)
+        encoder.writer().write(&self.octets())
     }
 }
 
 impl Decode for Ipv4Addr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Self::from(<[u8; 4]>::decode(decoder)?))
+        let mut buff = [0u8; 4];
+        decoder.reader().read(&mut buff)?;
+        Ok(Self::from(buff))
     }
 }
 
 impl Encode for Ipv6Addr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.octets().encode(encoder)
+        encoder.writer().write(&self.octets())
     }
 }
 
 impl Decode for Ipv6Addr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Ok(Self::from(<[u8; 16]>::decode(decoder)?))
+        let mut buff = [0u8; 16];
+        decoder.reader().read(&mut buff)?;
+        Ok(Self::from(buff))
     }
 }
 

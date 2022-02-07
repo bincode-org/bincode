@@ -512,7 +512,7 @@ where
     U: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let is_ok = u8::decode(decoder)?;
+        let is_ok = u32::decode(decoder)?;
         match is_ok {
             0 => {
                 let t = T::decode(decoder)?;

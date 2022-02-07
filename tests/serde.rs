@@ -24,12 +24,17 @@ fn test_serde_round_trip() {
     assert_eq!(result.b, 0);
 
     // validate bincode working
-    let bytes =
-        bincode::encode_to_vec(SerdeRoundtrip { a: 15, b: 15 }, bincode::config::standard())
-            .unwrap();
+    let bytes = bincode::encode_to_vec(
+        SerdeRoundtrip { a: 15, b: 15 },
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
     assert_eq!(bytes, &[15, 15]);
-    let (result, len): (SerdeRoundtrip, usize) =
-        bincode::decode_from_slice(&bytes, bincode::config::standard()).unwrap();
+    let (result, len): (SerdeRoundtrip, usize) = bincode::decode_from_slice(
+        &bytes,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
     assert_eq!(result.a, 15);
     assert_eq!(result.b, 15);
     assert_eq!(len, 2);
@@ -61,17 +66,28 @@ fn test_serialize_deserialize_borrowed_data() {
     ];
 
     let mut result = [0u8; 20];
-    let len = bincode::serde::encode_into_slice(&input, &mut result, bincode::config::standard())
-        .unwrap();
+    let len = bincode::serde::encode_into_slice(
+        &input,
+        &mut result,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
-    let result = bincode::serde::encode_to_vec(&input, bincode::config::standard()).unwrap();
+    let result = bincode::serde::encode_to_vec(
+        &input,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
 
     assert_eq!(result, expected);
 
-    let output: SerdeWithBorrowedData =
-        bincode::serde::decode_borrowed_from_slice(&result, bincode::config::standard()).unwrap();
+    let output: SerdeWithBorrowedData = bincode::serde::decode_borrowed_from_slice(
+        &result,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
     assert_eq!(
         SerdeWithBorrowedData {
             b: 0, // remember: b is skipped
@@ -107,17 +123,28 @@ fn test_serialize_deserialize_owned_data() {
     ];
 
     let mut result = [0u8; 20];
-    let len = bincode::serde::encode_into_slice(&input, &mut result, bincode::config::standard())
-        .unwrap();
+    let len = bincode::serde::encode_into_slice(
+        &input,
+        &mut result,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
     let result = &result[..len];
     assert_eq!(result, expected);
 
-    let result = bincode::serde::encode_to_vec(&input, bincode::config::standard()).unwrap();
+    let result = bincode::serde::encode_to_vec(
+        &input,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
 
     assert_eq!(result, expected);
 
-    let (output, len): (SerdeWithOwnedData, usize) =
-        bincode::serde::decode_from_slice(&result, bincode::config::standard()).unwrap();
+    let (output, len): (SerdeWithOwnedData, usize) = bincode::serde::decode_from_slice(
+        &result,
+        bincode::config::standard().write_fixed_array_length(),
+    )
+    .unwrap();
     assert_eq!(
         SerdeWithOwnedData {
             b: 0, // remember: b is skipped
@@ -161,12 +188,19 @@ mod derive {
             T: bincode::Encode + bincode::Decode + PartialEq + core::fmt::Debug,
         {
             let mut slice = [0u8; 100];
-            let len = bincode::encode_into_slice(&start, &mut slice, bincode::config::standard())
-                .unwrap();
+            let len = bincode::encode_into_slice(
+                &start,
+                &mut slice,
+                bincode::config::standard().write_fixed_array_length(),
+            )
+            .unwrap();
             assert_eq!(len, expected_len);
             let slice = &slice[..len];
-            let (result, len): (T, usize) =
-                bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
+            let (result, len): (T, usize) = bincode::decode_from_slice(
+                &slice,
+                bincode::config::standard().write_fixed_array_length(),
+            )
+            .unwrap();
 
             assert_eq!(start, result);
             assert_eq!(len, expected_len);

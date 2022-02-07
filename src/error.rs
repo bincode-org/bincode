@@ -147,18 +147,11 @@ pub enum DecodeError {
         duration: core::time::Duration,
     },
 
-    /// The decoder tried to decode a `CStr`, but the incoming data contained a 0 byte
-    #[cfg(feature = "std")]
-    CStrNulError {
-        /// The inner exception
-        inner: std::ffi::FromBytesWithNulError,
-    },
-
     /// The decoder tried to decode a `CString`, but the incoming data contained a 0 byte
     #[cfg(feature = "std")]
     CStringNulError {
         /// The inner exception
-        inner: std::ffi::FromVecWithNulError,
+        inner: std::ffi::NulError,
     },
 
     /// An uncommon error occurred, see the inner text for more information
