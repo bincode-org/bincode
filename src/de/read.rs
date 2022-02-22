@@ -31,7 +31,7 @@ pub trait Reader {
     fn consume(&mut self, _: usize) {}
 }
 
-impl<'a, T> Reader for &'a mut T
+impl<T> Reader for &mut T
 where
     T: Reader,
 {
