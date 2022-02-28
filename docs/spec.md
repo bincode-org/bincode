@@ -40,7 +40,7 @@ Encoding an unsigned integer v (of any type excepting u8/i8) works as follows:
 
 `usize` is being encoded/decoded as a `u64` and `isize` is being encoded/decoded as a `i64`.
 
-See the documentation of [VarintEncoding](https://docs.rs/bincode/2.0.0-beta/bincode/config/struct.Configuration.html#method.with_variable_int_encoding) for more information.
+See the documentation of [VarintEncoding](https://docs.rs/bincode/2.0.0-rc/bincode/config/struct.Configuration.html#method.with_variable_int_encoding) for more information.
 
 ### FixintEncoding
 
@@ -48,7 +48,7 @@ See the documentation of [VarintEncoding](https://docs.rs/bincode/2.0.0-beta/bin
 - Enum discriminants are encoded as u32
 - Lengths and usize are encoded as u64
 
-See the documentation of [FixintEncoding](https://docs.rs/bincode/2.0.0-beta/bincode/config/struct.Configuration.html#method.with_fixed_int_encoding) for more information.
+See the documentation of [FixintEncoding](https://docs.rs/bincode/2.0.0-rc/bincode/config/struct.Configuration.html#method.with_fixed_int_encoding) for more information.
 
 ## Enums
 
