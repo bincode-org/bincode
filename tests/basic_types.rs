@@ -212,12 +212,15 @@ fn test_array() {
     let mut buffer = [0u8; 32];
     let input: [u8; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
     bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(&buffer[..10], &[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+    assert_eq!(
+        &buffer[..11],
+        &[10, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    );
 
     let (output, len): ([u8; 10], usize) =
-        bincode::decode_from_slice(&mut buffer[..10], bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&mut buffer[..11], bincode::config::standard()).unwrap();
     assert_eq!(input, output);
-    assert_eq!(len, 10);
+    assert_eq!(len, 11);
 
     let mut buffer = [0u8; 32];
     let input: [u8; 1] = [1];

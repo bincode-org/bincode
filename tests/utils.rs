@@ -86,32 +86,28 @@ where
         &element,
         bincode::config::standard()
             .with_little_endian()
-            .with_fixed_int_encoding()
-            .write_fixed_array_length(),
+            .with_fixed_int_encoding(),
         &cmp,
     );
     the_same_with_config(
         &element,
         bincode::config::standard()
             .with_big_endian()
-            .with_fixed_int_encoding()
-            .write_fixed_array_length(),
+            .with_fixed_int_encoding(),
         &cmp,
     );
     the_same_with_config(
         &element,
         bincode::config::standard()
             .with_little_endian()
-            .with_variable_int_encoding()
-            .write_fixed_array_length(),
+            .with_variable_int_encoding(),
         &cmp,
     );
     the_same_with_config(
         &element,
         bincode::config::standard()
             .with_big_endian()
-            .with_variable_int_encoding()
-            .write_fixed_array_length(),
+            .with_variable_int_encoding(),
         &cmp,
     );
 }

@@ -39,7 +39,7 @@ use core::marker::PhantomData;
 /// [skip_fixed_array_length]: #method.skip_fixed_array_length
 /// [write_fixed_array_length]: #method.write_fixed_array_length
 #[derive(Copy, Clone)]
-pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength, L = NoLimit> {
+pub struct Configuration<E = LittleEndian, I = Varint, A = WriteFixedArrayLength, L = NoLimit> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
     _a: PhantomData<A>,
@@ -49,7 +49,7 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = SkipFixedArrayLength,
 /// The default config for bincode 2.0. By default this will be:
 /// - Little endian
 /// - Variable int encoding
-/// - Skip fixed array length
+/// - Write fixed array length
 pub const fn standard() -> Configuration {
     generate()
 }
