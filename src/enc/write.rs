@@ -12,6 +12,13 @@ pub trait Writer {
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError>;
 }
 
+impl<T: Writer> Writer for &mut T {
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
+        (**self).write(bytes)
+    }
+}
+
 /// A helper struct that implements `Writer` for a `&[u8]` slice.
 ///
 /// ```
