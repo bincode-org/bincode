@@ -129,6 +129,7 @@ fn test_container_limits() {
         #[cfg(feature = "std")]
         {
             validate_fail::<std::collections::HashMap<i32, i32>>(slice);
+            validate_fail::<std::collections::HashSet<i32>>(slice);
         }
     }
 }

@@ -101,6 +101,11 @@ fn test_std_commons() {
     map.insert("you".to_owned(), "doing?".to_owned());
     the_same(map);
 
+    let mut set = std::collections::HashSet::new();
+    set.insert("Hello".to_string());
+    set.insert("World".to_string());
+    the_same(set);
+
     // Borrowed values
     let config = bincode::config::standard();
     let mut buffer = [0u8; 1024];
