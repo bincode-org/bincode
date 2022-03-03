@@ -6,8 +6,9 @@ use crate::{
 };
 use core::time::Duration;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::{CStr, CString},
+    hash::Hash,
     io::Read,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     path::{Path, PathBuf},
@@ -390,5 +391,38 @@ where
             map.insert(k, v);
         }
         Ok(map)
+    }
+}
+
+impl<T> Decode for HashSet<T>
+where
+    T: Decode + Eq + Hash,
+{
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut map = HashSet::new();
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            let key = T::decode(decoder)?;
+            map.insert(key);
+        }
+        Ok(map)
+    }
+}
+
+impl<T> Encode for HashSet<T>
+where
+    T: Encode,
+{
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
+        for item in self.iter() {
+            item.encode(encoder)?;
+        }
+        Ok(())
     }
 }
