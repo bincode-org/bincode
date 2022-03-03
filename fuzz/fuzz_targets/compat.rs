@@ -43,13 +43,25 @@ fuzz_target!(|data: &[u8]| {
     #[allow(deprecated)]
     let mut configv1 = bincodev1::config();
     configv1.limit(1024);
-    let bincode_v1: Result<AllTypes, _> = configv1.deserialize(data);
+    let bincode_v1: Result<AllTypes, _> = configv1.deserialize_from(data);
     let bincode_v2: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
-    if bincode_v1.as_ref().ok() != bincode_v2.as_ref().ok().map(|x| &x.0) {
-        println!("Bytes:      {:?}", data);
-        println!("Bincode V1: {:?}", bincode_v1);
-        println!("Bincode V2: {:?}", bincode_v2);
-        panic!("failed equality check");
+    match (&bincode_v1, &bincode_v2) {
+        (Err(e), _) if e.to_string() == "the size limit has been reached" => {},
+        (_, Err(bincode::error::DecodeError::LimitExceeded)) => {},
+        (Ok(bincode_v1), Ok((bincode_v2, _))) if bincode_v1 != bincode_v2 => {
+            println!("Bytes:      {:?}", data);
+            println!("Bincode V1: {:?}", bincode_v1);
+            println!("Bincode V2: {:?}", bincode_v2);
+            panic!("failed equality check");
+        },
+        (Ok(_), Err(_)) | (Err(_), Ok(_)) => {
+            println!("Bytes:      {:?}", data);
+            println!("Bincode V1: {:?}", bincode_v1);
+            println!("Bincode V2: {:?}", bincode_v2);
+            panic!("failed equality check");
+        }
+
+        _ => {}
     }
 });
