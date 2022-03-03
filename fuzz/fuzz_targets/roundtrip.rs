@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::ffi::CString;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::num::{NonZeroI128, NonZeroI32, NonZeroU128, NonZeroU32};
@@ -14,6 +14,7 @@ use std::time::{Duration, SystemTime};
 enum AllTypes {
     BTreeMap(BTreeMap<u8, u8>),
     HashMap(HashMap<u8, u8>),
+    HashSet(HashSet<u8>),
     BTreeSet(BTreeSet<u8>),
     VecDeque(VecDeque<AllTypes>),
     Vec(Vec<AllTypes>),
