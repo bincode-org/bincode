@@ -4,7 +4,7 @@ Bincode 2 now has an optional dependency on `serde`. You can either use `serde`,
 
 ## From `Options` to `Configuration`
 
-Bincode 1 had the [Options](https://docs.rs/bincode/1/bincode/config/trait.Options.html) trait. This has been replaced with the [Configuration](https://docs.rs/bincode/2.0.0-beta/bincode/config/struct.Configuration.html) struct.
+Bincode 1 had the [Options](https://docs.rs/bincode/1/bincode/config/trait.Options.html) trait. This has been replaced with the [Configuration](https://docs.rs/bincode/2.0.0-rc/bincode/config/struct.Configuration.html) struct.
 
 If you're using `Options`, you can change it like this:
 
@@ -43,10 +43,10 @@ Make sure to include bincode 2 with the `serde` feature enabled.
 
 ```toml
 [dependencies]
-bincode = { version = "2.0.0-beta", features = ["serde"] }
+bincode = { version = "2.0.0-rc", features = ["serde"] }
 
 # Optionally you can disable the `derive` feature:
-# bincode = { version = "2.0.0-beta", default-features = false, features = ["std", "serde"] }
+# bincode = { version = "2.0.0-rc", default-features = false, features = ["std", "serde"] }
 ```
 
 
@@ -68,13 +68,13 @@ Then replace the following functions: (`Configuration` is `bincode::config::lega
 
 ```toml,ignore
 [dependencies]
-bincode = "2.0.0-beta"
+bincode = "2.0.0-rc"
 
 # If you need `no_std` with `alloc`:
-# bincode = { version = "2.0.0-beta", default-features = false, features = ["derive", "alloc"] }
+# bincode = { version = "2.0.0-rc", default-features = false, features = ["derive", "alloc"] }
 
 # If you need `no_std` and no `alloc`:
-# bincode = { version = "2.0.0-beta", default-features = false, features = ["derive"] }
+# bincode = { version = "2.0.0-rc", default-features = false, features = ["derive"] }
 ```
 
 Replace or add the following attributes. You are able to use both `serde-derive` and `bincode-derive` side-by-side.
@@ -84,7 +84,7 @@ Replace or add the following attributes. You are able to use both `serde-derive`
 |`#[derive(serde::Serialize)]`|`#[derive(bincode::Encode)]`|
 |`#[derive(serde::Deserialize)]`|`#[derive(bincode::Decode)]`|
 
-**note:** To implement these traits manually, see the documentation of [Encode](https://docs.rs/bincode/2.0.0-beta/bincode/enc/trait.Encode.html) and [Decode](https://docs.rs/bincode/2.0.0-beta/bincode/de/trait.Decode.html).
+**note:** To implement these traits manually, see the documentation of [Encode](https://docs.rs/bincode/2.0.0-rc/bincode/enc/trait.Encode.html) and [Decode](https://docs.rs/bincode/2.0.0-rc/bincode/de/trait.Decode.html).
 
 **note:** For more information on using `bincode-derive` with external libraries, see [below](#bincode-derive-and-libraries).
 
@@ -105,10 +105,10 @@ Then replace the following functions: (`Configuration` is `bincode::config::lega
 
 Currently not many libraries support the traits `Encode` and `Decode`. There are a couple of options if you want to use `#[derive(bincode::Encode, bincode::Decode)]`:
 - Enable the `serde` feature and add a `#[bincode(with_serde)]` above each field that implements `serde::Serialize/Deserialize` but not `Encode/Decode`
-- Enable the `serde` feature and wrap your field in [bincode::serde::Compat](https://docs.rs/bincode/2.0.0-beta/bincode/serde/struct.Compat.html) or [bincode::serde::BorrowCompat](https://docs.rs/bincode/2.0.0-beta/bincode/serde/struct.BorrowCompat.html)
+- Enable the `serde` feature and wrap your field in [bincode::serde::Compat](https://docs.rs/bincode/2.0.0-rc/bincode/serde/struct.Compat.html) or [bincode::serde::BorrowCompat](https://docs.rs/bincode/2.0.0-rc/bincode/serde/struct.BorrowCompat.html)
 - Make a pull request to the library:
   - Make sure to be respectful, most of the developers are doing this in their free time.
-  - Add a dependency `bincode = { version = "2.0.0-beta", default-features = false, optional = true }` to the `Cargo.toml`
-  - Implement [Encode](https://docs.rs/bincode/2.0.0-beta/bincode/enc/trait.Encode.html)
-  - Implement [Decode](https://docs.rs/bincode/2.0.0-beta/bincode/de/trait.Decode.html)
+  - Add a dependency `bincode = { version = "2.0.0-rc", default-features = false, optional = true }` to the `Cargo.toml`
+  - Implement [Encode](https://docs.rs/bincode/2.0.0-rc/bincode/enc/trait.Encode.html)
+  - Implement [Decode](https://docs.rs/bincode/2.0.0-rc/bincode/de/trait.Decode.html)
   - Make sure both of these implementations have a `#[cfg(feature = "bincode")]` attribute.
