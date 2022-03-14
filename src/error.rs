@@ -68,7 +68,14 @@ impl core::fmt::Display for EncodeError {
 #[derive(Debug, PartialEq)]
 pub enum DecodeError {
     /// The reader reached its end but more bytes were expected.
-    UnexpectedEnd,
+    UnexpectedEnd {
+        /// Gives an estimate of how many extra bytes are needed.
+        ///
+        /// **Note**: this is only an estimate and not indicative of the actual bytes needed.
+        ///
+        /// **Note**: Bincode has no look-ahead mechanism. This means that this will only return the amount of bytes to be read for the current action, and not take into account the entire data structure being read.
+        additional: usize,
+    },
 
     /// The given configuration limit was exceeded
     LimitExceeded,
