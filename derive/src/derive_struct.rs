@@ -10,18 +10,26 @@ pub(crate) struct DeriveStruct {
 
 impl DeriveStruct {
     pub fn generate_encode(self, generator: &mut Generator) -> Result<()> {
-        let DeriveStruct { fields, attributes } = self;
-        let crate_name = attributes.crate_name;
-
+        let crate_name = &self.attributes.crate_name;
         generator
             .impl_for(&format!("{}::Encode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
-                for g in generics.iter_generics() {
+                if let Some((bounds, lit)) =
+                    (self.attributes.encode_bounds.as_ref()).or(self.attributes.bounds.as_ref())
+                {
+                    where_constraints.clear();
                     where_constraints
-                        .push_constraint(g, format!("{}::Encode", crate_name))
-                        .unwrap();
+                        .push_parsed_constraint(bounds)
+                        .map_err(|e| e.with_span(lit.span()))?;
+                } else {
+                    for g in generics.iter_generics() {
+                        where_constraints
+                            .push_constraint(g, format!("{}::Encode", crate_name))
+                            .unwrap();
+                    }
                 }
-            })
+                Ok(())
+            })?
             .generate_fn("encode")
             .with_generic_deps("E", [format!("{}::enc::Encoder", crate_name)])
             .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
@@ -31,7 +39,7 @@ impl DeriveStruct {
                 crate_name
             ))
             .body(|fn_body| {
-                for field in fields.names() {
+                for field in self.fields.names() {
                     let attributes = field
                         .attributes()
                         .get_attribute::<FieldAttributes>()?
@@ -56,16 +64,21 @@ impl DeriveStruct {
 
     pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_borrow_decode
-        let DeriveStruct { fields, attributes } = self;
-        let crate_name = attributes.crate_name;
+        let crate_name = &self.attributes.crate_name;
 
         generator
             .impl_for(format!("{}::Decode", crate_name))
             .modify_generic_constraints(|generics, where_constraints| {
-                for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
+                if let Some((bounds, lit)) = (self.attributes.decode_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
+                    where_constraints.clear();
+                    where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
+                } else {
+                    for g in generics.iter_generics() {
+                        where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
+                    }
                 }
-            })
+                Ok(())
+            })?
             .generate_fn("decode")
             .with_generic_deps("D", [format!("{}::de::Decoder", crate_name)])
             .with_arg("decoder", "&mut D")
@@ -82,7 +95,7 @@ impl DeriveStruct {
                         //      b: bincode::Decode::decode(decoder)?,
                         //      ...
                         // }
-                        for field in fields.names() {
+                        for field in &self.fields.names() {
                             let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                             if attributes.with_serde {
                                 struct_body
@@ -106,21 +119,27 @@ impl DeriveStruct {
                 })?;
                 Ok(())
             })?;
+        self.generate_borrow_decode(generator)?;
         Ok(())
     }
 
     pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_decode
-        let DeriveStruct { fields, attributes } = self;
-        let crate_name = attributes.crate_name;
+        let crate_name = self.attributes.crate_name;
 
         generator
             .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
             .modify_generic_constraints(|generics, where_constraints| {
-                for g in generics.iter_generics() {
-                    where_constraints.push_constraint(g, format!("{}::BorrowDecode", crate_name)).unwrap();
+                if let Some((bounds, lit)) = (self.attributes.borrow_decode_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
+                    where_constraints.clear();
+                    where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
+                } else {
+                    for g in generics.iter_generics() {
+                        where_constraints.push_constraint(g, format!("{}::de::BorrowDecode<'__de>", crate_name)).unwrap();
+                    }
                 }
-            })
+                Ok(())
+            })?
             .generate_fn("borrow_decode")
             .with_generic_deps("D", [format!("{}::de::BorrowDecoder<'__de>", crate_name)])
             .with_arg("decoder", "&mut D")
@@ -131,7 +150,7 @@ impl DeriveStruct {
                 fn_body.group(Delimiter::Parenthesis, |ok_group| {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
-                        for field in fields.names() {
+                        for field in self.fields.names() {
                             let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                             if attributes.with_serde {
                                 struct_body

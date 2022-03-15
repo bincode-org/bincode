@@ -1,4 +1,4 @@
-use crate::{de::Decode, enc::Encode};
+use crate::{de::Decode, enc::Encode, impl_borrow_decode};
 use core::sync::atomic::{
     AtomicBool, AtomicI16, AtomicI32, AtomicI64, AtomicI8, AtomicIsize, AtomicU16, AtomicU32,
     AtomicU64, AtomicU8, AtomicUsize, Ordering,
@@ -18,6 +18,7 @@ impl Decode for AtomicBool {
         Ok(AtomicBool::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicBool);
 
 impl Encode for AtomicU8 {
     fn encode<E: crate::enc::Encoder>(
@@ -33,6 +34,7 @@ impl Decode for AtomicU8 {
         Ok(AtomicU8::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicU8);
 
 impl Encode for AtomicU16 {
     fn encode<E: crate::enc::Encoder>(
@@ -48,6 +50,7 @@ impl Decode for AtomicU16 {
         Ok(AtomicU16::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicU16);
 
 impl Encode for AtomicU32 {
     fn encode<E: crate::enc::Encoder>(
@@ -63,6 +66,7 @@ impl Decode for AtomicU32 {
         Ok(AtomicU32::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicU32);
 
 impl Encode for AtomicU64 {
     fn encode<E: crate::enc::Encoder>(
@@ -78,6 +82,7 @@ impl Decode for AtomicU64 {
         Ok(AtomicU64::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicU64);
 
 impl Encode for AtomicUsize {
     fn encode<E: crate::enc::Encoder>(
@@ -93,6 +98,7 @@ impl Decode for AtomicUsize {
         Ok(AtomicUsize::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicUsize);
 
 impl Encode for AtomicI8 {
     fn encode<E: crate::enc::Encoder>(
@@ -108,6 +114,7 @@ impl Decode for AtomicI8 {
         Ok(AtomicI8::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicI8);
 
 impl Encode for AtomicI16 {
     fn encode<E: crate::enc::Encoder>(
@@ -123,6 +130,7 @@ impl Decode for AtomicI16 {
         Ok(AtomicI16::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicI16);
 
 impl Encode for AtomicI32 {
     fn encode<E: crate::enc::Encoder>(
@@ -138,6 +146,7 @@ impl Decode for AtomicI32 {
         Ok(AtomicI32::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicI32);
 
 impl Encode for AtomicI64 {
     fn encode<E: crate::enc::Encoder>(
@@ -153,6 +162,7 @@ impl Decode for AtomicI64 {
         Ok(AtomicI64::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicI64);
 
 impl Encode for AtomicIsize {
     fn encode<E: crate::enc::Encoder>(
@@ -168,3 +178,4 @@ impl Decode for AtomicIsize {
         Ok(AtomicIsize::new(Decode::decode(decoder)?))
     }
 }
+impl_borrow_decode!(AtomicIsize);

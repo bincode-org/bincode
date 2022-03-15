@@ -136,7 +136,7 @@ fn test_std_commons() {
     let path = Path::new("C:/Program Files/Foo");
     let len = bincode::encode_into_slice(path, &mut buffer, config).unwrap();
     let (decoded, len): (&Path, usize) =
-        bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
+        bincode::borrow_decode_from_slice(&mut buffer[..len], config).unwrap();
     assert_eq!(path, decoded);
     assert_eq!(len, 21);
 }

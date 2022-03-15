@@ -8,7 +8,17 @@ use std::num::{NonZeroI128, NonZeroI32, NonZeroU128, NonZeroU32};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-#[derive(bincode::Decode, bincode::Encode, PartialEq, Debug, serde::Serialize, serde::Deserialize, Eq, PartialOrd, Ord)]
+#[derive(
+    bincode::Decode,
+    bincode::Encode,
+    PartialEq,
+    Debug,
+    serde::Serialize,
+    serde::Deserialize,
+    Eq,
+    PartialOrd,
+    Ord,
+)]
 enum AllTypes {
     BTreeMap(BTreeMap<u8, AllTypes>),
     BTreeSet(BTreeSet<AllTypes>),
@@ -47,14 +57,14 @@ fuzz_target!(|data: &[u8]| {
     let bincode_v2: Result<(AllTypes, _), _> = bincode::decode_from_slice(data, config);
 
     match (&bincode_v1, &bincode_v2) {
-        (Err(e), _) if e.to_string() == "the size limit has been reached" => {},
-        (_, Err(bincode::error::DecodeError::LimitExceeded)) => {},
+        (Err(e), _) if e.to_string() == "the size limit has been reached" => {}
+        (_, Err(bincode::error::DecodeError::LimitExceeded)) => {}
         (Ok(bincode_v1), Ok((bincode_v2, _))) if bincode_v1 != bincode_v2 => {
             println!("Bytes:      {:?}", data);
             println!("Bincode V1: {:?}", bincode_v1);
             println!("Bincode V2: {:?}", bincode_v2);
             panic!("failed equality check");
-        },
+        }
         (Ok(_), Err(_)) | (Err(_), Ok(_)) => {
             println!("Bytes:      {:?}", data);
             println!("Bincode V1: {:?}", bincode_v1);

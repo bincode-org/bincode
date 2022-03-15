@@ -202,6 +202,17 @@ where
         T::deserialize(serde_decoder).map(Compat)
     }
 }
+impl<'de, T> crate::BorrowDecode<'de> for Compat<T>
+where
+    T: serde_incl::de::DeserializeOwned,
+{
+    fn borrow_decode<D: crate::de::BorrowDecoder<'de>>(
+        decoder: &mut D,
+    ) -> Result<Self, crate::error::DecodeError> {
+        let serde_decoder = de_owned::SerdeDecoder { de: decoder };
+        T::deserialize(serde_decoder).map(Compat)
+    }
+}
 
 impl<T> crate::Encode for Compat<T>
 where

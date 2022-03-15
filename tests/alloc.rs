@@ -38,6 +38,7 @@ impl bincode::Decode for Foo {
         })
     }
 }
+bincode::impl_borrow_decode!(Foo);
 
 #[test]
 fn test_vec() {
@@ -49,6 +50,30 @@ fn test_vec() {
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
     assert_eq!(len, 2);
+
+    let vec: Vec<u8> = bincode::decode_from_slice(
+        &[4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+        bincode::config::legacy(),
+    )
+    .unwrap()
+    .0;
+    assert_eq!(vec, &[1, 2, 3, 4]);
+
+    let vec: Vec<Cow<'static, u8>> = bincode::decode_from_slice(
+        &[4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+        bincode::config::legacy(),
+    )
+    .unwrap()
+    .0;
+    assert_eq!(
+        vec,
+        &[
+            Cow::Borrowed(&1),
+            Cow::Borrowed(&2),
+            Cow::Borrowed(&3),
+            Cow::Borrowed(&4)
+        ]
+    );
 }
 
 #[test]
@@ -97,7 +122,7 @@ fn test_alloc_commons() {
 
 #[test]
 fn test_container_limits() {
-    use bincode::{error::DecodeError, Decode};
+    use bincode::{error::DecodeError, BorrowDecode, Decode};
 
     const DECODE_LIMIT: usize = 100_000;
 
@@ -109,8 +134,15 @@ fn test_container_limits() {
         bincode::encode_to_vec(DECODE_LIMIT as u64, bincode::config::standard()).unwrap(),
     ];
 
-    fn validate_fail<T: Decode + core::fmt::Debug>(slice: &[u8]) {
+    fn validate_fail<T: Decode + for<'de> BorrowDecode<'de> + core::fmt::Debug>(slice: &[u8]) {
         let result = bincode::decode_from_slice::<T, _>(
+            slice,
+            bincode::config::standard().with_limit::<DECODE_LIMIT>(),
+        );
+
+        assert_eq!(result.unwrap_err(), DecodeError::LimitExceeded);
+
+        let result = bincode::borrow_decode_from_slice::<T, _>(
             slice,
             bincode::config::standard().with_limit::<DECODE_LIMIT>(),
         );
@@ -125,7 +157,6 @@ fn test_container_limits() {
         validate_fail::<VecDeque<i32>>(slice);
         validate_fail::<Vec<i32>>(slice);
         validate_fail::<String>(slice);
-        validate_fail::<Box<[u8]>>(slice);
         #[cfg(feature = "std")]
         {
             validate_fail::<std::collections::HashMap<i32, i32>>(slice);
