@@ -135,8 +135,8 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 /// See the [config] module for more information on configurations.
 ///
 /// [config]: config/index.html
-pub fn decode_from_slice<'a, D: de::Decode, C: Config>(
-    src: &'a [u8],
+pub fn decode_from_slice<D: de::Decode, C: Config>(
+    src: &[u8],
     config: C,
 ) -> Result<(D, usize), error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
