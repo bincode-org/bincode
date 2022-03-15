@@ -285,7 +285,7 @@ where
 
 impl<'cow, T> Decode for Cow<'cow, T>
 where
-    T: ToOwned,
+    T: ToOwned + ?Sized,
     <T as ToOwned>::Owned: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {

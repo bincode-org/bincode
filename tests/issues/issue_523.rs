@@ -2,8 +2,8 @@
 
 extern crate std;
 
-use bincode::Encode;
+use bincode::{Decode, Encode};
 use std::borrow::Cow;
 
-#[derive(Clone, Encode)]
+#[derive(Clone, Encode, Decode)]
 pub struct Foo<'a>(Cow<'a, str>);
