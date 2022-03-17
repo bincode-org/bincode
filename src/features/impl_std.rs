@@ -49,7 +49,9 @@ where
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         match self.reader.read_exact(bytes) {
             Ok(_) => Ok(()),
-            Err(_) => Err(DecodeError::UnexpectedEnd),
+            Err(_) => Err(DecodeError::UnexpectedEnd {
+                additional: bytes.len(),
+            }),
         }
     }
 }
@@ -61,7 +63,9 @@ where
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         match self.read_exact(bytes) {
             Ok(_) => Ok(()),
-            Err(_) => Err(DecodeError::UnexpectedEnd),
+            Err(_) => Err(DecodeError::UnexpectedEnd {
+                additional: bytes.len(),
+            }),
         }
     }
 

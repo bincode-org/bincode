@@ -422,8 +422,8 @@ fn test_decode_u16() {
                 found: IntegerType::U128,
             },
         ),
-        (&[U16_BYTE], DecodeError::UnexpectedEnd),
-        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd { additional: 2 }),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd { additional: 1 }),
     ];
 
     for (slice, expected) in errors {
@@ -466,12 +466,18 @@ fn test_decode_u32() {
                 found: IntegerType::U128,
             },
         ),
-        (&[U16_BYTE], DecodeError::UnexpectedEnd),
-        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd { additional: 2 }),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd { additional: 1 }),
+        (&[U32_BYTE], DecodeError::UnexpectedEnd { additional: 4 }),
+        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd { additional: 3 }),
+        (
+            &[U32_BYTE, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[U32_BYTE, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
     ];
 
     for (slice, expected) in errors {
@@ -512,20 +518,44 @@ fn test_decode_u64() {
                 found: IntegerType::U128,
             },
         ),
-        (&[U16_BYTE], DecodeError::UnexpectedEnd),
-        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd { additional: 2 }),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd { additional: 1 }),
+        (&[U32_BYTE], DecodeError::UnexpectedEnd { additional: 4 }),
+        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd { additional: 3 }),
+        (
+            &[U32_BYTE, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[U32_BYTE, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
+        (&[U64_BYTE], DecodeError::UnexpectedEnd { additional: 8 }),
+        (&[U64_BYTE, 0], DecodeError::UnexpectedEnd { additional: 7 }),
+        (
+            &[U64_BYTE, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 6 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 5 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 4 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 3 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
     ];
 
     for (slice, expected) in errors {
@@ -564,58 +594,104 @@ fn test_decode_u128() {
     }
 
     let errors: &[(&[u8], DecodeError)] = &[
-        (&[U16_BYTE], DecodeError::UnexpectedEnd),
-        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U32_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U64_BYTE, 0, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE, 0], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
-        (&[U128_BYTE, 0, 0, 0, 0, 0, 0], DecodeError::UnexpectedEnd),
+        (&[U16_BYTE], DecodeError::UnexpectedEnd { additional: 2 }),
+        (&[U16_BYTE, 0], DecodeError::UnexpectedEnd { additional: 1 }),
+        (&[U32_BYTE], DecodeError::UnexpectedEnd { additional: 4 }),
+        (&[U32_BYTE, 0], DecodeError::UnexpectedEnd { additional: 3 }),
+        (
+            &[U32_BYTE, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[U32_BYTE, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
+        (&[U64_BYTE], DecodeError::UnexpectedEnd { additional: 8 }),
+        (&[U64_BYTE, 0], DecodeError::UnexpectedEnd { additional: 7 }),
+        (
+            &[U64_BYTE, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 6 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 5 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 4 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 3 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[U64_BYTE, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
+        ),
+        (&[U128_BYTE], DecodeError::UnexpectedEnd { additional: 16 }),
+        (
+            &[U128_BYTE, 0],
+            DecodeError::UnexpectedEnd { additional: 15 },
+        ),
+        (
+            &[U128_BYTE, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 14 },
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 13 },
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 12 },
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 11 },
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 10 },
+        ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 9 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 8 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 7 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 6 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 5 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 4 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 3 },
         ),
         (
             &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            DecodeError::UnexpectedEnd,
+            DecodeError::UnexpectedEnd { additional: 2 },
+        ),
+        (
+            &[U128_BYTE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            DecodeError::UnexpectedEnd { additional: 1 },
         ),
     ];
 
