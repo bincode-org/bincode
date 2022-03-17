@@ -285,7 +285,7 @@ where
 
 impl<'cow, T> Decode for Cow<'cow, T>
 where
-    T: ToOwned,
+    T: ToOwned + ?Sized,
     <T as ToOwned>::Owned: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -296,7 +296,8 @@ where
 
 impl<'cow, T> Encode for Cow<'cow, T>
 where
-    T: Encode + Clone,
+    T: ToOwned + ?Sized,
+    for<'a> &'a T: Encode,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_ref().encode(encoder)

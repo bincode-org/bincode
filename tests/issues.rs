@@ -20,3 +20,6 @@ mod issue_498;
 
 #[path = "issues/issue_500.rs"]
 mod issue_500;
+
+#[path = "issues/issue_523.rs"]
+mod issue_523;
