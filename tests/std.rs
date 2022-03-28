@@ -106,6 +106,20 @@ fn test_std_commons() {
     set.insert("World".to_string());
     the_same(set);
 
+    // HashMap and HashSet with custom hash algorithm
+    type MyBuildHasher = std::hash::BuildHasherDefault<ExampleCustomHasher>;
+    let mut custom_map: std::collections::HashMap<String, String, MyBuildHasher> =
+        Default::default();
+    custom_map.insert("Hello".to_owned(), "world".to_owned());
+    custom_map.insert("How".to_owned(), "are".to_owned());
+    custom_map.insert("you".to_owned(), "doing?".to_owned());
+    the_same(custom_map);
+
+    let mut custom_set: std::collections::HashSet<String, MyBuildHasher> = Default::default();
+    custom_set.insert("Hello".to_string());
+    custom_set.insert("World".to_string());
+    the_same(custom_set);
+
     // Borrowed values
     let config = bincode::config::standard();
     let mut buffer = [0u8; 1024];
@@ -140,4 +154,22 @@ fn test_system_time_out_of_range() {
             duration: std::time::Duration::new(10447520527445462160, 144),
         }
     );
+}
+
+/// Simple example of user-defined hasher to test encoding/decoding HashMap and HashSet with custom hash algorithms.
+#[derive(Copy, Clone, Default)]
+pub struct ExampleCustomHasher {
+    pub hash: u64,
+}
+
+impl std::hash::Hasher for ExampleCustomHasher {
+    fn write(&mut self, value: &[u8]) {
+        for (index, &item) in value.iter().enumerate() {
+            self.hash ^= u64::from(item) << ((index % 8) * 8);
+        }
+    }
+
+    fn finish(&self) -> u64 {
+        self.hash
+    }
 }

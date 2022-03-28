@@ -361,7 +361,7 @@ impl Decode for SocketAddrV6 {
 impl std::error::Error for EncodeError {}
 impl std::error::Error for DecodeError {}
 
-impl<K, V> Encode for HashMap<K, V>
+impl<K, V, S> Encode for HashMap<K, V, S>
 where
     K: Encode,
     V: Encode,
@@ -376,16 +376,18 @@ where
     }
 }
 
-impl<K, V> Decode for HashMap<K, V>
+impl<K, V, S> Decode for HashMap<K, V, S>
 where
     K: Decode + Eq + std::hash::Hash,
     V: Decode,
+    S: std::hash::BuildHasher + Default,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
-        let mut map = HashMap::with_capacity(len);
+        let hash_builder: S = Default::default();
+        let mut map = HashMap::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
@@ -398,15 +400,17 @@ where
     }
 }
 
-impl<T> Decode for HashSet<T>
+impl<T, S> Decode for HashSet<T, S>
 where
     T: Decode + Eq + Hash,
+    S: std::hash::BuildHasher + Default,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
-        let mut map = HashSet::new();
+        let hash_builder: S = Default::default();
+        let mut map: HashSet<T, S> = HashSet::with_capacity_and_hasher(len, hash_builder);
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
@@ -418,7 +422,7 @@ where
     }
 }
 
-impl<T> Encode for HashSet<T>
+impl<T, S> Encode for HashSet<T, S>
 where
     T: Encode,
 {
