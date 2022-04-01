@@ -22,7 +22,7 @@
       "strategy": {
         "fail-fast": false,
         "matrix": {
-          "platforms": [
+          "platform": [
             "aarch64-unknown-linux-gnu",
             "aarch64-unknown-linux-musl",
             "arm-unknown-linux-gnueabi",
@@ -77,7 +77,7 @@
           "name": "Install cargo cross"
         },
         {
-          "run": "cargo test",
+          "run": "cross test --target ${{ matrix.platform }}",
           "name": "Run tests",
           "env": {
             "RUSTFLAGS": "-D warnings"
