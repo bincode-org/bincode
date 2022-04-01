@@ -1,0 +1,63 @@
+{
+  "name": "Cross platform tests",
+  "on": {
+    "push": {
+      "branches": [
+        "trunk",
+        "v*.x",
+        "ci/*"
+      ]
+    },
+    "pull_request": {
+      "branches": [
+        "trunk",
+        "v*.x"
+      ]
+    }
+  },
+  "jobs": {
+    "check": {
+      "name": "Check",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "platforms": [
+            "riscv32imac-unknown-none-elf",
+            "wasm32-unknown-unknown",
+            "i686-unknown-linux-gnu"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "stable",
+            "override": true
+          },
+          "name": "Install Rust stable"
+        },
+        {
+          "uses": "actions-rs/install@v0.1",
+          "with": {
+            "crate": "cross"
+          },
+          "name": "Install cargo cross"
+        },
+        {
+          "run": "cargo test",
+          "name": "Run tests",
+          "env": {
+            "RUSTFLAGS": "-D warnings"
+          }
+        }
+      ]
+    }
+  }
+}
