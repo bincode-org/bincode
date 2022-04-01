@@ -1,8 +1,11 @@
 use crate::{de::Decode, enc::Encode};
 use core::sync::atomic::{
-    AtomicBool, AtomicI16, AtomicI32, AtomicI64, AtomicI8, AtomicIsize, AtomicU16, AtomicU32,
-    AtomicU64, AtomicU8, AtomicUsize, Ordering,
+    AtomicBool, AtomicI16, AtomicI32, AtomicI8, AtomicIsize, AtomicU16, AtomicU32, AtomicU8,
+    AtomicUsize, Ordering,
 };
+
+#[cfg(target_has_atomic = "64")]
+use core::sync::atomic::{AtomicI64, AtomicU64};
 
 impl Encode for AtomicBool {
     fn encode<E: crate::enc::Encoder>(
@@ -64,6 +67,7 @@ impl Decode for AtomicU32 {
     }
 }
 
+#[cfg(not(target_arch = "riscv32"))]
 impl Encode for AtomicU64 {
     fn encode<E: crate::enc::Encoder>(
         &self,
@@ -73,6 +77,7 @@ impl Encode for AtomicU64 {
     }
 }
 
+#[cfg(not(target_arch = "riscv32"))]
 impl Decode for AtomicU64 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU64::new(Decode::decode(decoder)?))
@@ -139,6 +144,7 @@ impl Decode for AtomicI32 {
     }
 }
 
+#[cfg(target_has_atomic = "64")]
 impl Encode for AtomicI64 {
     fn encode<E: crate::enc::Encoder>(
         &self,
@@ -148,6 +154,7 @@ impl Encode for AtomicI64 {
     }
 }
 
+#[cfg(target_has_atomic = "64")]
 impl Decode for AtomicI64 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI64::new(Decode::decode(decoder)?))
