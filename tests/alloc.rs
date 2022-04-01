@@ -115,7 +115,13 @@ fn test_container_limits() {
             bincode::config::standard().with_limit::<DECODE_LIMIT>(),
         );
 
-        assert_eq!(result.unwrap_err(), DecodeError::LimitExceeded);
+        let name = core::any::type_name::<T>();
+        match result {
+            Ok(_) => panic!("Decoding {} should fail, it instead succeeded", name),
+            Err(DecodeError::OutsideUsizeRange(_)) if cfg!(target_pointer_width = "32") => {},
+            Err(DecodeError::LimitExceeded) => {},
+            Err(e) => panic!("Expected OutsideUsizeRange (on 32 bit platforms) or LimitExceeded whilst decoding {}, got {:?}", name, e),
+        }
     }
 
     for slice in test_cases {

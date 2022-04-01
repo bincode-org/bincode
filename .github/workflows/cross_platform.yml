@@ -24,24 +24,24 @@
         "matrix": {
           "platform": [
             "aarch64-unknown-linux-gnu",
-            # "arm-unknown-linux-gnueabi",
-            # "arm-unknown-linux-gnueabihf",
-            # "armv5te-unknown-linux-gnueabi",
-            # "armv7-unknown-linux-gnueabihf",
-            # "i586-unknown-linux-gnu",
-            # "i686-pc-windows-gnu",
-            # "i686-unknown-linux-gnu",
-            # "mips-unknown-linux-gnu",
+            "arm-unknown-linux-gnueabi",
+            "arm-unknown-linux-gnueabihf",
+            "armv5te-unknown-linux-gnueabi",
+            "armv7-unknown-linux-gnueabihf",
+            "i586-unknown-linux-gnu",
+            "i686-pc-windows-gnu",
+            "i686-unknown-linux-gnu",
+            "mips-unknown-linux-gnu",
             "mips64-unknown-linux-gnuabi64",
-            "mips64el-unknown-linux-gnuabi64"
-            # "mipsel-unknown-linux-gnu",
-            # "powerpc-unknown-linux-gnu",
-            # "powerpc64-unknown-linux-gnu",
-            # "powerpc64le-unknown-linux-gnu",
-            # "riscv64gc-unknown-linux-gnu",
-            # "sparc64-unknown-linux-gnu",
-            # "x86_64-pc-windows-gnu",
-            # "x86_64-unknown-linux-gnu"
+            "mips64el-unknown-linux-gnuabi64",
+            "mipsel-unknown-linux-gnu",
+            "powerpc-unknown-linux-gnu",
+            "powerpc64-unknown-linux-gnu",
+            "powerpc64le-unknown-linux-gnu",
+            "riscv64gc-unknown-linux-gnu",
+            "sparc64-unknown-linux-gnu",
+            "x86_64-pc-windows-gnu",
+            "x86_64-unknown-linux-gnu"
           ]
         }
       },
