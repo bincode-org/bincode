@@ -24,10 +24,9 @@ description = "A binary serialization / deserialization strategy for transformin
 edition = "2021"
 
 [features]
-default = ["std", "derive", "atomic"]
+default = ["std", "derive"]
 std = ["alloc"]
 alloc = []
-atomic = []
 derive = ["bincode_derive"]
 
 # BlockedTODO: https://github.com/rust-lang/cargo/issues/8832

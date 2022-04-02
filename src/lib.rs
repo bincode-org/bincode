@@ -80,6 +80,7 @@ extern crate alloc;
 #[cfg(any(feature = "std", test))]
 extern crate std;
 
+mod atomic;
 mod features;
 pub(crate) mod utils;
 pub(crate) mod varint;
@@ -93,6 +94,7 @@ pub mod de;
 pub mod enc;
 pub mod error;
 
+pub use atomic::*;
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
 
