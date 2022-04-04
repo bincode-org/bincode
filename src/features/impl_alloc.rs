@@ -217,7 +217,9 @@ where
 impl Decode for String {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
-        String::from_utf8(bytes).map_err(|e| DecodeError::Utf8(e.utf8_error()))
+        String::from_utf8(bytes).map_err(|e| DecodeError::Utf8 {
+            inner: e.utf8_error(),
+        })
     }
 }
 
