@@ -6,7 +6,6 @@ use alloc::string::String;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode)]
-#[serde(crate = "serde_incl")]
 pub struct SerdeRoundtrip {
     pub a: u32,
     #[serde(skip)]
@@ -36,7 +35,6 @@ fn test_serde_round_trip() {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(crate = "serde_incl")]
 pub struct SerdeWithBorrowedData<'a> {
     pub a: u32,
     #[serde(skip)]
@@ -82,7 +80,6 @@ fn test_serialize_deserialize_borrowed_data() {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-#[serde(crate = "serde_incl")]
 pub struct SerdeWithOwnedData {
     pub a: u32,
     #[serde(skip)]
@@ -134,7 +131,6 @@ mod derive {
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
-    #[serde(crate = "serde_incl")]
     pub struct SerdeType {
         pub a: u32,
     }

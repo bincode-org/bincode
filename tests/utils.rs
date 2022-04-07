@@ -116,8 +116,8 @@ where
 pub trait TheSameTrait:
     bincode::Encode
     + bincode::Decode
-    + serde_incl::de::DeserializeOwned
-    + serde_incl::Serialize
+    + serde::de::DeserializeOwned
+    + serde::Serialize
     + Debug
     + 'static
 {
@@ -126,8 +126,8 @@ pub trait TheSameTrait:
 impl<T> TheSameTrait for T where
     T: bincode::Encode
         + bincode::Decode
-        + serde_incl::de::DeserializeOwned
-        + serde_incl::Serialize
+        + serde::de::DeserializeOwned
+        + serde::Serialize
         + Debug
         + 'static
 {

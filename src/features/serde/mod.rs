@@ -18,7 +18,6 @@
 //! # use bincode::{Decode, Encode};
 //! # use serde_derive::{Deserialize, Serialize};
 //! #[derive(Serialize, Deserialize)]
-//! # #[serde(crate = "serde_incl")]
 //! pub struct SerdeType {
 //!     // ...
 //! }
@@ -102,7 +101,7 @@ pub enum DecodeError {
 }
 
 #[cfg(feature = "alloc")]
-impl serde_incl::de::Error for crate::error::DecodeError {
+impl serde::de::Error for crate::error::DecodeError {
     fn custom<T>(msg: T) -> Self
     where
         T: core::fmt::Display,
@@ -113,10 +112,10 @@ impl serde_incl::de::Error for crate::error::DecodeError {
 }
 
 #[cfg(not(feature = "std"))]
-impl serde_incl::de::StdError for crate::error::DecodeError {}
+impl serde::de::StdError for crate::error::DecodeError {}
 
 #[cfg(not(feature = "alloc"))]
-impl serde_incl::de::Error for crate::error::DecodeError {
+impl serde::de::Error for crate::error::DecodeError {
     fn custom<T>(_: T) -> Self
     where
         T: core::fmt::Display,
@@ -159,7 +158,7 @@ impl Into<crate::error::EncodeError> for EncodeError {
 }
 
 #[cfg(feature = "alloc")]
-impl serde_incl::ser::Error for crate::error::EncodeError {
+impl serde::ser::Error for crate::error::EncodeError {
     fn custom<T>(msg: T) -> Self
     where
         T: core::fmt::Display,
@@ -171,10 +170,10 @@ impl serde_incl::ser::Error for crate::error::EncodeError {
 }
 
 #[cfg(not(feature = "std"))]
-impl serde_incl::de::StdError for crate::error::EncodeError {}
+impl serde::de::StdError for crate::error::EncodeError {}
 
 #[cfg(not(feature = "alloc"))]
-impl serde_incl::ser::Error for crate::error::EncodeError {
+impl serde::ser::Error for crate::error::EncodeError {
     fn custom<T>(_: T) -> Self
     where
         T: core::fmt::Display,
@@ -195,7 +194,7 @@ pub struct Compat<T>(pub T);
 
 impl<T> crate::Decode for Compat<T>
 where
-    T: serde_incl::de::DeserializeOwned,
+    T: serde::de::DeserializeOwned,
 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         let serde_decoder = de_owned::SerdeDecoder { de: decoder };
@@ -205,7 +204,7 @@ where
 
 impl<T> crate::Encode for Compat<T>
 where
-    T: serde_incl::Serialize,
+    T: serde::Serialize,
 {
     fn encode<E: crate::enc::Encoder>(
         &self,
@@ -227,7 +226,7 @@ pub struct BorrowCompat<T>(pub T);
 
 impl<'de, T> crate::de::BorrowDecode<'de> for BorrowCompat<T>
 where
-    T: serde_incl::de::Deserialize<'de>,
+    T: serde::de::Deserialize<'de>,
 {
     fn borrow_decode<D: crate::de::BorrowDecoder<'de>>(
         decoder: &mut D,
@@ -242,7 +241,7 @@ where
 
 impl<T> crate::Encode for BorrowCompat<T>
 where
-    T: serde_incl::Serialize,
+    T: serde::Serialize,
 {
     fn encode<E: crate::enc::Encoder>(
         &self,
