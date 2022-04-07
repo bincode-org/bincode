@@ -422,7 +422,7 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a [u8]> {
 impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let slice = <&[u8]>::borrow_decode(decoder)?;
-        core::str::from_utf8(slice).map_err(DecodeError::Utf8)
+        core::str::from_utf8(slice).map_err(|inner| DecodeError::Utf8 { inner })
     }
 }
 

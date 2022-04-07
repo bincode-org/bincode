@@ -134,8 +134,8 @@ impl Encode for usize {
                 crate::varint::varint_encode_usize(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endian::Big => encoder.writer().write(&(*self as u64).to_be_bytes()),
+                Endian::Little => encoder.writer().write(&(*self as u64).to_le_bytes()),
             },
         }
     }
@@ -246,8 +246,8 @@ impl Encode for isize {
                 crate::varint::varint_encode_isize(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endian::Big => encoder.writer().write(&(*self as i64).to_be_bytes()),
+                Endian::Little => encoder.writer().write(&(*self as i64).to_le_bytes()),
             },
         }
     }

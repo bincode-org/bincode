@@ -1,0 +1,79 @@
+{
+  "name": "Cross platform tests",
+  "on": {
+    "push": {
+      "branches": [
+        "trunk",
+        "v*.x",
+        "ci/*"
+      ]
+    },
+    "pull_request": {
+      "branches": [
+        "trunk",
+        "v*.x"
+      ]
+    }
+  },
+  "jobs": {
+    "check": {
+      "name": "Test",
+      "runs-on": "ubuntu-latest",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "platform": [
+            "aarch64-unknown-linux-gnu",
+            "arm-unknown-linux-gnueabi",
+            "arm-unknown-linux-gnueabihf",
+            # "armv5te-unknown-linux-gnueabi",
+            "armv7-unknown-linux-gnueabihf",
+            "i586-unknown-linux-gnu",
+            # "i686-pc-windows-gnu",
+            "i686-unknown-linux-gnu",
+            # "mips-unknown-linux-gnu",
+            "mips64-unknown-linux-gnuabi64",
+            "mips64el-unknown-linux-gnuabi64",
+            # "mipsel-unknown-linux-gnu",
+            # "powerpc-unknown-linux-gnu",
+            # "powerpc64-unknown-linux-gnu",
+            # "powerpc64le-unknown-linux-gnu",
+            "riscv64gc-unknown-linux-gnu",
+            # "sparc64-unknown-linux-gnu",
+            "x86_64-pc-windows-gnu",
+            "x86_64-unknown-linux-gnu"
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "stable",
+            "override": true
+          },
+          "name": "Install Rust stable"
+        },
+        {
+          "uses": "actions-rs/install@v0.1",
+          "with": {
+            "crate": "cross"
+          },
+          "name": "Install cargo cross"
+        },
+        {
+          "run": "cross test --target ${{ matrix.platform }}",
+          "name": "Run tests",
+          "env": {
+            "RUSTFLAGS": "-D warnings"
+          }
+        }
+      ]
+    }
+  }
+}
