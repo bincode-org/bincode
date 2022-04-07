@@ -27,7 +27,7 @@ where
     );
     assert_eq!(len, decoded_len);
 
-    #[cfg(feature = "serde")]
+    #[cfg(all(feature = "serde", feature = "alloc"))]
     // skip_fixed_array_length is not supposed on serde
     if !C::SKIP_FIXED_ARRAY_LENGTH {
         let encoded = bincode::serde::encode_to_vec(&element, config).unwrap();
