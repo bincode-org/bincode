@@ -114,12 +114,7 @@ where
 
 #[cfg(feature = "serde")]
 pub trait TheSameTrait:
-    bincode::Encode
-    + bincode::Decode
-    + serde::de::DeserializeOwned
-    + serde::Serialize
-    + Debug
-    + 'static
+    bincode::Encode + bincode::Decode + serde::de::DeserializeOwned + serde::Serialize + Debug + 'static
 {
 }
 #[cfg(feature = "serde")]

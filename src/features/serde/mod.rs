@@ -39,14 +39,6 @@
 //! # }
 //! ```
 //!
-//! # `alloc` and `no_std`
-//!
-//! The `serde` feature enables both `alloc` and `std` at this point in time.
-//! To use bincode and serde on no_std targets, try one of the following features:
-//!
-//! - `serde_alloc`: enables `serde` and `alloc`
-//! - `serde_no_std`: enables `serde` without `alloc` or `std`
-//!
 //! # Known issues
 //!
 //! Currently the `serde` feature will automatically enable the `alloc` and `std` feature. If you're running in a `#[no_std]` environment consider using bincode's own derive macros.
