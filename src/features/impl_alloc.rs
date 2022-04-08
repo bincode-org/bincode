@@ -348,7 +348,7 @@ where
 
 impl<T> Encode for Box<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
@@ -441,7 +441,7 @@ where
 
 impl<T> Encode for Rc<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
@@ -473,7 +473,7 @@ where
 #[cfg(target_has_atomic = "ptr")]
 impl<T> Encode for Arc<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)

@@ -91,7 +91,6 @@ fn test_alloc_commons() {
         #[cfg(target_has_atomic = "ptr")]
         {
             the_same(Arc::<u32>::new(5));
-            the_same::<Arc<str>>(Arc::from("Example String"));
         }
     }
 
@@ -170,4 +169,20 @@ fn test_container_limits() {
             validate_fail::<std::collections::HashSet<i32>>(slice);
         }
     }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+#[test]
+fn test_arc_str() {
+    use alloc::sync::Arc;
+
+    let start: Arc<str> = Arc::from("Example String");
+    let mut target = [0u8; 100];
+    let config = bincode::config::standard();
+
+    let len = bincode::encode_into_slice(&start, &mut target, config).unwrap();
+    let slice = &target[..len];
+
+    let decoded: &str = bincode::borrow_decode_from_slice(slice, config).unwrap().0;
+    assert_eq!(decoded, &*start);
 }

@@ -345,7 +345,7 @@ impl<T: Encode> Encode for &'_ [T] {
     }
 }
 
-impl Encode for &'_ str {
+impl Encode for str {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
     }
@@ -409,7 +409,7 @@ where
 
 impl<T> Encode for RefCell<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let borrow_guard = self
@@ -476,7 +476,7 @@ where
 
 impl<'a, T> Encode for &'a T
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
