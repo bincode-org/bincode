@@ -283,12 +283,12 @@ impl Encode for char {
     }
 }
 
-impl Encode for &'_ [u8] {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        super::encode_slice_len(encoder, self.len())?;
-        encoder.writer().write(self)
-    }
-}
+// impl Encode for &'_ [u8] {
+//     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+//         super::encode_slice_len(encoder, self.len())?;
+//         encoder.writer().write(self)
+//     }
+// }
 
 const TAG_CONT: u8 = 0b1000_0000;
 const TAG_TWO_B: u8 = 0b1100_0000;
@@ -335,15 +335,15 @@ fn encode_utf8(writer: &mut impl Writer, c: char) -> Result<(), EncodeError> {
 //     }
 // }
 //
-// impl<T: Encode> Encode for &'_ [T] {
-//     fn encode<E: Encode>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         self.len().encode(encoder)?;
-//         for item in self.iter() {
-//             item.encode(encoder)?;
-//         }
-//         Ok(())
-//     }
-// }
+impl<T: Encode> Encode for &'_ [T] {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.len().encode(encoder)?;
+        for item in self.iter() {
+            item.encode(encoder)?;
+        }
+        Ok(())
+    }
+}
 
 impl Encode for &'_ str {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {

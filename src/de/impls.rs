@@ -455,18 +455,6 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
     }
 }
 
-// impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a str> {
-//     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-//         match super::decode_option_variant(decoder, core::any::type_name::<Option<&str>>())? {
-//             Some(_) => {
-//                 let val = BorrowDecode::borrow_decode(decoder)?;
-//                 Ok(Some(val))
-//             }
-//             None => Ok(None),
-//         }
-//     }
-// }
-
 impl<T, const N: usize> Decode for [T; N]
 where
     T: Decode + Sized + 'static,

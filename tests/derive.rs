@@ -393,3 +393,45 @@ fn test_enum_with_generics_roundtrip() {
             .0;
     assert_eq!(start, decoded);
 }
+
+#[cfg(feature = "alloc")]
+mod zoxide {
+    extern crate alloc;
+
+    use alloc::borrow::Cow;
+    use bincode::{Decode, Encode};
+
+    pub type Rank = f64;
+    pub type Epoch = u64;
+
+    #[derive(Encode, Decode)]
+    pub struct Dir<'a> {
+        pub path: Cow<'a, str>,
+        pub rank: Rank,
+        pub last_accessed: Epoch,
+    }
+
+    #[test]
+    fn test() {
+        let dirs = &[
+            Dir {
+                path: Cow::Borrowed("Foo"),
+                rank: 1.23,
+                last_accessed: 5,
+            },
+            Dir {
+                path: Cow::Owned(String::from("Bar")),
+                rank: 2.34,
+                last_accessed: 10,
+            },
+        ];
+        let config = bincode::config::standard();
+
+        let slice = bincode::encode_to_vec(dirs, config).unwrap();
+        let decoded: Vec<Dir> = bincode::borrow_decode_from_slice(&slice, config).unwrap().0;
+
+        assert_eq!(decoded.len(), 2);
+        assert!(matches!(decoded[0].path, Cow::Borrowed("Foo")));
+        assert!(matches!(decoded[1].path, Cow::Borrowed("Bar")));
+    }
+}
