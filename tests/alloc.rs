@@ -180,9 +180,12 @@ fn test_arc_str() {
     let mut target = [0u8; 100];
     let config = bincode::config::standard();
 
-    let len = bincode::encode_into_slice(&start, &mut target, config).unwrap();
+    let len = {
+        let start: Arc<str> = Arc::clone(&start);
+        bincode::encode_into_slice(start, &mut target, config).unwrap()
+    };
     let slice = &target[..len];
 
-    let decoded: &str = bincode::borrow_decode_from_slice(slice, config).unwrap().0;
-    assert_eq!(decoded, &*start);
+    let decoded: Arc<str> = bincode::borrow_decode_from_slice(slice, config).unwrap().0;
+    assert_eq!(decoded, start);
 }

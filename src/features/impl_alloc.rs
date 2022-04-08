@@ -460,6 +460,14 @@ where
 }
 
 #[cfg(target_has_atomic = "ptr")]
+impl Decode for Arc<str> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let decoded = String::decode(decoder)?;
+        Ok(decoded.into())
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
 impl<'de, T> BorrowDecode<'de> for Arc<T>
 where
     T: BorrowDecode<'de>,
@@ -467,6 +475,14 @@ where
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Arc::new(t))
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<'de> BorrowDecode<'de> for Arc<str> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let decoded = String::decode(decoder)?;
+        Ok(decoded.into())
     }
 }
 
