@@ -364,15 +364,16 @@ where
         Ok(vec.into_boxed_slice())
     }
 }
-// TODO
-// impl<'de, T> BorrowDecode<'de> for Box<[T]>
-// where &'de [T]: BorrowDecode<'de> + 'de
-// {
-//     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-//         let t = <&[T]>::borrow_decode(decoder)?;
-//         Ok(Box::from(t))
-//     }
-// }
+
+impl<'de, T> BorrowDecode<'de> for Box<[T]>
+where
+    T: BorrowDecode<'de> + 'de,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::borrow_decode(decoder)?;
+        Ok(vec.into_boxed_slice())
+    }
+}
 
 impl<T> Encode for Box<[T]>
 where
