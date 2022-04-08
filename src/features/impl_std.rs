@@ -119,8 +119,8 @@ impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.writer
             .write_all(bytes)
-            .map_err(|error| EncodeError::Io {
-                error,
+            .map_err(|inner| EncodeError::Io {
+                inner,
                 index: self.bytes_written,
             })?;
         self.bytes_written += bytes.len();
@@ -358,8 +358,25 @@ impl Decode for SocketAddrV6 {
     }
 }
 
-impl std::error::Error for EncodeError {}
-impl std::error::Error for DecodeError {}
+impl std::error::Error for EncodeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
+            Self::Io { inner, .. } => Some(inner),
+            Self::InvalidSystemTime { inner, .. } => Some(inner),
+            _ => None,
+        }
+    }
+}
+impl std::error::Error for DecodeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Utf8 { inner } => Some(inner),
+            Self::CStringNulError { inner } => Some(inner),
+            _ => None,
+        }
+    }
+}
 
 impl<K, V, S> Encode for HashMap<K, V, S>
 where

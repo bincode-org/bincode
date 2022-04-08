@@ -30,7 +30,7 @@ pub enum EncodeError {
     #[cfg(feature = "std")]
     Io {
         /// The encountered error
-        error: std::io::Error,
+        inner: std::io::Error,
         /// The amount of bytes that were written before the error occurred
         index: usize,
     },
@@ -107,7 +107,10 @@ pub enum DecodeError {
     },
 
     /// The decoder tried to decode a `str`, but an utf8 error was encountered.
-    Utf8(core::str::Utf8Error),
+    Utf8 {
+        /// The inner error
+        inner: core::str::Utf8Error,
+    },
 
     /// The decoder tried to decode a `char` and failed. The given buffer contains the bytes that are read at the moment of failure.
     InvalidCharEncoding([u8; 4]),
