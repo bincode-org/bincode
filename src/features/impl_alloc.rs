@@ -4,7 +4,7 @@ use crate::{
     error::{DecodeError, EncodeError},
     impl_borrow_decode, BorrowDecode, Config,
 };
-#[cfg(feature = "atomic")]
+#[cfg(target_has_atomic = "ptr")]
 use alloc::sync::Arc;
 use alloc::{
     borrow::{Cow, ToOwned},
@@ -448,7 +448,7 @@ where
     }
 }
 
-#[cfg(feature = "atomic")]
+#[cfg(target_has_atomic = "ptr")]
 impl<T> Decode for Arc<T>
 where
     T: Decode,
@@ -458,7 +458,8 @@ where
         Ok(Arc::new(t))
     }
 }
-#[cfg(feature = "atomic")]
+
+#[cfg(target_has_atomic = "ptr")]
 impl<'de, T> BorrowDecode<'de> for Arc<T>
 where
     T: BorrowDecode<'de>,
@@ -469,7 +470,7 @@ where
     }
 }
 
-#[cfg(feature = "atomic")]
+#[cfg(target_has_atomic = "ptr")]
 impl<T> Encode for Arc<T>
 where
     T: Encode,
