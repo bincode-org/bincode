@@ -128,7 +128,9 @@
         "fail-fast": false,
         "matrix": {
           "platform": [
-            "i686-pc-windows-gnu",
+            # linker `i686-w64-mingw32-gcc` not found
+            # "i686-pc-windows-gnu",
+
             "x86_64-pc-windows-gnu",
           ]
         }
