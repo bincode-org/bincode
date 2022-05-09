@@ -290,6 +290,19 @@ impl Encode for char {
 //     }
 // }
 
+impl<T> Encode for [T]
+where
+    T: Encode,
+{
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        super::encode_slice_len(encoder, self.len())?;
+        for item in self {
+            item.encode(encoder)?;
+        }
+        Ok(())
+    }
+}
+
 const TAG_CONT: u8 = 0b1000_0000;
 const TAG_TWO_B: u8 = 0b1100_0000;
 const TAG_THREE_B: u8 = 0b1110_0000;
