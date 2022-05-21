@@ -3,19 +3,17 @@
 extern crate std;
 
 use chrono::{DateTime, Utc};
-use serde_incl::de::DeserializeOwned;
+use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use std::prelude::rust_2021::*;
 use uuid::Uuid;
 
 #[derive(serde_derive::Serialize, serde_derive::Deserialize, PartialEq, Debug)]
-#[serde(crate = "serde_incl")]
 pub struct MyStruct {
     name: String,
 }
 
 #[derive(serde_derive::Serialize, serde_derive::Deserialize, PartialEq, Debug)]
-#[serde(crate = "serde_incl")]
 pub struct CustomerTest {
     pub id: Option<Uuid>,
     pub email_address: Option<String>,
@@ -60,7 +58,7 @@ impl MemCache {
         expire_seconds: i64,
     ) -> Result<(), bincode::error::EncodeError>
     where
-        T: Send + Sync + serde_incl::Serialize,
+        T: Send + Sync + serde::Serialize,
     {
         let config = bincode::config::standard();
         let mut guard = self.cache.write().unwrap();
