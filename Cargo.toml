@@ -32,7 +32,7 @@ derive = ["bincode_derive"]
 
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-rc.1", optional = true }
-serde = { package = "serde", version = "1.0", default-features = false, optional = true }
+serde = { version = "1.0", default-features = false, optional = true }
 
 # Used for tests
 [dev-dependencies]
