@@ -16,32 +16,77 @@
     }
   },
   "jobs": {
-    "check": {
-      "name": "Test",
+    "test_cross": {
+      "name": "Cross platform test",
       "runs-on": "ubuntu-latest",
       "strategy": {
         "fail-fast": false,
         "matrix": {
           "platform": [
-            "aarch64-unknown-linux-gnu",
+            "aarch64-unknown-linux-musl",
+            "arm-linux-androideabi",
             "arm-unknown-linux-gnueabi",
             "arm-unknown-linux-gnueabihf",
-            # "armv5te-unknown-linux-gnueabi",
+            "arm-unknown-linux-musleabi",
+            "arm-unknown-linux-musleabihf",
+            "armv5te-unknown-linux-gnueabi",
+            "armv5te-unknown-linux-musleabi",
+            "armv7-linux-androideabi",
             "armv7-unknown-linux-gnueabihf",
+            "armv7-unknown-linux-musleabihf",
+
+            # BlockedTODO: https://github.com/chronotope/chrono/issues/674
+            # Fixed in https://github.com/chronotope/chrono/pull/593
+            # "asmjs-unknown-emscripten",
+
             "i586-unknown-linux-gnu",
-            # "i686-pc-windows-gnu",
+            "i586-unknown-linux-musl",
+            "i686-linux-android",
             "i686-unknown-linux-gnu",
-            # "mips-unknown-linux-gnu",
+            "i686-unknown-linux-musl",
+            "mips-unknown-linux-gnu",
+            "mips-unknown-linux-musl",
             "mips64-unknown-linux-gnuabi64",
             "mips64el-unknown-linux-gnuabi64",
-            # "mipsel-unknown-linux-gnu",
-            # "powerpc-unknown-linux-gnu",
-            # "powerpc64-unknown-linux-gnu",
+            "mipsel-unknown-linux-gnu",
+            "mipsel-unknown-linux-musl",
+            "powerpc-unknown-linux-gnu",
+
+            # Seems to have a bug in qemu, where all floats are `0.0` and aren't equal with each other
             # "powerpc64le-unknown-linux-gnu",
+
             "riscv64gc-unknown-linux-gnu",
-            # "sparc64-unknown-linux-gnu",
-            "x86_64-pc-windows-gnu",
-            "x86_64-unknown-linux-gnu"
+            "s390x-unknown-linux-gnu",
+
+            # Seems to not be able to link to certain files
+            # - cannot find -lsendfile
+            # - cannot find -llgrp
+            # "sparcv9-sun-solaris",
+
+            # These have no `std`
+            # "thumbv6m-none-eabi",
+            # "thumbv7em-none-eabi",
+            # "thumbv7em-none-eabihf",
+            # "thumbv7m-none-eabi",
+
+            # BlockedTODO: https://github.com/chronotope/chrono/issues/674
+            # Fixed in https://github.com/chronotope/chrono/pull/593
+            # "wasm32-unknown-emscripten",
+
+            "x86_64-linux-android",
+
+            # Seems to not be able to link to certain files
+            # - cannot find -lsendfile
+            # - cannot find -llgrp
+            # "x86_64-sun-solaris",
+
+            "x86_64-unknown-linux-gnu",
+            "x86_64-unknown-linux-musl",
+
+            # Seems to immediately bail
+            # error: test failed, to rerun pass '--lib'
+            # could not execute process `...` (never executed)
+            # "x86_64-unknown-netbsd",
           ]
         }
       },
@@ -68,6 +113,45 @@
         },
         {
           "run": "cross test --target ${{ matrix.platform }}",
+          "name": "Run tests",
+          "env": {
+            "RUSTFLAGS": "-D warnings",
+            "RUST_BACKTRACE": "1",
+          }
+        }
+      ]
+    },
+    "test_windows": {
+      "name": "Cross platform test",
+      "runs-on": "windows-latest",
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "platform": [
+            # linker `i686-w64-mingw32-gcc` not found
+            # "i686-pc-windows-gnu",
+
+            "x86_64-pc-windows-gnu",
+          ]
+        }
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "stable",
+            "target": "${{ matrix.platform }}",
+            "override": true
+          },
+          "name": "Install Rust stable"
+        },
+        {
+          "run": "cargo test --target ${{ matrix.platform }}",
           "name": "Run tests",
           "env": {
             "RUSTFLAGS": "-D warnings"
