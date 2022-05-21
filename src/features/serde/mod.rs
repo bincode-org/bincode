@@ -195,7 +195,7 @@ where
 }
 impl<'de, T> crate::BorrowDecode<'de> for Compat<T>
 where
-    T: serde_incl::de::DeserializeOwned,
+    T: serde::de::DeserializeOwned,
 {
     fn borrow_decode<D: crate::de::BorrowDecoder<'de>>(
         decoder: &mut D,
