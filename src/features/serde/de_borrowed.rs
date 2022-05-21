@@ -5,7 +5,7 @@ use crate::{
     error::DecodeError,
 };
 use core::marker::PhantomData;
-use serde_incl::de::*;
+use serde::de::*;
 
 /// Decode a borrowed type from the given slice. Some parts of the decoded type are expected to be referring to the given slice
 pub fn decode_borrowed_from_slice<'de, T, C>(slice: &'de [u8], config: C) -> Result<T, DecodeError>
@@ -35,50 +35,50 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
 
     fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         Err(SerdeDecodeError::AnyNotSupported.into())
     }
 
     fn deserialize_bool<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_bool(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_i8<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_i8(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_i16<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_i16(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_i32<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_i32(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_i64<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_i64(Decode::decode(&mut self.de)?)
     }
 
-    serde_incl::serde_if_integer128! {
+    serde::serde_if_integer128! {
         fn deserialize_i128<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
         where
-            V: serde_incl::de::Visitor<'de>,
+            V: serde::de::Visitor<'de>,
         {
             visitor.visit_i128(Decode::decode(&mut self.de)?)
         }
@@ -86,36 +86,36 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
 
     fn deserialize_u8<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_u8(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_u16<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_u16(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_u32<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_u32(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_u64<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_u64(Decode::decode(&mut self.de)?)
     }
 
-    serde_incl::serde_if_integer128! {
+    serde::serde_if_integer128! {
         fn deserialize_u128<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
         where
-            V: serde_incl::de::Visitor<'de>,
+            V: serde::de::Visitor<'de>,
         {
             visitor.visit_u128(Decode::decode(&mut self.de)?)
         }
@@ -123,28 +123,28 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
 
     fn deserialize_f32<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_f32(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_f64<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_f64(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_char<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_char(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_str<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         let str = <&'de str>::borrow_decode(&mut self.de)?;
         visitor.visit_borrowed_str(str)
@@ -153,7 +153,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     #[cfg(not(feature = "alloc"))]
     fn deserialize_string<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         Err(SerdeDecodeError::CannotBorrowOwnedData.into())
     }
@@ -161,14 +161,14 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     #[cfg(feature = "alloc")]
     fn deserialize_string<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_string(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_bytes<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         let bytes = <&'de [u8]>::borrow_decode(&mut self.de)?;
         visitor.visit_borrowed_bytes(bytes)
@@ -177,7 +177,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     #[cfg(not(feature = "alloc"))]
     fn deserialize_byte_buf<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         Err(SerdeDecodeError::CannotBorrowOwnedData.into())
     }
@@ -185,14 +185,14 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     #[cfg(feature = "alloc")]
     fn deserialize_byte_buf<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_byte_buf(Decode::decode(&mut self.de)?)
     }
 
     fn deserialize_option<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         let variant = crate::de::decode_option_variant(&mut self.de, "Option<T>")?;
         if variant.is_some() {
@@ -204,7 +204,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_unit()
     }
@@ -215,7 +215,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_unit()
     }
@@ -226,14 +226,14 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_newtype_struct(self)
     }
 
     fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         let len = usize::decode(&mut self.de)?;
         self.deserialize_tuple(len, visitor)
@@ -241,7 +241,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
 
     fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         struct Access<'a, 'b, 'de, DE: BorrowDecoder<'de>> {
             deserializer: &'a mut SerdeDecoder<'b, 'de, DE>,
@@ -288,14 +288,14 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         self.deserialize_tuple(len, visitor)
     }
 
     fn deserialize_map<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         struct Access<'a, 'b, 'de, DE: BorrowDecoder<'de>> {
             deserializer: &'a mut SerdeDecoder<'b, 'de, DE>,
@@ -358,7 +358,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         self.deserialize_tuple(fields.len(), visitor)
     }
@@ -370,21 +370,21 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         visitor.visit_enum(self)
     }
 
     fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         Err(SerdeDecodeError::IdentifierNotSupported.into())
     }
 
     fn deserialize_ignored_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
-        V: serde_incl::de::Visitor<'de>,
+        V: serde::de::Visitor<'de>,
     {
         Err(SerdeDecodeError::IgnoredAnyNotSupported.into())
     }

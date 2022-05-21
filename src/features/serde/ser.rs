@@ -6,7 +6,7 @@ use crate::{
 };
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-use serde_incl::ser::*;
+use serde::ser::*;
 
 #[cfg(feature = "alloc")]
 /// Encode a `serde` `Serialize` type into a `Vec<u8>` with the bincode algorithm
@@ -121,7 +121,7 @@ where
         v.encode(self.enc)
     }
 
-    serde_incl::serde_if_integer128! {
+    serde::serde_if_integer128! {
         fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
             v.encode(self.enc)
         }
@@ -143,7 +143,7 @@ where
         v.encode(self.enc)
     }
 
-    serde_incl::serde_if_integer128! {
+    serde::serde_if_integer128! {
         fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
             v.encode(self.enc)
         }

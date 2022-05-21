@@ -25,22 +25,13 @@ edition = "2021"
 
 [features]
 default = ["std", "derive"]
-std = ["alloc"]
-alloc = []
+std = ["alloc", "serde?/std"]
+alloc = ["serde?/alloc"]
 derive = ["bincode_derive"]
-
-# BlockedTODO: https://github.com/rust-lang/cargo/issues/8832
-# We want to enable these features automatically based on "alloc" or "std"
-#   std = ["alloc", "serde?/std"]
-#   alloc = ["serde?/alloc"]
-# now we have to do this hack:
-serde = ["serde_incl/std", "std", "serde_alloc"] # std
-serde_alloc = ["serde_incl/alloc", "alloc"] # alloc
-serde_no_std = ["serde_incl"] # no_std
 
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-rc.1", optional = true }
-serde_incl = { package = "serde", version = "1.0", default-features = false, optional = true }
+serde = { version = "1.0", default-features = false, optional = true }
 
 # Used for tests
 [dev-dependencies]

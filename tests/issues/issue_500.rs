@@ -14,7 +14,6 @@ use std::collections::BTreeSet;
     Debug,
     PartialEq,
 )]
-#[serde(crate = "serde_incl")]
 pub struct Membership {
     /// learners set
     learners: BTreeSet<NodeId>,

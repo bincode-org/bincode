@@ -27,7 +27,7 @@ where
     );
     assert_eq!(len, decoded_len);
 
-    #[cfg(feature = "serde")]
+    #[cfg(all(feature = "serde", feature = "alloc"))]
     // skip_fixed_array_length is not supposed on serde
     if !C::SKIP_FIXED_ARRAY_LENGTH {
         let encoded = bincode::serde::encode_to_vec(&element, config).unwrap();
@@ -114,20 +114,15 @@ where
 
 #[cfg(feature = "serde")]
 pub trait TheSameTrait:
-    bincode::Encode
-    + bincode::Decode
-    + serde_incl::de::DeserializeOwned
-    + serde_incl::Serialize
-    + Debug
-    + 'static
+    bincode::Encode + bincode::Decode + serde::de::DeserializeOwned + serde::Serialize + Debug + 'static
 {
 }
 #[cfg(feature = "serde")]
 impl<T> TheSameTrait for T where
     T: bincode::Encode
         + bincode::Decode
-        + serde_incl::de::DeserializeOwned
-        + serde_incl::Serialize
+        + serde::de::DeserializeOwned
+        + serde::Serialize
         + Debug
         + 'static
 {
