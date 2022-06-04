@@ -10,28 +10,44 @@ pub struct SerdeRoundtrip {
     pub a: u32,
     #[serde(skip)]
     pub b: u32,
+    pub c: TupleS,
 }
+
+#[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode, PartialEq, Debug)]
+pub struct TupleS(f32, f32, f32);
 
 #[test]
 fn test_serde_round_trip() {
     // validate serde attribute working
-    let json = serde_json::to_string(&SerdeRoundtrip { a: 5, b: 5 }).unwrap();
-    assert_eq!("{\"a\":5}", json);
+    let json = serde_json::to_string(&SerdeRoundtrip {
+        a: 5,
+        b: 5,
+        c: TupleS(2.0, 3.0, 4.0),
+    })
+    .unwrap();
+    assert_eq!("{\"a\":5,\"c\":[2.0,3.0,4.0]}", json);
 
     let result: SerdeRoundtrip = serde_json::from_str(&json).unwrap();
     assert_eq!(result.a, 5);
     assert_eq!(result.b, 0);
 
     // validate bincode working
-    let bytes =
-        bincode::encode_to_vec(SerdeRoundtrip { a: 15, b: 15 }, bincode::config::standard())
-            .unwrap();
-    assert_eq!(bytes, &[15, 15]);
+    let bytes = bincode::serde::encode_to_vec(
+        SerdeRoundtrip {
+            a: 15,
+            b: 15,
+            c: TupleS(2.0, 3.0, 4.0),
+        },
+        bincode::config::standard(),
+    )
+    .unwrap();
+    assert_eq!(bytes, &[15, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64]);
     let (result, len): (SerdeRoundtrip, usize) =
-        bincode::decode_from_slice(&bytes, bincode::config::standard()).unwrap();
+        bincode::serde::decode_from_slice(&bytes, bincode::config::standard()).unwrap();
     assert_eq!(result.a, 15);
-    assert_eq!(result.b, 15);
-    assert_eq!(len, 2);
+    assert_eq!(result.b, 0); // remember: b is skipped
+    assert_eq!(result.c, TupleS(2.0, 3.0, 4.0));
+    assert_eq!(len, 13);
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
