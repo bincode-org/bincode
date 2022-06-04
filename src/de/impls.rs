@@ -8,6 +8,7 @@ use crate::{
         InternalIntEncodingConfig,
     },
     error::{DecodeError, IntegerType},
+    impl_borrow_decode,
 };
 use core::{
     any::TypeId,
@@ -29,6 +30,7 @@ impl Decode for bool {
         }
     }
 }
+impl_borrow_decode!(bool);
 
 impl Decode for u8 {
     #[inline]
@@ -45,6 +47,7 @@ impl Decode for u8 {
         }
     }
 }
+impl_borrow_decode!(u8);
 
 impl Decode for NonZeroU8 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -53,6 +56,7 @@ impl Decode for NonZeroU8 {
         })
     }
 }
+impl_borrow_decode!(NonZeroU8);
 
 impl Decode for u16 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -72,6 +76,7 @@ impl Decode for u16 {
         }
     }
 }
+impl_borrow_decode!(u16);
 
 impl Decode for NonZeroU16 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -80,6 +85,7 @@ impl Decode for NonZeroU16 {
         })
     }
 }
+impl_borrow_decode!(NonZeroU16);
 
 impl Decode for u32 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -99,6 +105,7 @@ impl Decode for u32 {
         }
     }
 }
+impl_borrow_decode!(u32);
 
 impl Decode for NonZeroU32 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -107,6 +114,7 @@ impl Decode for NonZeroU32 {
         })
     }
 }
+impl_borrow_decode!(NonZeroU32);
 
 impl Decode for u64 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -126,6 +134,7 @@ impl Decode for u64 {
         }
     }
 }
+impl_borrow_decode!(u64);
 
 impl Decode for NonZeroU64 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -134,6 +143,7 @@ impl Decode for NonZeroU64 {
         })
     }
 }
+impl_borrow_decode!(NonZeroU64);
 
 impl Decode for u128 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -153,6 +163,7 @@ impl Decode for u128 {
         }
     }
 }
+impl_borrow_decode!(u128);
 
 impl Decode for NonZeroU128 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -161,6 +172,7 @@ impl Decode for NonZeroU128 {
         })
     }
 }
+impl_borrow_decode!(NonZeroU128);
 
 impl Decode for usize {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -185,6 +197,7 @@ impl Decode for usize {
         }
     }
 }
+impl_borrow_decode!(usize);
 
 impl Decode for NonZeroUsize {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -193,6 +206,7 @@ impl Decode for NonZeroUsize {
         })
     }
 }
+impl_borrow_decode!(NonZeroUsize);
 
 impl Decode for i8 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -202,6 +216,7 @@ impl Decode for i8 {
         Ok(bytes[0] as i8)
     }
 }
+impl_borrow_decode!(i8);
 
 impl Decode for NonZeroI8 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -210,6 +225,7 @@ impl Decode for NonZeroI8 {
         })
     }
 }
+impl_borrow_decode!(NonZeroI8);
 
 impl Decode for i16 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -229,6 +245,7 @@ impl Decode for i16 {
         }
     }
 }
+impl_borrow_decode!(i16);
 
 impl Decode for NonZeroI16 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -237,6 +254,7 @@ impl Decode for NonZeroI16 {
         })
     }
 }
+impl_borrow_decode!(NonZeroI16);
 
 impl Decode for i32 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -256,6 +274,7 @@ impl Decode for i32 {
         }
     }
 }
+impl_borrow_decode!(i32);
 
 impl Decode for NonZeroI32 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -264,6 +283,7 @@ impl Decode for NonZeroI32 {
         })
     }
 }
+impl_borrow_decode!(NonZeroI32);
 
 impl Decode for i64 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -283,6 +303,7 @@ impl Decode for i64 {
         }
     }
 }
+impl_borrow_decode!(i64);
 
 impl Decode for NonZeroI64 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -291,6 +312,7 @@ impl Decode for NonZeroI64 {
         })
     }
 }
+impl_borrow_decode!(NonZeroI64);
 
 impl Decode for i128 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -310,6 +332,7 @@ impl Decode for i128 {
         }
     }
 }
+impl_borrow_decode!(i128);
 
 impl Decode for NonZeroI128 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -318,6 +341,7 @@ impl Decode for NonZeroI128 {
         })
     }
 }
+impl_borrow_decode!(NonZeroI128);
 
 impl Decode for isize {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -337,6 +361,7 @@ impl Decode for isize {
         }
     }
 }
+impl_borrow_decode!(isize);
 
 impl Decode for NonZeroIsize {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -345,6 +370,7 @@ impl Decode for NonZeroIsize {
         })
     }
 }
+impl_borrow_decode!(NonZeroIsize);
 
 impl Decode for f32 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -357,6 +383,7 @@ impl Decode for f32 {
         })
     }
 }
+impl_borrow_decode!(f32);
 
 impl Decode for f64 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -369,6 +396,7 @@ impl Decode for f64 {
         })
     }
 }
+impl_borrow_decode!(f64);
 
 impl Decode for char {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -398,6 +426,7 @@ impl Decode for char {
         Ok(res)
     }
 }
+impl_borrow_decode!(char);
 
 impl<'a, 'de: 'a> BorrowDecode<'de> for &'a [u8] {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -407,34 +436,10 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for &'a [u8] {
     }
 }
 
-impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a [u8]> {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        match super::decode_option_variant(decoder, core::any::type_name::<Option<&[u8]>>())? {
-            Some(_) => {
-                let val = BorrowDecode::borrow_decode(decoder)?;
-                Ok(Some(val))
-            }
-            None => Ok(None),
-        }
-    }
-}
-
 impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let slice = <&[u8]>::borrow_decode(decoder)?;
         core::str::from_utf8(slice).map_err(|inner| DecodeError::Utf8 { inner })
-    }
-}
-
-impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a str> {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        match super::decode_option_variant(decoder, core::any::type_name::<Option<&str>>())? {
-            Some(_) => {
-                let val = BorrowDecode::borrow_decode(decoder)?;
-                Ok(Some(val))
-            }
-            None => Ok(None),
-        }
     }
 }
 
@@ -479,14 +484,61 @@ where
     }
 }
 
+impl<'de, T, const N: usize> BorrowDecode<'de> for [T; N]
+where
+    T: BorrowDecode<'de> + Sized + 'static,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        if !D::C::SKIP_FIXED_ARRAY_LENGTH {
+            let length = super::decode_slice_len(decoder)?;
+            if length != N {
+                return Err(DecodeError::ArrayLengthMismatch {
+                    found: length,
+                    required: N,
+                });
+            }
+        }
+
+        decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
+
+        // Optimize for `[u8; N]`
+        if TypeId::of::<u8>() == TypeId::of::<T>() {
+            let mut buf = [0u8; N];
+            decoder.reader().read(&mut buf)?;
+            let ptr = &mut buf as *mut _ as *mut [T; N];
+
+            // Safety: we know that T is a u8, so it is perfectly safe to
+            // translate an array of u8 into an array of T
+            let res = unsafe { ptr.read() };
+            Ok(res)
+        } else {
+            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+                T::borrow_decode(decoder)
+            }));
+
+            // result is only None if N does not match the values of `(0..N)`, which it always should
+            // So this unwrap should never occur
+            result.unwrap()
+        }
+    }
+}
+
 impl Decode for () {
     fn decode<D: Decoder>(_: &mut D) -> Result<Self, DecodeError> {
         Ok(())
     }
 }
+impl_borrow_decode!(());
 
 impl<T> Decode for core::marker::PhantomData<T> {
     fn decode<D: Decoder>(_: &mut D) -> Result<Self, DecodeError> {
+        Ok(core::marker::PhantomData)
+    }
+}
+impl<'de, T> BorrowDecode<'de> for core::marker::PhantomData<T> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(_: &mut D) -> Result<Self, DecodeError> {
         Ok(core::marker::PhantomData)
     }
 }
@@ -505,6 +557,37 @@ where
         }
     }
 }
+
+impl<'de, T> BorrowDecode<'de> for Option<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        match super::decode_option_variant(decoder, core::any::type_name::<Option<T>>())? {
+            Some(_) => {
+                let val = T::borrow_decode(decoder)?;
+                Ok(Some(val))
+            }
+            None => Ok(None),
+        }
+    }
+}
+
+// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
+//
+// We'll want to implement BorrowDecode for both Option<&[u8]> and Option<&[T: Encode]>,
+// but those implementations overlap because &'a [u8] also implements BorrowDecode
+// impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a [u8]> {
+//     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+//         match super::decode_option_variant(decoder, core::any::type_name::<Option<&[u8]>>())? {
+//             Some(_) => {
+//                 let val = BorrowDecode::borrow_decode(decoder)?;
+//                 Ok(Some(val))
+//             }
+//             None => Ok(None),
+//         }
+//     }
+// }
 
 impl<T, U> Decode for Result<T, U>
 where
@@ -531,6 +614,31 @@ where
     }
 }
 
+impl<'de, T, U> BorrowDecode<'de> for Result<T, U>
+where
+    T: BorrowDecode<'de>,
+    U: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let is_ok = u32::decode(decoder)?;
+        match is_ok {
+            0 => {
+                let t = T::borrow_decode(decoder)?;
+                Ok(Ok(t))
+            }
+            1 => {
+                let u = U::borrow_decode(decoder)?;
+                Ok(Err(u))
+            }
+            x => Err(DecodeError::UnexpectedVariant {
+                found: x as u32,
+                allowed: crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
+                type_name: core::any::type_name::<Result<T, U>>(),
+            }),
+        }
+    }
+}
+
 impl<T> Decode for Cell<T>
 where
     T: Decode,
@@ -541,12 +649,32 @@ where
     }
 }
 
+impl<'de, T> BorrowDecode<'de> for Cell<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let t = T::borrow_decode(decoder)?;
+        Ok(Cell::new(t))
+    }
+}
+
 impl<T> Decode for RefCell<T>
 where
     T: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
+        Ok(RefCell::new(t))
+    }
+}
+
+impl<'de, T> BorrowDecode<'de> for RefCell<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let t = T::borrow_decode(decoder)?;
         Ok(RefCell::new(t))
     }
 }
@@ -562,6 +690,7 @@ impl Decode for Duration {
         Ok(Duration::new(secs, nanos))
     }
 }
+impl_borrow_decode!(Duration);
 
 impl<T> Decode for Range<T>
 where
@@ -570,6 +699,16 @@ where
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let min = T::decode(decoder)?;
         let max = T::decode(decoder)?;
+        Ok(min..max)
+    }
+}
+impl<'de, T> BorrowDecode<'de> for Range<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let min = T::borrow_decode(decoder)?;
+        let max = T::borrow_decode(decoder)?;
         Ok(min..max)
     }
 }
@@ -585,6 +724,17 @@ where
     }
 }
 
+impl<'de, T> BorrowDecode<'de> for RangeInclusive<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let min = T::borrow_decode(decoder)?;
+        let max = T::borrow_decode(decoder)?;
+        Ok(RangeInclusive::new(min, max))
+    }
+}
+
 impl<T> Decode for Bound<T>
 where
     T: Decode,
@@ -594,6 +744,24 @@ where
             0 => Ok(Bound::Unbounded),
             1 => Ok(Bound::Included(T::decode(decoder)?)),
             2 => Ok(Bound::Excluded(T::decode(decoder)?)),
+            x => Err(DecodeError::UnexpectedVariant {
+                allowed: crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
+                found: x,
+                type_name: core::any::type_name::<Bound<T>>(),
+            }),
+        }
+    }
+}
+
+impl<'de, T> BorrowDecode<'de> for Bound<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        match u32::decode(decoder)? {
+            0 => Ok(Bound::Unbounded),
+            1 => Ok(Bound::Included(T::borrow_decode(decoder)?)),
+            2 => Ok(Bound::Excluded(T::borrow_decode(decoder)?)),
             x => Err(DecodeError::UnexpectedVariant {
                 allowed: crate::error::AllowedEnumVariants::Range { max: 2, min: 0 },
                 found: x,

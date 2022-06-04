@@ -1,4 +1,4 @@
-use crate::{de::Decode, enc::Encode};
+use crate::{de::Decode, enc::Encode, impl_borrow_decode};
 use core::sync::atomic::Ordering;
 
 #[cfg(target_has_atomic = "ptr")]
@@ -32,6 +32,8 @@ impl Decode for AtomicBool {
         Ok(AtomicBool::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "8")]
+impl_borrow_decode!(AtomicBool);
 
 #[cfg(target_has_atomic = "8")]
 impl Encode for AtomicU8 {
@@ -49,6 +51,8 @@ impl Decode for AtomicU8 {
         Ok(AtomicU8::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "8")]
+impl_borrow_decode!(AtomicU8);
 
 #[cfg(target_has_atomic = "16")]
 impl Encode for AtomicU16 {
@@ -66,6 +70,8 @@ impl Decode for AtomicU16 {
         Ok(AtomicU16::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "16")]
+impl_borrow_decode!(AtomicU16);
 
 #[cfg(target_has_atomic = "32")]
 impl Encode for AtomicU32 {
@@ -83,6 +89,8 @@ impl Decode for AtomicU32 {
         Ok(AtomicU32::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "32")]
+impl_borrow_decode!(AtomicU32);
 
 #[cfg(target_has_atomic = "64")]
 impl Encode for AtomicU64 {
@@ -100,6 +108,8 @@ impl Decode for AtomicU64 {
         Ok(AtomicU64::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "64")]
+impl_borrow_decode!(AtomicU64);
 
 #[cfg(target_has_atomic = "ptr")]
 impl Encode for AtomicUsize {
@@ -117,6 +127,8 @@ impl Decode for AtomicUsize {
         Ok(AtomicUsize::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "ptr")]
+impl_borrow_decode!(AtomicUsize);
 
 #[cfg(target_has_atomic = "8")]
 impl Encode for AtomicI8 {
@@ -134,6 +146,8 @@ impl Decode for AtomicI8 {
         Ok(AtomicI8::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "8")]
+impl_borrow_decode!(AtomicI8);
 
 #[cfg(target_has_atomic = "16")]
 impl Encode for AtomicI16 {
@@ -151,6 +165,8 @@ impl Decode for AtomicI16 {
         Ok(AtomicI16::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "16")]
+impl_borrow_decode!(AtomicI16);
 
 #[cfg(target_has_atomic = "32")]
 impl Encode for AtomicI32 {
@@ -168,6 +184,8 @@ impl Decode for AtomicI32 {
         Ok(AtomicI32::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "32")]
+impl_borrow_decode!(AtomicI32);
 
 #[cfg(target_has_atomic = "64")]
 impl Encode for AtomicI64 {
@@ -185,6 +203,8 @@ impl Decode for AtomicI64 {
         Ok(AtomicI64::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "64")]
+impl_borrow_decode!(AtomicI64);
 
 #[cfg(target_has_atomic = "ptr")]
 impl Encode for AtomicIsize {
@@ -202,3 +222,5 @@ impl Decode for AtomicIsize {
         Ok(AtomicIsize::new(Decode::decode(decoder)?))
     }
 }
+#[cfg(target_has_atomic = "ptr")]
+impl_borrow_decode!(AtomicIsize);

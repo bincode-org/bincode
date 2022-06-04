@@ -283,12 +283,12 @@ impl Encode for char {
     }
 }
 
-impl Encode for &'_ [u8] {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        super::encode_slice_len(encoder, self.len())?;
-        encoder.writer().write(self)
-    }
-}
+// impl Encode for &'_ [u8] {
+//     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+//         super::encode_slice_len(encoder, self.len())?;
+//         encoder.writer().write(self)
+//     }
+// }
 
 const TAG_CONT: u8 = 0b1000_0000;
 const TAG_TWO_B: u8 = 0b1100_0000;
@@ -327,25 +327,24 @@ fn encode_utf8(writer: &mut impl Writer, c: char) -> Result<(), EncodeError> {
 // BlockedTODO: https://github.com/rust-lang/rust/issues/37653
 //
 // We'll want to implement encoding for both &[u8] and &[T: Encode],
-// but those implementations overlap because u8 also implements Encodeabl
-//
-// default impl Encode for &'_ [u8] {
-//     fn encode<E: Encode>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         encoder.encode_slice(*self)
-//     }
-// }
-//
-// impl<T: Encode> Encode for &'_ [T] {
-//     fn encode<E: Encode>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         self.len().encode(encoder)?;
-//         for item in self.iter() {
-//             item.encode(encoder)?;
-//         }
-//         Ok(())
+// but those implementations overlap because u8 also implements Encode
+// impl Encode for &'_ [u8] {
+//     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+//         encoder.writer().write(*self)
 //     }
 // }
 
-impl Encode for &'_ str {
+impl<T: Encode> Encode for &'_ [T] {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.len().encode(encoder)?;
+        for item in self.iter() {
+            item.encode(encoder)?;
+        }
+        Ok(())
+    }
+}
+
+impl Encode for str {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
     }
@@ -409,7 +408,7 @@ where
 
 impl<T> Encode for RefCell<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         let borrow_guard = self
@@ -476,7 +475,7 @@ where
 
 impl<'a, T> Encode for &'a T
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)

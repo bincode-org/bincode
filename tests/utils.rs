@@ -15,11 +15,10 @@ where
         &buffer[..len],
         core::any::type_name::<C>()
     );
-    let (decoded, decoded_len): (V, usize) =
-        bincode::decode_from_slice(&mut buffer, config).unwrap();
+    let (decoded, decoded_len): (V, usize) = bincode::decode_from_slice(&buffer, config).unwrap();
 
     assert!(
-        cmp(&element, &decoded),
+        cmp(element, &decoded),
         "Comparison failed\nDecoded:  {:?}\nExpected: {:?}\nBytes: {:?}",
         decoded,
         element,
@@ -57,7 +56,7 @@ where
         );
 
         assert!(
-            cmp(&element, &decoded),
+            cmp(element, &decoded),
             "Comparison failed\nDecoded:  {:?}\nExpected: {:?}\nBytes: {:?}",
             decoded,
             element,

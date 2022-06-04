@@ -178,7 +178,7 @@ mod derive {
             assert_eq!(len, expected_len);
             let slice = &slice[..len];
             let (result, len): (T, usize) =
-                bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
+                bincode::decode_from_slice(slice, bincode::config::standard()).unwrap();
 
             assert_eq!(start, result);
             assert_eq!(len, expected_len);

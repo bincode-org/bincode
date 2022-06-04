@@ -6,12 +6,14 @@ use bincode::{Decode, Encode};
 use std::borrow::Cow;
 use std::string::String;
 
-#[derive(Encode, Decode, PartialEq, Debug)]
+#[derive(Decode, Encode, PartialEq, Debug)]
+#[bincode(borrow_decode_bounds = "&'__de U<'a, A>: ::bincode::de::BorrowDecode<'__de> + '__de")]
 struct T<'a, A: Clone + Encode + Decode> {
     t: Cow<'a, U<'a, A>>,
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, Debug)]
+#[derive(Clone, Decode, Encode, PartialEq, Debug)]
+#[bincode(borrow_decode_bounds = "&'__de A: ::bincode::de::BorrowDecode<'__de> + '__de")]
 struct U<'a, A: Clone + Encode + Decode> {
     u: Cow<'a, A>,
 }

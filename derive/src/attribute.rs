@@ -3,12 +3,20 @@ use virtue::utils::{parse_tagged_attribute, ParsedAttribute};
 
 pub struct ContainerAttributes {
     pub crate_name: String,
+    pub bounds: Option<(String, Literal)>,
+    pub decode_bounds: Option<(String, Literal)>,
+    pub borrow_decode_bounds: Option<(String, Literal)>,
+    pub encode_bounds: Option<(String, Literal)>,
 }
 
 impl Default for ContainerAttributes {
     fn default() -> Self {
         Self {
             crate_name: "::bincode".to_string(),
+            bounds: None,
+            decode_bounds: None,
+            encode_bounds: None,
+            borrow_decode_bounds: None,
         }
     }
 }
@@ -26,6 +34,44 @@ impl FromAttribute for ContainerAttributes {
                     let val_string = val.to_string();
                     if val_string.starts_with('"') && val_string.ends_with('"') {
                         result.crate_name = val_string[1..val_string.len() - 1].to_string();
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                }
+                ParsedAttribute::Property(key, val) if key.to_string() == "bounds" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        result.bounds =
+                            Some((val_string[1..val_string.len() - 1].to_string(), val));
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                }
+                ParsedAttribute::Property(key, val) if key.to_string() == "decode_bounds" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        result.decode_bounds =
+                            Some((val_string[1..val_string.len() - 1].to_string(), val));
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                }
+                ParsedAttribute::Property(key, val) if key.to_string() == "encode_bounds" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        result.encode_bounds =
+                            Some((val_string[1..val_string.len() - 1].to_string(), val));
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                }
+                ParsedAttribute::Property(key, val)
+                    if key.to_string() == "borrow_decode_bounds" =>
+                {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        result.borrow_decode_bounds =
+                            Some((val_string[1..val_string.len() - 1].to_string(), val));
                     } else {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }

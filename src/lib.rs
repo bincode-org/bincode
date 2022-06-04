@@ -90,6 +90,7 @@ use enc::write::Writer;
 pub use features::*;
 
 pub mod config;
+#[macro_use]
 pub mod de;
 pub mod enc;
 pub mod error;
@@ -136,7 +137,23 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 /// See the [config] module for more information on configurations.
 ///
 /// [config]: config/index.html
-pub fn decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
+pub fn decode_from_slice<D: de::Decode, C: Config>(
+    src: &[u8],
+    config: C,
+) -> Result<(D, usize), error::DecodeError> {
+    let reader = de::read::SliceReader::new(src);
+    let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
+    let result = D::decode(&mut decoder)?;
+    let bytes_read = src.len() - decoder.reader().slice.len();
+    Ok((result, bytes_read))
+}
+
+/// Attempt to decode a given type `D` from the given slice.
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
     src: &'a [u8],
     config: C,
 ) -> Result<(D, usize), error::DecodeError> {

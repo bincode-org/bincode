@@ -1,3 +1,4 @@
+#![allow(clippy::blacklisted_name)]
 #![cfg(feature = "alloc")]
 
 extern crate alloc;
@@ -8,7 +9,7 @@ use alloc::borrow::Cow;
 use alloc::collections::*;
 #[cfg(not(feature = "serde"))]
 use alloc::rc::Rc;
-#[cfg(all(feature = "atomic", not(feature = "serde")))]
+#[cfg(all(target_has_atomic = "ptr", not(feature = "serde")))]
 use alloc::sync::Arc;
 use utils::{the_same, the_same_with_comparer};
 
@@ -38,6 +39,7 @@ impl bincode::Decode for Foo {
         })
     }
 }
+bincode::impl_borrow_decode!(Foo);
 
 #[test]
 fn test_vec() {
@@ -49,6 +51,30 @@ fn test_vec() {
     assert_eq!(foo.a, 5);
     assert_eq!(foo.b, 10);
     assert_eq!(len, 2);
+
+    let vec: Vec<u8> = bincode::decode_from_slice(
+        &[4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+        bincode::config::legacy(),
+    )
+    .unwrap()
+    .0;
+    assert_eq!(vec, &[1, 2, 3, 4]);
+
+    let vec: Vec<Cow<'static, u8>> = bincode::decode_from_slice(
+        &[4, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4],
+        bincode::config::legacy(),
+    )
+    .unwrap()
+    .0;
+    assert_eq!(
+        vec,
+        &[
+            Cow::Borrowed(&1),
+            Cow::Borrowed(&2),
+            Cow::Borrowed(&3),
+            Cow::Borrowed(&4)
+        ]
+    );
 }
 
 #[test]
@@ -59,12 +85,16 @@ fn test_alloc_commons() {
     the_same(Box::<[u32]>::from(vec![1, 2, 3, 4, 5]));
     the_same(Cow::<u32>::Owned(5));
     the_same(Cow::<u32>::Borrowed(&5));
-    // Serde doesn't support Rc<u32>
     #[cfg(not(feature = "serde"))]
-    the_same(Rc::<u32>::new(5));
-    // serde doesn't support Arc<u32>
-    #[cfg(all(feature = "atomic", not(feature = "serde")))]
-    the_same(Arc::<u32>::new(5));
+    {
+        // Serde doesn't support Rc or Arc
+        the_same(Rc::<u32>::new(5));
+        #[cfg(target_has_atomic = "ptr")]
+        {
+            the_same(Arc::<u32>::new(5));
+        }
+    }
+
     the_same_with_comparer(
         {
             let mut map = BinaryHeap::<u32>::new();
@@ -75,7 +105,7 @@ fn test_alloc_commons() {
             map.push(5);
             map
         },
-        |a, b| a.into_iter().collect::<Vec<_>>() == b.into_iter().collect::<Vec<_>>(),
+        |a, b| a.iter().collect::<Vec<_>>() == b.iter().collect::<Vec<_>>(),
     );
     the_same({
         let mut map = BTreeMap::<u32, i32>::new();
@@ -97,7 +127,7 @@ fn test_alloc_commons() {
 
 #[test]
 fn test_container_limits() {
-    use bincode::{error::DecodeError, Decode};
+    use bincode::{error::DecodeError, BorrowDecode, Decode};
 
     const DECODE_LIMIT: usize = 100_000;
 
@@ -112,7 +142,7 @@ fn test_container_limits() {
         bincode::encode_to_vec(DECODE_LIMIT as u64, bincode::config::standard()).unwrap(),
     ];
 
-    fn validate_fail<T: Decode + core::fmt::Debug>(slice: &[u8]) {
+    fn validate_fail<T: Decode + for<'de> BorrowDecode<'de> + core::fmt::Debug>(slice: &[u8]) {
         let result = bincode::decode_from_slice::<T, _>(
             slice,
             bincode::config::standard().with_limit::<DECODE_LIMIT>(),
@@ -134,11 +164,29 @@ fn test_container_limits() {
         validate_fail::<VecDeque<i32>>(slice);
         validate_fail::<Vec<i32>>(slice);
         validate_fail::<String>(slice);
-        validate_fail::<Box<[u8]>>(slice);
         #[cfg(feature = "std")]
         {
             validate_fail::<std::collections::HashMap<i32, i32>>(slice);
             validate_fail::<std::collections::HashSet<i32>>(slice);
         }
     }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+#[test]
+fn test_arc_str() {
+    use alloc::sync::Arc;
+
+    let start: Arc<str> = Arc::from("Example String");
+    let mut target = [0u8; 100];
+    let config = bincode::config::standard();
+
+    let len = {
+        let start: Arc<str> = Arc::clone(&start);
+        bincode::encode_into_slice(start, &mut target, config).unwrap()
+    };
+    let slice = &target[..len];
+
+    let decoded: Arc<str> = bincode::borrow_decode_from_slice(slice, config).unwrap().0;
+    assert_eq!(decoded, start);
 }

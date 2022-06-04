@@ -1,3 +1,4 @@
+#![allow(clippy::blacklisted_name)]
 #![cfg(feature = "std")]
 
 mod utils;
@@ -89,10 +90,10 @@ fn test_std_commons() {
         0,
     )));
     the_same_with_comparer(Mutex::new("Hello world".to_string()), |a, b| {
-        &*a.lock().unwrap() == &*b.lock().unwrap()
+        *a.lock().unwrap() == *b.lock().unwrap()
     });
     the_same_with_comparer(RwLock::new("Hello world".to_string()), |a, b| {
-        &*a.read().unwrap() == &*b.read().unwrap()
+        *a.read().unwrap() == *b.read().unwrap()
     });
 
     let mut map = std::collections::HashMap::new();
@@ -128,7 +129,7 @@ fn test_std_commons() {
     let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
     let len = bincode::encode_into_slice(cstr, &mut buffer, config).unwrap();
     let (decoded, len): (CString, usize) =
-        bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
+        bincode::decode_from_slice(&buffer[..len], config).unwrap();
     assert_eq!(cstr, decoded.as_c_str());
     assert_eq!(len, 12);
 
@@ -136,17 +137,17 @@ fn test_std_commons() {
     let path = Path::new("C:/Program Files/Foo");
     let len = bincode::encode_into_slice(path, &mut buffer, config).unwrap();
     let (decoded, len): (&Path, usize) =
-        bincode::decode_from_slice(&mut buffer[..len], config).unwrap();
+        bincode::borrow_decode_from_slice(&buffer[..len], config).unwrap();
     assert_eq!(path, decoded);
     assert_eq!(len, 21);
 }
 
 #[test]
 fn test_system_time_out_of_range() {
-    let mut input = [0xfd, 0x90, 0x0c, 0xfd, 0xfd, 0x90, 0x0c, 0xfd, 0x90, 0x90];
+    let input = [0xfd, 0x90, 0x0c, 0xfd, 0xfd, 0x90, 0x0c, 0xfd, 0x90, 0x90];
 
     let result: Result<(std::time::SystemTime, usize), _> =
-        bincode::decode_from_slice(&mut input, bincode::config::standard());
+        bincode::decode_from_slice(&input, bincode::config::standard());
 
     assert_eq!(
         result.unwrap_err(),

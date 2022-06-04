@@ -54,6 +54,16 @@ pub use self::decoder::DecoderImpl;
 ///         })
 ///     }
 /// }
+/// impl<'de> bincode::BorrowDecode<'de> for Entity {
+///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+///         decoder: &mut D,
+///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
+///         Ok(Self {
+///             x: bincode::BorrowDecode::borrow_decode(decoder)?,
+///             y: bincode::BorrowDecode::borrow_decode(decoder)?,
+///         })
+///     }
+/// }
 /// ```
 ///
 /// From here you can add/remove fields, or add custom logic.
@@ -70,8 +80,9 @@ pub use self::decoder::DecoderImpl;
 /// #         Ok(Foo)
 /// #     }
 /// # }
+/// # bincode::impl_borrow_decode!(Foo);
 /// ```
-pub trait Decode: for<'de> BorrowDecode<'de> {
+pub trait Decode: Sized {
     /// Attempt to decode this type with the given [Decode].
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
@@ -86,10 +97,18 @@ pub trait BorrowDecode<'de>: Sized {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
-impl<'de, T: Decode> BorrowDecode<'de> for T {
-    fn borrow_decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        Decode::decode(decoder)
-    }
+/// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
+#[macro_export]
+macro_rules! impl_borrow_decode {
+    ($ty:ty) => {
+        impl<'de> $crate::BorrowDecode<'de> for $ty {
+            fn borrow_decode<D: $crate::de::BorrowDecoder<'de>>(
+                decoder: &mut D,
+            ) -> core::result::Result<Self, $crate::error::DecodeError> {
+                $crate::Decode::decode(decoder)
+            }
+        }
+    };
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
@@ -159,6 +178,24 @@ pub trait Decoder: Sealed {
     ///             // un-claim the memory
     ///             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
     ///             result.push(T::decode(decoder)?)
+    ///         }
+    ///         Ok(result)
+    ///     }
+    /// }
+    /// impl<'de, T: bincode::BorrowDecode<'de>> bincode::BorrowDecode<'de> for Container<T> {
+    ///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+    ///         decoder: &mut D,
+    ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
+    ///         let len = u64::borrow_decode(decoder)?;
+    ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
+    ///         // Make sure we don't allocate too much memory
+    ///         decoder.claim_bytes_read(len * core::mem::size_of::<T>());
+    ///
+    ///         let mut result = Container::with_capacity(len);
+    ///         for _ in 0..len {
+    ///             // un-claim the memory
+    ///             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+    ///             result.push(T::borrow_decode(decoder)?)
     ///         }
     ///         Ok(result)
     ///     }

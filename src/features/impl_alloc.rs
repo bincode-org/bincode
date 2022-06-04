@@ -1,10 +1,10 @@
 use crate::{
-    de::{Decode, Decoder},
+    de::{BorrowDecoder, Decode, Decoder},
     enc::{self, Encode, Encoder},
     error::{DecodeError, EncodeError},
-    Config,
+    impl_borrow_decode, BorrowDecode, Config,
 };
-#[cfg(feature = "atomic")]
+#[cfg(target_has_atomic = "ptr")]
 use alloc::sync::Arc;
 use alloc::{
     borrow::{Cow, ToOwned},
@@ -65,6 +65,25 @@ where
         Ok(map)
     }
 }
+impl<'de, T> BorrowDecode<'de> for BinaryHeap<T>
+where
+    T: BorrowDecode<'de> + Ord,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut map = BinaryHeap::with_capacity(len);
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            let key = T::borrow_decode(decoder)?;
+            map.push(key);
+        }
+        Ok(map)
+    }
+}
 
 impl<T> Encode for BinaryHeap<T>
 where
@@ -95,6 +114,27 @@ where
 
             let key = K::decode(decoder)?;
             let value = V::decode(decoder)?;
+            map.insert(key, value);
+        }
+        Ok(map)
+    }
+}
+impl<'de, K, V> BorrowDecode<'de> for BTreeMap<K, V>
+where
+    K: BorrowDecode<'de> + Ord,
+    V: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+        decoder.claim_container_read::<(K, V)>(len)?;
+
+        let mut map = BTreeMap::new();
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
+
+            let key = K::borrow_decode(decoder)?;
+            let value = V::borrow_decode(decoder)?;
             map.insert(key, value);
         }
         Ok(map)
@@ -135,6 +175,25 @@ where
         Ok(map)
     }
 }
+impl<'de, T> BorrowDecode<'de> for BTreeSet<T>
+where
+    T: BorrowDecode<'de> + Ord,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut map = BTreeSet::new();
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            let key = T::borrow_decode(decoder)?;
+            map.insert(key);
+        }
+        Ok(map)
+    }
+}
 
 impl<T> Encode for BTreeSet<T>
 where
@@ -163,6 +222,25 @@ where
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
             let key = T::decode(decoder)?;
+            map.push_back(key);
+        }
+        Ok(map)
+    }
+}
+impl<'de, T> BorrowDecode<'de> for VecDeque<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut map = VecDeque::with_capacity(len);
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            let key = T::borrow_decode(decoder)?;
             map.push_back(key);
         }
         Ok(map)
@@ -201,6 +279,25 @@ where
     }
 }
 
+impl<'de, T> BorrowDecode<'de> for Vec<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut vec = Vec::with_capacity(len);
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            vec.push(T::borrow_decode(decoder)?);
+        }
+        Ok(vec)
+    }
+}
+
 impl<T> Encode for Vec<T>
 where
     T: Encode,
@@ -222,6 +319,7 @@ impl Decode for String {
         })
     }
 }
+impl_borrow_decode!(String);
 
 impl Encode for String {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -238,10 +336,19 @@ where
         Ok(Box::new(t))
     }
 }
+impl<'de, T> BorrowDecode<'de> for Box<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let t = T::borrow_decode(decoder)?;
+        Ok(Box::new(t))
+    }
+}
 
 impl<T> Encode for Box<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
@@ -254,6 +361,16 @@ where
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
+        Ok(vec.into_boxed_slice())
+    }
+}
+
+impl<'de, T> BorrowDecode<'de> for Box<[T]>
+where
+    T: BorrowDecode<'de> + 'de,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::borrow_decode(decoder)?;
         Ok(vec.into_boxed_slice())
     }
 }
@@ -271,20 +388,6 @@ where
     }
 }
 
-// BlockedTODO: https://github.com/rust-lang/rust/issues/31844
-// Cow should be able to decode a borrowed value
-// Currently this conflicts with the owned `Decode` implementation below
-
-// impl<'cow, T> BorrowDecode<'cow> for Cow<'cow, T>
-// where
-//     T: BorrowDecode<'cow>,
-// {
-//     fn borrow_decode<D: crate::de::BorrowDecoder<'cow>>(decoder: &mut D) -> Result<Self, DecodeError> {
-//         let t = T::borrow_decode(decoder)?;
-//         Ok(Cow::Borrowed(t))
-//     }
-// }
-
 impl<'cow, T> Decode for Cow<'cow, T>
 where
     T: ToOwned + ?Sized,
@@ -293,6 +396,16 @@ where
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = <T as ToOwned>::Owned::decode(decoder)?;
         Ok(Cow::Owned(t))
+    }
+}
+impl<'cow, T> BorrowDecode<'cow> for Cow<'cow, T>
+where
+    T: ToOwned + ?Sized,
+    &'cow T: BorrowDecode<'cow>,
+{
+    fn borrow_decode<D: BorrowDecoder<'cow>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let t = <&T>::borrow_decode(decoder)?;
+        Ok(Cow::Borrowed(t))
     }
 }
 
@@ -316,16 +429,26 @@ where
     }
 }
 
+impl<'de, T> BorrowDecode<'de> for Rc<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let t = T::borrow_decode(decoder)?;
+        Ok(Rc::new(t))
+    }
+}
+
 impl<T> Encode for Rc<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
     }
 }
 
-#[cfg(feature = "atomic")]
+#[cfg(target_has_atomic = "ptr")]
 impl<T> Decode for Arc<T>
 where
     T: Decode,
@@ -336,10 +459,37 @@ where
     }
 }
 
-#[cfg(feature = "atomic")]
+#[cfg(target_has_atomic = "ptr")]
+impl Decode for Arc<str> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let decoded = String::decode(decoder)?;
+        Ok(decoded.into())
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<'de, T> BorrowDecode<'de> for Arc<T>
+where
+    T: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let t = T::borrow_decode(decoder)?;
+        Ok(Arc::new(t))
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<'de> BorrowDecode<'de> for Arc<str> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let decoded = String::decode(decoder)?;
+        Ok(decoded.into())
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
 impl<T> Encode for Arc<T>
 where
-    T: Encode,
+    T: Encode + ?Sized,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
