@@ -26,12 +26,35 @@ where
     );
     assert_eq!(len, decoded_len);
 
-    #[cfg(all(feature = "serde", feature = "alloc"))]
-    // skip_fixed_array_length is not supposed on serde
+    #[cfg(feature = "serde")]
+    the_same_with_config_serde(element, config, cmp)
+}
+
+#[cfg(feature = "serde")]
+fn the_same_with_config_serde<V, C, CMP>(element: &V, config: C, cmp: CMP)
+where
+    V: TheSameTrait,
+    C: bincode::config::Config,
+    CMP: Fn(&V, &V) -> bool,
+{
+    use bincode::error::EncodeError;
+
+    let mut buffer = [0u8; 2048];
+    let len = bincode::serde::encode_into_slice(&element, &mut buffer, config);
+
+    let decoded = bincode::serde::decode_from_slice(&mut buffer, config);
+
     if !C::SKIP_FIXED_ARRAY_LENGTH {
-        let encoded = bincode::serde::encode_to_vec(&element, config).unwrap();
-        assert_eq!(&buffer[..len], &encoded);
-        let (decoded, decoded_len) = bincode::serde::decode_from_slice(&encoded, config).unwrap();
+        let len = len.unwrap();
+        let (decoded, decoded_len): (V, usize) = decoded.unwrap();
+        println!(
+            "{:?} ({}): {:?} ({:?})",
+            element,
+            core::any::type_name::<V>(),
+            &buffer[..len],
+            core::any::type_name::<C>()
+        );
+
         assert!(
             cmp(element, &decoded),
             "Comparison failed\nDecoded:  {:?}\nExpected: {:?}\nBytes: {:?}",
@@ -39,7 +62,12 @@ where
             element,
             &buffer[..len],
         );
-        assert_eq!(decoded_len, len);
+        assert_eq!(len, decoded_len);
+    } else {
+        match len.unwrap_err() {
+            EncodeError::Serde(bincode::serde::EncodeError::SkipFixedArrayLengthNotSupported) => {}
+            err => panic!("Unexpected error: {:?}", err),
+        }
     }
 }
 
