@@ -1,3 +1,4 @@
+#![allow(clippy::blacklisted_name)]
 #![cfg(feature = "alloc")]
 
 extern crate alloc;
@@ -104,7 +105,7 @@ fn test_alloc_commons() {
             map.push(5);
             map
         },
-        |a, b| a.into_iter().collect::<Vec<_>>() == b.into_iter().collect::<Vec<_>>(),
+        |a, b| a.iter().collect::<Vec<_>>() == b.iter().collect::<Vec<_>>(),
     );
     the_same({
         let mut map = BTreeMap::<u32, i32>::new();

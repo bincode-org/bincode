@@ -111,9 +111,9 @@ fn test_encode_tuple() {
 #[test]
 fn test_decode_tuple() {
     let start = TestTupleStruct(5, 10, 1024);
-    let mut slice = [5, 10, 251, 0, 4];
+    let slice = [5, 10, 251, 0, 4];
     let (result, len): (TestTupleStruct, usize) =
-        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 5);
 }
@@ -137,9 +137,9 @@ fn test_encode_enum_struct_variant() {
 #[test]
 fn test_decode_enum_struct_variant() {
     let start = TestEnum::Bar { name: 5u32 };
-    let mut slice = [1, 5];
+    let slice = [1, 5];
     let (result, len): (TestEnum, usize) =
-        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 2);
 }
@@ -147,9 +147,9 @@ fn test_decode_enum_struct_variant() {
 #[test]
 fn test_decode_enum_unit_variant() {
     let start = TestEnum::Foo;
-    let mut slice = [0];
+    let slice = [0];
     let (result, len): (TestEnum, usize) =
-        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 1);
 }
@@ -177,9 +177,9 @@ fn test_encode_enum_tuple_variant() {
 #[test]
 fn test_decode_enum_tuple_variant() {
     let start = TestEnum::Baz(5, 10, 1024);
-    let mut slice = [2, 5, 10, 251, 0, 4];
+    let slice = [2, 5, 10, 251, 0, 4];
     let (result, len): (TestEnum, usize) =
-        bincode::decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 6);
 }
@@ -204,9 +204,9 @@ fn test_encode_borrowed_enum_struct_variant() {
 #[test]
 fn test_decode_borrowed_enum_struct_variant() {
     let start = TestEnum2::Bar { name: "foo" };
-    let mut slice = [1, 3, 102, 111, 111];
+    let slice = [1, 3, 102, 111, 111];
     let (result, len): (TestEnum2, usize) =
-        bincode::borrow_decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::borrow_decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 5);
 }
@@ -214,9 +214,9 @@ fn test_decode_borrowed_enum_struct_variant() {
 #[test]
 fn test_decode_borrowed_enum_unit_variant() {
     let start = TestEnum2::Foo;
-    let mut slice = [0];
+    let slice = [0];
     let (result, len): (TestEnum2, usize) =
-        bincode::borrow_decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::borrow_decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 1);
 }
@@ -244,9 +244,9 @@ fn test_encode_borrowed_enum_tuple_variant() {
 #[test]
 fn test_decode_borrowed_enum_tuple_variant() {
     let start = TestEnum2::Baz(5, 10, 1024);
-    let mut slice = [2, 5, 10, 251, 0, 4];
+    let slice = [2, 5, 10, 251, 0, 4];
     let (result, len): (TestEnum2, usize) =
-        bincode::borrow_decode_from_slice(&mut slice, bincode::config::standard()).unwrap();
+        bincode::borrow_decode_from_slice(&slice, bincode::config::standard()).unwrap();
     assert_eq!(result, start);
     assert_eq!(len, 6);
 }

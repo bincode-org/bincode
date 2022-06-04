@@ -66,7 +66,7 @@ impl MemCache {
         let encoded = bincode::serde::encode_to_vec(&cache_data, config)?;
         let cache_item = CacheItem::new(encoded, expire_seconds);
 
-        guard.insert(key.clone(), cache_item);
+        guard.insert(*key, cache_item);
         Ok(())
     }
 

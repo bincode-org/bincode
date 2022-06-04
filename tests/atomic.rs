@@ -1,9 +1,16 @@
 mod utils;
 
-use core::sync::atomic::{
-    AtomicBool, AtomicI16, AtomicI32, AtomicI64, AtomicI8, AtomicIsize, AtomicU16, AtomicU32,
-    AtomicU64, AtomicU8, AtomicUsize, Ordering,
-};
+use core::sync::atomic::Ordering;
+#[cfg(target_has_atomic = "8")]
+use core::sync::atomic::{AtomicBool, AtomicI8, AtomicU8};
+#[cfg(target_has_atomic = "16")]
+use core::sync::atomic::{AtomicI16, AtomicU16};
+#[cfg(target_has_atomic = "32")]
+use core::sync::atomic::{AtomicI32, AtomicU32};
+#[cfg(target_has_atomic = "64")]
+use core::sync::atomic::{AtomicI64, AtomicU64};
+#[cfg(target_has_atomic = "ptr")]
+use core::sync::atomic::{AtomicIsize, AtomicUsize};
 use utils::the_same_with_comparer;
 
 #[test]

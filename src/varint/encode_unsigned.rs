@@ -275,7 +275,7 @@ fn test_encode_u64() {
 
     // these values should encode in 9 bytes (leading byte + 8 bytes)
     // Values chosen at random, add new cases as needed
-    for i in [u32::MAX as u64 + 1, 500_0000_000, u64::MAX] {
+    for i in [u32::MAX as u64 + 1, 5_000_000_000, u64::MAX] {
         let mut writer = SliceWriter::new(&mut buffer);
         varint_encode_u64(&mut writer, Endian::Big, i).unwrap();
         assert_eq!(writer.bytes_written(), 9);
@@ -351,7 +351,7 @@ fn test_encode_u128() {
 
     // these values should encode in 9 bytes (leading byte + 8 bytes)
     // Values chosen at random, add new cases as needed
-    for i in [u32::MAX as u128 + 1, 500_0000_000, u64::MAX as u128] {
+    for i in [u32::MAX as u128 + 1, 5_000_000_000, u64::MAX as u128] {
         let mut writer = SliceWriter::new(&mut buffer);
         varint_encode_u128(&mut writer, Endian::Big, i).unwrap();
         assert_eq!(writer.bytes_written(), 9);
