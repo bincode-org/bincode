@@ -234,11 +234,10 @@ where
     }
 
     fn serialize_tuple_struct(
-        mut self,
+        self,
         _name: &'static str,
-        len: usize,
+        _len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        len.encode(&mut self.enc)?;
         Ok(Compound { enc: self.enc })
     }
 
