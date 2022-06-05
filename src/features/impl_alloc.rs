@@ -375,19 +375,6 @@ where
     }
 }
 
-impl<T> Encode for Box<[T]>
-where
-    T: Encode,
-{
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self.iter() {
-            item.encode(encoder)?;
-        }
-        Ok(())
-    }
-}
-
 impl<'cow, T> Decode for Cow<'cow, T>
 where
     T: ToOwned + ?Sized,

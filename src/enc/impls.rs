@@ -283,12 +283,28 @@ impl Encode for char {
     }
 }
 
+// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
+//
+// We'll want to implement encoding for both &[u8] and &[T: Encode],
+// but those implementations overlap because u8 also implements Encode
 // impl Encode for &'_ [u8] {
 //     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         super::encode_slice_len(encoder, self.len())?;
-//         encoder.writer().write(self)
+//         encoder.writer().write(*self)
 //     }
 // }
+
+impl<T> Encode for [T]
+where
+    T: Encode,
+{
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        super::encode_slice_len(encoder, self.len())?;
+        for item in self {
+            item.encode(encoder)?;
+        }
+        Ok(())
+    }
+}
 
 const TAG_CONT: u8 = 0b1000_0000;
 const TAG_TWO_B: u8 = 0b1100_0000;
@@ -321,26 +337,6 @@ fn encode_utf8(writer: &mut impl Writer, c: char) -> Result<(), EncodeError> {
         buf[2] = (code >> 6 & 0x3F) as u8 | TAG_CONT;
         buf[3] = (code & 0x3F) as u8 | TAG_CONT;
         writer.write(&buf)
-    }
-}
-
-// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
-//
-// We'll want to implement encoding for both &[u8] and &[T: Encode],
-// but those implementations overlap because u8 also implements Encode
-// impl Encode for &'_ [u8] {
-//     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         encoder.writer().write(*self)
-//     }
-// }
-
-impl<T: Encode> Encode for &'_ [T] {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.len().encode(encoder)?;
-        for item in self.iter() {
-            item.encode(encoder)?;
-        }
-        Ok(())
     }
 }
 
