@@ -337,26 +337,6 @@ fn encode_utf8(writer: &mut impl Writer, c: char) -> Result<(), EncodeError> {
     }
 }
 
-// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
-//
-// We'll want to implement encoding for both &[u8] and &[T: Encode],
-// but those implementations overlap because u8 also implements Encode
-// impl Encode for &'_ [u8] {
-//     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         encoder.writer().write(*self)
-//     }
-// }
-
-impl<T: Encode> Encode for &'_ [T] {
-    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        self.len().encode(encoder)?;
-        for item in self.iter() {
-            item.encode(encoder)?;
-        }
-        Ok(())
-    }
-}
-
 impl Encode for str {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
