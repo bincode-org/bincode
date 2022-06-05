@@ -283,10 +283,13 @@ impl Encode for char {
     }
 }
 
+// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
+//
+// We'll want to implement encoding for both &[u8] and &[T: Encode],
+// but those implementations overlap because u8 also implements Encode
 // impl Encode for &'_ [u8] {
 //     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         super::encode_slice_len(encoder, self.len())?;
-//         encoder.writer().write(self)
+//         encoder.writer().write(*self)
 //     }
 // }
 
