@@ -435,6 +435,26 @@ where
     }
 }
 
+impl<T> Decode for Rc<[T]>
+where
+    T: Decode,
+{
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::decode(decoder)?;
+        Ok(vec.into())
+    }
+}
+
+impl<'de, T> BorrowDecode<'de> for Rc<[T]>
+where
+    T: BorrowDecode<'de> + 'de,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::borrow_decode(decoder)?;
+        Ok(vec.into())
+    }
+}
+
 #[cfg(target_has_atomic = "ptr")]
 impl<T> Decode for Arc<T>
 where
@@ -480,5 +500,27 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<T> Decode for Arc<[T]>
+where
+    T: Decode,
+{
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::decode(decoder)?;
+        Ok(vec.into())
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<'de, T> BorrowDecode<'de> for Arc<[T]>
+where
+    T: BorrowDecode<'de> + 'de,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let vec = Vec::borrow_decode(decoder)?;
+        Ok(vec.into())
     }
 }
