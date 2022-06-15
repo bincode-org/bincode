@@ -100,7 +100,7 @@ pub enum DecodeError {
         type_name: &'static str,
 
         /// The variants that are allowed
-        allowed: AllowedEnumVariants,
+        allowed: &'static AllowedEnumVariants,
 
         /// The index of the enum that the decoder encountered
         found: u32,
@@ -160,8 +160,8 @@ pub enum DecodeError {
     /// The decoder tried to decode a `CString`, but the incoming data contained a 0 byte
     #[cfg(feature = "std")]
     CStringNulError {
-        /// The inner exception
-        inner: std::ffi::NulError,
+        /// Null byte position
+        position: usize,
     },
 
     /// An uncommon error occurred, see the inner text for more information

@@ -285,7 +285,7 @@ fn test_c_style_enum() {
     fn expected_err(idx: u32) -> Result<CStyleEnum, bincode::error::DecodeError> {
         Err(bincode::error::DecodeError::UnexpectedVariant {
             type_name: "CStyleEnum",
-            allowed: bincode::error::AllowedEnumVariants::Allowed(&[1, 2, 3, 5, 6]),
+            allowed: &bincode::error::AllowedEnumVariants::Allowed(&[1, 2, 3, 5, 6]),
             found: idx,
         })
     }
