@@ -89,9 +89,12 @@ fn test_alloc_commons() {
     {
         // Serde doesn't support Rc or Arc
         the_same(Rc::<u32>::new(5));
+        the_same(Rc::<[u32]>::from(vec![1, 2, 3, 4, 5]));
+
         #[cfg(target_has_atomic = "ptr")]
         {
             the_same(Arc::<u32>::new(5));
+            the_same(Arc::<[u32]>::from(vec![1, 2, 3, 4, 5]));
         }
     }
 
