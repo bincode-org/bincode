@@ -160,7 +160,7 @@ pub enum DecodeError {
     /// The decoder tried to decode a `CString`, but the incoming data contained a 0 byte
     #[cfg(feature = "std")]
     CStringNulError {
-        /// Null byte position
+        /// Nul byte position
         position: usize,
     },
 
