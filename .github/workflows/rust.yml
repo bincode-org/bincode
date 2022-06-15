@@ -121,6 +121,7 @@ else\n
   cargo test --no-default-features --features ${{ matrix.features }}\n
 fi",
           "name": "Run `cargo test` on all features",
+          "shell": "bash",
           "env": {
             "RUSTFLAGS": "-D warnings"
           }
