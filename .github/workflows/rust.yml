@@ -72,9 +72,13 @@
     },
     "test": {
       "name": "Test",
-      "runs-on": "ubuntu-latest",
       "strategy": {
         "matrix": {
+          "runner": [
+            "ubuntu-latest",
+            "windows-latest",
+            "macos-latest"
+          ],
           "rust": [
             "stable",
             # "1.55.0" TODO: Pick latest stable version when we release 2.0
@@ -94,6 +98,7 @@
           ]
         }
       },
+      "runs-on": "${{ matrix.runner }}",
       "steps": [
         {
           "uses": "actions/checkout@v2",
@@ -116,6 +121,7 @@ else\n
   cargo test --no-default-features --features ${{ matrix.features }}\n
 fi",
           "name": "Run `cargo test` on all features",
+          "shell": "bash",
           "env": {
             "RUSTFLAGS": "-D warnings"
           }
