@@ -48,7 +48,7 @@ pub enum EncodeError {
         /// The error that was thrown by the SystemTime
         inner: std::time::SystemTimeError,
         /// The SystemTime that caused the error
-        time: std::time::SystemTime,
+        time: std::boxed::Box<std::time::SystemTime>,
     },
 
     #[cfg(feature = "serde")]

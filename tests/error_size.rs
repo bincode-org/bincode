@@ -7,10 +7,7 @@ fn decode_error_size() {
 
 #[test]
 fn encode_error_size() {
-    #[cfg(feature = "std")]
-    assert_eq!(std::mem::size_of::<bincode::error::EncodeError>(), 40);
-
-    #[cfg(all(feature = "alloc", not(feature = "std")))]
+    #[cfg(any(feature = "std", feature = "alloc"))]
     assert_eq!(std::mem::size_of::<bincode::error::EncodeError>(), 32);
 
     #[cfg(not(any(feature = "std", feature = "alloc")))]

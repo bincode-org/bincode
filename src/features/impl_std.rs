@@ -218,7 +218,7 @@ impl Encode for SystemTime {
         let duration = self.duration_since(SystemTime::UNIX_EPOCH).map_err(|e| {
             EncodeError::InvalidSystemTime {
                 inner: e,
-                time: *self,
+                time: std::boxed::Box::new(*self),
             }
         })?;
         duration.encode(encoder)
