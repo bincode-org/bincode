@@ -144,7 +144,9 @@ impl Encode for CString {
 impl Decode for CString {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
-        CString::new(vec).map_err(|inner| DecodeError::CStringNulError { inner })
+        CString::new(vec).map_err(|inner| DecodeError::CStringNulError {
+            position: inner.nul_position(),
+        })
     }
 }
 impl_borrow_decode!(CString);
@@ -216,7 +218,7 @@ impl Encode for SystemTime {
         let duration = self.duration_since(SystemTime::UNIX_EPOCH).map_err(|e| {
             EncodeError::InvalidSystemTime {
                 inner: e,
-                time: *self,
+                time: std::boxed::Box::new(*self),
             }
         })?;
         duration.encode(encoder)
@@ -285,7 +287,7 @@ impl Decode for IpAddr {
             0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
             1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
             found => Err(DecodeError::UnexpectedVariant {
-                allowed: crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                allowed: &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
                 found,
                 type_name: core::any::type_name::<IpAddr>(),
             }),
@@ -345,7 +347,7 @@ impl Decode for SocketAddr {
             0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
             1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
             found => Err(DecodeError::UnexpectedVariant {
-                allowed: crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
+                allowed: &crate::error::AllowedEnumVariants::Range { min: 0, max: 1 },
                 found,
                 type_name: core::any::type_name::<SocketAddr>(),
             }),
@@ -400,7 +402,6 @@ impl std::error::Error for DecodeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Utf8 { inner } => Some(inner),
-            Self::CStringNulError { inner } => Some(inner),
             _ => None,
         }
     }

@@ -185,7 +185,7 @@ impl DeriveEnum {
                 if self.variants.iter().any(|i| i.has_fixed_value()) {
                     // we have fixed values, implement AllowedEnumVariants::Allowed
                     variant_inner.push_parsed(format!(
-                        "{}::error::AllowedEnumVariants::Allowed",
+                        "&{}::error::AllowedEnumVariants::Allowed",
                         crate_name
                     ))?;
                     variant_inner.group(Delimiter::Parenthesis, |allowed_inner| {
@@ -204,7 +204,7 @@ impl DeriveEnum {
                 } else {
                     // no fixed values, implement a range
                     variant_inner.push_parsed(format!(
-                        "{0}::error::AllowedEnumVariants::Range {{ min: 0, max: {1} }}",
+                        "&{0}::error::AllowedEnumVariants::Range {{ min: 0, max: {1} }}",
                         crate_name,
                         self.variants.len() - 1
                     ))?;
