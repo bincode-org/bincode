@@ -144,7 +144,9 @@ impl Encode for CString {
 impl Decode for CString {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
-        CString::new(vec).map_err(|inner| DecodeError::CStringNulError { position: inner.nul_position() })
+        CString::new(vec).map_err(|inner| DecodeError::CStringNulError {
+            position: inner.nul_position(),
+        })
     }
 }
 impl_borrow_decode!(CString);
