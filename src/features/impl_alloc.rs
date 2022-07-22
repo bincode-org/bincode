@@ -321,6 +321,13 @@ impl Decode for String {
 }
 impl_borrow_decode!(String);
 
+impl Decode for Box<str> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        String::decode(decoder).map(String::into_boxed_str)
+    }
+}
+impl_borrow_decode!(Box<str>);
+
 impl Encode for String {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
