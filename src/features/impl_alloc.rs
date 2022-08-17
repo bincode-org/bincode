@@ -420,7 +420,7 @@ where
     T: Decode + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = decode_slice_len(decoder)?;
+        let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
         unsafe {

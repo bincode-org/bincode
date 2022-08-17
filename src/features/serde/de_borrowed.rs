@@ -442,7 +442,7 @@ impl<'de, 'a, DE: BorrowDecoder<'de>> EnumAccess<'de> for SerdeDecoder<'a, 'de, 
         V: DeserializeSeed<'de>,
     {
         let idx = u32::decode(&mut self.de)?;
-        let val = seed.deserialize(idx.into_deserializer())?;
+        let val = seed.deserialize(serde::de::value::U32Deserializer::<Self::Error>::new(idx))?;
         Ok((val, self))
     }
 }

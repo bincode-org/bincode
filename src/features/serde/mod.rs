@@ -139,10 +139,9 @@ pub enum EncodeError {
     CustomError,
 }
 
-#[allow(clippy::from_over_into)]
-impl Into<crate::error::EncodeError> for EncodeError {
-    fn into(self) -> crate::error::EncodeError {
-        crate::error::EncodeError::Serde(self)
+impl From<EncodeError> for crate::error::EncodeError {
+    fn from(val: EncodeError) -> Self {
+        crate::error::EncodeError::Serde(val)
     }
 }
 
