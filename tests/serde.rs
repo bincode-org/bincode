@@ -50,7 +50,7 @@ fn test_serde_round_trip() {
     assert_eq!(len, 13);
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct SerdeWithBorrowedData<'a> {
     pub a: u32,
     #[serde(skip)]
@@ -95,7 +95,7 @@ fn test_serialize_deserialize_borrowed_data() {
     );
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
 pub struct SerdeWithOwnedData {
     pub a: u32,
     #[serde(skip)]
@@ -146,18 +146,18 @@ mod derive {
     use bincode::{Decode, Encode};
     use serde_derive::{Deserialize, Serialize};
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
     pub struct SerdeType {
         pub a: u32,
     }
 
-    #[derive(Decode, Encode, PartialEq, Debug)]
+    #[derive(Decode, Encode, PartialEq, Eq, Debug)]
     pub struct StructWithSerde {
         #[bincode(with_serde)]
         pub serde: SerdeType,
     }
 
-    #[derive(Decode, Encode, PartialEq, Debug)]
+    #[derive(Decode, Encode, PartialEq, Eq, Debug)]
     pub enum EnumWithSerde {
         Unit(#[bincode(with_serde)] SerdeType),
         Struct {
