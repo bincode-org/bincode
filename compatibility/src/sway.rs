@@ -25,7 +25,7 @@ fn random(rng: &mut impl Rng) -> FTXresponse<Trade> {
     }
 }
 
-#[derive(bincode_2::Encode, bincode_2::Decode, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(bincode_2::Encode, bincode_2::Decode, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[bincode(crate = "bincode_2")]
 pub enum FTXresponse<T> {
     Result(FTXresponseSuccess<T>),
@@ -33,7 +33,7 @@ pub enum FTXresponse<T> {
 }
 
 #[derive(
-    bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, Debug, PartialEq,
+    bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq,
 )]
 #[bincode(crate = "bincode_2")]
 pub struct FTXresponseSuccess<T> {
@@ -41,14 +41,14 @@ pub struct FTXresponseSuccess<T> {
     pub result: T,
 }
 
-#[derive(bincode_2::Encode, bincode_2::Decode, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(bincode_2::Encode, bincode_2::Decode, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[bincode(crate = "bincode_2")]
 pub struct FTXresponseFailure {
     pub success: bool,
     pub error: String,
 }
 
-#[derive(bincode_2::Encode, bincode_2::Decode, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(bincode_2::Encode, bincode_2::Decode, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[bincode(crate = "bincode_2")]
 pub enum TradeSide {
     Buy,

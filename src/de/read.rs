@@ -21,7 +21,7 @@ pub trait Reader {
     /// If this reader wraps a buffer of any kind, this function lets callers access contents of
     /// the buffer without passing data through a buffer first.
     #[inline]
-    fn peek_read(&self, _: usize) -> Option<&[u8]> {
+    fn peek_read(&mut self, _: usize) -> Option<&[u8]> {
         None
     }
 
@@ -41,7 +41,7 @@ where
     }
 
     #[inline]
-    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+    fn peek_read(&mut self, n: usize) -> Option<&[u8]> {
         (**self).peek_read(n)
     }
 
@@ -87,7 +87,7 @@ impl<'storage> Reader for SliceReader<'storage> {
     }
 
     #[inline]
-    fn peek_read(&self, n: usize) -> Option<&'storage [u8]> {
+    fn peek_read(&mut self, n: usize) -> Option<&'storage [u8]> {
         self.slice.get(..n)
     }
 

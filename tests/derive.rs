@@ -1,5 +1,7 @@
 #![cfg(feature = "derive")]
 
+use bincode::error::DecodeError;
+
 #[derive(bincode::Encode, PartialEq, Debug)]
 pub(crate) struct Test<T> {
     a: T,
@@ -276,28 +278,38 @@ fn test_c_style_enum() {
     assert_eq!(ser(CStyleEnum::D), 5);
     assert_eq!(ser(CStyleEnum::E), 6);
 
-    fn de(num: u8) -> Result<CStyleEnum, bincode::error::DecodeError> {
-        let (result, len) = bincode::decode_from_slice(&[num], bincode::config::standard())?;
-        assert_eq!(len, 1);
-        Ok(result)
+    fn assert_de_successfully(num: u8, expected: CStyleEnum) {
+        match bincode::decode_from_slice::<CStyleEnum, _>(&[num], bincode::config::standard()) {
+            Ok((result, len)) => {
+                assert_eq!(len, 1);
+                assert_eq!(result, expected)
+            }
+            Err(e) => panic!("Could not deserialize CStyleEnum idx {num}: {e:?}"),
+        }
     }
 
-    fn expected_err(idx: u32) -> Result<CStyleEnum, bincode::error::DecodeError> {
-        Err(bincode::error::DecodeError::UnexpectedVariant {
-            type_name: "CStyleEnum",
-            allowed: &bincode::error::AllowedEnumVariants::Allowed(&[1, 2, 3, 5, 6]),
-            found: idx,
-        })
+    fn assert_de_fails(num: u8) {
+        match bincode::decode_from_slice::<CStyleEnum, _>(&[num], bincode::config::standard()) {
+            Ok(_) => {
+                panic!("Expected to not be able to decode CStyleEnum index {num}, but it succeeded")
+            }
+            Err(DecodeError::UnexpectedVariant {
+                type_name: "CStyleEnum",
+                allowed: &bincode::error::AllowedEnumVariants::Allowed(&[1, 2, 3, 5, 6]),
+                found,
+            }) if found == num as u32 => {}
+            Err(e) => panic!("Expected DecodeError::UnexpectedVariant, got {e:?}"),
+        }
     }
 
-    assert_eq!(de(0), expected_err(0));
-    assert_eq!(de(1).unwrap(), CStyleEnum::A);
-    assert_eq!(de(2).unwrap(), CStyleEnum::B);
-    assert_eq!(de(3).unwrap(), CStyleEnum::C);
-    assert_eq!(de(4), expected_err(4));
-    assert_eq!(de(5).unwrap(), CStyleEnum::D);
-    assert_eq!(de(6).unwrap(), CStyleEnum::E);
-    assert_eq!(de(7), expected_err(7));
+    assert_de_fails(0);
+    assert_de_successfully(1, CStyleEnum::A);
+    assert_de_successfully(2, CStyleEnum::B);
+    assert_de_successfully(3, CStyleEnum::C);
+    assert_de_fails(4);
+    assert_de_successfully(5, CStyleEnum::D);
+    assert_de_successfully(6, CStyleEnum::E);
+    assert_de_fails(7);
 }
 
 macro_rules! macro_newtype {
@@ -344,14 +356,13 @@ pub enum BorrowedEmptyEnum {}
 
 #[test]
 fn test_empty_enum_decode() {
-    let err =
-        bincode::decode_from_slice::<EmptyEnum, _>(&[], bincode::config::standard()).unwrap_err();
-    assert_eq!(
-        err,
-        bincode::error::DecodeError::EmptyEnum {
-            type_name: "derive::EmptyEnum"
-        }
-    );
+    match bincode::decode_from_slice::<EmptyEnum, _>(&[], bincode::config::standard()) {
+        Ok(_) => panic!("We successfully decoded an empty slice, this should never happen"),
+        Err(DecodeError::EmptyEnum {
+            type_name: "derive::EmptyEnum",
+        }) => {}
+        Err(e) => panic!("Expected DecodeError::EmptyEnum, got {e:?}"),
+    }
 }
 
 #[derive(bincode::Encode, bincode::Decode, PartialEq, Debug, Eq)]

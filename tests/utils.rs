@@ -42,7 +42,7 @@ where
     let mut buffer = [0u8; 2048];
     let len = bincode::serde::encode_into_slice(&element, &mut buffer, config);
 
-    let decoded = bincode::serde::decode_from_slice(&mut buffer, config);
+    let decoded = bincode::serde::decode_from_slice(&buffer, config);
 
     if !C::SKIP_FIXED_ARRAY_LENGTH {
         let len = len.unwrap();
