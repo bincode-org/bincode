@@ -1,16 +1,17 @@
 [workspace]
-members = [
-    "derive",
-    "compatibility"
-]
+members = ["derive", "compatibility"]
 
 [package]
 name = "bincode"
 version = "2.0.0-rc.1" # remember to update html_root_url and bincode_derive
-authors = ["Ty Overby <ty@pre-alpha.com>", "Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
+authors = [
+    "Ty Overby <ty@pre-alpha.com>",
+    "Zoey Riordan <zoey@dos.cafe>",
+    "Victor Koenders <bincode@trangar.com>",
+]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
 
-publish =  true
+publish = true
 
 repository = "https://github.com/bincode-org/bincode"
 documentation = "https://docs.rs/bincode"
@@ -40,9 +41,9 @@ serde_json = { version = "1.0", default-features = false }
 tempfile = "3.2"
 criterion = "0.3"
 rand = "0.8"
-uuid = { version = "0.8", features = ["serde"] }
+uuid = { version = "1.1", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-glam = { version="0.20.5", features=["serde"] }
+glam = { version = "0.21", features = ["serde"] }
 
 [[bench]]
 name = "varint"
