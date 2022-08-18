@@ -5,7 +5,7 @@
 use rand::Rng;
 
 #[derive(
-    Debug, bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, PartialEq,
+    Debug, bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, PartialEq, Eq,
 )]
 #[bincode(crate = "bincode_2")]
 pub struct Lcg64Xsh32 {

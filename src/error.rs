@@ -65,7 +65,7 @@ impl core::fmt::Display for EncodeError {
 
 /// Errors that can be encountered by decoding a type
 #[non_exhaustive]
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum DecodeError {
     /// The reader reached its end but more bytes were expected.
     UnexpectedEnd {
@@ -164,6 +164,20 @@ pub enum DecodeError {
         position: usize,
     },
 
+    /// The reader encountered an IO error but more bytes were expected.
+    #[cfg(feature = "std")]
+    Io {
+        /// The IO error expected
+        inner: std::io::Error,
+
+        /// Gives an estimate of how many extra bytes are needed.
+        ///
+        /// **Note**: this is only an estimate and not indicative of the actual bytes needed.
+        ///
+        /// **Note**: Bincode has no look-ahead mechanism. This means that this will only return the amount of bytes to be read for the current action, and not take into account the entire data structure being read.
+        additional: usize,
+    },
+
     /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
@@ -199,7 +213,7 @@ impl DecodeError {
 
 /// Indicates which enum variants are allowed
 #[non_exhaustive]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum AllowedEnumVariants {
     /// All values between `min` and `max` (inclusive) are allowed
     #[allow(missing_docs)]

@@ -5,7 +5,7 @@
 /// # Remarks
 /// Used to store HID-IO data chunks. Will be chunked into individual packets on transmission.
 #[repr(C)]
-#[derive(PartialEq, Clone, Debug, bincode::Encode)]
+#[derive(PartialEq, Eq, Clone, Debug, bincode::Encode)]
 pub struct HidIoPacketBuffer<const H: usize> {
     /// Type of packet (Continued is automatically set if needed)
     pub ptype: u32,
@@ -20,7 +20,7 @@ pub struct HidIoPacketBuffer<const H: usize> {
 }
 
 #[repr(u32)]
-#[derive(PartialEq, Clone, Copy, Debug, bincode::Encode)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, bincode::Encode)]
 #[allow(dead_code)]
 /// Requests for to perform a specific action
 pub enum HidIoCommandId {

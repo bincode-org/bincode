@@ -13,6 +13,7 @@ use std::collections::BTreeSet;
     serde_derive::Deserialize,
     Debug,
     PartialEq,
+    Eq,
 )]
 pub struct Membership {
     /// learners set

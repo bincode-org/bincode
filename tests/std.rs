@@ -3,6 +3,7 @@
 
 mod utils;
 
+use bincode::error::DecodeError;
 use std::{
     ffi::{CStr, CString},
     io::{Cursor, Seek, SeekFrom},
@@ -149,12 +150,16 @@ fn test_system_time_out_of_range() {
     let result: Result<(std::time::SystemTime, usize), _> =
         bincode::decode_from_slice(&input, bincode::config::standard());
 
-    assert_eq!(
-        result.unwrap_err(),
-        bincode::error::DecodeError::InvalidSystemTime {
-            duration: std::time::Duration::new(10447520527445462160, 144),
+    match result {
+        Ok(_) => panic!("Expected the decode to fail, but it succeeded"),
+        Err(DecodeError::InvalidSystemTime { duration }) => {
+            assert_eq!(
+                duration,
+                std::time::Duration::new(10447520527445462160, 144)
+            )
         }
-    );
+        Err(e) => panic!("Expected DecodeError::InvalidSystemTime, got {e:?}"),
+    }
 }
 
 /// Simple example of user-defined hasher to test encoding/decoding HashMap and HashSet with custom hash algorithms.
