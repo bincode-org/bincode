@@ -69,7 +69,7 @@ where
     }
 
     #[inline]
-    fn peek_read(&self, n: usize) -> Option<&[u8]> {
+    fn peek_read(&mut self, n: usize) -> Option<&[u8]> {
         self.buffer().get(..n)
     }
 
