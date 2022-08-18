@@ -1,5 +1,6 @@
 mod utils;
 
+use bincode::error::DecodeError;
 use core::cell::{Cell, RefCell};
 use core::ops::Bound;
 use core::time::Duration;
@@ -253,13 +254,14 @@ fn test_duration_out_of_range() {
     let result: Result<(std::time::Duration, usize), _> =
         bincode::decode_from_slice(&input, bincode::config::standard());
 
-    assert_eq!(
-        result.unwrap_err(),
-        bincode::error::DecodeError::InvalidDuration {
+    match result {
+        Err(DecodeError::InvalidDuration {
             secs: u64::MAX,
-            nanos: u32::MAX
-        }
-    );
+            nanos: u32::MAX,
+        }) => {}
+        Err(e) => panic!("Expected InvalidDuration, got {:?}", e),
+        Ok(_) => panic!("Expected the decode to fail"),
+    }
 }
 
 #[test]

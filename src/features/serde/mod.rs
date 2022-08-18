@@ -65,7 +65,7 @@ pub use self::de_owned::*;
 pub use self::ser::*;
 
 /// A serde-specific error that occurred while decoding.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum DecodeError {
     /// Bincode does not support serde's `any` decoding feature
@@ -124,7 +124,7 @@ impl Into<crate::error::DecodeError> for DecodeError {
 }
 
 /// A serde-specific error that occurred while encoding.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum EncodeError {
     /// Serde provided bincode with a sequence without a length, which is not supported in bincode
