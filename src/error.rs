@@ -205,7 +205,7 @@ pub enum DecodeError {
 
 /// A wrapper to make all the out of memory errors consistent
 #[cfg(feature = "alloc")]
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum OutOfMemory {
     /// Failed to reserve an entry
     TryReserve(TryReserveError),
