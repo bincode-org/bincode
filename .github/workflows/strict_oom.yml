@@ -1,0 +1,70 @@
+{
+  "name": "strict OOM",
+  "on": {
+    "push": {
+      "branches": [
+        "trunk",
+        "v*.x",
+        "ci/*"
+      ]
+    },
+    "pull_request": {
+      "branches": [
+        "trunk",
+        "v*.x"
+      ]
+    }
+  },
+  "jobs": {
+    "no_oom": {
+      "name": "Strict OOM checks",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "uses": "actions-rs/toolchain@v1",
+          "with": {
+            "profile": "minimal",
+            "toolchain": "nightly",
+            "components": "rust-src",
+            "override": true
+          },
+          "name": "Install Rust nightly"
+        },
+        {
+          "run": "cargo build --no-default-features --features unstable-strict-oom-checks -Z build-std=core,alloc --target x86_64-unknown-linux-gnu",
+          "env": {
+            "RUSTFLAGS": "--cfg no_global_oom_handling"
+          }
+        }
+      ]
+    },
+    "miri": {
+      "name": "MIRI",
+      "runs-on": "ubuntu-latest",
+      "steps": [
+        {
+          "uses": "actions/checkout@v2",
+          "name": "Checkout"
+        },
+        {
+          "run": "rustup toolchain install nightly --component miri
+rustup override set nightly
+cargo miri setup",
+          "name": "Install Rust nightly"
+        },
+        {
+          "run": "cargo miri test",
+          "name": "Default features"
+        },
+        {
+          "run": "cargo miri test --no-default-features --features unstable-strict-oom-checks",
+          "name": "Strict OOM check"
+        }
+      ]
+    }
+  }
+}
