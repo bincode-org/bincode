@@ -46,6 +46,16 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = WriteFixedArrayLength
     _l: PhantomData<L>,
 }
 
+// When adding more features to configuration, follow these steps:
+// - Create 2 or more structs that can be used as a type (e.g. Limit and NoLimit)
+// - Add an `Internal...Config` to the `internal` module
+// - Make sure `Config` and `impl<T> Config for T` extend from this new trait
+// - Add a generic to `Configuration`
+// - Add this generic to `impl<...> Default for Configuration<...>`
+// - Add this generic to `const fn generate<...>()`
+// - Add this generic to _every_ function in `Configuration`
+// - Add your new methods
+
 /// The default config for bincode 2.0. By default this will be:
 /// - Little endian
 /// - Variable int encoding
@@ -62,7 +72,13 @@ pub const fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLeng
     generate()
 }
 
-const fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
+impl<E, I, A, L> Default for Configuration<E, I, A, L> {
+    fn default() -> Self {
+        generate()
+    }
+}
+
+const fn generate<E, I, A, L>() -> Configuration<E, I, A, L> {
     Configuration {
         _e: PhantomData,
         _i: PhantomData,
@@ -70,15 +86,6 @@ const fn generate<_E, _I, _A, _L>() -> Configuration<_E, _I, _A, _L> {
         _l: PhantomData,
     }
 }
-
-// When adding more features to configuration, follow these steps:
-// - Create 2 or more structs that can be used as a type (e.g. Limit and NoLimit)
-// - Add an `Internal...Config` to the `internal` module
-// - Make sure `Config` and `impl<T> Config for T` extend from this new trait
-// - Add a generic to `Configuration`
-// - Add this generic to `const fn generate<...>()`
-// - Add this generic to _every_ function in `Configuration`
-// - Add your new methods
 
 impl<E, I, A, L> Configuration<E, I, A, L> {
     /// Makes bincode encode all integer types in big endian.
