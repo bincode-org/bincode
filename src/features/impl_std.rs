@@ -81,6 +81,7 @@ where
 
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
 /// See the [config] module for more information.
+/// Returns the amount of bytes written.
 ///
 /// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
