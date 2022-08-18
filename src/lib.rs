@@ -132,7 +132,7 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
     Ok(())
 }
 
-/// Attempt to decode a given type `D` from the given slice.
+/// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
 /// See the [config] module for more information on configurations.
 ///
@@ -148,7 +148,7 @@ pub fn decode_from_slice<D: de::Decode, C: Config>(
     Ok((result, bytes_read))
 }
 
-/// Attempt to decode a given type `D` from the given slice.
+/// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
 /// See the [config] module for more information on configurations.
 ///
