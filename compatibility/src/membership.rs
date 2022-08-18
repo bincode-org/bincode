@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 type NodeId = u64;
 
 #[derive(
-    bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, Debug, PartialEq,
+    bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq,
 )]
 #[bincode(crate = "bincode_2")]
 pub struct Membership {

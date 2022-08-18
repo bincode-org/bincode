@@ -8,12 +8,12 @@ use std::collections::HashMap;
 use std::prelude::rust_2021::*;
 use uuid::Uuid;
 
-#[derive(serde_derive::Serialize, serde_derive::Deserialize, PartialEq, Debug)]
+#[derive(serde_derive::Serialize, serde_derive::Deserialize, PartialEq, Eq, Debug)]
 pub struct MyStruct {
     name: String,
 }
 
-#[derive(serde_derive::Serialize, serde_derive::Deserialize, PartialEq, Debug)]
+#[derive(serde_derive::Serialize, serde_derive::Deserialize, PartialEq, Eq, Debug)]
 pub struct CustomerTest {
     pub id: Option<Uuid>,
     pub email_address: Option<String>,
