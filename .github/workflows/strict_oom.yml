@@ -51,8 +51,8 @@
           "name": "Checkout"
         },
         {
-          "run": "rustup toolchain install nightly --component miri
-rustup override set nightly
+          "run": "rustup toolchain install nightly --component miri \n
+rustup override set nightly \n
 cargo miri setup",
           "name": "Install Rust nightly"
         },
