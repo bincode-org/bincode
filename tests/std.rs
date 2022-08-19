@@ -53,7 +53,11 @@ fn test_std_cursor() {
 
 #[test]
 fn test_std_file() {
-    let mut file = tempfile::tempfile().expect("Could not create temp file");
+    #[cfg_attr(miri, ignore)]
+    fn create_temp_file() -> std::fs::File {
+        tempfile::tempfile().expect("Could not create temp file")
+    }
+    let mut file = create_temp_file();
 
     let bytes_written = bincode::encode_into_std_write(
         Foo { a: 30, b: 50 },
