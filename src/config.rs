@@ -67,7 +67,7 @@ pub const fn standard() -> Configuration {
 /// Creates the "legacy" default config. This is the default config that was present in bincode 1.0
 /// - Little endian
 /// - Fixed int length encoding
-/// - Write array lengths
+/// - Write fixed array length
 pub const fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
     generate()
 }
