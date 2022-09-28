@@ -212,7 +212,7 @@ impl<T> Config for T where
 {
 }
 
-#[doc(hidden)]
+/// Encodes all integer types in big endian.
 #[derive(Copy, Clone)]
 pub struct BigEndian {}
 
@@ -220,7 +220,7 @@ impl InternalEndianConfig for BigEndian {
     const ENDIAN: Endian = Endian::Big;
 }
 
-#[doc(hidden)]
+/// Encodes all integer types in little endian.
 #[derive(Copy, Clone)]
 pub struct LittleEndian {}
 
@@ -228,7 +228,7 @@ impl InternalEndianConfig for LittleEndian {
     const ENDIAN: Endian = Endian::Little;
 }
 
-#[doc(hidden)]
+/// Use fixed-size integer encoding.
 #[derive(Copy, Clone)]
 pub struct Fixint {}
 
@@ -236,7 +236,7 @@ impl InternalIntEncodingConfig for Fixint {
     const INT_ENCODING: IntEncoding = IntEncoding::Fixed;
 }
 
-#[doc(hidden)]
+/// Use variable integer encoding.
 #[derive(Copy, Clone)]
 pub struct Varint {}
 
@@ -244,7 +244,7 @@ impl InternalIntEncodingConfig for Varint {
     const INT_ENCODING: IntEncoding = IntEncoding::Variable;
 }
 
-#[doc(hidden)]
+/// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array.
 #[derive(Copy, Clone)]
 pub struct SkipFixedArrayLength {}
 
@@ -252,7 +252,7 @@ impl InternalArrayLengthConfig for SkipFixedArrayLength {
     const SKIP_FIXED_ARRAY_LENGTH: bool = true;
 }
 
-#[doc(hidden)]
+/// Write the length of fixed size arrays (`[u8; N]`) before writing the array.
 #[derive(Copy, Clone)]
 pub struct WriteFixedArrayLength {}
 
@@ -260,14 +260,14 @@ impl InternalArrayLengthConfig for WriteFixedArrayLength {
     const SKIP_FIXED_ARRAY_LENGTH: bool = false;
 }
 
-#[doc(hidden)]
+/// Sets an unlimited byte limit.
 #[derive(Copy, Clone)]
 pub struct NoLimit {}
 impl InternalLimitConfig for NoLimit {
     const LIMIT: Option<usize> = None;
 }
 
-#[doc(hidden)]
+/// Sets the byte limit to N.
 #[derive(Copy, Clone)]
 pub struct Limit<const N: usize> {}
 impl<const N: usize> InternalLimitConfig for Limit<N> {
