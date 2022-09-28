@@ -44,11 +44,12 @@
 //! Currently the `serde` feature will automatically enable the `alloc` and `std` feature. If you're running in a `#[no_std]` environment consider using bincode's own derive macros.
 //!
 //! Because bincode is a format without meta data, there are several known issues with serde's attributes. Please do not use any of the following attributes if you plan on using bincode, or use bincode's own `derive` macros.
-//! - `#[serde(skip)]`
-//! - `#[serde(skip_serializing)]`
-//! - `#[serde(skip_deserializing)]`
-//! - `#[serde(skip_serializing_if = "path")]`
 //! - `#[serde(flatten)]`
+//! - `#[serde(skip)]`
+//! - `#[serde(skip_deserializing)]`
+//! - `#[serde(skip_serializing)]`
+//! - `#[serde(skip_serializing_if = "path")]`
+//! - `#[serde(tag = "...")]`
 //! - `#[serde(untagged)]`
 //!
 //! **Using any of the above attributes can and will cause issues with bincode and will result in lost data**. Consider using bincode's own derive macro instead.
