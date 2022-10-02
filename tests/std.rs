@@ -51,13 +51,10 @@ fn test_std_cursor() {
     assert_eq!(foo.b, 10);
 }
 
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 #[test]
 fn test_std_file() {
-    #[cfg_attr(miri, ignore)]
-    fn create_temp_file() -> std::fs::File {
-        tempfile::tempfile().expect("Could not create temp file")
-    }
-    let mut file = create_temp_file();
+    let mut file = tempfile::tempfile().expect("Could not create temp file");
 
     let bytes_written = bincode::encode_into_std_write(
         Foo { a: 30, b: 50 },
