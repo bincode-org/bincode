@@ -51,7 +51,8 @@ fn test_std_cursor() {
     assert_eq!(foo.b, 10);
 }
 
-#[cfg(not(feature = "unstable-strict-oom-checks"))]
+// miri seems to not be able to deal with `tempfile::tempfile()`
+#[cfg_attr(miri, ignore)]
 #[test]
 fn test_std_file() {
     let mut file = tempfile::tempfile().expect("Could not create temp file");
