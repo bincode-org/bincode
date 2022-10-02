@@ -25,6 +25,28 @@ where
     T::deserialize(serde_decoder)
 }
 
+/// Decode a borrowed type from the given slice using a seed. Some parts of the decoded type are expected to be referring to the given slice
+pub fn decode_seed_from_slice<'de, T, C>(
+    seed: T,
+    slice: &'de [u8],
+    config: C,
+) -> Result<T::Value, DecodeError>
+where
+    T: DeserializeSeed<'de>,
+    C: Config,
+{
+    if C::SKIP_FIXED_ARRAY_LENGTH {
+        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
+    }
+    let reader = crate::de::read::SliceReader::new(slice);
+    let mut decoder = crate::de::DecoderImpl::new(reader, config);
+    let serde_decoder = SerdeDecoder {
+        de: &mut decoder,
+        pd: PhantomData,
+    };
+    seed.deserialize(serde_decoder)
+}
+
 pub(super) struct SerdeDecoder<'a, 'de, DE: BorrowDecoder<'de>> {
     pub(super) de: &'a mut DE,
     pub(super) pd: PhantomData<&'de ()>,
