@@ -1,7 +1,10 @@
 [package]
 name = "bincode_derive"
-version = "2.0.0-rc.1" # remember to update bincode
-authors = ["Zoey Riordan <zoey@dos.cafe>", "Victor Koenders <bincode@trangar.com>"]
+version = "2.0.0-rc.2" # remember to update bincode
+authors = [
+    "Zoey Riordan <zoey@dos.cafe>",
+    "Victor Koenders <bincode@trangar.com>",
+]
 edition = "2021"
 
 repository = "https://github.com/bincode-org/bincode"
@@ -16,4 +19,4 @@ description = "Implementation of #[derive(Encode, Decode)] for bincode"
 proc-macro = true
 
 [dependencies]
-virtue = "0.0.8" 
+virtue = "0.0.8"
