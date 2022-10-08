@@ -255,7 +255,7 @@ fn test_decode_borrowed_enum_tuple_variant() {
 
 #[derive(bincode::Decode, bincode::Encode, PartialEq, Eq, Debug)]
 enum CStyleEnum {
-    A = 1,
+    A = -1,
     B = 2,
     C,
     D = 5,
@@ -272,11 +272,11 @@ fn test_c_style_enum() {
         slice[0]
     }
 
-    assert_eq!(ser(CStyleEnum::A), 1);
-    assert_eq!(ser(CStyleEnum::B), 2);
-    assert_eq!(ser(CStyleEnum::C), 3);
-    assert_eq!(ser(CStyleEnum::D), 5);
-    assert_eq!(ser(CStyleEnum::E), 6);
+    assert_eq!(ser(CStyleEnum::A), 0);
+    assert_eq!(ser(CStyleEnum::B), 1);
+    assert_eq!(ser(CStyleEnum::C), 2);
+    assert_eq!(ser(CStyleEnum::D), 3);
+    assert_eq!(ser(CStyleEnum::E), 4);
 
     fn assert_de_successfully(num: u8, expected: CStyleEnum) {
         match bincode::decode_from_slice::<CStyleEnum, _>(&[num], bincode::config::standard()) {
@@ -295,21 +295,19 @@ fn test_c_style_enum() {
             }
             Err(DecodeError::UnexpectedVariant {
                 type_name: "CStyleEnum",
-                allowed: &bincode::error::AllowedEnumVariants::Allowed(&[1, 2, 3, 5, 6]),
+                allowed: &bincode::error::AllowedEnumVariants::Allowed(&[0, 1, 2, 3, 4]),
                 found,
             }) if found == num as u32 => {}
             Err(e) => panic!("Expected DecodeError::UnexpectedVariant, got {e:?}"),
         }
     }
 
-    assert_de_fails(0);
-    assert_de_successfully(1, CStyleEnum::A);
-    assert_de_successfully(2, CStyleEnum::B);
-    assert_de_successfully(3, CStyleEnum::C);
-    assert_de_fails(4);
-    assert_de_successfully(5, CStyleEnum::D);
-    assert_de_successfully(6, CStyleEnum::E);
-    assert_de_fails(7);
+    assert_de_successfully(0, CStyleEnum::A);
+    assert_de_successfully(1, CStyleEnum::B);
+    assert_de_successfully(2, CStyleEnum::C);
+    assert_de_successfully(3, CStyleEnum::D);
+    assert_de_successfully(4, CStyleEnum::E);
+    assert_de_fails(5);
 }
 
 macro_rules! macro_newtype {

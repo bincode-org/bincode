@@ -19,4 +19,4 @@ description = "Implementation of #[derive(Encode, Decode)] for bincode"
 proc-macro = true
 
 [dependencies]
-virtue = "0.0.9"
+virtue = "0.0.10"
