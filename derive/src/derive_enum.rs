@@ -12,7 +12,6 @@ impl DeriveEnum {
     fn iter_fields(&self) -> EnumVariantIterator {
         EnumVariantIterator {
             idx: 0,
-            last_val: None,
             variants: &self.variants,
         }
     }
@@ -401,7 +400,6 @@ impl DeriveEnum {
 struct EnumVariantIterator<'a> {
     variants: &'a [EnumVariant],
     idx: usize,
-    last_val: Option<(Literal, u32)>,
 }
 
 impl<'a> Iterator for EnumVariantIterator<'a> {
@@ -412,20 +410,7 @@ impl<'a> Iterator for EnumVariantIterator<'a> {
         let variant = self.variants.get(self.idx)?;
         self.idx += 1;
 
-        let tokens = if let Fields::Integer(lit) = &variant.fields {
-            let tree = TokenTree::Literal(lit.clone());
-            self.last_val = Some((lit.clone(), 0));
-            vec![tree]
-        } else if let Some((lit, add)) = self.last_val.as_mut() {
-            *add += 1;
-            vec![
-                TokenTree::Literal(lit.clone()),
-                TokenTree::Punct(Punct::new('+', Spacing::Alone)),
-                TokenTree::Literal(Literal::u32_suffixed(*add)),
-            ]
-        } else {
-            vec![TokenTree::Literal(Literal::u32_suffixed(idx as u32))]
-        };
+        let tokens = vec![TokenTree::Literal(Literal::u32_suffixed(idx as u32))];
 
         Some((tokens, variant))
     }
