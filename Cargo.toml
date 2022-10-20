@@ -29,6 +29,7 @@ default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive"]
+no-extra-debug = ["bincode_derive/no-extra-debug"]
 
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-rc.2", optional = true }

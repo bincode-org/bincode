@@ -175,7 +175,15 @@ impl DeriveEnum {
 
                 variant_inner.ident_str("type_name");
                 variant_inner.punct(':');
-                variant_inner.lit_str(enum_name);
+                // we add the enum name in the generated error
+                if cfg!(feature = "no-extra-debug") {
+                    // if the feature is "no-extra-debug" we set an empty string rather than leaking the enum name
+                    // this is also useful for optimization
+                    variant_inner.lit_str("");
+                } else {
+                    // by default, we add the enum name to the generated error
+                    variant_inner.lit_str(enum_name);
+                }
                 variant_inner.punct(',');
 
                 variant_inner.ident_str("allowed");

@@ -15,6 +15,9 @@ keywords = ["binary", "encode", "decode", "serialize", "deserialize"]
 license = "MIT"
 description = "Implementation of #[derive(Encode, Decode)] for bincode"
 
+[features]
+no-extra-debug = []
+
 [lib]
 proc-macro = true
 
