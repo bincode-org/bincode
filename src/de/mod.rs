@@ -26,7 +26,7 @@ pub use self::decoder::DecoderImpl;
 ///
 /// # Implementing this trait manually
 ///
-/// If you want to implement this trait for your type, the easiest way is to add a `#[derive(bincode::Decode)]`, build and check your `target/` folder. This should generate a `<Struct name>_Decode.rs` file.
+/// If you want to implement this trait for your type, the easiest way is to add a `#[derive(bincode::Decode)]`, build and check your `target/generated/bincode/` folder. This should generate a `<Struct name>_Decode.rs` file.
 ///
 /// For this struct:
 ///
