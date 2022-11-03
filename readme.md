@@ -108,4 +108,4 @@ Bincode will encode enum variants as a `u32`. If you're worried about storage si
 
 Currently we have not found a compelling case to respect `#[repr(...)]`. You're most likely trying to interop with a format that is similar-but-not-quite-bincode. We only support our own protocol ([spec](https://github.com/bincode-org/bincode/blob/trunk/docs/spec.md)).
 
-If you really want to use bincode to encode/decode a different protocol, consider implementing `Encode` and `Decode` yourself. `bincode-derive` will output the generated implementation in `target/<name>_Encode.rs` and `target/<name>_Decode.rs` which should get you started.
+If you really want to use bincode to encode/decode a different protocol, consider implementing `Encode` and `Decode` yourself. `bincode-derive` will output the generated implementation in `target/generated/bincode/<name>_Encode.rs` and `target/generated/bincode/<name>_Decode.rs` which should get you started.

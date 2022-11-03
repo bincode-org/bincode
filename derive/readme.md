@@ -25,4 +25,4 @@ This is supported by the structs in `src/generate`. The most notable points of t
 
 For additional derive testing, see the test cases in `../tests`
 
-For testing purposes, all generated code is outputted to the current `target` folder, under file name `<struct/enum name>_Encode.rs` and `<struct/enum name>_Decode.rs`. This can help with debugging.
+For testing purposes, all generated code is outputted to the current `target/generated/bincode` folder, under file name `<struct/enum name>_Encode.rs` and `<struct/enum name>_Decode.rs`. This can help with debugging.

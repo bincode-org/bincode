@@ -17,7 +17,7 @@ pub use self::encoder::EncoderImpl;
 ///
 /// # Implementing this trait manually
 ///
-/// If you want to implement this trait for your type, the easiest way is to add a `#[derive(bincode::Encode)]`, build and check your `target/` folder. This should generate a `<Struct name>_Encode.rs` file.
+/// If you want to implement this trait for your type, the easiest way is to add a `#[derive(bincode::Encode)]`, build and check your `target/generated/bincode/` folder. This should generate a `<Struct name>_Encode.rs` file.
 ///
 /// For this struct:
 ///
