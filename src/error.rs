@@ -179,6 +179,9 @@ pub enum DecodeError {
     },
 
     /// An uncommon error occurred, see the inner text for more information
+    Other(&'static str),
+
+    /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
 
