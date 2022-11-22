@@ -31,7 +31,7 @@ impl<T> Encode for PhantomData<T> {
 
 impl Encode for bool {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        if *self { 1u8 } else { 0u8 }.encode(encoder)
+        u8::from(*self).encode(encoder)
     }
 }
 
