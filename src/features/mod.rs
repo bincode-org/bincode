@@ -16,3 +16,7 @@ pub use self::derive::*;
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde;
+
+#[cfg(feature = "smallvec")]
+#[cfg_attr(docsrs, doc(cfg(feature = "smallvec")))]
+mod impl_smallvec;
