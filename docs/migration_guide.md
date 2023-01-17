@@ -60,7 +60,7 @@ Then replace the following functions: (`Configuration` is `bincode::config::lega
 |||
 |`bincode::serialize(T)`|`bincode::serde::encode_to_vec(T, Configuration)`<br />`bincode::serde::encode_into_slice(T, &mut [u8], Configuration)`|
 |`bincode::serialize_into(std::io::Write, T)`|`bincode::serde::encode_into_std_write(T, std::io::Write, Configuration)`|
-|`bincode::serialized_size(T)`|Currently not implemented|
+|`bincode::serialized_size(T)`|`bincode::serde::encoded_size(T, Configuration)`|
 
 ## Migrating to `bincode-derive`
 
@@ -98,7 +98,7 @@ Then replace the following functions: (`Configuration` is `bincode::config::lega
 |||
 |`bincode::serialize(T)`|`bincode::encode_to_vec(T, Configuration)`<br />`bincode::encode_into_slice(t: T, &mut [u8], Configuration)`|
 |`bincode::serialize_into(std::io::Write, T)`|`bincode::encode_into_std_write(T, std::io::Write, Configuration)`|
-|`bincode::serialized_size(T)`|Currently not implemented|
+|`bincode::serialized_size(T)`|`bincode::encoded_size(T, Configuration)`|
 
 
 ### Bincode derive and libraries

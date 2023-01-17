@@ -4,6 +4,7 @@ use crate::{
     enc::{write::Writer, Encode, Encoder, EncoderImpl},
     error::{DecodeError, EncodeError},
     impl_borrow_decode,
+    size::EncodedSize,
 };
 use core::time::Duration;
 use std::{
@@ -134,9 +135,21 @@ impl<'a> Encode for &'a CStr {
     }
 }
 
+impl<'a> EncodedSize for &'a CStr {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        self.to_bytes().encoded_size::<C>()
+    }
+}
+
 impl Encode for CString {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
+    }
+}
+
+impl EncodedSize for CString {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        self.as_bytes().encoded_size::<C>()
     }
 }
 
@@ -159,6 +172,18 @@ where
             type_name: core::any::type_name::<Mutex<T>>(),
         })?;
         t.encode(encoder)
+    }
+}
+
+impl<T> EncodedSize for Mutex<T>
+where
+    T: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let t = self.lock().map_err(|_| EncodeError::LockFailed {
+            type_name: core::any::type_name::<Mutex<T>>(),
+        })?;
+        t.encoded_size::<C>()
     }
 }
 
@@ -193,6 +218,18 @@ where
     }
 }
 
+impl<T> EncodedSize for RwLock<T>
+where
+    T: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let t = self.read().map_err(|_| EncodeError::LockFailed {
+            type_name: core::any::type_name::<RwLock<T>>(),
+        })?;
+        t.encoded_size::<C>()
+    }
+}
+
 impl<T> Decode for RwLock<T>
 where
     T: Decode,
@@ -224,6 +261,18 @@ impl Encode for SystemTime {
     }
 }
 
+impl EncodedSize for SystemTime {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let duration = self.duration_since(SystemTime::UNIX_EPOCH).map_err(|e| {
+            EncodeError::InvalidSystemTime {
+                inner: e,
+                time: std::boxed::Box::new(*self),
+            }
+        })?;
+        duration.encoded_size::<C>()
+    }
+}
+
 impl Decode for SystemTime {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
@@ -244,6 +293,15 @@ impl Encode for &'_ Path {
     }
 }
 
+impl EncodedSize for &'_ Path {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        match self.to_str() {
+            Some(s) => s.encoded_size::<C>(),
+            None => Err(EncodeError::InvalidPathCharacters),
+        }
+    }
+}
+
 impl<'de> BorrowDecode<'de> for &'de Path {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let str = <&'de str>::borrow_decode(decoder)?;
@@ -254,6 +312,12 @@ impl<'de> BorrowDecode<'de> for &'de Path {
 impl Encode for PathBuf {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_path().encode(encoder)
+    }
+}
+
+impl EncodedSize for PathBuf {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        self.as_path().encoded_size::<C>()
     }
 }
 
@@ -280,6 +344,15 @@ impl Encode for IpAddr {
     }
 }
 
+impl EncodedSize for IpAddr {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        match self {
+            IpAddr::V4(v4) => Ok(0u32.encoded_size::<C>()? + v4.encoded_size::<C>()?),
+            IpAddr::V6(v6) => Ok(1u32.encoded_size::<C>()? + v6.encoded_size::<C>()?),
+        }
+    }
+}
+
 impl Decode for IpAddr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
@@ -301,6 +374,12 @@ impl Encode for Ipv4Addr {
     }
 }
 
+impl EncodedSize for Ipv4Addr {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        Ok(self.octets().len())
+    }
+}
+
 impl Decode for Ipv4Addr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 4];
@@ -313,6 +392,12 @@ impl_borrow_decode!(Ipv4Addr);
 impl Encode for Ipv6Addr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.writer().write(&self.octets())
+    }
+}
+
+impl EncodedSize for Ipv6Addr {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        Ok(self.octets().len())
     }
 }
 
@@ -340,6 +425,15 @@ impl Encode for SocketAddr {
     }
 }
 
+impl EncodedSize for SocketAddr {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        match self {
+            SocketAddr::V4(v4) => Ok(0u32.encoded_size::<C>()? + v4.encoded_size::<C>()?),
+            SocketAddr::V6(v6) => Ok(1u32.encoded_size::<C>()? + v6.encoded_size::<C>()?),
+        }
+    }
+}
+
 impl Decode for SocketAddr {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
@@ -362,6 +456,12 @@ impl Encode for SocketAddrV4 {
     }
 }
 
+impl EncodedSize for SocketAddrV4 {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        Ok(self.ip().encoded_size::<C>()? + self.port().encoded_size::<C>()?)
+    }
+}
+
 impl Decode for SocketAddrV4 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv4Addr::decode(decoder)?;
@@ -375,6 +475,12 @@ impl Encode for SocketAddrV6 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.ip().encode(encoder)?;
         self.port().encode(encoder)
+    }
+}
+
+impl EncodedSize for SocketAddrV6 {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        Ok(self.ip().encoded_size::<C>()? + self.port().encoded_size::<C>()?)
     }
 }
 
@@ -418,6 +524,21 @@ where
             Encode::encode(v, encoder)?;
         }
         Ok(())
+    }
+}
+
+impl<K, V, S> EncodedSize for HashMap<K, V, S>
+where
+    K: EncodedSize,
+    V: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for (k, v) in self.iter() {
+            size += k.encoded_size::<C>()?;
+            size += v.encoded_size::<C>()?;
+        }
+        Ok(size)
     }
 }
 
@@ -521,5 +642,18 @@ where
             item.encode(encoder)?;
         }
         Ok(())
+    }
+}
+
+impl<T, S> EncodedSize for HashSet<T, S>
+where
+    T: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for item in self.iter() {
+            size += item.encoded_size::<C>()?;
+        }
+        Ok(size)
     }
 }

@@ -31,3 +31,9 @@ name = "compat"
 path = "fuzz_targets/compat.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "encoded_size"
+path = "fuzz_targets/encoded_size.rs"
+test = false
+doc = false

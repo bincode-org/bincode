@@ -62,6 +62,59 @@ impl DeriveStruct {
         Ok(())
     }
 
+    pub fn generate_encoded_size(self, generator: &mut Generator) -> Result<()> {
+        let crate_name = &self.attributes.crate_name;
+        generator
+            .impl_for(&format!("{}::EncodedSize", crate_name))
+            .modify_generic_constraints(|generics, where_constraints| {
+                if let Some((bounds, lit)) =
+                    (self.attributes.encoded_size_bounds.as_ref()).or(self.attributes.bounds.as_ref())
+                {
+                    where_constraints.clear();
+                    where_constraints
+                        .push_parsed_constraint(bounds)
+                        .map_err(|e| e.with_span(lit.span()))?;
+                } else {
+                    for g in generics.iter_generics() {
+                        where_constraints
+                            .push_constraint(g, format!("{}::EncodedSize", crate_name))
+                            .unwrap();
+                    }
+                }
+                Ok(())
+            })?
+            .generate_fn("encoded_size")
+            .with_generic_deps("__C", [format!("{}::config::Config", crate_name)])
+            .with_self_arg(virtue::generate::FnSelfArg::RefSelf)
+            .with_return_type(format!(
+                "core::result::Result<usize, {}::error::EncodeError>",
+                crate_name
+            ))
+            .body(|fn_body| {
+                fn_body.push_parsed("let mut __encoded_size = 0;")?;
+                for field in self.fields.names() {
+                    let attributes = field
+                        .attributes()
+                        .get_attribute::<FieldAttributes>()?
+                        .unwrap_or_default();
+                    if attributes.with_serde {
+                        fn_body.push_parsed(format!(
+                            "__encoded_size += {0}::EncodedSize::encoded_size::<__C>(&{0}::serde::Compat(&self.{1}))?;",
+                            crate_name, field
+                        ))?;
+                    } else {
+                        fn_body.push_parsed(format!(
+                            "__encoded_size += {}::EncodedSize::encoded_size::<__C>(&self.{})?;",
+                            crate_name, field
+                        ))?;
+                    }
+                }
+                fn_body.push_parsed("Ok(__encoded_size)")?;
+                Ok(())
+            })?;
+        Ok(())
+    }
+
     pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
         // Remember to keep this mostly in sync with generate_borrow_decode
         let crate_name = &self.attributes.crate_name;

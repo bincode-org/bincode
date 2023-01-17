@@ -5,7 +5,7 @@ extern crate alloc;
 use alloc::string::String;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode)]
+#[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode, bincode::EncodedSize)]
 pub struct SerdeRoundtrip {
     pub a: u32,
     #[serde(skip)]
@@ -13,7 +13,9 @@ pub struct SerdeRoundtrip {
     pub c: TupleS,
 }
 
-#[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode, PartialEq, Debug)]
+#[derive(
+    Serialize, Deserialize, bincode::Encode, bincode::Decode, bincode::EncodedSize, PartialEq, Debug,
+)]
 pub struct TupleS(f32, f32, f32);
 
 #[test]
@@ -32,16 +34,16 @@ fn test_serde_round_trip() {
     assert_eq!(result.b, 0);
 
     // validate bincode working
-    let bytes = bincode::serde::encode_to_vec(
-        SerdeRoundtrip {
-            a: 15,
-            b: 15,
-            c: TupleS(2.0, 3.0, 4.0),
-        },
-        bincode::config::standard(),
-    )
-    .unwrap();
+    let start = SerdeRoundtrip {
+        a: 15,
+        b: 15,
+        c: TupleS(2.0, 3.0, 4.0),
+    };
+    let encoded_size = bincode::serde::encoded_size(&start, bincode::config::standard()).unwrap();
+    let bytes = bincode::serde::encode_to_vec(start, bincode::config::standard()).unwrap();
+    assert_eq!(bytes.len(), encoded_size);
     assert_eq!(bytes, &[15, 0, 0, 0, 64, 0, 0, 64, 64, 0, 0, 128, 64]);
+
     let (result, len): (SerdeRoundtrip, usize) =
         bincode::serde::decode_from_slice(&bytes, bincode::config::standard()).unwrap();
     assert_eq!(result.a, 15);
@@ -75,8 +77,10 @@ fn test_serialize_deserialize_borrowed_data() {
     ];
 
     let mut result = [0u8; 20];
+    let encoded_size = bincode::serde::encoded_size(&input, bincode::config::standard()).unwrap();
     let len = bincode::serde::encode_into_slice(&input, &mut result, bincode::config::standard())
         .unwrap();
+    assert_eq!(len, encoded_size);
     let result = &result[..len];
     assert_eq!(result, expected);
 
@@ -120,8 +124,10 @@ fn test_serialize_deserialize_owned_data() {
     ];
 
     let mut result = [0u8; 20];
+    let encoded_size = bincode::serde::encoded_size(&input, bincode::config::standard()).unwrap();
     let len = bincode::serde::encode_into_slice(&input, &mut result, bincode::config::standard())
         .unwrap();
+    assert_eq!(len, encoded_size);
     let result = &result[..len];
     assert_eq!(result, expected);
 
@@ -143,7 +149,7 @@ fn test_serialize_deserialize_owned_data() {
 
 #[cfg(feature = "derive")]
 mod derive {
-    use bincode::{Decode, Encode};
+    use bincode::{Decode, Encode, EncodedSize};
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -151,13 +157,13 @@ mod derive {
         pub a: u32,
     }
 
-    #[derive(Decode, Encode, PartialEq, Eq, Debug)]
+    #[derive(Decode, Encode, EncodedSize, PartialEq, Eq, Debug)]
     pub struct StructWithSerde {
         #[bincode(with_serde)]
         pub serde: SerdeType,
     }
 
-    #[derive(Decode, Encode, PartialEq, Eq, Debug)]
+    #[derive(Decode, Encode, EncodedSize, PartialEq, Eq, Debug)]
     pub enum EnumWithSerde {
         Unit(#[bincode(with_serde)] SerdeType),
         Struct {
@@ -170,12 +176,18 @@ mod derive {
     fn test_serde_derive() {
         fn test_encode_decode<T>(start: T, expected_len: usize)
         where
-            T: bincode::Encode + bincode::Decode + PartialEq + core::fmt::Debug,
+            T: bincode::Encode
+                + bincode::Decode
+                + bincode::EncodedSize
+                + PartialEq
+                + core::fmt::Debug,
         {
             let mut slice = [0u8; 100];
+            let encoded_size = bincode::encoded_size(&start, bincode::config::standard()).unwrap();
             let len = bincode::encode_into_slice(&start, &mut slice, bincode::config::standard())
                 .unwrap();
             assert_eq!(len, expected_len);
+            assert_eq!(len, encoded_size);
             let slice = &slice[..len];
             let (result, len): (T, usize) =
                 bincode::decode_from_slice(slice, bincode::config::standard()).unwrap();

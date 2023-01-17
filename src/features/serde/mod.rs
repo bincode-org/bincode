@@ -58,10 +58,12 @@
 mod de_borrowed;
 mod de_owned;
 mod ser;
+mod size;
 
 pub use self::de_borrowed::*;
 pub use self::de_owned::*;
 pub use self::ser::*;
+pub use self::size::*;
 
 /// A serde-specific error that occurred while decoding.
 #[derive(Debug)]
@@ -219,6 +221,18 @@ where
         let serializer = ser::SerdeEncoder { enc: encoder };
         self.0.serialize(serializer)?;
         Ok(())
+    }
+}
+
+impl<T> crate::EncodedSize for Compat<T>
+where
+    T: serde::Serialize,
+{
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        let mut encoded_size = 0;
+        let serializer = size::SerdeEncodedSize::<'_, C>::new(&mut encoded_size);
+        self.0.serialize(serializer)?;
+        Ok(encoded_size)
     }
 }
 

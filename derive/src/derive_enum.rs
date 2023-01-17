@@ -135,6 +135,122 @@ impl DeriveEnum {
         Ok(())
     }
 
+    pub fn generate_encoded_size(self, generator: &mut Generator) -> Result<()> {
+        let crate_name = self.attributes.crate_name.as_str();
+        generator
+            .impl_for(format!("{}::EncodedSize", crate_name))
+            .modify_generic_constraints(|generics, where_constraints| {
+                if let Some((bounds, lit)) =
+                    (self.attributes.encoded_size_bounds.as_ref()).or(self.attributes.bounds.as_ref())
+                {
+                    where_constraints.clear();
+                    where_constraints
+                        .push_parsed_constraint(bounds)
+                        .map_err(|e| e.with_span(lit.span()))?;
+                } else {
+                    for g in generics.iter_generics() {
+                        where_constraints
+                            .push_constraint(g, format!("{}::EncodedSize", crate_name))
+                            .unwrap();
+                    }
+                }
+                Ok(())
+            })?
+            .generate_fn("encoded_size")
+            .with_generic_deps("__C", [format!("{}::config::Config", crate_name)])
+            .with_self_arg(FnSelfArg::RefSelf)
+            .with_return_type(format!(
+                "core::result::Result<usize, {}::error::EncodeError>",
+                crate_name
+            ))
+            .body(|fn_body| {
+                fn_body.ident_str("match");
+                fn_body.ident_str("self");
+                fn_body.group(Delimiter::Brace, |match_body| {
+                    if self.variants.is_empty() {
+                        self.encode_empty_enum_case(match_body)?;
+                    }
+                    for (variant_index, variant) in self.iter_fields() {
+                        // Self::Variant
+                        match_body.ident_str("Self");
+                        match_body.puncts("::");
+                        match_body.ident(variant.name.clone());
+
+                        // if we have any fields, declare them here
+                        // Self::Variant { a, b, c }
+                        if let Some(delimiter) = variant.fields.delimiter() {
+                            match_body.group(delimiter, |field_body| {
+                                for (idx, field_name) in
+                                    variant.fields.names().into_iter().enumerate()
+                                {
+                                    if idx != 0 {
+                                        field_body.punct(',');
+                                    }
+                                    field_body.push(
+                                        field_name.to_token_tree_with_prefix(TUPLE_FIELD_PREFIX),
+                                    );
+                                }
+                                Ok(())
+                            })?;
+                        }
+
+                        // Arrow
+                        // Self::Variant { a, b, c } =>
+                        match_body.puncts("=>");
+
+                        // Body of this variant
+                        // Note that the fields are available as locals because of the match destructuring above
+                        // {
+                        //      encoder.encode_u32(n)?;
+                        //      bincode::Encode::encode(a, encoder)?;
+                        //      bincode::Encode::encode(b, encoder)?;
+                        //      bincode::Encode::encode(c, encoder)?;
+                        // }
+                        match_body.group(Delimiter::Brace, |body| {
+                            // variant index
+                            body.push_parsed(format!("let mut __encoded_size = <u32 as {}::EncodedSize>::encoded_size::<__C>", crate_name))?;
+                            body.group(Delimiter::Parenthesis, |args| {
+                                args.punct('&');
+                                args.group(Delimiter::Parenthesis, |num| {
+                                    num.extend(variant_index);
+                                    Ok(())
+                                })?;
+                                Ok(())
+                            })?;
+                            body.punct('?');
+                            body.punct(';');
+                            // If we have any fields, add up all their sizes them all one by one
+                            for field_name in variant.fields.names() {
+                                let attributes = field_name
+                                    .attributes()
+                                    .get_attribute::<FieldAttributes>()?
+                                    .unwrap_or_default();
+                                if attributes.with_serde {
+                                    body.push_parsed(format!(
+                                        "__encoded_size += {0}::EncodedSize::encoded_size::<__C>(&{0}::serde::Compat({1}))?;",
+                                        crate_name,
+                                        field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                    ))?;
+                                } else {
+                                    body.push_parsed(format!(
+                                        "__encoded_size += {0}::EncodedSize::encoded_size::<__C>({1})?;",
+                                        crate_name,
+                                        field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                    ))?;
+                                }
+                            }
+                            body.push_parsed("Ok(__encoded_size)")?;
+                            Ok(())
+                        })?;
+                        match_body.punct(',');
+                    }
+                    Ok(())
+                })?;
+                Ok(())
+            })?;
+        Ok(())
+    }
+
     /// If we're encoding an empty enum, we need to add an empty case in the form of:
     /// `_ => core::unreachable!(),`
     fn encode_empty_enum_case(&self, builder: &mut StreamBuilder) -> Result {

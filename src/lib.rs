@@ -94,10 +94,12 @@ pub mod config;
 pub mod de;
 pub mod enc;
 pub mod error;
+pub mod size;
 
 pub use atomic::*;
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
+pub use size::EncodedSize;
 
 use config::Config;
 
@@ -175,6 +177,14 @@ pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
 ) -> Result<D, error::DecodeError> {
     let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
     D::decode(&mut decoder)
+}
+
+/// Determine the encoded size of a value.
+pub fn encoded_size<E: EncodedSize, C: Config>(
+    val: E,
+    _config: C,
+) -> Result<usize, error::EncodeError> {
+    val.encoded_size::<C>()
 }
 
 // TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.

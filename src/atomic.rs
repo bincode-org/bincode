@@ -1,4 +1,4 @@
-use crate::{de::Decode, enc::Encode, impl_borrow_decode};
+use crate::{de::Decode, enc::Encode, impl_borrow_decode, size::EncodedSize};
 use core::sync::atomic::Ordering;
 
 #[cfg(target_has_atomic = "ptr")]
@@ -27,6 +27,13 @@ impl Encode for AtomicBool {
 }
 
 #[cfg(target_has_atomic = "8")]
+impl EncodedSize for AtomicBool {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
+    }
+}
+
+#[cfg(target_has_atomic = "8")]
 impl Decode for AtomicBool {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicBool::new(Decode::decode(decoder)?))
@@ -42,6 +49,13 @@ impl Encode for AtomicU8 {
         encoder: &mut E,
     ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "8")]
+impl EncodedSize for AtomicU8 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
     }
 }
 
@@ -65,6 +79,13 @@ impl Encode for AtomicU16 {
 }
 
 #[cfg(target_has_atomic = "16")]
+impl EncodedSize for AtomicU16 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
+    }
+}
+
+#[cfg(target_has_atomic = "16")]
 impl Decode for AtomicU16 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU16::new(Decode::decode(decoder)?))
@@ -80,6 +101,13 @@ impl Encode for AtomicU32 {
         encoder: &mut E,
     ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "32")]
+impl EncodedSize for AtomicU32 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
     }
 }
 
@@ -103,6 +131,13 @@ impl Encode for AtomicU64 {
 }
 
 #[cfg(target_has_atomic = "64")]
+impl EncodedSize for AtomicU64 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
+    }
+}
+
+#[cfg(target_has_atomic = "64")]
 impl Decode for AtomicU64 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicU64::new(Decode::decode(decoder)?))
@@ -118,6 +153,13 @@ impl Encode for AtomicUsize {
         encoder: &mut E,
     ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl EncodedSize for AtomicUsize {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
     }
 }
 
@@ -141,6 +183,13 @@ impl Encode for AtomicI8 {
 }
 
 #[cfg(target_has_atomic = "8")]
+impl EncodedSize for AtomicI8 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
+    }
+}
+
+#[cfg(target_has_atomic = "8")]
 impl Decode for AtomicI8 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI8::new(Decode::decode(decoder)?))
@@ -156,6 +205,13 @@ impl Encode for AtomicI16 {
         encoder: &mut E,
     ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "16")]
+impl EncodedSize for AtomicI16 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
     }
 }
 
@@ -179,6 +235,13 @@ impl Encode for AtomicI32 {
 }
 
 #[cfg(target_has_atomic = "32")]
+impl EncodedSize for AtomicI32 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
+    }
+}
+
+#[cfg(target_has_atomic = "32")]
 impl Decode for AtomicI32 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI32::new(Decode::decode(decoder)?))
@@ -198,6 +261,13 @@ impl Encode for AtomicI64 {
 }
 
 #[cfg(target_has_atomic = "64")]
+impl EncodedSize for AtomicI64 {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
+    }
+}
+
+#[cfg(target_has_atomic = "64")]
 impl Decode for AtomicI64 {
     fn decode<D: crate::de::Decoder>(decoder: &mut D) -> Result<Self, crate::error::DecodeError> {
         Ok(AtomicI64::new(Decode::decode(decoder)?))
@@ -213,6 +283,13 @@ impl Encode for AtomicIsize {
         encoder: &mut E,
     ) -> Result<(), crate::error::EncodeError> {
         self.load(Ordering::SeqCst).encode(encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl EncodedSize for AtomicIsize {
+    fn encoded_size<C: crate::config::Config>(&self) -> Result<usize, crate::error::EncodeError> {
+        self.load(Ordering::SeqCst).encoded_size::<C>()
     }
 }
 

@@ -2,7 +2,9 @@ use crate::{
     de::{BorrowDecoder, Decode, Decoder},
     enc::{self, Encode, Encoder},
     error::{DecodeError, EncodeError},
-    impl_borrow_decode, BorrowDecode, Config,
+    impl_borrow_decode,
+    size::EncodedSize,
+    BorrowDecode, Config,
 };
 #[cfg(target_has_atomic = "ptr")]
 use alloc::sync::Arc;
@@ -98,6 +100,19 @@ where
     }
 }
 
+impl<T> EncodedSize for BinaryHeap<T>
+where
+    T: EncodedSize + Ord,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for val in self.iter() {
+            size += val.encoded_size::<C>()?;
+        }
+        Ok(size)
+    }
+}
+
 impl<K, V> Decode for BTreeMap<K, V>
 where
     K: Decode + Ord,
@@ -156,6 +171,21 @@ where
     }
 }
 
+impl<K, V> EncodedSize for BTreeMap<K, V>
+where
+    K: EncodedSize + Ord,
+    V: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for (key, val) in self.iter() {
+            size += key.encoded_size::<C>()?;
+            size += val.encoded_size::<C>()?;
+        }
+        Ok(size)
+    }
+}
+
 impl<T> Decode for BTreeSet<T>
 where
     T: Decode + Ord,
@@ -205,6 +235,19 @@ where
             item.encode(encoder)?;
         }
         Ok(())
+    }
+}
+
+impl<T> EncodedSize for BTreeSet<T>
+where
+    T: EncodedSize + Ord,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for item in self.iter() {
+            size += item.encoded_size::<C>()?;
+        }
+        Ok(size)
     }
 }
 
@@ -260,6 +303,19 @@ where
     }
 }
 
+impl<T> EncodedSize for VecDeque<T>
+where
+    T: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for item in self.iter() {
+            size += item.encoded_size::<C>()?;
+        }
+        Ok(size)
+    }
+}
+
 impl<T> Decode for Vec<T>
 where
     T: Decode,
@@ -311,6 +367,19 @@ where
     }
 }
 
+impl<T> EncodedSize for Vec<T>
+where
+    T: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        let mut size = crate::size::size_slice_len::<C>(self.len())?;
+        for item in self.iter() {
+            size += item.encoded_size::<C>()?;
+        }
+        Ok(size)
+    }
+}
+
 impl Decode for String {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
@@ -331,6 +400,12 @@ impl_borrow_decode!(Box<str>);
 impl Encode for String {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_bytes().encode(encoder)
+    }
+}
+
+impl EncodedSize for String {
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        self.as_bytes().encoded_size::<C>()
     }
 }
 
@@ -359,6 +434,15 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
+    }
+}
+
+impl<T> EncodedSize for Box<T>
+where
+    T: EncodedSize + ?Sized,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        T::encoded_size::<C>(self)
     }
 }
 
@@ -413,6 +497,16 @@ where
     }
 }
 
+impl<'cow, T> EncodedSize for Cow<'cow, T>
+where
+    T: ToOwned + ?Sized,
+    for<'a> &'a T: EncodedSize,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        self.as_ref().encoded_size::<C>()
+    }
+}
+
 impl<T> Decode for Rc<T>
 where
     T: Decode,
@@ -439,6 +533,15 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
+    }
+}
+
+impl<T> EncodedSize for Rc<T>
+where
+    T: EncodedSize + ?Sized,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        T::encoded_size::<C>(self)
     }
 }
 
@@ -507,6 +610,16 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         T::encode(self, encoder)
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<T> EncodedSize for Arc<T>
+where
+    T: EncodedSize + ?Sized,
+{
+    fn encoded_size<C: Config>(&self) -> Result<usize, EncodeError> {
+        T::encoded_size::<C>(self)
     }
 }
 

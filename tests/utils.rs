@@ -7,6 +7,7 @@ where
     CMP: Fn(&V, &V) -> bool,
 {
     let mut buffer = [0u8; 2048];
+    let calculated_size = bincode::encoded_size(&element, config).unwrap();
     let len = bincode::encode_into_slice(&element, &mut buffer, config).unwrap();
     println!(
         "{:?} ({}): {:?} ({:?})",
@@ -14,6 +15,11 @@ where
         core::any::type_name::<V>(),
         &buffer[..len],
         core::any::type_name::<C>()
+    );
+    assert_eq!(
+        calculated_size, len,
+        "Calculated encoded size does not match actual encoded size\nCalculated: {:?}\nActual:     {:?}",
+        calculated_size, len,
     );
     let (decoded, decoded_len): (V, usize) = bincode::decode_from_slice(&buffer, config).unwrap();
 
@@ -141,13 +147,20 @@ where
 
 #[cfg(feature = "serde")]
 pub trait TheSameTrait:
-    bincode::Encode + bincode::Decode + serde::de::DeserializeOwned + serde::Serialize + Debug + 'static
+    bincode::Encode
+    + bincode::Decode
+    + bincode::EncodedSize
+    + serde::de::DeserializeOwned
+    + serde::Serialize
+    + Debug
+    + 'static
 {
 }
 #[cfg(feature = "serde")]
 impl<T> TheSameTrait for T where
     T: bincode::Encode
         + bincode::Decode
+        + bincode::EncodedSize
         + serde::de::DeserializeOwned
         + serde::Serialize
         + Debug
@@ -156,9 +169,15 @@ impl<T> TheSameTrait for T where
 }
 
 #[cfg(not(feature = "serde"))]
-pub trait TheSameTrait: bincode::Encode + bincode::Decode + Debug + 'static {}
+pub trait TheSameTrait:
+    bincode::Encode + bincode::Decode + bincode::EncodedSize + Debug + 'static
+{
+}
 #[cfg(not(feature = "serde"))]
-impl<T> TheSameTrait for T where T: bincode::Encode + bincode::Decode + Debug + 'static {}
+impl<T> TheSameTrait for T where
+    T: bincode::Encode + bincode::Decode + bincode::EncodedSize + Debug + 'static
+{
+}
 
 #[allow(dead_code)] // This is not used in every test
 pub fn the_same<V: TheSameTrait + PartialEq>(element: V) {
