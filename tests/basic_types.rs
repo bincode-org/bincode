@@ -245,7 +245,7 @@ fn test_duration_out_of_range() {
     let mut input = [0u8; 14];
 
     bincode::encode_into_slice(
-        &(u64::MAX, u32::MAX),
+        (u64::MAX, u32::MAX),
         &mut input,
         bincode::config::standard(),
     )
@@ -269,7 +269,7 @@ fn test_duration_wrapping() {
     let mut input = [0u8; 14];
 
     bincode::encode_into_slice(
-        &(u64::MAX - 4, u32::MAX),
+        (u64::MAX - 4, u32::MAX),
         &mut input,
         bincode::config::standard(),
     )
