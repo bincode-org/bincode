@@ -35,3 +35,9 @@ mod issue_570;
 
 #[path = "issues/issue_592.rs"]
 mod issue_592;
+
+#[derive(Debug, bincode::Decode, PartialEq)]
+struct MyStruct {
+    value: [u8; 3],
+    len: u8,
+}

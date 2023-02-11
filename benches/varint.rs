@@ -9,7 +9,7 @@ fn slice_varint_u8(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("slice_varint_u8", |b| {
         b.iter(|| {
@@ -25,7 +25,7 @@ fn slice_varint_u16(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("slice_varint_u16", |b| {
         b.iter(|| {
@@ -41,7 +41,7 @@ fn slice_varint_u32(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("slice_varint_u32", |b| {
         b.iter(|| {
@@ -57,7 +57,7 @@ fn slice_varint_u64(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("slice_varint_u64", |b| {
         b.iter(|| {
@@ -73,7 +73,7 @@ fn bufreader_varint_u8(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("bufreader_varint_u8", |b| {
         b.iter(|| {
@@ -91,7 +91,7 @@ fn bufreader_varint_u16(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("bufreader_varint_u16", |b| {
         b.iter(|| {
@@ -109,7 +109,7 @@ fn bufreader_varint_u32(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("bufreader_varint_u32", |b| {
         b.iter(|| {
@@ -127,7 +127,7 @@ fn bufreader_varint_u64(c: &mut Criterion) {
         .take(10_000)
         .collect();
     let config = config::standard();
-    let bytes = bincode::encode_to_vec(&input, config).unwrap();
+    let bytes = bincode::encode_to_vec(input, config).unwrap();
 
     c.bench_function("bufreader_varint_u64", |b| {
         b.iter(|| {

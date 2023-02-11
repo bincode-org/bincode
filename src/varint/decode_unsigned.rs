@@ -54,8 +54,8 @@ where
             let mut bytes = [0u8; 4];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endian::Big => u32::from_be_bytes(bytes) as u32,
-                Endian::Little => u32::from_le_bytes(bytes) as u32,
+                Endian::Big => u32::from_be_bytes(bytes),
+                Endian::Little => u32::from_le_bytes(bytes),
             })
         }
         U64_BYTE => invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
@@ -94,8 +94,8 @@ where
             let mut bytes = [0u8; 8];
             read.read(&mut bytes)?;
             Ok(match endian {
-                Endian::Big => u64::from_be_bytes(bytes) as u64,
-                Endian::Little => u64::from_le_bytes(bytes) as u64,
+                Endian::Big => u64::from_be_bytes(bytes),
+                Endian::Little => u64::from_le_bytes(bytes),
             })
         }
         U128_BYTE => invalid_varint_discriminant(IntegerType::U64, IntegerType::U128),
@@ -242,7 +242,7 @@ pub fn varint_decode_u32<R: Reader>(read: &mut R, endian: Endian) -> Result<u32,
                     Endian::Little => u32::from_le_bytes(bytes[..4].try_into().unwrap()),
                 };
 
-                (val as u32, 5)
+                (val, 5)
             }
             U64_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U64),
             U128_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
@@ -283,7 +283,7 @@ pub fn varint_decode_u64<R: Reader>(read: &mut R, endian: Endian) -> Result<u64,
                     Endian::Little => u64::from_le_bytes(bytes[..8].try_into().unwrap()),
                 };
 
-                (val as u64, 9)
+                (val, 9)
             }
             U128_BYTE => return invalid_varint_discriminant(IntegerType::U32, IntegerType::U128),
             _ => return invalid_varint_discriminant(IntegerType::U32, IntegerType::Reserved),
@@ -371,7 +371,7 @@ pub fn varint_decode_u128<R: Reader>(read: &mut R, endian: Endian) -> Result<u12
                     Endian::Little => u128::from_le_bytes(bytes[..16].try_into().unwrap()),
                 };
 
-                (val as u128, 17)
+                (val, 17)
             }
             _ => return invalid_varint_discriminant(IntegerType::Usize, IntegerType::Reserved),
         };
