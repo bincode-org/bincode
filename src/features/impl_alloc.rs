@@ -1,6 +1,10 @@
 use crate::{
     de::{read::Reader, BorrowDecoder, Decode, Decoder},
-    enc::{self, write::Writer, Encode, Encoder},
+    enc::{
+        self,
+        write::{SizeWriter, Writer},
+        Encode, Encoder,
+    },
     error::{DecodeError, EncodeError},
     impl_borrow_decode, BorrowDecode, Config,
 };
@@ -21,6 +25,12 @@ pub(crate) struct VecWriter {
 }
 
 impl VecWriter {
+    /// Create a new vec writer with the given capacity
+    pub fn with_capacity(cap: usize) -> Self {
+        Self {
+            inner: Vec::with_capacity(cap),
+        }
+    }
     // May not be used in all feature combinations
     #[allow(dead_code)]
     pub(crate) fn collect(self) -> Vec<u8> {
@@ -29,6 +39,7 @@ impl VecWriter {
 }
 
 impl enc::write::Writer for VecWriter {
+    #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.inner.extend_from_slice(bytes);
         Ok(())
@@ -40,7 +51,12 @@ impl enc::write::Writer for VecWriter {
 /// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec<u8>, EncodeError> {
-    let writer = VecWriter::default();
+    let size = {
+        let mut size_writer = enc::EncoderImpl::<_, C>::new(SizeWriter::default(), config);
+        val.encode(&mut size_writer)?;
+        size_writer.into_writer().bytes_written
+    };
+    let writer = VecWriter::with_capacity(size);
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().inner)
@@ -274,7 +290,7 @@ where
             vec.resize(len, 0u8);
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            return Ok(unsafe { std::mem::transmute(vec) });
+            return Ok(unsafe { core::mem::transmute(vec) });
         }
         decoder.claim_container_read::<T>(len)?;
 
