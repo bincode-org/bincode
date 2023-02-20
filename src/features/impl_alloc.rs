@@ -1,6 +1,6 @@
 use crate::{
-    de::{BorrowDecoder, Decode, Decoder},
-    enc::{self, Encode, Encoder},
+    de::{read::Reader, BorrowDecoder, Decode, Decoder},
+    enc::{self, write::Writer, Encode, Encoder},
     error::{DecodeError, EncodeError},
     impl_borrow_decode, BorrowDecode, Config,
 };
@@ -262,10 +262,20 @@ where
 
 impl<T> Decode for Vec<T>
 where
-    T: Decode,
+    T: Decode + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
+
+        if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
+            decoder.claim_container_read::<T>(len)?;
+            // optimize for reading u8 vecs
+            let mut vec = Vec::new();
+            vec.resize(len, 0u8);
+            decoder.reader().read(&mut vec)?;
+            // Safety: Vec<T> is Vec<u8>
+            return Ok(unsafe { std::mem::transmute(vec) });
+        }
         decoder.claim_container_read::<T>(len)?;
 
         let mut vec = Vec::with_capacity(len);
@@ -300,10 +310,18 @@ where
 
 impl<T> Encode for Vec<T>
 where
-    T: Encode,
+    T: Encode + 'static,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
+        if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
+            // Safety: We just asserted that T == u8, so &[T] == &[u8]
+            // so we can cast to a &[u8] slice safely
+            let slice: &[u8] =
+                unsafe { core::slice::from_raw_parts(self.as_ptr().cast(), self.len()) };
+            encoder.writer().write(slice)?;
+            return Ok(());
+        }
         for item in self.iter() {
             item.encode(encoder)?;
         }
@@ -364,7 +382,7 @@ where
 
 impl<T> Decode for Box<[T]>
 where
-    T: Decode,
+    T: Decode + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
@@ -444,7 +462,7 @@ where
 
 impl<T> Decode for Rc<[T]>
 where
-    T: Decode,
+    T: Decode + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
@@ -513,7 +531,7 @@ where
 #[cfg(target_has_atomic = "ptr")]
 impl<T> Decode for Arc<[T]>
 where
-    T: Decode,
+    T: Decode + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
