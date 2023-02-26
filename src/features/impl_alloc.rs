@@ -331,10 +331,7 @@ where
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
         if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
-            // Safety: We just asserted that T == u8, so &[T] == &[u8]
-            // so we can cast to a &[u8] slice safely
-            let slice: &[u8] =
-                unsafe { core::slice::from_raw_parts(self.as_ptr().cast(), self.len()) };
+            let slice: &[u8] = unsafe { core::mem::transmute(self.as_slice()) };
             encoder.writer().write(slice)?;
             return Ok(());
         }

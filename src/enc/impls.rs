@@ -295,10 +295,17 @@ impl Encode for char {
 
 impl<T> Encode for [T]
 where
-    T: Encode,
+    T: Encode + 'static,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         super::encode_slice_len(encoder, self.len())?;
+
+        if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
+            let t: &[u8] = unsafe { core::mem::transmute(self) };
+            encoder.writer().write(t)?;
+            return Ok(());
+        }
+
         for item in self {
             item.encode(encoder)?;
         }
