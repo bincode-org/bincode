@@ -606,7 +606,7 @@ where
                 Ok(Err(u))
             }
             x => Err(DecodeError::UnexpectedVariant {
-                found: x as u32,
+                found: x,
                 allowed: &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
                 type_name: core::any::type_name::<Result<T, U>>(),
             }),
@@ -631,7 +631,7 @@ where
                 Ok(Err(u))
             }
             x => Err(DecodeError::UnexpectedVariant {
-                found: x as u32,
+                found: x,
                 allowed: &crate::error::AllowedEnumVariants::Range { max: 1, min: 0 },
                 type_name: core::any::type_name::<Result<T, U>>(),
             }),

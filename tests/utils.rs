@@ -7,7 +7,7 @@ where
     CMP: Fn(&V, &V) -> bool,
 {
     let mut buffer = [0u8; 2048];
-    let len = bincode::encode_into_slice(&element, &mut buffer, config).unwrap();
+    let len = bincode::encode_into_slice(element, &mut buffer, config).unwrap();
     println!(
         "{:?} ({}): {:?} ({:?})",
         element,
@@ -40,7 +40,7 @@ where
     use bincode::error::EncodeError;
 
     let mut buffer = [0u8; 2048];
-    let len = bincode::serde::encode_into_slice(&element, &mut buffer, config);
+    let len = bincode::serde::encode_into_slice(element, &mut buffer, config);
 
     let decoded = bincode::serde::decode_from_slice(&buffer, config);
 

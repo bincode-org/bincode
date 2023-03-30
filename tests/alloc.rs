@@ -1,4 +1,4 @@
-#![allow(clippy::blacklisted_name)]
+#![allow(clippy::disallowed_names)]
 #![cfg(feature = "alloc")]
 
 extern crate alloc;
