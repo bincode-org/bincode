@@ -42,20 +42,8 @@ impl enc::write::Writer for VecWriter {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.inner.try_reserve(bytes.len())?;
+        self.inner.extend_from_slice(bytes);
 
-        let start = self.inner.len();
-
-        // Get a slice of `&mut [MaybeUninit<u8>]` of the remaining capacity
-        let remaining = &mut self.inner.spare_capacity_mut()[..bytes.len()];
-        for (i, b) in bytes.iter().copied().enumerate() {
-            // TODO: is there a better way to copy from `&mut [MaybeUninit<u8>]` to `&[u8]`?
-            remaining[i].write(b);
-        }
-
-        unsafe {
-            // Safety: We reserved enough bytes, and the bytes have values written to them
-            self.inner.set_len(start + bytes.len());
-        }
         Ok(())
     }
 }
@@ -414,41 +402,9 @@ where
     }
 }
 
-#[cfg(feature = "unstable-strict-oom-checks")]
 impl<T> Decode for Box<[T]>
 where
     T: Decode + 'static,
-{
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        unsafe {
-            let mut result = Box::try_new_uninit_slice(len)?;
-
-            let mut guard = DropGuard {
-                slice: &mut result,
-                idx: 0,
-            };
-
-            while guard.idx < len {
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-                let t = T::decode(decoder)?;
-
-                guard.slice.get_unchecked_mut(guard.idx).write(t);
-                guard.idx += 1;
-            }
-
-            core::mem::forget(guard);
-            Ok(result.assume_init())
-        }
-    }
-}
-
-#[cfg(not(feature = "unstable-strict-oom-checks"))]
-impl<T> Decode for Box<[T]>
-where
-    T: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::<T>::decode(decoder)?;
