@@ -448,7 +448,10 @@ where
     T: Decode + Sized + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        if !D::C::SKIP_FIXED_ARRAY_LENGTH {
+        // Serde implements arrays up to length 32, and those are implemented as a tuple (no length prefix)
+        // When an array is larger than 32, serde falls back to a slice implementation, which does write the length
+        // so we cannot write the slice length if the length is less than 32
+        if N > 32 && !D::C::SKIP_FIXED_ARRAY_LENGTH {
             let length = super::decode_slice_len(decoder)?;
             if length != N {
                 return Err(DecodeError::ArrayLengthMismatch {

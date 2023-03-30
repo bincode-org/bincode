@@ -2,6 +2,7 @@
 fn test() {
     super::test_same((1,));
     super::test_same(TupleS(2.0, 3.0, 4.0));
+    super::test_same([2.0, 3.0, 4.0]);
     super::test_same(Option::<u32>::Some(5));
     super::test_same(Option::<u32>::None);
     super::test_same(Result::<u32, u8>::Ok(5));

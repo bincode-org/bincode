@@ -351,7 +351,10 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        if !E::C::SKIP_FIXED_ARRAY_LENGTH {
+        // Serde implements arrays up to length 32, and those are implemented as a tuple (no length prefix)
+        // When an array is larger than 32, serde falls back to a slice implementation, which does write the length
+        // so we cannot write the slice length if the length is less than 32
+        if N > 32 && !E::C::SKIP_FIXED_ARRAY_LENGTH {
             super::encode_slice_len(encoder, N)?;
         }
         for item in self.iter() {

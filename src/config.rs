@@ -253,6 +253,8 @@ impl InternalArrayLengthConfig for SkipFixedArrayLength {
 }
 
 /// Write the length of fixed size arrays (`[u8; N]`) before writing the array.
+///
+/// Because of how serde (and thus bincode 1) works, the length is never written when encoding an array with 32 elements or less. In those cases this flag does nothing.
 #[derive(Copy, Clone)]
 pub struct WriteFixedArrayLength {}
 
