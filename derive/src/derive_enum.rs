@@ -60,11 +60,10 @@ impl DeriveEnum {
 
                         // if we have any fields, declare them here
                         // Self::Variant { a, b, c }
-                        if let Some(delimiter) = variant.fields.delimiter() {
+                        if let Some(fields) = variant.fields.as_ref() {
+                            let delimiter = fields.delimiter();
                             match_body.group(delimiter, |field_body| {
-                                for (idx, field_name) in
-                                    variant.fields.names().into_iter().enumerate()
-                                {
+                                for (idx, field_name) in fields.names().into_iter().enumerate() {
                                     if idx != 0 {
                                         field_body.punct(',');
                                     }
@@ -104,23 +103,25 @@ impl DeriveEnum {
                             body.punct('?');
                             body.punct(';');
                             // If we have any fields, encode them all one by one
-                            for field_name in variant.fields.names() {
-                                let attributes = field_name
-                                    .attributes()
-                                    .get_attribute::<FieldAttributes>()?
-                                    .unwrap_or_default();
-                                if attributes.with_serde {
-                                    body.push_parsed(format!(
+                            if let Some(fields) = variant.fields.as_ref() {
+                                for field_name in fields.names() {
+                                    let attributes = field_name
+                                        .attributes()
+                                        .get_attribute::<FieldAttributes>()?
+                                        .unwrap_or_default();
+                                    if attributes.with_serde {
+                                        body.push_parsed(format!(
                                         "{0}::Encode::encode(&{0}::serde::Compat({1}), encoder)?;",
                                         crate_name,
                                         field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
                                     ))?;
-                                } else {
-                                    body.push_parsed(format!(
-                                        "{0}::Encode::encode({1}, encoder)?;",
-                                        crate_name,
-                                        field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
-                                    ))?;
+                                    } else {
+                                        body.push_parsed(format!(
+                                            "{0}::Encode::encode({1}, encoder)?;",
+                                            crate_name,
+                                            field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                        ))?;
+                                    }
                                 }
                             }
                             body.push_parsed("Ok(())")?;
@@ -181,7 +182,7 @@ impl DeriveEnum {
                 variant_inner.ident_str("allowed");
                 variant_inner.punct(':');
 
-                if self.variants.iter().any(|i| i.has_fixed_value()) {
+                if self.variants.iter().any(|i| i.value.is_some()) {
                     // we have fixed values, implement AllowedEnumVariants::Allowed
                     variant_inner.push_parsed(format!(
                         "&{}::error::AllowedEnumVariants::Allowed",
@@ -230,7 +231,7 @@ impl DeriveEnum {
                     where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
                 } else {
                     for g in generics.iter_generics() {
-                        where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
+                        where_constraints.push_constraint(g, format!("{}::Decode", crate_name))?;
                     }
                 }
                 Ok(())
@@ -272,27 +273,29 @@ impl DeriveEnum {
                                 variant_case_body.ident(variant.name.clone());
 
                                 variant_case_body.group(Delimiter::Brace, |variant_body| {
-                                    let is_tuple = matches!(variant.fields, Fields::Tuple(_));
-                                    for (idx, field) in variant.fields.names().into_iter().enumerate() {
-                                        if is_tuple {
-                                            variant_body.lit_usize(idx);
-                                        } else {
-                                            variant_body.ident(field.unwrap_ident().clone());
-                                        }
-                                        variant_body.punct(':');
-                                        let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                        if attributes.with_serde {
-                                            variant_body
-                                                .push_parsed(format!(
-                                                    "<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?.0,",
-                                                    crate_name
-                                                ))?;
-                                        } else {
-                                            variant_body
-                                                .push_parsed(format!(
-                                                    "{}::Decode::decode(decoder)?,",
-                                                    crate_name
-                                                ))?;
+                                    if let Some(fields) = variant.fields.as_ref() {
+                                        let is_tuple = matches!(fields, Fields::Tuple(_));
+                                        for (idx, field) in fields.names().into_iter().enumerate() {
+                                            if is_tuple {
+                                                variant_body.lit_usize(idx);
+                                            } else {
+                                                variant_body.ident(field.unwrap_ident().clone());
+                                            }
+                                            variant_body.punct(':');
+                                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                            if attributes.with_serde {
+                                                variant_body
+                                                    .push_parsed(format!(
+                                                        "<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?.0,",
+                                                        crate_name
+                                                    ))?;
+                                            } else {
+                                                variant_body
+                                                    .push_parsed(format!(
+                                                        "{}::Decode::decode(decoder)?,",
+                                                        crate_name
+                                                    ))?;
+                                            }
                                         }
                                     }
                                     Ok(())
@@ -326,6 +329,9 @@ impl DeriveEnum {
                 } else {
                     for g in generics.iter_generics() {
                         where_constraints.push_constraint(g, format!("{}::de::BorrowDecode<'__de>", crate_name)).unwrap();
+                    }
+                    for lt in generics.iter_lifetimes() {
+                        where_constraints.push_parsed_constraint(format!("'__de: '{}", lt.ident))?;
                     }
                 }
                 Ok(())
@@ -364,20 +370,22 @@ impl DeriveEnum {
                                 variant_case_body.ident(variant.name.clone());
 
                                 variant_case_body.group(Delimiter::Brace, |variant_body| {
-                                    let is_tuple = matches!(variant.fields, Fields::Tuple(_));
-                                    for (idx, field) in variant.fields.names().into_iter().enumerate() {
-                                        if is_tuple {
-                                            variant_body.lit_usize(idx);
-                                        } else {
-                                            variant_body.ident(field.unwrap_ident().clone());
-                                        }
-                                        variant_body.punct(':');
-                                        let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                        if attributes.with_serde {
-                                            variant_body
-                                                .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?.0,", crate_name))?;
-                                        } else {
-                                            variant_body.push_parsed(format!("{}::BorrowDecode::borrow_decode(decoder)?,", crate_name))?;
+                                    if let Some(fields) = variant.fields.as_ref() {
+                                        let is_tuple = matches!(fields, Fields::Tuple(_));
+                                        for (idx, field) in fields.names().into_iter().enumerate() {
+                                            if is_tuple {
+                                                variant_body.lit_usize(idx);
+                                            } else {
+                                                variant_body.ident(field.unwrap_ident().clone());
+                                            }
+                                            variant_body.punct(':');
+                                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                            if attributes.with_serde {
+                                                variant_body
+                                                    .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?.0,", crate_name))?;
+                                            } else {
+                                                variant_body.push_parsed(format!("{}::BorrowDecode::borrow_decode(decoder)?,", crate_name))?;
+                                            }
                                         }
                                     }
                                     Ok(())

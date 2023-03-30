@@ -4,7 +4,7 @@ use virtue::parse::Fields;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveStruct {
-    pub fields: Fields,
+    pub fields: Option<Fields>,
     pub attributes: ContainerAttributes,
 }
 
@@ -39,21 +39,23 @@ impl DeriveStruct {
                 crate_name
             ))
             .body(|fn_body| {
-                for field in self.fields.names() {
-                    let attributes = field
-                        .attributes()
-                        .get_attribute::<FieldAttributes>()?
-                        .unwrap_or_default();
-                    if attributes.with_serde {
-                        fn_body.push_parsed(format!(
-                            "{0}::Encode::encode(&{0}::serde::Compat(&self.{1}), encoder)?;",
-                            crate_name, field
-                        ))?;
-                    } else {
-                        fn_body.push_parsed(format!(
-                            "{}::Encode::encode(&self.{}, encoder)?;",
-                            crate_name, field
-                        ))?;
+                if let Some(fields) = self.fields.as_ref() {
+                    for field in fields.names() {
+                        let attributes = field
+                            .attributes()
+                            .get_attribute::<FieldAttributes>()?
+                            .unwrap_or_default();
+                        if attributes.with_serde {
+                            fn_body.push_parsed(format!(
+                                "{0}::Encode::encode(&{0}::serde::Compat(&self.{1}), encoder)?;",
+                                crate_name, field
+                            ))?;
+                        } else {
+                            fn_body.push_parsed(format!(
+                                "{}::Encode::encode(&self.{}, encoder)?;",
+                                crate_name, field
+                            ))?;
+                        }
                     }
                 }
                 fn_body.push_parsed("Ok(())")?;
@@ -95,22 +97,24 @@ impl DeriveStruct {
                         //      b: bincode::Decode::decode(decoder)?,
                         //      ...
                         // }
-                        for field in &self.fields.names() {
-                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                            if attributes.with_serde {
-                                struct_body
-                                    .push_parsed(format!(
-                                        "{1}: (<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?).0,",
-                                        crate_name,
-                                        field
-                                    ))?;
-                            } else {
-                                struct_body
-                                    .push_parsed(format!(
-                                        "{1}: {0}::Decode::decode(decoder)?,",
-                                        crate_name,
-                                        field
-                                    ))?;
+                        if let Some(fields) = self.fields.as_ref() {
+                            for field in fields.names() {
+                                let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                if attributes.with_serde {
+                                    struct_body
+                                        .push_parsed(format!(
+                                            "{1}: (<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?).0,",
+                                            crate_name,
+                                            field
+                                        ))?;
+                                } else {
+                                    struct_body
+                                        .push_parsed(format!(
+                                            "{1}: {0}::Decode::decode(decoder)?,",
+                                            crate_name,
+                                            field
+                                        ))?;
+                                }
                             }
                         }
                         Ok(())
@@ -137,6 +141,9 @@ impl DeriveStruct {
                     for g in generics.iter_generics() {
                         where_constraints.push_constraint(g, format!("{}::de::BorrowDecode<'__de>", crate_name)).unwrap();
                     }
+                    for lt in generics.iter_lifetimes() {
+                        where_constraints.push_parsed_constraint(format!("'__de: '{}", lt.ident))?;
+                    }
                 }
                 Ok(())
             })?
@@ -150,22 +157,24 @@ impl DeriveStruct {
                 fn_body.group(Delimiter::Parenthesis, |ok_group| {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
-                        for field in self.fields.names() {
-                            let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                            if attributes.with_serde {
-                                struct_body
-                                    .push_parsed(format!(
-                                        "{1}: (<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?).0,",
-                                        crate_name,
-                                        field
-                                    ))?;
-                            } else {
-                                struct_body
-                                    .push_parsed(format!(
-                                        "{1}: {0}::BorrowDecode::borrow_decode(decoder)?,",
-                                        crate_name,
-                                        field
-                                    ))?;
+                        if let Some(fields) = self.fields.as_ref() {
+                            for field in fields.names() {
+                                let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
+                                if attributes.with_serde {
+                                    struct_body
+                                        .push_parsed(format!(
+                                            "{1}: (<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?).0,",
+                                            crate_name,
+                                            field
+                                        ))?;
+                                } else {
+                                    struct_body
+                                        .push_parsed(format!(
+                                            "{1}: {0}::BorrowDecode::borrow_decode(decoder)?,",
+                                            crate_name,
+                                            field
+                                        ))?;
+                                }
                             }
                         }
                         Ok(())
