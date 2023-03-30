@@ -65,3 +65,18 @@ impl<'storage> Writer for SliceWriter<'storage> {
         Ok(())
     }
 }
+
+/// A writer that counts how many bytes were written. This is useful for e.g. pre-allocating buffers bfeore writing to them.
+#[derive(Default)]
+pub struct SizeWriter {
+    /// the amount of bytes that were written so far
+    pub bytes_written: usize,
+}
+impl Writer for SizeWriter {
+    #[inline(always)]
+    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
+        self.bytes_written += bytes.len();
+
+        Ok(())
+    }
+}
