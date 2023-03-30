@@ -126,7 +126,7 @@ assert_eq!(encoded.as_slice(), &[
 
 # Arrays
 
-Array length is encoded based on the `.write_fixed_array_length` and `.skip_fixed_array_length()` config. When an array length is written, it will be encoded as a `u64`.
+Array length is never encoded.
 
 Note that `&[T]` is encoded as a [Collection](#collections).
 
@@ -135,15 +135,9 @@ Note that `&[T]` is encoded as a [Collection](#collections).
 let arr: [u8; 5] = [10, 20, 30, 40, 50];
 let encoded = bincode::encode_to_vec(arr, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    5, 0, 0, 0, 0, 0, 0, 0, // The length, as a u64
     10, 20, 30, 40, 50, // the bytes
 ]);
 
-let encoded = bincode::encode_to_vec(arr, bincode::config::legacy().skip_fixed_array_length()).unwrap();
-assert_eq!(encoded.as_slice(), &[
-    // no length
-    10, 20, 30, 40, 50, // the bytes
-]);
 ```
 
 This applies to any type `T` that implements `Encode`/`Decode`
@@ -168,14 +162,6 @@ let arr: [Foo; 2] = [
 
 let encoded = bincode::encode_to_vec(&arr, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    2, 0, 0, 0, 0, 0, 0, 0, // Length of the array
-    10, 20, // First Foo
-    30, 40, // Second Foo
-]);
-
-let encoded = bincode::encode_to_vec(&arr, bincode::config::legacy().skip_fixed_array_length()).unwrap();
-assert_eq!(encoded.as_slice(), &[
-    // no length
     10, 20, // First Foo
     30, 40, // Second Foo
 ]);

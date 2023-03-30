@@ -13,9 +13,6 @@ where
     T: Deserialize<'de>,
     C: Config,
 {
-    if C::SKIP_FIXED_ARRAY_LENGTH {
-        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
-    }
     let reader = crate::de::read::SliceReader::new(slice);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder {
@@ -35,9 +32,6 @@ where
     T: DeserializeSeed<'de>,
     C: Config,
 {
-    if C::SKIP_FIXED_ARRAY_LENGTH {
-        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
-    }
     let reader = crate::de::read::SliceReader::new(slice);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder {

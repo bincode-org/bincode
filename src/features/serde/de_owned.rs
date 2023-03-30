@@ -16,9 +16,6 @@ where
     T: DeserializeOwned,
     C: Config,
 {
-    if C::SKIP_FIXED_ARRAY_LENGTH {
-        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
-    }
     let reader = crate::de::read::SliceReader::new(slice);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder { de: &mut decoder };
@@ -34,9 +31,6 @@ pub fn decode_from_std_read<D: DeserializeOwned, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
 ) -> Result<D, DecodeError> {
-    if C::SKIP_FIXED_ARRAY_LENGTH {
-        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
-    }
     let reader = crate::IoReader::new(src);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder { de: &mut decoder };
@@ -52,9 +46,6 @@ pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
     reader: R,
     config: C,
 ) -> Result<D, DecodeError> {
-    if C::SKIP_FIXED_ARRAY_LENGTH {
-        return Err(SerdeDecodeError::SkipFixedArrayLengthNotSupported.into());
-    }
     let mut decoder = crate::de::DecoderImpl::<_, C>::new(reader, config);
     let serde_decoder = SerdeDecoder { de: &mut decoder };
     D::deserialize(serde_decoder)

@@ -37,38 +37,29 @@ where
     C: bincode::config::Config,
     CMP: Fn(&V, &V) -> bool,
 {
-    use bincode::error::EncodeError;
-
     let mut buffer = [0u8; 2048];
     let len = bincode::serde::encode_into_slice(element, &mut buffer, config);
 
     let decoded = bincode::serde::decode_from_slice(&buffer, config);
 
-    if !C::SKIP_FIXED_ARRAY_LENGTH {
-        let len = len.unwrap();
-        let (decoded, decoded_len): (V, usize) = decoded.unwrap();
-        println!(
-            "{:?} ({}): {:?} ({:?})",
-            element,
-            core::any::type_name::<V>(),
-            &buffer[..len],
-            core::any::type_name::<C>()
-        );
+    let len = len.unwrap();
+    let (decoded, decoded_len): (V, usize) = decoded.unwrap();
+    println!(
+        "{:?} ({}): {:?} ({:?})",
+        element,
+        core::any::type_name::<V>(),
+        &buffer[..len],
+        core::any::type_name::<C>()
+    );
 
-        assert!(
-            cmp(element, &decoded),
-            "Comparison failed\nDecoded:  {:?}\nExpected: {:?}\nBytes: {:?}",
-            decoded,
-            element,
-            &buffer[..len],
-        );
-        assert_eq!(len, decoded_len);
-    } else {
-        match len.unwrap_err() {
-            EncodeError::Serde(bincode::serde::EncodeError::SkipFixedArrayLengthNotSupported) => {}
-            err => panic!("Unexpected error: {:?}", err),
-        }
-    }
+    assert!(
+        cmp(element, &decoded),
+        "Comparison failed\nDecoded:  {:?}\nExpected: {:?}\nBytes: {:?}",
+        decoded,
+        element,
+        &buffer[..len],
+    );
+    assert_eq!(len, decoded_len);
 }
 
 pub fn the_same_with_comparer<V, CMP>(element: V, cmp: CMP)
@@ -81,32 +72,28 @@ where
         &element,
         bincode::config::standard()
             .with_little_endian()
-            .with_fixed_int_encoding()
-            .skip_fixed_array_length(),
+            .with_fixed_int_encoding(),
         &cmp,
     );
     the_same_with_config(
         &element,
         bincode::config::standard()
             .with_big_endian()
-            .with_fixed_int_encoding()
-            .skip_fixed_array_length(),
+            .with_fixed_int_encoding(),
         &cmp,
     );
     the_same_with_config(
         &element,
         bincode::config::standard()
             .with_little_endian()
-            .with_variable_int_encoding()
-            .skip_fixed_array_length(),
+            .with_variable_int_encoding(),
         &cmp,
     );
     the_same_with_config(
         &element,
         bincode::config::standard()
             .with_big_endian()
-            .with_variable_int_encoding()
-            .skip_fixed_array_length(),
+            .with_variable_int_encoding(),
         &cmp,
     );
     the_same_with_config(
