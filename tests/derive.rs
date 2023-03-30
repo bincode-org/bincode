@@ -422,7 +422,7 @@ mod zoxide {
 
     #[test]
     fn test() {
-        let dirs = &[
+        let dirs = vec![
             Dir {
                 path: Cow::Borrowed("Foo"),
                 rank: 1.23,

@@ -1,9 +1,6 @@
 use super::{write::Writer, Encode, Encoder};
 use crate::{
-    config::{
-        Endian, IntEncoding, InternalArrayLengthConfig, InternalEndianConfig,
-        InternalIntEncodingConfig,
-    },
+    config::{Endian, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
     error::EncodeError,
 };
 use core::{
@@ -358,9 +355,6 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        if !E::C::SKIP_FIXED_ARRAY_LENGTH {
-            super::encode_slice_len(encoder, N)?;
-        }
         for item in self.iter() {
             item.encode(encoder)?;
         }

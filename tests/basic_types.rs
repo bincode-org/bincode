@@ -214,30 +214,25 @@ fn test_array() {
     let mut buffer = [0u8; 32];
     let input: [u8; 10] = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
     bincode::encode_into_slice(input, &mut buffer, bincode::config::standard()).unwrap();
-    assert_eq!(
-        &buffer[..11],
-        &[10, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    );
+    assert_eq!(&buffer[..10], &[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
 
     let (output, len): ([u8; 10], usize) =
         bincode::decode_from_slice(&buffer[..11], bincode::config::standard()).unwrap();
     assert_eq!(input, output);
-    assert_eq!(len, 11);
+    assert_eq!(len, 10);
 
     let mut buffer = [0u8; 32];
     let input: [u8; 1] = [1];
     let config = bincode::config::standard()
-        .write_fixed_array_length()
         .with_fixed_int_encoding()
         .with_little_endian();
     let len = bincode::encode_into_slice(input, &mut buffer, config).unwrap();
-    assert_eq!(len, 9);
-    assert_eq!(&buffer[..9], &[1, 0, 0, 0, 0, 0, 0, 0, 1]);
+    assert_eq!(len, 1);
+    assert_eq!(&buffer[..1], &[1]);
 
-    let (output, len): (&[u8], usize) =
-        bincode::borrow_decode_from_slice(&buffer[..9], config).unwrap();
+    let (output, len): ([u8; 1], usize) = bincode::decode_from_slice(&buffer[..9], config).unwrap();
+    assert_eq!(len, 1);
     assert_eq!(input, output);
-    assert_eq!(len, 9);
 }
 
 #[test]

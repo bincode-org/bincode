@@ -22,18 +22,22 @@ where
     // This is what bincode 1 serializes to. This will be our comparison value.
     let encoded = bincode_1_options.serialize(t).unwrap();
 
-    println!("Encoded {:?} as {:?}", t, encoded);
+    println!("Encoded {t:?} as {encoded:?}");
 
     // Test bincode 2 encode
     let bincode_2_output = bincode_2::encode_to_vec(t, bincode_2_config).unwrap();
-    assert_eq!(encoded, bincode_2_output, "{:?} serializes differently", t);
+    assert_eq!(
+        encoded,
+        bincode_2_output,
+        "{t:?} serializes differently\nbincode 2 config {:?}",
+        core::any::type_name::<C>(),
+    );
 
     // Test bincode 2 serde serialize
     let bincode_2_serde_output = bincode_2::serde::encode_to_vec(t, bincode_2_config).unwrap();
     assert_eq!(
         encoded, bincode_2_serde_output,
-        "{:?} serializes differently",
-        t
+        "{t:?} serializes differently"
     );
 
     // Test bincode 1 deserialize

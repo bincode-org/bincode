@@ -3,10 +3,7 @@ use super::{
     BorrowDecode, BorrowDecoder, Decode, Decoder,
 };
 use crate::{
-    config::{
-        Endian, IntEncoding, InternalArrayLengthConfig, InternalEndianConfig,
-        InternalIntEncodingConfig,
-    },
+    config::{Endian, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
     error::{DecodeError, IntegerType},
     impl_borrow_decode,
 };
@@ -448,16 +445,6 @@ where
     T: Decode + Sized + 'static,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        if !D::C::SKIP_FIXED_ARRAY_LENGTH {
-            let length = super::decode_slice_len(decoder)?;
-            if length != N {
-                return Err(DecodeError::ArrayLengthMismatch {
-                    found: length,
-                    required: N,
-                });
-            }
-        }
-
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
         // Optimize for `[u8; N]`
@@ -489,16 +476,6 @@ where
     T: BorrowDecode<'de> + Sized + 'static,
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        if !D::C::SKIP_FIXED_ARRAY_LENGTH {
-            let length = super::decode_slice_len(decoder)?;
-            if length != N {
-                return Err(DecodeError::ArrayLengthMismatch {
-                    found: length,
-                    required: N,
-                });
-            }
-        }
-
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
         // Optimize for `[u8; N]`

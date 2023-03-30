@@ -11,10 +11,7 @@
 //!     .with_little_endian()
 //!     // pick one of:
 //!     .with_variable_int_encoding()
-//!     .with_fixed_int_encoding()
-//!     // pick one of:
-//!     .skip_fixed_array_length()
-//!     .write_fixed_array_length();
+//!     .with_fixed_int_encoding();
 //! ```
 //!
 //! See [Configuration] for more information on the configuration options.
@@ -29,20 +26,16 @@ use core::marker::PhantomData;
 ///
 /// - [with_little_endian] and [with_big_endian]
 /// - [with_fixed_int_encoding] and [with_variable_int_encoding]
-/// - [skip_fixed_array_length] and [write_fixed_array_length]
 ///
 ///
 /// [with_little_endian]: #method.with_little_endian
 /// [with_big_endian]: #method.with_big_endian
 /// [with_fixed_int_encoding]: #method.with_fixed_int_encoding
 /// [with_variable_int_encoding]: #method.with_variable_int_encoding
-/// [skip_fixed_array_length]: #method.skip_fixed_array_length
-/// [write_fixed_array_length]: #method.write_fixed_array_length
 #[derive(Copy, Clone)]
-pub struct Configuration<E = LittleEndian, I = Varint, A = WriteFixedArrayLength, L = NoLimit> {
+pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
-    _a: PhantomData<A>,
     _l: PhantomData<L>,
 }
 
@@ -59,7 +52,6 @@ pub struct Configuration<E = LittleEndian, I = Varint, A = WriteFixedArrayLength
 /// The default config for bincode 2.0. By default this will be:
 /// - Little endian
 /// - Variable int encoding
-/// - Write fixed array length
 pub const fn standard() -> Configuration {
     generate()
 }
@@ -67,34 +59,32 @@ pub const fn standard() -> Configuration {
 /// Creates the "legacy" default config. This is the default config that was present in bincode 1.0
 /// - Little endian
 /// - Fixed int length encoding
-/// - Write fixed array length
-pub const fn legacy() -> Configuration<LittleEndian, Fixint, WriteFixedArrayLength, NoLimit> {
+pub const fn legacy() -> Configuration<LittleEndian, Fixint, NoLimit> {
     generate()
 }
 
-impl<E, I, A, L> Default for Configuration<E, I, A, L> {
+impl<E, I, L> Default for Configuration<E, I, L> {
     fn default() -> Self {
         generate()
     }
 }
 
-const fn generate<E, I, A, L>() -> Configuration<E, I, A, L> {
+const fn generate<E, I, L>() -> Configuration<E, I, L> {
     Configuration {
         _e: PhantomData,
         _i: PhantomData,
-        _a: PhantomData,
         _l: PhantomData,
     }
 }
 
-impl<E, I, A, L> Configuration<E, I, A, L> {
+impl<E, I, L> Configuration<E, I, L> {
     /// Makes bincode encode all integer types in big endian.
-    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, A, L> {
+    pub const fn with_big_endian(self) -> Configuration<BigEndian, I, L> {
         generate()
     }
 
     /// Makes bincode encode all integer types in little endian.
-    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, A, L> {
+    pub const fn with_little_endian(self) -> Configuration<LittleEndian, I, L> {
         generate()
     }
 
@@ -155,7 +145,7 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     ///
     /// Note that u256 and the like are unsupported by this format; if and when they are added to the
     /// language, they may be supported via the extension point given by the 255 byte.
-    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, A, L> {
+    pub const fn with_variable_int_encoding(self) -> Configuration<E, Varint, L> {
         generate()
     }
 
@@ -164,51 +154,29 @@ impl<E, I, A, L> Configuration<E, I, A, L> {
     /// * Fixed size integers are encoded directly
     /// * Enum discriminants are encoded as u32
     /// * Lengths and usize are encoded as u64
-    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, A, L> {
-        generate()
-    }
-
-    /// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array
-    ///
-    /// **NOTE:** This is not supported if you're using the `bincode::serde::*` functions, the `#[bincode(with_serde)]` attribute, or the `Compat` struct.
-    pub const fn skip_fixed_array_length(self) -> Configuration<E, I, SkipFixedArrayLength, L> {
-        generate()
-    }
-
-    /// Write the length of fixed size arrays (`[u8; N]`) before writing the array
-    pub const fn write_fixed_array_length(self) -> Configuration<E, I, WriteFixedArrayLength, L> {
+    pub const fn with_fixed_int_encoding(self) -> Configuration<E, Fixint, L> {
         generate()
     }
 
     /// Sets the byte limit to `limit`.
-    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, A, Limit<N>> {
+    pub const fn with_limit<const N: usize>(self) -> Configuration<E, I, Limit<N>> {
         generate()
     }
 
     /// Clear the byte limit.
-    pub const fn with_no_limit(self) -> Configuration<E, I, A, NoLimit> {
+    pub const fn with_no_limit(self) -> Configuration<E, I, NoLimit> {
         generate()
     }
 }
 
 /// Indicates a type is valid for controlling the bincode configuration
 pub trait Config:
-    InternalEndianConfig
-    + InternalArrayLengthConfig
-    + InternalIntEncodingConfig
-    + InternalLimitConfig
-    + Copy
-    + Clone
+    InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone
 {
 }
 
 impl<T> Config for T where
-    T: InternalEndianConfig
-        + InternalArrayLengthConfig
-        + InternalIntEncodingConfig
-        + InternalLimitConfig
-        + Copy
-        + Clone
+    T: InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone
 {
 }
 
@@ -244,22 +212,6 @@ impl InternalIntEncodingConfig for Varint {
     const INT_ENCODING: IntEncoding = IntEncoding::Variable;
 }
 
-/// Skip writing the length of fixed size arrays (`[u8; N]`) before writing the array.
-#[derive(Copy, Clone)]
-pub struct SkipFixedArrayLength {}
-
-impl InternalArrayLengthConfig for SkipFixedArrayLength {
-    const SKIP_FIXED_ARRAY_LENGTH: bool = true;
-}
-
-/// Write the length of fixed size arrays (`[u8; N]`) before writing the array.
-#[derive(Copy, Clone)]
-pub struct WriteFixedArrayLength {}
-
-impl InternalArrayLengthConfig for WriteFixedArrayLength {
-    const SKIP_FIXED_ARRAY_LENGTH: bool = false;
-}
-
 /// Sets an unlimited byte limit.
 #[derive(Copy, Clone)]
 pub struct NoLimit {}
@@ -281,7 +233,7 @@ mod internal {
         const ENDIAN: Endian;
     }
 
-    impl<E: InternalEndianConfig, I, A, L> InternalEndianConfig for Configuration<E, I, A, L> {
+    impl<E: InternalEndianConfig, I, L> InternalEndianConfig for Configuration<E, I, L> {
         const ENDIAN: Endian = E::ENDIAN;
     }
 
@@ -295,9 +247,7 @@ mod internal {
         const INT_ENCODING: IntEncoding;
     }
 
-    impl<E, I: InternalIntEncodingConfig, A, L> InternalIntEncodingConfig
-        for Configuration<E, I, A, L>
-    {
+    impl<E, I: InternalIntEncodingConfig, L> InternalIntEncodingConfig for Configuration<E, I, L> {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
     }
 
@@ -307,21 +257,11 @@ mod internal {
         Variable,
     }
 
-    pub trait InternalArrayLengthConfig {
-        const SKIP_FIXED_ARRAY_LENGTH: bool;
-    }
-
-    impl<E, I, A: InternalArrayLengthConfig, L> InternalArrayLengthConfig
-        for Configuration<E, I, A, L>
-    {
-        const SKIP_FIXED_ARRAY_LENGTH: bool = A::SKIP_FIXED_ARRAY_LENGTH;
-    }
-
     pub trait InternalLimitConfig {
         const LIMIT: Option<usize>;
     }
 
-    impl<E, I, A, L: InternalLimitConfig> InternalLimitConfig for Configuration<E, I, A, L> {
+    impl<E, I, L: InternalLimitConfig> InternalLimitConfig for Configuration<E, I, L> {
         const LIMIT: Option<usize> = L::LIMIT;
     }
 }
