@@ -39,9 +39,12 @@
             # Fixed in https://github.com/chronotope/chrono/pull/593
             # "asmjs-unknown-emscripten",
 
+            # These seem to fail on `-lunwind` not being available
+            # "i686-linux-android",
+            # "x86_64-linux-android",
+
             "i586-unknown-linux-gnu",
             "i586-unknown-linux-musl",
-            "i686-linux-android",
             "i686-unknown-linux-gnu",
             "i686-unknown-linux-musl",
             "mips-unknown-linux-gnu",
@@ -72,8 +75,6 @@
             # BlockedTODO: https://github.com/chronotope/chrono/issues/674
             # Fixed in https://github.com/chronotope/chrono/pull/593
             # "wasm32-unknown-emscripten",
-
-            "x86_64-linux-android",
 
             # Seems to not be able to link to certain files
             # - cannot find -lsendfile
