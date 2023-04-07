@@ -74,14 +74,14 @@ assert_eq!(encoded.as_slice(), &[
 // SomeEnum::B(0)
 let encoded = bincode::encode_to_vec(SomeEnum::B(0), bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    1, 0, 0, 0, // first variant, B
+    1, 0, 0, 0, // second variant, B
     0, 0, 0, 0  // B has 1 unnamed field, which is an u32, so 4 bytes
 ]);
 
 // SomeEnum::C { value: 0u32 }
 let encoded = bincode::encode_to_vec(SomeEnum::C { value: 0u32 }, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    2, 0, 0, 0, // first variant, C
+    2, 0, 0, 0, // third variant, C
     0, 0, 0, 0  // C has 1 named field which is a u32, so 4 bytes
 ]);
 ```
