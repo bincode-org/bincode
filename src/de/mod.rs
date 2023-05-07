@@ -109,6 +109,15 @@ macro_rules! impl_borrow_decode {
             }
         }
     };
+    ($ty:ident<$($param:tt),+>) => {
+        impl<'de,$($param),+> $crate::BorrowDecode<'de> for $ty<$($param),+> {
+            fn borrow_decode<D: $crate::de::BorrowDecoder<'de>>(
+                decoder: &mut D,
+            ) -> core::result::Result<Self, $crate::error::DecodeError> {
+                $crate::Decode::decode(decoder)
+            }
+        }
+    };
 }
 
 /// Any source that can decode basic types. This type is most notably implemented for [Decoder].
