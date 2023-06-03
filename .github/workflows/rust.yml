@@ -32,7 +32,7 @@
       },
       "steps": [
         {
-          "uses": "actions/checkout@v2",
+          "uses": "actions/checkout@v3",
           "name": "Checkout"
         },
         {
@@ -101,7 +101,7 @@
       "runs-on": "${{ matrix.runner }}",
       "steps": [
         {
-          "uses": "actions/checkout@v2",
+          "uses": "actions/checkout@v3",
           "name": "Checkout"
         },
         {
@@ -133,7 +133,7 @@ fi",
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "uses": "actions/checkout@v2",
+          "uses": "actions/checkout@v3",
           "name": "Checkout"
         },
         {
@@ -169,7 +169,7 @@ fi",
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "uses": "actions/checkout@v2",
+          "uses": "actions/checkout@v3",
           "name": "Checkout"
         },
         {
@@ -196,7 +196,7 @@ fi",
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "uses": "actions/checkout@v2",
+          "uses": "actions/checkout@v3",
           "name": "Checkout"
         },
         {
@@ -218,7 +218,7 @@ fi",
         },
         {
           "name": "Upload to codecov.io",
-          "uses": "codecov/codecov-action@v2"
+          "uses": "codecov/codecov-action@v3"
         },
         {
           "name": "Archive code coverage results",
