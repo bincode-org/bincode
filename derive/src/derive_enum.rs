@@ -316,7 +316,7 @@ impl DeriveEnum {
     }
 
     pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
-        let crate_name = self.attributes.crate_name.clone();
+        let crate_name = &self.attributes.crate_name;
 
         // Remember to keep this mostly in sync with generate_decode
         let enum_name = generator.target_name().to_string();
