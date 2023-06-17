@@ -514,7 +514,7 @@ impl<T> Decode for core::marker::PhantomData<T> {
         Ok(core::marker::PhantomData)
     }
 }
-impl_borrow_decode!(core::marker::PhantomData<T>);
+impl_borrow_decode!(core::marker::PhantomData<T>, T);
 
 impl<T> Decode for Option<T>
 where
