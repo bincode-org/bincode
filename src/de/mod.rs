@@ -100,8 +100,8 @@ pub trait BorrowDecode<'de>: Sized {
 /// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
 macro_rules! impl_borrow_decode {
-    ($ty:ty) => {
-        impl<'de> $crate::BorrowDecode<'de> for $ty {
+    ($ty:ty $(, $param:ident),*) => {
+        impl<'de $(, $param)*> $crate::BorrowDecode<'de> for $ty {
             fn borrow_decode<D: $crate::de::BorrowDecoder<'de>>(
                 decoder: &mut D,
             ) -> core::result::Result<Self, $crate::error::DecodeError> {
