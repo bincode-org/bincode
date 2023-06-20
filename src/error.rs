@@ -7,7 +7,7 @@ pub enum EncodeError {
     /// The writer ran out of storage.
     UnexpectedEnd,
 
-    /// The RefCell<T> is already borrowed
+    /// The `RefCell<T>` is already borrowed
     RefCellAlreadyBorrowed {
         /// The inner borrow error
         inner: core::cell::BorrowError,

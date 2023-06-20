@@ -19,10 +19,10 @@
 //! |-----------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
 //! |std        | Yes    |`HashMap` and `HashSet`|`decode_from_std_read` and `encode_into_std_write`|
 //! |alloc      | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
+//! |embedded-io| No     ||`decode_from_embedded_io_read`, `encode_into_embedded_io_write`|Io errors are mapped to the `EmbeddedIo` error variant
 //! |atomic     | Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
 //! |derive     | Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
 //! |serde      | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
-//! |embedded-io| No     |No new types|`decode_from_embedded_io_read`, `encode_into_embedded_io_write`|Io errors are mapped to the `EmbeddedIo` error variant
 //!
 //! # Which functions to use
 //!
