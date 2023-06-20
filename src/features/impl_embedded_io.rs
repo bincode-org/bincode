@@ -5,7 +5,7 @@ use crate::{
     error::{DecodeError, EncodeError},
 };
 
-/// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `embedded_io::blocking::Read`, e.g. `std::fs::File`.
+/// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `embedded_io::blocking::Read`.
 ///
 /// See the [config] module for more information about config options.
 ///
@@ -38,13 +38,13 @@ where
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         self.reader
             .read_exact(bytes)
-            .map_err(|_inner| DecodeError::Io {
+            .map_err(|_inner| DecodeError::EmbeddedIo {
                 additional: bytes.len(),
             })
     }
 }
 
-/// Encode the given value into any type that implements `embedded_io::blocking::Write`, e.g. `std::fs::File`, with the given `Config`.
+/// Encode the given value into any type that implements `embedded_io::blocking::Write`, with the given `Config`.
 /// See the [config] module for more information.
 /// Returns the amount of bytes written.
 ///
@@ -61,12 +61,12 @@ pub fn encode_into_embedded_io_write<E: Encode, C: Config, W: embedded_io::block
     Ok(encoder.into_writer().bytes_written())
 }
 
-pub(crate) struct IoWriter<'a, W: embedded_io::blocking::Write> {
+pub(crate) struct EmbeddedIoWriter<'a, W: embedded_io::blocking::Write> {
     writer: &'a mut W,
     bytes_written: usize,
 }
 
-impl<'a, W: embedded_io::blocking::Write> IoWriter<'a, W> {
+impl<'a, W: embedded_io::blocking::Write> EmbeddedIoWriter<'a, W> {
     pub fn new(writer: &'a mut W) -> Self {
         Self {
             writer,
@@ -79,12 +79,12 @@ impl<'a, W: embedded_io::blocking::Write> IoWriter<'a, W> {
     }
 }
 
-impl<'storage, W: embedded_io::blocking::Write> Writer for IoWriter<'storage, W> {
+impl<'storage, W: embedded_io::blocking::Write> Writer for EmbeddedIoWriter<'storage, W> {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.writer
             .write_all(bytes)
-            .map_err(|_inner| EncodeError::Io {
+            .map_err(|_inner| EncodeError::EmbeddedIo {
                 index: self.bytes_written,
             })?;
         self.bytes_written += bytes.len();

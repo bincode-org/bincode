@@ -15,13 +15,14 @@
 //!
 //! # Features
 //!
-//! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
-//! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
-//! |std   | Yes    |`HashMap` and `HashSet`|`decode_from_std_read` and `encode_into_std_write`|
-//! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
-//! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
-//! |derive| Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
-//! |serde | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//! |Name       |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
+//! |-----------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
+//! |std        | Yes    |`HashMap` and `HashSet`|`decode_from_std_read` and `encode_into_std_write`|
+//! |alloc      | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
+//! |atomic     | Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
+//! |derive     | Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
+//! |serde      | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//! |embedded-io| No     |No new types|`decode_from_embedded_io_read`, `encode_into_embedded_io_write`|Io errors are mapped to the `EmbeddedIo` error variant
 //!
 //! # Which functions to use
 //!
@@ -74,9 +75,6 @@
 #![doc(html_root_url = "https://docs.rs/bincode/2.0.0-rc.3")]
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
-
-#[cfg(all(feature = "std", feature = "embedded-io"))]
-compiler_error!("Cannot enable both the `std` and `embedded-io` features at the same time");
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

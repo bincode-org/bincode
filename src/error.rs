@@ -1,4 +1,4 @@
-//! Errors that can be encounting by Encoding and Decoding.
+//! Errors that can be encountered by Encoding and Decoding.
 
 /// Errors that can be encountered by encoding a type
 #[non_exhaustive]
@@ -27,11 +27,17 @@ pub enum EncodeError {
     InvalidPathCharacters,
 
     /// The targeted writer encountered an `std::io::Error`
-    #[cfg(any(feature = "std", feature = "embedded-io"))]
+    #[cfg(feature = "std")]
     Io {
         /// The encountered error
-        #[cfg(feature = "std")]
         inner: std::io::Error,
+        /// The amount of bytes that were written before the error occurred
+        index: usize,
+    },
+
+    /// The targeted writer encountered an `std::io::Error`
+    #[cfg(feature = "embedded-io")]
+    EmbeddedIo {
         /// The amount of bytes that were written before the error occurred
         index: usize,
     },
@@ -166,12 +172,22 @@ pub enum DecodeError {
     },
 
     /// The reader encountered an IO error but more bytes were expected.
-    #[cfg(any(feature = "std", feature = "embedded-io"))]
+    #[cfg(feature = "std")]
     Io {
         /// The IO error expected
-        #[cfg(feature = "std")]
         inner: std::io::Error,
 
+        /// Gives an estimate of how many extra bytes are needed.
+        ///
+        /// **Note**: this is only an estimate and not indicative of the actual bytes needed.
+        ///
+        /// **Note**: Bincode has no look-ahead mechanism. This means that this will only return the amount of bytes to be read for the current action, and not take into account the entire data structure being read.
+        additional: usize,
+    },
+
+    /// The reader encountered an IO error but more bytes were expected.
+    #[cfg(feature = "embedded-io")]
+    EmbeddedIo {
         /// Gives an estimate of how many extra bytes are needed.
         ///
         /// **Note**: this is only an estimate and not indicative of the actual bytes needed.
