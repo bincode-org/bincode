@@ -75,6 +75,9 @@
 #![crate_name = "bincode"]
 #![crate_type = "rlib"]
 
+#[cfg(all(feature = "std", feature = "embedded-io"))]
+compiler_error!("Cannot enable both the `std` and `embedded-io` features at the same time");
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(any(feature = "std", test))]

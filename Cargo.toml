@@ -27,12 +27,14 @@ edition = "2021"
 [features]
 default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
+embedded-io = ["dep:embedded-io"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive"]
 
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-rc.3", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
+embedded-io = { version = "0.4", optional = true }
 
 # Used for tests
 [dev-dependencies]

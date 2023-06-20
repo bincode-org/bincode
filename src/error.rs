@@ -27,9 +27,10 @@ pub enum EncodeError {
     InvalidPathCharacters,
 
     /// The targeted writer encountered an `std::io::Error`
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "embedded-io"))]
     Io {
         /// The encountered error
+        #[cfg(feature = "std")]
         inner: std::io::Error,
         /// The amount of bytes that were written before the error occurred
         index: usize,
@@ -165,9 +166,10 @@ pub enum DecodeError {
     },
 
     /// The reader encountered an IO error but more bytes were expected.
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "embedded-io"))]
     Io {
         /// The IO error expected
+        #[cfg(feature = "std")]
         inner: std::io::Error,
 
         /// Gives an estimate of how many extra bytes are needed.

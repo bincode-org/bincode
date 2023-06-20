@@ -8,6 +8,11 @@ mod impl_std;
 #[cfg(feature = "std")]
 pub use self::impl_std::*;
 
+#[cfg(feature = "embedded-io")]
+mod impl_embedded_io;
+#[cfg(feature = "embedded-io")]
+pub use self::impl_embedded_io::*;
+
 #[cfg(feature = "derive")]
 mod derive;
 #[cfg(feature = "derive")]
