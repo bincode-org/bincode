@@ -1,3 +1,5 @@
+use embedded_io::blocking::ReadExactError;
+
 use crate::{
     config::Config,
     de::{read::Reader, Decode, DecoderImpl},
@@ -36,11 +38,14 @@ where
 {
     #[inline(always)]
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
-        self.reader
-            .read_exact(bytes)
-            .map_err(|_inner| DecodeError::EmbeddedIo {
+        self.reader.read_exact(bytes).map_err(|inner| match inner {
+            ReadExactError::UnexpectedEof => DecodeError::UnexpectedEnd {
                 additional: bytes.len(),
-            })
+            },
+            ReadExactError::Other(_) => DecodeError::EmbeddedIo {
+                additional: bytes.len(),
+            },
+        })
     }
 }
 
