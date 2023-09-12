@@ -22,8 +22,8 @@ pub use self::{
     },
 };
 
-pub(self) const SINGLE_BYTE_MAX: u8 = 250;
-pub(self) const U16_BYTE: u8 = 251;
-pub(self) const U32_BYTE: u8 = 252;
-pub(self) const U64_BYTE: u8 = 253;
-pub(self) const U128_BYTE: u8 = 254;
+const SINGLE_BYTE_MAX: u8 = 250;
+const U16_BYTE: u8 = 251;
+const U32_BYTE: u8 = 252;
+const U64_BYTE: u8 = 253;
+const U128_BYTE: u8 = 254;
