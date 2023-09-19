@@ -26,10 +26,10 @@ pub(crate) struct VecWriter {
 
 impl VecWriter {
     /// Create a new vec writer with the given capacity
-    pub fn with_capacity(cap: usize) -> Self {
-        Self {
-            inner: Vec::with_capacity(cap),
-        }
+    pub fn with_capacity(cap: usize) -> Result<Self, alloc::collections::TryReserveError> {
+        let mut inner = Vec::new();
+        inner.try_reserve(cap)?;
+        Ok(Self { inner })
     }
     // May not be used in all feature combinations
     #[allow(dead_code)]
@@ -58,7 +58,7 @@ pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec
         val.encode(&mut size_writer)?;
         size_writer.into_writer().bytes_written
     };
-    let writer = VecWriter::with_capacity(size);
+    let writer = VecWriter::with_capacity(size).map_err(EncodeError::from)?;
     let mut encoder = enc::EncoderImpl::<_, C>::new(writer, config);
     val.encode(&mut encoder)?;
     Ok(encoder.into_writer().inner)
@@ -402,6 +402,8 @@ where
     }
 }
 
+// TODO
+// Vec does not implement Into for Box<[T]> because it allocates again
 impl<T> Decode for Box<[T]>
 where
     T: Decode + 'static,
@@ -414,7 +416,6 @@ where
 
 // TODO
 // Vec does not implement Into for Box<[T]> because it allocates again
-// we could do this manually with `Box::try_new_uninit`
 #[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl<'de, T> BorrowDecode<'de> for Box<[T]>
 where
