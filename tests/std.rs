@@ -179,3 +179,24 @@ impl std::hash::Hasher for ExampleCustomHasher {
         self.hash
     }
 }
+
+#[test]
+fn test_decode_borrow_str_in_array() {
+    let (strs, _): (Vec<&str>, usize) = bincode::borrow_decode_from_slice(
+        &[
+            3, 3, b'a', b'b', b'c', 3, b'd', b'e', b'f', 3, b'g', b'h', b'i',
+        ],
+        bincode::config::standard(),
+    )
+    .unwrap();
+    assert_eq!(strs, vec!["abc", "def", "ghi"]);
+
+    let (strs, _): ([&str; 3], usize) = bincode::borrow_decode_from_slice(
+        &[
+            3, b'a', b'b', b'c', 3, b'd', b'e', b'f', 3, b'g', b'h', b'i',
+        ],
+        bincode::config::standard(),
+    )
+    .unwrap();
+    assert_eq!(strs, ["abc", "def", "ghi"]);
+}

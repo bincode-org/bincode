@@ -1,5 +1,5 @@
 use crate::{
-    de::{read::Reader, BorrowDecoder, Decode, Decoder},
+    de::{BorrowDecoder, Decode, Decoder},
     enc::{
         self,
         write::{SizeWriter, Writer},
@@ -278,20 +278,23 @@ where
 
 impl<T> Decode for Vec<T>
 where
-    T: Decode + 'static,
+    T: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
-        if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
-            decoder.claim_container_read::<T>(len)?;
-            // optimize for reading u8 vecs
-            let mut vec = Vec::new();
-            vec.resize(len, 0u8);
-            decoder.reader().read(&mut vec)?;
-            // Safety: Vec<T> is Vec<u8>
-            return Ok(unsafe { core::mem::transmute(vec) });
-        }
+        // TODO: we can't limit `T: 'static` because that would break other things
+        // but we want to have this optimization
+        // This will be another contendor for specialization implementation
+        // if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
+        //     decoder.claim_container_read::<T>(len)?;
+        //     // optimize for reading u8 vecs
+        //     let mut vec = Vec::new();
+        //     vec.resize(len, 0u8);
+        //     decoder.reader().read(&mut vec)?;
+        //     // Safety: Vec<T> is Vec<u8>
+        //     return Ok(unsafe { core::mem::transmute(vec) });
+        // }
         decoder.claim_container_read::<T>(len)?;
 
         let mut vec = Vec::with_capacity(len);
