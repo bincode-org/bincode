@@ -16,78 +16,118 @@
     }
   },
   "jobs": {
-    "test_cross": {
-      "name": "Cross platform test",
+    "test_cross_std": {
+      "name": "Cross platform test (platforms with standard library)",
       "runs-on": "ubuntu-latest",
       "strategy": {
         "fail-fast": false,
         "matrix": {
           "platform": [
+            # Tier 1
+            "aarch64-unknown-linux-gnu",
+            "i686-pc-windows-gnu",
+            # `cross` does not provide a Docker image for target i686-pc-windows-msvc
+            # "i686-pc-windows-msvc",
+            "i686-unknown-linux-gnu",
+            # `cross` does not provide a Docker image for target x86_64-apple-darwin
+            # "x86_64-apple-darwin",
+            "x86_64-pc-windows-gnu",
+            # `cross` does not provide a Docker image for target x86_64-pc-windows-msvc
+            # "x86_64-pc-windows-msvc",
+            "x86_64-unknown-linux-gnu",
+
+            # Tier 2
+            # `cross` does not provide a Docker image for target aarch64-apple-darwin
+            # "aarch64-apple-darwin",
+            # `cross` does not provide a Docker image for target aarch64-pc-windows-msvc
+            # "aarch64-pc-windows-msvc",
             "aarch64-unknown-linux-musl",
-            "arm-linux-androideabi",
             "arm-unknown-linux-gnueabi",
             "arm-unknown-linux-gnueabihf",
+            "armv7-unknown-linux-gnueabihf",
+            # `cross` does not provide a Docker image for target loongarch64-unknown-linux-gnu
+            # "loongarch64-unknown-linux-gnu",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "mips-unknown-linux-gnu",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "mips64-unknown-linux-gnuabi64",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "mips64el-unknown-linux-gnuabi64",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "mipsel-unknown-linux-gnu",
+            "powerpc-unknown-linux-gnu",
+            "powerpc64-unknown-linux-gnu",
+            "powerpc64le-unknown-linux-gnu",
+            "riscv64gc-unknown-linux-gnu",
+            "s390x-unknown-linux-gnu",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "x86_64-unknown-freebsd",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "x86_64-unknown-illumos",
+            "x86_64-unknown-linux-musl",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "x86_64-unknown-netbsd",
+
+            # Tier 3, only those that have std
+            # `cross` does not provide a Docker image for target aarch64-apple-ios
+            # "aarch64-apple-ios",
+            # `cross` does not provide a Docker image for target aarch64-apple-ios-sim
+            # "aarch64-apple-ios-sim",
+            # `cross` does not provide a Docker image for target aarch64-fuchsia
+            # "aarch64-fuchsia",
+            # `cross` does not provide a Docker image for target aarch64-unknown-fuchsia
+            # "aarch64-unknown-fuchsia",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
+            # "aarch64-linux-android",
+            "arm-linux-androideabi",
             "arm-unknown-linux-musleabi",
             "arm-unknown-linux-musleabihf",
             "armv5te-unknown-linux-gnueabi",
             "armv5te-unknown-linux-musleabi",
             "armv7-linux-androideabi",
-            "armv7-unknown-linux-gnueabihf",
+            "armv7-unknown-linux-gnueabi",
+            "armv7-unknown-linux-musleabi",
             "armv7-unknown-linux-musleabihf",
-
-            # BlockedTODO: https://github.com/chronotope/chrono/issues/674
-            # Fixed in https://github.com/chronotope/chrono/pull/593
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/634): broken
             # "asmjs-unknown-emscripten",
-
-            # These seem to fail on `-lunwind` not being available
-            # "i686-linux-android",
-            # "x86_64-linux-android",
-
             "i586-unknown-linux-gnu",
             "i586-unknown-linux-musl",
-            "i686-unknown-linux-gnu",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/1222): currently broken
+            # "i686-linux-android",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "i686-unknown-freebsd",
             "i686-unknown-linux-musl",
-            "mips-unknown-linux-gnu",
             "mips-unknown-linux-musl",
-            "mips64-unknown-linux-gnuabi64",
-            "mips64el-unknown-linux-gnuabi64",
-            "mipsel-unknown-linux-gnu",
+            "mips64-unknown-linux-muslabi64",
+            "mips64el-unknown-linux-muslabi64",
             "mipsel-unknown-linux-musl",
-            "powerpc-unknown-linux-gnu",
-
-            # Seems to have a bug in qemu, where all floats are `0.0` and aren't equal with each other
-            # "powerpc64le-unknown-linux-gnu",
-
-            "riscv64gc-unknown-linux-gnu",
-            "s390x-unknown-linux-gnu",
-
-            # Seems to not be able to link to certain files
-            # - cannot find -lsendfile
-            # - cannot find -llgrp
+            "sparc64-unknown-linux-gnu",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "sparcv9-sun-solaris",
-
-            # These have no `std`
-            # "thumbv6m-none-eabi",
-            # "thumbv7em-none-eabi",
-            # "thumbv7em-none-eabihf",
-            # "thumbv7m-none-eabi",
-
-            # BlockedTODO: https://github.com/chronotope/chrono/issues/674
-            # Fixed in https://github.com/chronotope/chrono/pull/593
+            "thumbv7neon-linux-androideabi",
+            "thumbv7neon-unknown-linux-gnueabihf",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "wasm32-unknown-emscripten",
-
-            # Seems to not be able to link to certain files
-            # - cannot find -lsendfile
-            # - cannot find -llgrp
-            # "x86_64-sun-solaris",
-
-            "x86_64-unknown-linux-gnu",
-            "x86_64-unknown-linux-musl",
-
-            # Seems to immediately bail
-            # error: test failed, to rerun pass '--lib'
-            # could not execute process `...` (never executed)
-            # "x86_64-unknown-netbsd",
+            # `cross` does not provide a Docker image for target wasm32-unknown-unknown
+            # "wasm32-unknown-unknown",
+            # `cross` does not provide a Docker image for target wasm32-wasi
+            # "wasm32-wasi",
+            # `cross` does not provide a Docker image for target x86_64-apple-ios
+            # "x86_64-apple-ios",
+            # `cross` does not provide a Docker image for target x86_64-fortanix-unknown-sgx
+            # "x86_64-fortanix-unknown-sgx",
+            # `cross` does not provide a Docker image for target x86_64-fuchsia
+            # "x86_64-fuchsia",
+            # `cross` does not provide a Docker image for target x86_64-unknown-fuchsia
+            # "x86_64-unknown-fuchsia",
+            # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
+            # "x86_64-linux-android",
+            # `cross` does not provide a Docker image for target x86_64-pc-solaris
+            # "x86_64-pc-solaris",
+            # `cross` does not provide a Docker image for target x86_64-unknown-linux-gnux32
+            # "x86_64-unknown-linux-gnux32",
+            # `cross` does not provide a Docker image for target x86_64-unknown-redox
+            # "x86_64-unknown-redox",
           ]
         }
       },
@@ -122,43 +162,73 @@
         }
       ]
     },
-    "test_windows": {
-      "name": "Cross platform test",
-      "runs-on": "windows-latest",
-      "strategy": {
-        "fail-fast": false,
-        "matrix": {
-          "platform": [
-            # linker `i686-w64-mingw32-gcc` not found
-            # "i686-pc-windows-gnu",
-
-            "x86_64-pc-windows-gnu",
-          ]
-        }
-      },
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "stable",
-            "target": "${{ matrix.platform }}",
-            "override": true
-          },
-          "name": "Install Rust stable"
-        },
-        {
-          "run": "cargo test --target ${{ matrix.platform }}",
-          "name": "Run tests",
-          "env": {
-            "RUSTFLAGS": "-D warnings"
-          }
-        }
-      ]
-    }
+    # None of these work, needs more investigation
+    # "test_cross_no_std": {
+    #   "name": "Cross platform test (no_std, platforms without standard library)",
+    #   "runs-on": "ubuntu-latest",
+    #   "strategy": {
+    #     "fail-fast": false,
+    #     "matrix": {
+    #       "platform": [
+    #         # Tier 3
+    #         "aarch64-unknown-none-softfloat",
+    #         "aarch64-unknown-none",
+    #         "aarch64-unknown-uefi",
+    #         "armebv7r-none-eabi",
+    #         "armebv7r-none-eabihf",
+    #         "armv7a-none-eabi",
+    #         "armv7r-none-eabi",
+    #         "armv7r-none-eabihf",
+    #         "i586-pc-windows-msvc",
+    #         "i686-unknown-uefi",
+    #         "nvptx64-nvidia-cuda",
+    #         "riscv32i-unknown-none-elf",
+    #         "riscv32imac-unknown-none-elf",
+    #         "riscv32imc-unknown-none-elf",
+    #         "riscv64gc-unknown-none-elf",
+    #         "riscv64imac-unknown-none-elf",
+    #         "thumbv6m-none-eabi",
+    #         "thumbv7em-none-eabi",
+    #         "thumbv7em-none-eabihf",
+    #         "thumbv7m-none-eabi",
+    #         "thumbv8m.base-none-eabi",
+    #         "thumbv8m.main-none-eabi",
+    #         "thumbv8m.main-none-eabihf",
+    #         "x86_64-unknown-none",
+    #         "x86_64-unknown-uefi",
+    #       ]
+    #     }
+    #   },
+    #   "steps": [
+    #     {
+    #       "uses": "actions/checkout@v4",
+    #       "name": "Checkout"
+    #     },
+    #     {
+    #       "uses": "actions-rs/toolchain@v1",
+    #       "with": {
+    #         "profile": "minimal",
+    #         "toolchain": "stable",
+    #         "override": true
+    #       },
+    #       "name": "Install Rust stable"
+    #     },
+    #     {
+    #       "uses": "actions-rs/install@v0.1",
+    #       "with": {
+    #         "crate": "cross"
+    #       },
+    #       "name": "Install cargo cross"
+    #     },
+    #     {
+    #       "run": "cross test --target ${{ matrix.platform }} --no-default-features --features alloc,derive",
+    #       "name": "Run tests",
+    #       "env": {
+    #         "RUSTFLAGS": "-D warnings",
+    #         "RUST_BACKTRACE": "1",
+    #       }
+    #     }
+    #   ]
+    # }
   }
 }
