@@ -441,7 +441,7 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
 
 impl<T, const N: usize> Decode for [T; N]
 where
-    T: Decode + Sized,
+    T: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
@@ -471,7 +471,7 @@ where
 
 impl<'de, T, const N: usize> BorrowDecode<'de> for [T; N]
 where
-    T: BorrowDecode<'de> + Sized,
+    T: BorrowDecode<'de>,
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
@@ -542,22 +542,6 @@ where
         }
     }
 }
-
-// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
-//
-// We'll want to implement BorrowDecode for both Option<&[u8]> and Option<&[T: Encode]>,
-// but those implementations overlap because &'a [u8] also implements BorrowDecode
-// impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a [u8]> {
-//     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-//         match super::decode_option_variant(decoder, core::any::type_name::<Option<&[u8]>>())? {
-//             Some(_) => {
-//                 let val = BorrowDecode::borrow_decode(decoder)?;
-//                 Ok(Some(val))
-//             }
-//             None => Ok(None),
-//         }
-//     }
-// }
 
 impl<T, U> Decode for Result<T, U>
 where

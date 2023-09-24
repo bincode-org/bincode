@@ -280,16 +280,6 @@ impl Encode for char {
     }
 }
 
-// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
-//
-// We'll want to implement encoding for both &[u8] and &[T: Encode],
-// but those implementations overlap because u8 also implements Encode
-// impl Encode for &'_ [u8] {
-//     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-//         encoder.writer().write(*self)
-//     }
-// }
-
 impl<T> Encode for [T]
 where
     T: Encode,
@@ -356,10 +346,17 @@ where
     T: Encode,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        for item in self.iter() {
-            item.encode(encoder)?;
+        if unty::type_equal::<T, u8>() {
+            // Safety: this is &[u8; N]
+            let array_slice: &[u8] =
+                unsafe { core::slice::from_raw_parts(self.as_ptr().cast(), N) };
+            encoder.writer().write(array_slice)
+        } else {
+            for item in self.iter() {
+                item.encode(encoder)?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
 
