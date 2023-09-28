@@ -441,65 +441,61 @@ impl<'a, 'de: 'a> BorrowDecode<'de> for &'a str {
 
 impl<T, const N: usize> Decode for [T; N]
 where
-    T: Decode + Sized,
+    T: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
-        // TODO: we can't limit `T: 'static` because that would break other things
-        // but we want to have this optimization
-        // This will be another contendor for specialization implementation
-        // if TypeId::of::<u8>() == TypeId::of::<T>() {
-        //     let mut buf = [0u8; N];
-        //     decoder.reader().read(&mut buf)?;
-        //     let ptr = &mut buf as *mut _ as *mut [T; N];
+        if unty::type_equal::<T, u8>() {
+            let mut buf = [0u8; N];
+            decoder.reader().read(&mut buf)?;
+            let ptr = &mut buf as *mut _ as *mut [T; N];
 
-        //     // Safety: we know that T is a u8, so it is perfectly safe to
-        //     // translate an array of u8 into an array of T
-        //     let res = unsafe { ptr.read() };
-        //     Ok(res)
-        // }
-        let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-            T::decode(decoder)
-        }));
+            // Safety: we know that T is a u8, so it is perfectly safe to
+            // translate an array of u8 into an array of T
+            let res = unsafe { ptr.read() };
+            Ok(res)
+        } else {
+            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+                T::decode(decoder)
+            }));
 
-        // result is only None if N does not match the values of `(0..N)`, which it always should
-        // So this unwrap should never occur
-        result.unwrap()
+            // result is only None if N does not match the values of `(0..N)`, which it always should
+            // So this unwrap should never occur
+            result.unwrap()
+        }
     }
 }
 
 impl<'de, T, const N: usize> BorrowDecode<'de> for [T; N]
 where
-    T: BorrowDecode<'de> + Sized,
+    T: BorrowDecode<'de>,
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
-        // TODO: we can't limit `T: 'static` because that would break other things
-        // but we want to have this optimization
-        // This will be another contendor for specialization implementation
-        // if TypeId::of::<u8>() == TypeId::of::<T>() {
-        //     let mut buf = [0u8; N];
-        //     decoder.reader().read(&mut buf)?;
-        //     let ptr = &mut buf as *mut _ as *mut [T; N];
+        if unty::type_equal::<T, u8>() {
+            let mut buf = [0u8; N];
+            decoder.reader().read(&mut buf)?;
+            let ptr = &mut buf as *mut _ as *mut [T; N];
 
-        //     // Safety: we know that T is a u8, so it is perfectly safe to
-        //     // translate an array of u8 into an array of T
-        //     let res = unsafe { ptr.read() };
-        //     Ok(res)
-        // }
-        let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-            T::borrow_decode(decoder)
-        }));
+            // Safety: we know that T is a u8, so it is perfectly safe to
+            // translate an array of u8 into an array of T
+            let res = unsafe { ptr.read() };
+            Ok(res)
+        } else {
+            let result = super::impl_core::collect_into_array(&mut (0..N).map(|_| {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+                T::borrow_decode(decoder)
+            }));
 
-        // result is only None if N does not match the values of `(0..N)`, which it always should
-        // So this unwrap should never occur
-        result.unwrap()
+            // result is only None if N does not match the values of `(0..N)`, which it always should
+            // So this unwrap should never occur
+            result.unwrap()
+        }
     }
 }
 
@@ -546,22 +542,6 @@ where
         }
     }
 }
-
-// BlockedTODO: https://github.com/rust-lang/rust/issues/37653
-//
-// We'll want to implement BorrowDecode for both Option<&[u8]> and Option<&[T: Encode]>,
-// but those implementations overlap because &'a [u8] also implements BorrowDecode
-// impl<'a, 'de: 'a> BorrowDecode<'de> for Option<&'a [u8]> {
-//     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-//         match super::decode_option_variant(decoder, core::any::type_name::<Option<&[u8]>>())? {
-//             Some(_) => {
-//                 let val = BorrowDecode::borrow_decode(decoder)?;
-//                 Ok(Some(val))
-//             }
-//             None => Ok(None),
-//         }
-//     }
-// }
 
 impl<T, U> Decode for Result<T, U>
 where

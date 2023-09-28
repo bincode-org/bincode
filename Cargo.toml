@@ -33,6 +33,7 @@ derive = ["bincode_derive"]
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-rc.3", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
+unty = "0.0.3"
 
 # Used for tests
 [dev-dependencies]

@@ -1,5 +1,5 @@
 use crate::{
-    de::{BorrowDecoder, Decode, Decoder},
+    de::{read::Reader, BorrowDecoder, Decode, Decoder},
     enc::{
         self,
         write::{SizeWriter, Writer},
@@ -8,8 +8,6 @@ use crate::{
     error::{DecodeError, EncodeError},
     impl_borrow_decode, BorrowDecode, Config,
 };
-#[cfg(target_has_atomic = "ptr")]
-use alloc::sync::Arc;
 use alloc::{
     borrow::{Cow, ToOwned},
     boxed::Box,
@@ -18,6 +16,9 @@ use alloc::{
     string::String,
     vec::Vec,
 };
+
+#[cfg(target_has_atomic = "ptr")]
+use alloc::sync::Arc;
 
 #[derive(Default)]
 pub(crate) struct VecWriter {
@@ -67,18 +68,7 @@ where
     T: Decode + Ord,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        let mut map = BinaryHeap::with_capacity(len);
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::decode(decoder)?;
-            map.push(key);
-        }
-        Ok(map)
+        Ok(Vec::<T>::decode(decoder)?.into())
     }
 }
 impl<'de, T> BorrowDecode<'de> for BinaryHeap<T>
@@ -86,18 +76,7 @@ where
     T: BorrowDecode<'de> + Ord,
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        let mut map = BinaryHeap::with_capacity(len);
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::borrow_decode(decoder)?;
-            map.push(key);
-        }
-        Ok(map)
+        Ok(Vec::<T>::borrow_decode(decoder)?.into())
     }
 }
 
@@ -106,6 +85,7 @@ where
     T: Encode + Ord,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        // BLOCKEDTODO(https://github.com/rust-lang/rust/issues/83659): we can u8 optimize this with `.as_slice()`
         crate::enc::encode_slice_len(encoder, self.len())?;
         for val in self.iter() {
             val.encode(encoder)?;
@@ -229,18 +209,7 @@ where
     T: Decode,
 {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        let mut map = VecDeque::with_capacity(len);
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::decode(decoder)?;
-            map.push_back(key);
-        }
-        Ok(map)
+        Ok(Vec::<T>::decode(decoder)?.into())
     }
 }
 impl<'de, T> BorrowDecode<'de> for VecDeque<T>
@@ -248,18 +217,7 @@ where
     T: BorrowDecode<'de>,
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        let mut map = VecDeque::with_capacity(len);
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::borrow_decode(decoder)?;
-            map.push_back(key);
-        }
-        Ok(map)
+        Ok(Vec::<T>::borrow_decode(decoder)?.into())
     }
 }
 
@@ -269,8 +227,22 @@ where
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
-        for item in self.iter() {
-            item.encode(encoder)?;
+        if unty::type_equal::<T, u8>() {
+            let slices: (&[T], &[T]) = self.as_slices();
+            // Safety: T is u8 so turning this into `&[u8]` is okay
+            let slices: (&[u8], &[u8]) = unsafe {
+                (
+                    core::slice::from_raw_parts(slices.0.as_ptr().cast(), slices.0.len()),
+                    core::slice::from_raw_parts(slices.1.as_ptr().cast(), slices.1.len()),
+                )
+            };
+
+            encoder.writer().write(slices.0)?;
+            encoder.writer().write(slices.1)?;
+        } else {
+            for item in self.iter() {
+                item.encode(encoder)?;
+            }
         }
         Ok(())
     }
@@ -283,28 +255,26 @@ where
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
-        // TODO: we can't limit `T: 'static` because that would break other things
-        // but we want to have this optimization
-        // This will be another contendor for specialization implementation
-        // if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
-        //     decoder.claim_container_read::<T>(len)?;
-        //     // optimize for reading u8 vecs
-        //     let mut vec = Vec::new();
-        //     vec.resize(len, 0u8);
-        //     decoder.reader().read(&mut vec)?;
-        //     // Safety: Vec<T> is Vec<u8>
-        //     return Ok(unsafe { core::mem::transmute(vec) });
-        // }
-        decoder.claim_container_read::<T>(len)?;
+        if unty::type_equal::<T, u8>() {
+            decoder.claim_container_read::<T>(len)?;
+            // optimize for reading u8 vecs
+            let mut vec = Vec::new();
+            vec.resize(len, 0u8);
+            decoder.reader().read(&mut vec)?;
+            // Safety: Vec<T> is Vec<u8>
+            Ok(unsafe { core::mem::transmute(vec) })
+        } else {
+            decoder.claim_container_read::<T>(len)?;
 
-        let mut vec = Vec::with_capacity(len);
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+            let mut vec = Vec::with_capacity(len);
+            for _ in 0..len {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
 
-            vec.push(T::decode(decoder)?);
+                vec.push(T::decode(decoder)?);
+            }
+            Ok(vec)
         }
-        Ok(vec)
     }
 }
 
@@ -314,34 +284,47 @@ where
 {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
 
-        let mut vec = Vec::with_capacity(len);
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+        if unty::type_equal::<T, u8>() {
+            decoder.claim_container_read::<T>(len)?;
+            // optimize for reading u8 vecs
+            let mut vec = Vec::new();
+            vec.resize(len, 0u8);
+            decoder.reader().read(&mut vec)?;
+            // Safety: Vec<T> is Vec<u8>
+            Ok(unsafe { core::mem::transmute(vec) })
+        } else {
+            decoder.claim_container_read::<T>(len)?;
 
-            vec.push(T::borrow_decode(decoder)?);
+            let mut vec = Vec::with_capacity(len);
+            for _ in 0..len {
+                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+                vec.push(T::borrow_decode(decoder)?);
+            }
+            Ok(vec)
         }
-        Ok(vec)
     }
 }
 
 impl<T> Encode for Vec<T>
 where
-    T: Encode + 'static,
+    T: Encode,
 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         crate::enc::encode_slice_len(encoder, self.len())?;
-        if core::any::TypeId::of::<T>() == core::any::TypeId::of::<u8>() {
+        if unty::type_equal::<T, u8>() {
+            // Safety: T == u8
             let slice: &[u8] = unsafe { core::mem::transmute(self.as_slice()) };
             encoder.writer().write(slice)?;
-            return Ok(());
+            Ok(())
+        } else {
+            for item in self.iter() {
+                item.encode(encoder)?;
+            }
+            Ok(())
         }
-        for item in self.iter() {
-            item.encode(encoder)?;
-        }
-        Ok(())
     }
 }
 
