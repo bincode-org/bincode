@@ -59,6 +59,8 @@ mod de_borrowed;
 mod de_owned;
 mod ser;
 
+use core::fmt::Debug;
+
 pub use self::de_borrowed::*;
 pub use self::de_owned::*;
 pub use self::ser::*;
@@ -216,6 +218,24 @@ where
     }
 }
 
+impl<T> std::fmt::Debug for Compat<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("Compat").field(&self.0).finish()
+    }
+}
+
+impl<T> std::fmt::Display for Compat<T>
+where
+    T: std::fmt::Display,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
 /// Wrapper struct that implements [BorrowDecode] and [Encode] on any type that implements serde's [Deserialize] and [Serialize] respectively. This is mostly used on `&[u8]` and `&str`, for other types consider using [Compat] instead.
 ///
 /// [BorrowDecode]: ../de/trait.BorrowDecode.html
@@ -250,5 +270,23 @@ where
         let serializer = ser::SerdeEncoder { enc: encoder };
         self.0.serialize(serializer)?;
         Ok(())
+    }
+}
+
+impl<T> std::fmt::Debug for BorrowCompat<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_tuple("BorrowCompat").field(&self.0).finish()
+    }
+}
+
+impl<T> std::fmt::Display for BorrowCompat<T>
+where
+    T: std::fmt::Display,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.fmt(f)
     }
 }
