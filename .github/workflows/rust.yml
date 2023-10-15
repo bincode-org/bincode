@@ -1,234 +1,203 @@
 {
   "name": "CI",
-  "on": {
-    "push": {
-      "branches": [
-        "trunk",
-        "v*.x",
-        "ci/*"
-      ]
+  "on":
+    {
+      "push": { "branches": ["trunk", "v*.x", "ci/*"] },
+      "pull_request": { "branches": ["trunk", "v*.x"] },
     },
-    "pull_request": {
-      "branches": [
-        "trunk",
-        "v*.x"
-      ]
-    }
-  },
-  "jobs": {
-    "check": {
-      "name": "Check",
-      "runs-on": "ubuntu-latest",
-      "strategy": {
-        "fail-fast": false,
-        "matrix": {
-          "rust": [
-            "stable",
-            "beta",
-            "nightly"
-            # "1.55.0" TODO: Pick latest stable version when we release 2.0
-          ]
-        }
-      },
-      "steps": [
+  "jobs":
+    {
+      "check":
         {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
+          "name": "Check",
+          "runs-on": "ubuntu-latest",
+          "strategy": { "fail-fast": false, "matrix": { "rust": [
+                      "stable",
+                      "beta",
+                      "nightly",
+                      # "1.55.0" TODO: Pick latest stable version when we release 2.0
+                    ] } },
+          "steps":
+            [
+              { "uses": "actions/checkout@v4", "name": "Checkout" },
+              {
+                "uses": "actions-rs/toolchain@v1",
+                "with":
+                  {
+                    "profile": "minimal",
+                    "toolchain": "${{ matrix.rust }}",
+                    "override": true,
+                  },
+                "name": "Install Rust ${{ matrix.rust }}",
+              },
+              {
+                "uses": "actions-rs/cargo@v1",
+                "with": { "command": "check", "args": "--all-features" },
+                "name": "Run `cargo check`",
+              },
+              {
+                "uses": "actions-rs/cargo@v1",
+                "with": { "command": "check", "args": "--bench *" },
+                "name": "Run `cargo check` on benches",
+              },
+              {
+                "uses": "actions-rs/cargo@v1",
+                "with": { "command": "check", "args": "--examples" },
+                "name": "Check examples",
+              },
+            ],
         },
+      "test":
         {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "${{ matrix.rust }}",
-            "override": true
-          },
-          "name": "Install Rust ${{ matrix.rust }}"
+          "name": "Test",
+          "strategy":
+            {
+              "matrix":
+                {
+                  "runner": ["ubuntu-latest", "windows-latest", "macos-latest"],
+                  "rust": [
+                      "stable",
+                      # "1.55.0" TODO: Pick latest stable version when we release 2.0
+                    ],
+                  "features":
+                    [
+                      "",
+                      "alloc",
+                      "alloc,derive",
+                      "std",
+                      "std,derive",
+                      "serde",
+                      "alloc,serde",
+                      "std,serde",
+                      "serde,derive",
+                      "alloc,serde,derive",
+                      "std,serde,derive",
+                      "embedded-io",
+                      "embedded-io,alloc",
+                      "embedded-io,std",
+                      "embedded-io,serde",
+                      "embedded-io,serde,alloc",
+                      "embedded-io,serde,std",
+                    ],
+                },
+            },
+          "runs-on": "${{ matrix.runner }}",
+          "steps":
+            [
+              { "uses": "actions/checkout@v4", "name": "Checkout" },
+              {
+                "uses": "actions-rs/toolchain@v1",
+                "with":
+                  {
+                    "profile": "minimal",
+                    "toolchain": "${{ matrix.rust }}",
+                    "override": true,
+                  },
+                "name": "Install Rust ${{ matrix.rust }}",
+              },
+              { "run": "if [ -z \"${{ matrix.features }}\" ]\n
+                  then\n
+                  cargo test --no-default-features\n
+                  else\n
+                  cargo test --no-default-features --features ${{ matrix.features }}\n
+                  fi", "name": "Run `cargo test` on all features", "shell": "bash", "env": { "RUSTFLAGS": "-D warnings" } },
+            ],
         },
+      "lints":
         {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
-            "args": "--all-features"
-          },
-          "name": "Run `cargo check`"
+          "name": "Lints",
+          "runs-on": "ubuntu-latest",
+          "steps":
+            [
+              { "uses": "actions/checkout@v4", "name": "Checkout" },
+              {
+                "uses": "actions-rs/toolchain@v1",
+                "with":
+                  {
+                    "profile": "minimal",
+                    "toolchain": "stable",
+                    "override": true,
+                    "components": "rustfmt, clippy",
+                  },
+                "name": "Install Rust stable",
+              },
+              {
+                "uses": "actions-rs/cargo@v1",
+                "with": { "command": "fmt", "args": "--all -- --check" },
+                "name": "Run `cargo fmt`",
+              },
+              {
+                "uses": "actions-rs/cargo@v1",
+                "with":
+                  {
+                    "command": "clippy",
+                    "args": "--all-features -- -D warnings",
+                  },
+                "name": "Run `cargo clippy`",
+              },
+            ],
         },
+      "compatibility":
         {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
-            "args": "--bench *"
-          },
-          "name": "Run `cargo check` on benches"
+          "name": "Compatibility",
+          "runs-on": "ubuntu-latest",
+          "steps":
+            [
+              { "uses": "actions/checkout@v4", "name": "Checkout" },
+              {
+                "uses": "actions-rs/toolchain@v1",
+                "with":
+                  {
+                    "profile": "minimal",
+                    "toolchain": "stable",
+                    "override": true,
+                  },
+                "name": "Install Rust stable",
+              },
+              {
+                "uses": "actions-rs/cargo@v1",
+                "with":
+                  {
+                    "command": "test",
+                    "args": "--manifest-path compatibility/Cargo.toml",
+                  },
+                "name": "Run compatibility tests",
+              },
+            ],
         },
+      "coverage":
         {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "check",
-            "args": "--examples"
-          },
-          "name": "Check examples"
-        }
-      ]
+          "name": "Code Coverage",
+          "runs-on": "ubuntu-latest",
+          "steps":
+            [
+              { "uses": "actions/checkout@v4", "name": "Checkout" },
+              {
+                "uses": "actions-rs/toolchain@v1",
+                "with":
+                  {
+                    "profile": "minimal",
+                    "toolchain": "nightly",
+                    "override": true,
+                  },
+                "name": "Install Rust nightly",
+              },
+              {
+                "name": "Run cargo-tarpaulin",
+                "uses": "actions-rs/tarpaulin@v0.1",
+                "with": { "version": "0.19.1", "args": "--all --all-features" },
+              },
+              {
+                "name": "Upload to codecov.io",
+                "uses": "codecov/codecov-action@v3",
+              },
+              {
+                "name": "Archive code coverage results",
+                "uses": "actions/upload-artifact@v3",
+                "with":
+                  { "name": "code-coverage-report", "path": "cobertura.xml" },
+              },
+            ],
+        },
     },
-    "test": {
-      "name": "Test",
-      "strategy": {
-        "matrix": {
-          "runner": [
-            "ubuntu-latest",
-            "windows-latest",
-            "macos-latest"
-          ],
-          "rust": [
-            "stable",
-            # "1.55.0" TODO: Pick latest stable version when we release 2.0
-          ],
-          "features": [
-            "",
-            "alloc",
-            "alloc,derive",
-            "std",
-            "std,derive",
-            "serde",
-            "alloc,serde",
-            "std,serde",
-            "serde,derive",
-            "alloc,serde,derive",
-            "std,serde,derive",
-          ]
-        }
-      },
-      "runs-on": "${{ matrix.runner }}",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "${{ matrix.rust }}",
-            "override": true
-          },
-          "name": "Install Rust ${{ matrix.rust }}"
-        },
-        {
-          "run": "if [ -z \"${{ matrix.features }}\" ]\n
-then\n
-  cargo test --no-default-features\n
-else\n
-  cargo test --no-default-features --features ${{ matrix.features }}\n
-fi",
-          "name": "Run `cargo test` on all features",
-          "shell": "bash",
-          "env": {
-            "RUSTFLAGS": "-D warnings"
-          }
-        }
-      ]
-    },
-    "lints": {
-      "name": "Lints",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "stable",
-            "override": true,
-            "components": "rustfmt, clippy"
-          },
-          "name": "Install Rust stable"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "fmt",
-            "args": "--all -- --check"
-          },
-          "name": "Run `cargo fmt`"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "clippy",
-            "args": "--all-features -- -D warnings"
-          },
-          "name": "Run `cargo clippy`"
-        }
-      ]
-    },
-    "compatibility": {
-      "name": "Compatibility",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "stable",
-            "override": true,
-          },
-          "name": "Install Rust stable"
-        },
-        {
-          "uses": "actions-rs/cargo@v1",
-          "with": {
-            "command": "test",
-            "args": "--manifest-path compatibility/Cargo.toml"
-          },
-          "name": "Run compatibility tests"
-        }
-      ]
-    },
-    "coverage": {
-      "name": "Code Coverage",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        {
-          "uses": "actions/checkout@v4",
-          "name": "Checkout"
-        },
-        {
-          "uses": "actions-rs/toolchain@v1",
-          "with": {
-            "profile": "minimal",
-            "toolchain": "nightly",
-            "override": true
-          },
-          "name": "Install Rust nightly"
-        },
-        {
-          "name": "Run cargo-tarpaulin",
-          "uses": "actions-rs/tarpaulin@v0.1",
-          "with": {
-            "version": "0.19.1",
-            "args": "--all --all-features"
-          }
-        },
-        {
-          "name": "Upload to codecov.io",
-          "uses": "codecov/codecov-action@v3"
-        },
-        {
-          "name": "Archive code coverage results",
-          "uses": "actions/upload-artifact@v3",
-          "with": {
-            "name": "code-coverage-report",
-            "path": "cobertura.xml"
-          }
-        }
-      ]
-    }
-  }
 }

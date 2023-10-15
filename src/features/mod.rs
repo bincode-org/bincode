@@ -16,3 +16,8 @@ pub use self::derive::*;
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde;
+
+#[cfg(feature = "embedded-io")]
+#[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+#[path = "impl_embedded_io.rs"]
+pub mod embedded_io;
