@@ -84,8 +84,8 @@ fn test_serialize_deserialize_borrowed_data() {
 
     assert_eq!(result, expected);
 
-    let output: SerdeWithBorrowedData =
-        bincode::serde::decode_borrowed_from_slice(&result, bincode::config::standard()).unwrap();
+    let (output, len): (SerdeWithBorrowedData, usize) =
+        bincode::serde::borrow_decode_from_slice(&result, bincode::config::standard()).unwrap();
     assert_eq!(
         SerdeWithBorrowedData {
             b: 0, // remember: b is skipped
@@ -93,6 +93,7 @@ fn test_serialize_deserialize_borrowed_data() {
         },
         output
     );
+    assert_eq!(len, 13);
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
