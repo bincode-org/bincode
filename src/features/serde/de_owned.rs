@@ -6,25 +6,32 @@ use crate::{
 };
 use serde::de::*;
 
-/// Decode an owned type from the given slice. Will return the decoded type `T` as well as the amount of bytes that were read.
+/// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
-/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [decode_borrowed_from_slice].
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
 ///
-/// [decode_borrowed_from_slice]: fn.decode_borrowed_from_slice.html
-pub fn decode_from_slice<T, C>(slice: &[u8], config: C) -> Result<(T, usize), DecodeError>
+/// See the [config] module for more information on configurations.
+///
+/// [borrow_decode_from_slice]: fn.borrow_decode_from_slice.html
+/// [config]: ../config/index.html
+pub fn decode_from_slice<D, C>(slice: &[u8], config: C) -> Result<(D, usize), DecodeError>
 where
-    T: DeserializeOwned,
+    D: DeserializeOwned,
     C: Config,
 {
     let reader = crate::de::read::SliceReader::new(slice);
     let mut decoder = crate::de::DecoderImpl::new(reader, config);
     let serde_decoder = SerdeDecoder { de: &mut decoder };
-    let result = T::deserialize(serde_decoder)?;
+    let result = D::deserialize(serde_decoder)?;
     let bytes_read = slice.len() - decoder.reader().slice.len();
     Ok((result, bytes_read))
 }
 
-/// Decode an owned type from the given `std::io::Read`.
+/// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+///
+/// See the [config] module for more information about config options.
+///
+/// [config]: ../config/index.html
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from_std_read<D: DeserializeOwned, C: Config, R: std::io::Read>(
@@ -41,7 +48,7 @@ pub fn decode_from_std_read<D: DeserializeOwned, C: Config, R: std::io::Read>(
 ///
 /// See the [config] module for more information on configurations.
 ///
-/// [config]: config/index.html
+/// [config]: ../config/index.html
 pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
     reader: R,
     config: C,
