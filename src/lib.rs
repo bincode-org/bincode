@@ -31,7 +31,7 @@
 //! |---|---|---
 //! |You're working with [`fs::File`] or [`net::TcpStream`]|[`encode_into_std_write`]|[`decode_from_std_read`]|
 //! |you're working with in-memory buffers|[`encode_to_vec`]|[`decode_from_slice`]|
-//! |You want to use a custom [Reader](de::read::Reader) and [writer](enc::write::Writer)|[`encode_into_writer`]|[`decode_from_reader`]|
+//! |You want to use a custom [Reader] and [Writer]|[`encode_into_writer`]|[`decode_from_reader`]|
 //! |You're working with pre-allocated buffers or on embedded targets|[`encode_into_slice`]|[`decode_from_slice`]|
 //!
 //! **Note:** If you're using `serde`, use `bincode::serde::...` instead of `bincode::...`
@@ -133,6 +133,8 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 }
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
+///
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
 ///
 /// See the [config] module for more information on configurations.
 ///

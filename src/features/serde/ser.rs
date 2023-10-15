@@ -8,30 +8,36 @@ use crate::{
 use alloc::vec::Vec;
 use serde::ser::*;
 
+/// Encode the given value into a `Vec<u8>` with the given `Config`. See the [config] module for more information.
+///
+/// [config]: ../config/index.html
 #[cfg(feature = "alloc")]
-/// Encode a `serde` `Serialize` type into a `Vec<u8>` with the bincode algorithm
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
-pub fn encode_to_vec<T, C>(t: T, config: C) -> Result<Vec<u8>, EncodeError>
+pub fn encode_to_vec<E, C>(val: E, config: C) -> Result<Vec<u8>, EncodeError>
 where
-    T: Serialize,
+    E: Serialize,
     C: Config,
 {
     let mut encoder = crate::enc::EncoderImpl::new(crate::VecWriter::default(), config);
     let serializer = SerdeEncoder { enc: &mut encoder };
-    t.serialize(serializer)?;
+    val.serialize(serializer)?;
     Ok(encoder.into_writer().collect())
 }
 
-/// Encode a `serde` `Serialize` type into a given byte slice with the bincode algorithm
-pub fn encode_into_slice<T, C>(t: T, slice: &mut [u8], config: C) -> Result<usize, EncodeError>
+/// Encode the given value into the given slice. Returns the amount of bytes that have been written.
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: ../config/index.html
+pub fn encode_into_slice<E, C>(val: E, dst: &mut [u8], config: C) -> Result<usize, EncodeError>
 where
-    T: Serialize,
+    E: Serialize,
     C: Config,
 {
     let mut encoder =
-        crate::enc::EncoderImpl::new(crate::enc::write::SliceWriter::new(slice), config);
+        crate::enc::EncoderImpl::new(crate::enc::write::SliceWriter::new(dst), config);
     let serializer = SerdeEncoder { enc: &mut encoder };
-    t.serialize(serializer)?;
+    val.serialize(serializer)?;
     Ok(encoder.into_writer().bytes_written())
 }
 
@@ -39,7 +45,7 @@ where
 ///
 /// See the [config] module for more information on configurations.
 ///
-/// [config]: config/index.html
+/// [config]: ../config/index.html
 pub fn encode_into_writer<E: Serialize, W: Writer, C: Config>(
     val: E,
     writer: W,
@@ -54,7 +60,7 @@ pub fn encode_into_writer<E: Serialize, W: Writer, C: Config>(
 /// Encode the given value into any type that implements `std::io::Write`, e.g. `std::fs::File`, with the given `Config`.
 /// See the [config] module for more information.
 ///
-/// [config]: config/index.html
+/// [config]: ../config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 #[cfg(feature = "std")]
 pub fn encode_into_std_write<E: Serialize, C: Config, W: std::io::Write>(
