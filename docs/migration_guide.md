@@ -18,15 +18,16 @@ bincode_2::config::legacy().with_variable_int_encoding()
 
 If you want to be compatible with bincode 1, use the following table:
 
-|Bincode 1|Bincode 2|
-|---|---|
-|version 1.0 - 1.2 with `bincode_1::DefaultOptions::new().serialize(T)`|`config::legacy()`|
-|version 1.3+ with `bincode_1::DefaultOptions::new().serialize(T)`|`config::legacy().with_variable_int_encoding()`|
-|No explicit `Options`, e.g. `bincode::serialize(T)`|`config::legacy()`|
+| Bincode 1                                                              | Bincode 2                                       |
+| ---------------------------------------------------------------------- | ----------------------------------------------- |
+| version 1.0 - 1.2 with `bincode_1::DefaultOptions::new().serialize(T)` | `config::legacy()`                              |
+| version 1.3+ with `bincode_1::DefaultOptions::new().serialize(T)`      | `config::legacy().with_variable_int_encoding()` |
+| No explicit `Options`, e.g. `bincode::serialize(T)`                    | `config::legacy()`                              |
 
 If you do not care about compatibility with bincode 1, we recommend using `config::standard()`
 
 The following changes have been made:
+
 - `.with_limit(n)` has been changed to `.with_limit::<n>()`.
 - `.with_native_endian()` has been removed. Use `.with_big_endian()` or `with_little_endian()` instead.
 - `.with_varint_encoding()` has been renamed to `.with_variable_int_encoding()`.
@@ -49,18 +50,17 @@ bincode = { version = "2.0.0-rc", features = ["serde"] }
 # bincode = { version = "2.0.0-rc", default-features = false, features = ["std", "serde"] }
 ```
 
-
 Then replace the following functions: (`Configuration` is `bincode::config::legacy()` by default)
 
-|Bincode 1|Bincode 2|
-|--|--|
-|`bincode::deserialize(&[u8])`|`bincode::serde::decode_from_slice(&[u8], Configuration)`<br />`bincode::serde::decode_borrowed_from_slice(&[u8], Configuration)`|
-|`bincode::deserialize_from(std::io::Read)`|`bincode::serde::decode_from_std_read(std::io::Read, Configuration)`|
-|`bincode::deserialize_from_custom(BincodeRead)`|`bincode::serde::decode_from_reader(Reader, Configuration)`|
-|||
-|`bincode::serialize(T)`|`bincode::serde::encode_to_vec(T, Configuration)`<br />`bincode::serde::encode_into_slice(T, &mut [u8], Configuration)`|
-|`bincode::serialize_into(std::io::Write, T)`|`bincode::serde::encode_into_std_write(T, std::io::Write, Configuration)`|
-|`bincode::serialized_size(T)`|Currently not implemented|
+| Bincode 1                                       | Bincode 2                                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `bincode::deserialize(&[u8])`                   | `bincode::serde::decode_from_slice(&[u8], Configuration)`<br />`bincode::serde::borrow_decode_from_slice(&[u8], Configuration)` |
+| `bincode::deserialize_from(std::io::Read)`      | `bincode::serde::decode_from_std_read(std::io::Read, Configuration)`                                                            |
+| `bincode::deserialize_from_custom(BincodeRead)` | `bincode::serde::decode_from_reader(Reader, Configuration)`                                                                     |
+|                                                 |                                                                                                                                 |
+| `bincode::serialize(T)`                         | `bincode::serde::encode_to_vec(T, Configuration)`<br />`bincode::serde::encode_into_slice(T, &mut [u8], Configuration)`         |
+| `bincode::serialize_into(std::io::Write, T)`    | `bincode::serde::encode_into_std_write(T, std::io::Write, Configuration)`                                                       |
+| `bincode::serialized_size(T)`                   | Currently not implemented                                                                                                       |
 
 ## Migrating to `bincode-derive`
 
@@ -79,10 +79,10 @@ bincode = "2.0.0-rc"
 
 Replace or add the following attributes. You are able to use both `serde-derive` and `bincode-derive` side-by-side.
 
-|serde-derive|bincode-derive|
-|---|---|
-|`#[derive(serde::Serialize)]`|`#[derive(bincode::Encode)]`|
-|`#[derive(serde::Deserialize)]`|`#[derive(bincode::Decode)]`|
+| serde-derive                    | bincode-derive               |
+| ------------------------------- | ---------------------------- |
+| `#[derive(serde::Serialize)]`   | `#[derive(bincode::Encode)]` |
+| `#[derive(serde::Deserialize)]` | `#[derive(bincode::Decode)]` |
 
 **note:** To implement these traits manually, see the documentation of [Encode](https://docs.rs/bincode/2.0.0-rc/bincode/enc/trait.Encode.html) and [Decode](https://docs.rs/bincode/2.0.0-rc/bincode/de/trait.Decode.html).
 
@@ -90,20 +90,20 @@ Replace or add the following attributes. You are able to use both `serde-derive`
 
 Then replace the following functions: (`Configuration` is `bincode::config::legacy()` by default)
 
-|Bincode 1|Bincode 2|
-|--|--|
-|`bincode::deserialize(&[u8])`|`bincode::decode_from_slice(&bytes, Configuration)`<br />`bincode::decode_borrowed_from_slice(&[u8], Configuration)`|
-|`bincode::deserialize_from(std::io::Read)`|`bincode::decode_from_std_read(std::io::Read, Configuration)`|
-|`bincode::deserialize_from_custom(BincodeRead)`|`bincode::decode_from_reader(Reader, Configuration)`|
-|||
-|`bincode::serialize(T)`|`bincode::encode_to_vec(T, Configuration)`<br />`bincode::encode_into_slice(t: T, &mut [u8], Configuration)`|
-|`bincode::serialize_into(std::io::Write, T)`|`bincode::encode_into_std_write(T, std::io::Write, Configuration)`|
-|`bincode::serialized_size(T)`|Currently not implemented|
-
+| Bincode 1                                       | Bincode 2                                                                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `bincode::deserialize(&[u8])`                   | `bincode::decode_from_slice(&bytes, Configuration)`<br />`bincode::borrow_decode_from_slice(&[u8], Configuration)` |
+| `bincode::deserialize_from(std::io::Read)`      | `bincode::decode_from_std_read(std::io::Read, Configuration)`                                                      |
+| `bincode::deserialize_from_custom(BincodeRead)` | `bincode::decode_from_reader(Reader, Configuration)`                                                               |
+|                                                 |                                                                                                                    |
+| `bincode::serialize(T)`                         | `bincode::encode_to_vec(T, Configuration)`<br />`bincode::encode_into_slice(t: T, &mut [u8], Configuration)`       |
+| `bincode::serialize_into(std::io::Write, T)`    | `bincode::encode_into_std_write(T, std::io::Write, Configuration)`                                                 |
+| `bincode::serialized_size(T)`                   | Currently not implemented                                                                                          |
 
 ### Bincode derive and libraries
 
 Currently not many libraries support the traits `Encode` and `Decode`. There are a couple of options if you want to use `#[derive(bincode::Encode, bincode::Decode)]`:
+
 - Enable the `serde` feature and add a `#[bincode(with_serde)]` above each field that implements `serde::Serialize/Deserialize` but not `Encode/Decode`
 - Enable the `serde` feature and wrap your field in [bincode::serde::Compat](https://docs.rs/bincode/2.0.0-rc/bincode/serde/struct.Compat.html) or [bincode::serde::BorrowCompat](https://docs.rs/bincode/2.0.0-rc/bincode/serde/struct.BorrowCompat.html)
 - Make a pull request to the library:

@@ -1,7 +1,7 @@
 //! Support for serde integration. Enable this with the `serde` feature.
 //!
 //! To encode/decode type that implement serde's trait, you can use:
-//! - [decode_borrowed_from_slice]
+//! - [borrow_decode_from_slice]
 //! - [decode_from_slice]
 //! - [encode_into_slice]
 //! - [encode_to_vec]

@@ -7,6 +7,29 @@ use crate::{
 use core::marker::PhantomData;
 use serde::de::*;
 
+/// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
+///
+/// See the [config](../config/index.html) module for more information on configurations.
+pub fn borrow_decode_from_slice<'de, D, C>(
+    slice: &'de [u8],
+    config: C,
+) -> Result<(D, usize), DecodeError>
+where
+    D: Deserialize<'de>,
+    C: Config,
+{
+    let reader = crate::de::read::SliceReader::new(slice);
+    let mut decoder = crate::de::DecoderImpl::new(reader, config);
+    let serde_decoder = SerdeDecoder {
+        de: &mut decoder,
+        pd: PhantomData,
+    };
+    let result = D::deserialize(serde_decoder)?;
+    let bytes_read = slice.len() - decoder.borrow_reader().slice.len();
+    Ok((result, bytes_read))
+}
+
+#[deprecated(note = "Use borrow_decode_from_slice instead")]
 /// Decode a borrowed type from the given slice. Some parts of the decoded type are expected to be referring to the given slice
 pub fn decode_borrowed_from_slice<'de, T, C>(slice: &'de [u8], config: C) -> Result<T, DecodeError>
 where

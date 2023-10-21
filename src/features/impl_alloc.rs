@@ -258,8 +258,7 @@ where
         if unty::type_equal::<T, u8>() {
             decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
-            let mut vec = Vec::new();
-            vec.resize(len, 0u8);
+            let mut vec = alloc::vec![0u8; len];
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
             Ok(unsafe { core::mem::transmute(vec) })
@@ -288,8 +287,7 @@ where
         if unty::type_equal::<T, u8>() {
             decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
-            let mut vec = Vec::new();
-            vec.resize(len, 0u8);
+            let mut vec = alloc::vec![0u8; len];
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
             Ok(unsafe { core::mem::transmute(vec) })
