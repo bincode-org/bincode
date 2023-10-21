@@ -59,8 +59,6 @@ mod de_borrowed;
 mod de_owned;
 mod ser;
 
-use core::fmt::Debug;
-
 pub use self::de_borrowed::*;
 pub use self::de_owned::*;
 pub use self::ser::*;
@@ -218,18 +216,18 @@ where
     }
 }
 
-impl<T> std::fmt::Debug for Compat<T>
+impl<T> core::fmt::Debug for Compat<T>
 where
-    T: std::fmt::Debug,
+    T: core::fmt::Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("Compat").field(&self.0).finish()
     }
 }
 
-impl<T> std::fmt::Display for Compat<T>
+impl<T> core::fmt::Display for Compat<T>
 where
-    T: std::fmt::Display,
+    T: core::fmt::Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)
@@ -273,18 +271,18 @@ where
     }
 }
 
-impl<T> std::fmt::Debug for BorrowCompat<T>
+impl<T> core::fmt::Debug for BorrowCompat<T>
 where
-    T: std::fmt::Debug,
+    T: core::fmt::Debug,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("BorrowCompat").field(&self.0).finish()
     }
 }
 
-impl<T> std::fmt::Display for BorrowCompat<T>
+impl<T> core::fmt::Display for BorrowCompat<T>
 where
-    T: std::fmt::Display,
+    T: core::fmt::Display,
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)

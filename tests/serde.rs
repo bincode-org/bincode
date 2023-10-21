@@ -143,7 +143,10 @@ fn test_serialize_deserialize_owned_data() {
 
 #[cfg(feature = "derive")]
 mod derive {
-    use bincode::{Decode, Encode, serde::{Compat, BorrowCompat}};
+    use bincode::{
+        serde::{BorrowCompat, Compat},
+        Decode, Encode,
+    };
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
