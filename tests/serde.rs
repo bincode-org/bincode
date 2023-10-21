@@ -144,7 +144,10 @@ fn test_serialize_deserialize_owned_data() {
 
 #[cfg(feature = "derive")]
 mod derive {
-    use bincode::{Decode, Encode};
+    use bincode::{
+        serde::{BorrowCompat, Compat},
+        Decode, Encode,
+    };
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -197,5 +200,55 @@ mod derive {
             },
             2,
         );
+    }
+
+    #[test]
+    fn test_vec_compat_debug() {
+        let compat = Compat(vec![0, 1, 2, 3]);
+        let debug_view = format!("{:?}", compat);
+        assert_eq!(debug_view, "Compat([0, 1, 2, 3])")
+    }
+
+    #[test]
+    fn test_i32_compat_debug() {
+        let compat = Compat(1337_i32);
+        let debug_view = format!("{:?}", compat);
+        assert_eq!(debug_view, "Compat(1337)")
+    }
+
+    #[test]
+    fn test_i32_compat_display() {
+        let compat = Compat(1337_i32);
+        let debug_view = format!("{}", compat);
+        assert_eq!(debug_view, "1337")
+    }
+
+    #[test]
+    fn test_f32_compat_display() {
+        let compat = Compat(1.5_f32);
+        let debug_view = format!("{}", compat);
+        assert_eq!(debug_view, "1.5")
+    }
+
+    #[test]
+    fn test_vec_borrow_compat_debug() {
+        let vector = vec![0, 1, 2, 3];
+        let borrow_compat = BorrowCompat(&vector);
+        let debug_view = format!("{:?}", borrow_compat);
+        assert_eq!(debug_view, "BorrowCompat([0, 1, 2, 3])")
+    }
+
+    #[test]
+    fn test_str_borrow_compat_debug() {
+        let borrow_compat = BorrowCompat("Hello World!");
+        let debug_view = format!("{:?}", borrow_compat);
+        assert_eq!(debug_view, "BorrowCompat(\"Hello World!\")")
+    }
+
+    #[test]
+    fn test_str_borrow_compat_display() {
+        let borrow_compat = BorrowCompat("Hello World!");
+        let debug_view = format!("{}", borrow_compat);
+        assert_eq!(debug_view, "Hello World!")
     }
 }
