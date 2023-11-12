@@ -1,10 +1,10 @@
 use crate::{
-    config::Endian,
+    config::Endianness,
     de::read::Reader,
     error::{DecodeError, IntegerType},
 };
 
-pub fn varint_decode_i16<R: Reader>(read: &mut R, endian: Endian) -> Result<i16, DecodeError> {
+pub fn varint_decode_i16<R: Reader>(read: &mut R, endian: Endianness) -> Result<i16, DecodeError> {
     let n = super::varint_decode_u16(read, endian)
         .map_err(DecodeError::change_integer_type_to_signed)?;
     Ok(if n % 2 == 0 {
@@ -21,7 +21,7 @@ pub fn varint_decode_i16<R: Reader>(read: &mut R, endian: Endian) -> Result<i16,
     })
 }
 
-pub fn varint_decode_i32<R: Reader>(read: &mut R, endian: Endian) -> Result<i32, DecodeError> {
+pub fn varint_decode_i32<R: Reader>(read: &mut R, endian: Endianness) -> Result<i32, DecodeError> {
     let n = super::varint_decode_u32(read, endian)
         .map_err(DecodeError::change_integer_type_to_signed)?;
     Ok(if n % 2 == 0 {
@@ -38,7 +38,7 @@ pub fn varint_decode_i32<R: Reader>(read: &mut R, endian: Endian) -> Result<i32,
     })
 }
 
-pub fn varint_decode_i64<R: Reader>(read: &mut R, endian: Endian) -> Result<i64, DecodeError> {
+pub fn varint_decode_i64<R: Reader>(read: &mut R, endian: Endianness) -> Result<i64, DecodeError> {
     let n = super::varint_decode_u64(read, endian)
         .map_err(DecodeError::change_integer_type_to_signed)?;
     Ok(if n % 2 == 0 {
@@ -55,7 +55,10 @@ pub fn varint_decode_i64<R: Reader>(read: &mut R, endian: Endian) -> Result<i64,
     })
 }
 
-pub fn varint_decode_i128<R: Reader>(read: &mut R, endian: Endian) -> Result<i128, DecodeError> {
+pub fn varint_decode_i128<R: Reader>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<i128, DecodeError> {
     let n = super::varint_decode_u128(read, endian)
         .map_err(DecodeError::change_integer_type_to_signed)?;
     Ok(if n % 2 == 0 {
@@ -72,7 +75,10 @@ pub fn varint_decode_i128<R: Reader>(read: &mut R, endian: Endian) -> Result<i12
     })
 }
 
-pub fn varint_decode_isize<R: Reader>(read: &mut R, endian: Endian) -> Result<isize, DecodeError> {
+pub fn varint_decode_isize<R: Reader>(
+    read: &mut R,
+    endian: Endianness,
+) -> Result<isize, DecodeError> {
     match varint_decode_i64(read, endian) {
         Ok(val) => Ok(val as isize),
         Err(DecodeError::InvalidIntegerType { found, .. }) => {

@@ -1,6 +1,6 @@
 use super::{write::Writer, Encode, Encoder};
 use crate::{
-    config::{Endian, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
+    config::{Endianness, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
     error::EncodeError,
 };
 use core::{
@@ -51,8 +51,8 @@ impl Encode for u16 {
                 crate::varint::varint_encode_u16(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -71,8 +71,8 @@ impl Encode for u32 {
                 crate::varint::varint_encode_u32(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -91,8 +91,8 @@ impl Encode for u64 {
                 crate::varint::varint_encode_u64(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -111,8 +111,8 @@ impl Encode for u128 {
                 crate::varint::varint_encode_u128(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -131,8 +131,8 @@ impl Encode for usize {
                 crate::varint::varint_encode_usize(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&(*self as u64).to_be_bytes()),
-                Endian::Little => encoder.writer().write(&(*self as u64).to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&(*self as u64).to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&(*self as u64).to_le_bytes()),
             },
         }
     }
@@ -163,8 +163,8 @@ impl Encode for i16 {
                 crate::varint::varint_encode_i16(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -183,8 +183,8 @@ impl Encode for i32 {
                 crate::varint::varint_encode_i32(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -203,8 +203,8 @@ impl Encode for i64 {
                 crate::varint::varint_encode_i64(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -223,8 +223,8 @@ impl Encode for i128 {
                 crate::varint::varint_encode_i128(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-                Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
             },
         }
     }
@@ -243,8 +243,8 @@ impl Encode for isize {
                 crate::varint::varint_encode_isize(encoder.writer(), E::C::ENDIAN, *self)
             }
             IntEncoding::Fixed => match E::C::ENDIAN {
-                Endian::Big => encoder.writer().write(&(*self as i64).to_be_bytes()),
-                Endian::Little => encoder.writer().write(&(*self as i64).to_le_bytes()),
+                Endianness::Big => encoder.writer().write(&(*self as i64).to_be_bytes()),
+                Endianness::Little => encoder.writer().write(&(*self as i64).to_le_bytes()),
             },
         }
     }
@@ -259,8 +259,8 @@ impl Encode for NonZeroIsize {
 impl Encode for f32 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::ENDIAN {
-            Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-            Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+            Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+            Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
         }
     }
 }
@@ -268,8 +268,8 @@ impl Encode for f32 {
 impl Encode for f64 {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match E::C::ENDIAN {
-            Endian::Big => encoder.writer().write(&self.to_be_bytes()),
-            Endian::Little => encoder.writer().write(&self.to_le_bytes()),
+            Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
+            Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
         }
     }
 }

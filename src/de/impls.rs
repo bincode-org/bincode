@@ -3,7 +3,7 @@ use super::{
     BorrowDecode, BorrowDecoder, Decode, Decoder,
 };
 use crate::{
-    config::{Endian, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
+    config::{Endianness, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
     error::{DecodeError, IntegerType},
     impl_borrow_decode,
 };
@@ -65,8 +65,8 @@ impl Decode for u16 {
                 let mut bytes = [0u8; 2];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => u16::from_le_bytes(bytes),
-                    Endian::Big => u16::from_be_bytes(bytes),
+                    Endianness::Little => u16::from_le_bytes(bytes),
+                    Endianness::Big => u16::from_be_bytes(bytes),
                 })
             }
         }
@@ -94,8 +94,8 @@ impl Decode for u32 {
                 let mut bytes = [0u8; 4];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => u32::from_le_bytes(bytes),
-                    Endian::Big => u32::from_be_bytes(bytes),
+                    Endianness::Little => u32::from_le_bytes(bytes),
+                    Endianness::Big => u32::from_be_bytes(bytes),
                 })
             }
         }
@@ -123,8 +123,8 @@ impl Decode for u64 {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => u64::from_le_bytes(bytes),
-                    Endian::Big => u64::from_be_bytes(bytes),
+                    Endianness::Little => u64::from_le_bytes(bytes),
+                    Endianness::Big => u64::from_be_bytes(bytes),
                 })
             }
         }
@@ -152,8 +152,8 @@ impl Decode for u128 {
                 let mut bytes = [0u8; 16];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => u128::from_le_bytes(bytes),
-                    Endian::Big => u128::from_be_bytes(bytes),
+                    Endianness::Little => u128::from_le_bytes(bytes),
+                    Endianness::Big => u128::from_be_bytes(bytes),
                 })
             }
         }
@@ -182,8 +182,8 @@ impl Decode for usize {
                 decoder.reader().read(&mut bytes)?;
 
                 let value = match D::C::ENDIAN {
-                    Endian::Little => u64::from_le_bytes(bytes),
-                    Endian::Big => u64::from_be_bytes(bytes),
+                    Endianness::Little => u64::from_le_bytes(bytes),
+                    Endianness::Big => u64::from_be_bytes(bytes),
                 };
 
                 value
@@ -234,8 +234,8 @@ impl Decode for i16 {
                 let mut bytes = [0u8; 2];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => i16::from_le_bytes(bytes),
-                    Endian::Big => i16::from_be_bytes(bytes),
+                    Endianness::Little => i16::from_le_bytes(bytes),
+                    Endianness::Big => i16::from_be_bytes(bytes),
                 })
             }
         }
@@ -263,8 +263,8 @@ impl Decode for i32 {
                 let mut bytes = [0u8; 4];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => i32::from_le_bytes(bytes),
-                    Endian::Big => i32::from_be_bytes(bytes),
+                    Endianness::Little => i32::from_le_bytes(bytes),
+                    Endianness::Big => i32::from_be_bytes(bytes),
                 })
             }
         }
@@ -292,8 +292,8 @@ impl Decode for i64 {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => i64::from_le_bytes(bytes),
-                    Endian::Big => i64::from_be_bytes(bytes),
+                    Endianness::Little => i64::from_le_bytes(bytes),
+                    Endianness::Big => i64::from_be_bytes(bytes),
                 })
             }
         }
@@ -321,8 +321,8 @@ impl Decode for i128 {
                 let mut bytes = [0u8; 16];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => i128::from_le_bytes(bytes),
-                    Endian::Big => i128::from_be_bytes(bytes),
+                    Endianness::Little => i128::from_le_bytes(bytes),
+                    Endianness::Big => i128::from_be_bytes(bytes),
                 })
             }
         }
@@ -350,8 +350,8 @@ impl Decode for isize {
                 let mut bytes = [0u8; 8];
                 decoder.reader().read(&mut bytes)?;
                 Ok(match D::C::ENDIAN {
-                    Endian::Little => i64::from_le_bytes(bytes),
-                    Endian::Big => i64::from_be_bytes(bytes),
+                    Endianness::Little => i64::from_le_bytes(bytes),
+                    Endianness::Big => i64::from_be_bytes(bytes),
                 } as isize)
             }
         }
@@ -374,8 +374,8 @@ impl Decode for f32 {
         let mut bytes = [0u8; 4];
         decoder.reader().read(&mut bytes)?;
         Ok(match D::C::ENDIAN {
-            Endian::Little => f32::from_le_bytes(bytes),
-            Endian::Big => f32::from_be_bytes(bytes),
+            Endianness::Little => f32::from_le_bytes(bytes),
+            Endianness::Big => f32::from_be_bytes(bytes),
         })
     }
 }
@@ -387,8 +387,8 @@ impl Decode for f64 {
         let mut bytes = [0u8; 8];
         decoder.reader().read(&mut bytes)?;
         Ok(match D::C::ENDIAN {
-            Endian::Little => f64::from_le_bytes(bytes),
-            Endian::Big => f64::from_be_bytes(bytes),
+            Endianness::Little => f64::from_le_bytes(bytes),
+            Endianness::Big => f64::from_be_bytes(bytes),
         })
     }
 }
