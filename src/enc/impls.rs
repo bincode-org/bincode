@@ -476,3 +476,17 @@ where
         T::encode(self, encoder)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::enc::impls::encode_utf8;
+    use crate::features::IoWriter;
+    use std::vec::Vec;
+    #[test]
+    fn test_encode_utf8() {
+        let mut vec: Vec<u8> = Vec::new();
+        let mut writer: IoWriter<Vec<u8>> = IoWriter::new(&mut vec);
+        assert!(encode_utf8(&mut writer, '\u{1F600}').is_ok());
+        assert_eq!(writer.bytes_written(), 4);
+    }
+}
