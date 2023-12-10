@@ -478,6 +478,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "std")]
 mod tests {
     use crate::enc::impls::encode_utf8;
     use crate::features::IoWriter;
