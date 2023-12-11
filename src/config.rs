@@ -173,11 +173,31 @@ impl<E, I, L> Configuration<E, I, L> {
 pub trait Config:
     InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone
 {
+    /// This configuration's Endianness
+    fn endianness(&self) -> Endianness;
+
+    /// This configuration's Integer Encoding
+    fn int_encoding(&self) -> IntEncoding;
+
+    /// This configuration's byte limit, or `None` if no limit is configured
+    fn limit(&self) -> Option<usize>;
 }
 
-impl<T> Config for T where
-    T: InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone
+impl<T> Config for T
+where
+    T: InternalEndianConfig + InternalIntEncodingConfig + InternalLimitConfig + Copy + Clone,
 {
+    fn endianness(&self) -> Endianness {
+        <T as InternalEndianConfig>::ENDIAN
+    }
+
+    fn int_encoding(&self) -> IntEncoding {
+        <T as InternalIntEncodingConfig>::INT_ENCODING
+    }
+
+    fn limit(&self) -> Option<usize> {
+        <T as InternalLimitConfig>::LIMIT
+    }
 }
 
 /// Encodes all integer types in big endian.
@@ -185,7 +205,7 @@ impl<T> Config for T where
 pub struct BigEndian {}
 
 impl InternalEndianConfig for BigEndian {
-    const ENDIAN: Endian = Endian::Big;
+    const ENDIAN: Endianness = Endianness::Big;
 }
 
 /// Encodes all integer types in little endian.
@@ -193,7 +213,7 @@ impl InternalEndianConfig for BigEndian {
 pub struct LittleEndian {}
 
 impl InternalEndianConfig for LittleEndian {
-    const ENDIAN: Endian = Endian::Little;
+    const ENDIAN: Endianness = Endianness::Little;
 }
 
 /// Use fixed-size integer encoding.
@@ -226,21 +246,35 @@ impl<const N: usize> InternalLimitConfig for Limit<N> {
     const LIMIT: Option<usize> = Some(N);
 }
 
+/// Endianness of a `Configuration`.
+#[derive(PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Endianness {
+    /// Little Endian encoding, see `LittleEndian`.
+    Little,
+    /// Big Endian encoding, see `BigEndian`.
+    Big,
+}
+
+/// Integer Encoding of a `Configuration`.
+#[derive(PartialEq, Eq)]
+#[non_exhaustive]
+pub enum IntEncoding {
+    /// Fixed Integer Encoding, see `Fixint`.
+    Fixed,
+    /// Variable Integer Encoding, see `Varint`.
+    Variable,
+}
+
 mod internal {
-    use super::Configuration;
+    use super::{Configuration, Endianness, IntEncoding};
 
     pub trait InternalEndianConfig {
-        const ENDIAN: Endian;
+        const ENDIAN: Endianness;
     }
 
     impl<E: InternalEndianConfig, I, L> InternalEndianConfig for Configuration<E, I, L> {
-        const ENDIAN: Endian = E::ENDIAN;
-    }
-
-    #[derive(PartialEq, Eq)]
-    pub enum Endian {
-        Little,
-        Big,
+        const ENDIAN: Endianness = E::ENDIAN;
     }
 
     pub trait InternalIntEncodingConfig {
@@ -249,12 +283,6 @@ mod internal {
 
     impl<E, I: InternalIntEncodingConfig, L> InternalIntEncodingConfig for Configuration<E, I, L> {
         const INT_ENCODING: IntEncoding = I::INT_ENCODING;
-    }
-
-    #[derive(PartialEq, Eq)]
-    pub enum IntEncoding {
-        Fixed,
-        Variable,
     }
 
     pub trait InternalLimitConfig {

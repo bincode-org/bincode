@@ -1,9 +1,9 @@
 use super::{varint_encode_u128, varint_encode_u16, varint_encode_u32, varint_encode_u64};
-use crate::{config::Endian, enc::write::Writer, error::EncodeError};
+use crate::{config::Endianness, enc::write::Writer, error::EncodeError};
 
 pub fn varint_encode_i16<W: Writer>(
     writer: &mut W,
-    endian: Endian,
+    endian: Endianness,
     val: i16,
 ) -> Result<(), EncodeError> {
     varint_encode_u16(
@@ -22,7 +22,7 @@ pub fn varint_encode_i16<W: Writer>(
 
 pub fn varint_encode_i32<W: Writer>(
     writer: &mut W,
-    endian: Endian,
+    endian: Endianness,
     val: i32,
 ) -> Result<(), EncodeError> {
     varint_encode_u32(
@@ -41,7 +41,7 @@ pub fn varint_encode_i32<W: Writer>(
 
 pub fn varint_encode_i64<W: Writer>(
     writer: &mut W,
-    endian: Endian,
+    endian: Endianness,
     val: i64,
 ) -> Result<(), EncodeError> {
     varint_encode_u64(
@@ -60,7 +60,7 @@ pub fn varint_encode_i64<W: Writer>(
 
 pub fn varint_encode_i128<W: Writer>(
     writer: &mut W,
-    endian: Endian,
+    endian: Endianness,
     val: i128,
 ) -> Result<(), EncodeError> {
     varint_encode_u128(
@@ -79,7 +79,7 @@ pub fn varint_encode_i128<W: Writer>(
 
 pub fn varint_encode_isize<W: Writer>(
     writer: &mut W,
-    endian: Endian,
+    endian: Endianness,
     val: isize,
 ) -> Result<(), EncodeError> {
     // isize is being encoded as a i64
@@ -116,14 +116,14 @@ fn test_encode_i16() {
 
         // Little endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i16(&mut writer, Endian::Little, value).unwrap();
+        varint_encode_i16(&mut writer, Endianness::Little, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_le.len());
         assert_eq!(&buffer[..expected_le.len()], expected_le);
 
         // Big endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i16(&mut writer, Endian::Big, value).unwrap();
+        varint_encode_i16(&mut writer, Endianness::Big, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_be.len());
         assert_eq!(&buffer[..expected_be.len()], expected_be);
@@ -165,14 +165,14 @@ fn test_encode_i32() {
 
         // Little endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i32(&mut writer, Endian::Little, value).unwrap();
+        varint_encode_i32(&mut writer, Endianness::Little, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_le.len());
         assert_eq!(&buffer[..expected_le.len()], expected_le);
 
         // Big endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i32(&mut writer, Endian::Big, value).unwrap();
+        varint_encode_i32(&mut writer, Endianness::Big, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_be.len());
         assert_eq!(&buffer[..expected_be.len()], expected_be);
@@ -219,14 +219,14 @@ fn test_encode_i64() {
 
         // Little endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i64(&mut writer, Endian::Little, value).unwrap();
+        varint_encode_i64(&mut writer, Endianness::Little, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_le.len());
         assert_eq!(&buffer[..expected_le.len()], expected_le);
 
         // Big endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i64(&mut writer, Endian::Big, value).unwrap();
+        varint_encode_i64(&mut writer, Endianness::Big, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_be.len());
         assert_eq!(&buffer[..expected_be.len()], expected_be);
@@ -303,14 +303,14 @@ fn test_encode_i128() {
 
         // Little endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i128(&mut writer, Endian::Little, value).unwrap();
+        varint_encode_i128(&mut writer, Endianness::Little, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_le.len());
         assert_eq!(&buffer[..expected_le.len()], expected_le);
 
         // Big endian
         let mut writer = SliceWriter::new(&mut buffer);
-        varint_encode_i128(&mut writer, Endian::Big, value).unwrap();
+        varint_encode_i128(&mut writer, Endianness::Big, value).unwrap();
 
         assert_eq!(writer.bytes_written(), expected_be.len());
         assert_eq!(&buffer[..expected_be.len()], expected_be);
