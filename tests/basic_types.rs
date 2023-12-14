@@ -4,6 +4,7 @@ use bincode::error::DecodeError;
 use core::cell::{Cell, RefCell};
 use core::ops::Bound;
 use core::time::Duration;
+use std::cmp::Reverse;
 use std::num::*;
 use utils::{the_same, the_same_with_comparer};
 
@@ -128,6 +129,21 @@ fn test_numbers() {
     the_same(Wrapping(5i64));
     the_same(Wrapping(5i128));
     the_same(Wrapping(5isize));
+
+    // Reverse types
+    the_same(Reverse(5u8));
+    the_same(Reverse(5u16));
+    the_same(Reverse(5u32));
+    the_same(Reverse(5u64));
+    the_same(Reverse(5u128));
+    the_same(Reverse(5usize));
+
+    the_same(Reverse(5i8));
+    the_same(Reverse(5i16));
+    the_same(Reverse(5i32));
+    the_same(Reverse(5i64));
+    the_same(Reverse(5i128));
+    the_same(Reverse(5isize));
 }
 
 #[test]

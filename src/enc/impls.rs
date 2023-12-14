@@ -13,6 +13,7 @@ use core::{
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
+use std::cmp::Reverse;
 
 impl Encode for () {
     fn encode<E: Encoder>(&self, _: &mut E) -> Result<(), EncodeError> {
@@ -275,6 +276,12 @@ impl Encode for f64 {
 }
 
 impl<T: Encode> Encode for Wrapping<T> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)
+    }
+}
+
+impl<T: Encode> Encode for Reverse<T> {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.0.encode(encoder)
     }

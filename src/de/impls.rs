@@ -16,6 +16,7 @@ use core::{
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
+use std::cmp::Reverse;
 
 impl Decode for bool {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -402,6 +403,18 @@ impl<T: Decode> Decode for Wrapping<T> {
 impl<'de, T: BorrowDecode<'de>> BorrowDecode<'de> for Wrapping<T> {
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Wrapping(T::borrow_decode(decoder)?))
+    }
+}
+
+impl<T: Decode> Decode for Reverse<T> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        Ok(Reverse(T::decode(decoder)?))
+    }
+}
+
+impl<'de, T: BorrowDecode<'de>> BorrowDecode<'de> for Reverse<T> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        Ok(Reverse(T::borrow_decode(decoder)?))
     }
 }
 
