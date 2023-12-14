@@ -190,7 +190,7 @@ where
 
 #[inline(never)]
 #[cold]
-fn invalid_varint_discriminant<T>(
+const fn invalid_varint_discriminant<T>(
     expected: IntegerType,
     found: IntegerType,
 ) -> Result<T, DecodeError> {

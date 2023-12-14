@@ -250,7 +250,7 @@ pub enum IntegerType {
 impl IntegerType {
     /// Change the `Ux` value to the associated `Ix` value.
     /// Returns the old value if `self` is already `Ix`.
-    pub(crate) fn into_signed(self) -> Self {
+    pub(crate) const fn into_signed(self) -> Self {
         match self {
             Self::U8 => Self::I8,
             Self::U16 => Self::I16,

@@ -37,7 +37,7 @@ pub(crate) struct IoReader<R> {
 }
 
 impl<R> IoReader<R> {
-    pub fn new(reader: R) -> Self {
+    pub const fn new(reader: R) -> Self {
         Self { reader }
     }
 }
@@ -109,7 +109,7 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
         }
     }
 
-    pub fn bytes_written(&self) -> usize {
+    pub const fn bytes_written(&self) -> usize {
         self.bytes_written
     }
 }
