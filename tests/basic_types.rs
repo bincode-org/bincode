@@ -113,6 +113,21 @@ fn test_numbers() {
     the_same(NonZeroI128::new(12345));
     the_same(NonZeroIsize::new(0));
     the_same(NonZeroIsize::new(12345));
+
+    // Wrapping types
+    the_same(Wrapping(5u8));
+    the_same(Wrapping(5u16));
+    the_same(Wrapping(5u32));
+    the_same(Wrapping(5u64));
+    the_same(Wrapping(5u128));
+    the_same(Wrapping(5usize));
+
+    the_same(Wrapping(5i8));
+    the_same(Wrapping(5i16));
+    the_same(Wrapping(5i32));
+    the_same(Wrapping(5i64));
+    the_same(Wrapping(5i128));
+    the_same(Wrapping(5isize));
 }
 
 #[test]
