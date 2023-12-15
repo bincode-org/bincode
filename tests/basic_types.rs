@@ -2,9 +2,9 @@ mod utils;
 
 use bincode::error::DecodeError;
 use core::cell::{Cell, RefCell};
+use core::cmp::Reverse;
 use core::ops::Bound;
 use core::time::Duration;
-use std::cmp::Reverse;
 use std::num::*;
 use utils::{the_same, the_same_with_comparer};
 

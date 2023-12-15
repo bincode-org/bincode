@@ -9,6 +9,7 @@ use crate::{
 };
 use core::{
     cell::{Cell, RefCell},
+    cmp::Reverse,
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
@@ -16,7 +17,6 @@ use core::{
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
-use std::cmp::Reverse;
 
 impl Decode for bool {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
