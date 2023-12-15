@@ -3,6 +3,7 @@ use crate::{
     config::{Endianness, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
     error::EncodeError,
 };
+use core::cmp::Reverse;
 use core::{
     cell::{Cell, RefCell},
     marker::PhantomData,
@@ -13,7 +14,6 @@ use core::{
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
-use std::cmp::Reverse;
 
 impl Encode for () {
     fn encode<E: Encoder>(&self, _: &mut E) -> Result<(), EncodeError> {
