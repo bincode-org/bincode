@@ -11,11 +11,12 @@ use core::{
     cell::{Cell, RefCell},
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
-        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize,
+        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
     },
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
+use std::cmp::Reverse;
 
 impl Decode for bool {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
@@ -393,6 +394,29 @@ impl Decode for f64 {
     }
 }
 impl_borrow_decode!(f64);
+
+impl<T: Decode> Decode for Wrapping<T> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        Ok(Wrapping(T::decode(decoder)?))
+    }
+}
+impl<'de, T: BorrowDecode<'de>> BorrowDecode<'de> for Wrapping<T> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        Ok(Wrapping(T::borrow_decode(decoder)?))
+    }
+}
+
+impl<T: Decode> Decode for Reverse<T> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        Ok(Reverse(T::decode(decoder)?))
+    }
+}
+
+impl<'de, T: BorrowDecode<'de>> BorrowDecode<'de> for Reverse<T> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        Ok(Reverse(T::borrow_decode(decoder)?))
+    }
+}
 
 impl Decode for char {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {

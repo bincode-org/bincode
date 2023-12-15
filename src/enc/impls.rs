@@ -8,11 +8,12 @@ use core::{
     marker::PhantomData,
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
-        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize,
+        NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
     },
     ops::{Bound, Range, RangeInclusive},
     time::Duration,
 };
+use std::cmp::Reverse;
 
 impl Encode for () {
     fn encode<E: Encoder>(&self, _: &mut E) -> Result<(), EncodeError> {
@@ -271,6 +272,18 @@ impl Encode for f64 {
             Endianness::Big => encoder.writer().write(&self.to_be_bytes()),
             Endianness::Little => encoder.writer().write(&self.to_le_bytes()),
         }
+    }
+}
+
+impl<T: Encode> Encode for Wrapping<T> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)
+    }
+}
+
+impl<T: Encode> Encode for Reverse<T> {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.0.encode(encoder)
     }
 }
 
