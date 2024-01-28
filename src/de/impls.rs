@@ -10,6 +10,7 @@ use crate::{
 use core::{
     cell::{Cell, RefCell},
     cmp::Reverse,
+    net::{Ipv4Addr, Ipv6Addr},
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
@@ -669,6 +670,22 @@ impl Decode for Duration {
     }
 }
 impl_borrow_decode!(Duration);
+
+impl Decode for Ipv4Addr {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let octets: [u8; 4] = Decode::decode(decoder)?;
+        Ok(Ipv4Addr::from(octets))
+    }
+}
+impl_borrow_decode!(Ipv4Addr);
+
+impl Decode for Ipv6Addr {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let octets: [u8; 16] = Decode::decode(decoder)?;
+        Ok(Ipv6Addr::from(octets))
+    }
+}
+impl_borrow_decode!(Ipv6Addr);
 
 impl<T> Decode for Range<T>
 where

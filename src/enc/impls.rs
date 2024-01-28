@@ -3,10 +3,11 @@ use crate::{
     config::{Endianness, IntEncoding, InternalEndianConfig, InternalIntEncodingConfig},
     error::EncodeError,
 };
-use core::cmp::Reverse;
 use core::{
     cell::{Cell, RefCell},
+    cmp::Reverse,
     marker::PhantomData,
+    net::{Ipv4Addr, Ipv6Addr},
     num::{
         NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroIsize, NonZeroU128,
         NonZeroU16, NonZeroU32, NonZeroU64, NonZeroU8, NonZeroUsize, Wrapping,
@@ -433,6 +434,20 @@ impl Encode for Duration {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.as_secs().encode(encoder)?;
         self.subsec_nanos().encode(encoder)?;
+        Ok(())
+    }
+}
+
+impl Encode for Ipv4Addr {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.octets().encode(encoder)?;
+        Ok(())
+    }
+}
+
+impl Encode for Ipv6Addr {
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.octets().encode(encoder)?;
         Ok(())
     }
 }
