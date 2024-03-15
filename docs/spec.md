@@ -86,7 +86,7 @@ assert_eq!(encoded.as_slice(), &[
 ]);
 ```
 
-## Options
+### Options
 `Option<T>` is always serialized using a single byte for the discriminant, even in `Fixint` encoding (which normally uses a `u32` for discriminant).
 
 ```rust
