@@ -326,6 +326,87 @@ where
     }
 }
 
+#[cfg(feature = "smallvec")]
+impl<T: smallvec::Array> Decode for smallvec::SmallVec<T>
+where
+    T::Item: Decode,
+{
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut vec = smallvec::SmallVec::with_capacity(len);
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            vec.push(T::Item::decode(decoder)?);
+        }
+        Ok(vec)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<'de, T: smallvec::Array> BorrowDecode<'de> for smallvec::SmallVec<T>
+where
+    T::Item: BorrowDecode<'de>,
+{
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let len = crate::de::decode_slice_len(decoder)?;
+
+        decoder.claim_container_read::<T>(len)?;
+
+        let mut vec = smallvec::SmallVec::with_capacity(len);
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            vec.push(T::Item::borrow_decode(decoder)?);
+        }
+        Ok(vec)
+    }
+}
+
+#[cfg(feature = "smallvec")]
+impl<T: smallvec::Array> Encode for smallvec::SmallVec<T>
+where
+    T::Item: Encode,
+{
+    fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        crate::enc::encode_slice_len(encoder, self.len())?;
+        if unty::type_equal::<T, u8>() {
+            // Safety: T == u8
+            let slice: &[u8] = unsafe { core::mem::transmute(self.as_slice()) };
+            encoder.writer().write(slice)?;
+            Ok(())
+        } else {
+            for item in self.iter() {
+                item.encode(encoder)?;
+            }
+            Ok(())
+        }
+    }
+}
+#[cfg(feature = "smallvec")]
+#[test]
+fn smallvec_roundtrip() {
+    let start: smallvec::SmallVec<[u8; 4]> = smallvec::smallvec![0, 5, 9, 8];
+    let encoded = crate::encode_to_vec(&start, crate::config::standard()).unwrap();
+    let (end, _) = crate::borrow_decode_from_slice::<smallvec::SmallVec<[u8; 4]>, _>(
+        &encoded,
+        crate::config::standard(),
+    )
+    .unwrap();
+    assert_eq!(start, end);
+    let (end, _) = crate::decode_from_slice::<smallvec::SmallVec<[u8; 4]>, _>(
+        &encoded,
+        crate::config::standard(),
+    )
+    .unwrap();
+    assert_eq!(start, end);
+}
+
 impl Decode for String {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
