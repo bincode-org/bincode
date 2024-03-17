@@ -86,6 +86,23 @@ assert_eq!(encoded.as_slice(), &[
 ]);
 ```
 
+### Options
+`Option<T>` is always serialized using a single byte for the discriminant, even in `Fixint` encoding (which normally uses a `u32` for discriminant).
+
+```rust
+let data: Option<u32> = Some(123);
+let encoded = bincode::encode_to_vec(data, bincode::config::legacy()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    1, 123, 0, 0, 0  // the Some(..) tag is the leading 1
+]);
+
+let data: Option<u32> = None;
+let encoded = bincode::encode_to_vec(data, bincode::config::legacy()).unwrap();
+assert_eq!(encoded.as_slice(), &[
+    0 // the None tag is simply 0
+]);
+```
+
 # Collections
 
 Collections are encoded with their length value first, following by each entry of the collection. The length value is based on your `IntEncoding`.
