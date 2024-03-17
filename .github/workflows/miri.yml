@@ -1,7 +1,19 @@
 {
   "name": "miri",
   "on": [
-    "pull_request"
+    "push": {
+      "branches": [
+        "trunk",
+        "v*.x",
+        "ci/*"
+      ]
+    },
+    "pull_request": {
+      "branches": [
+        "trunk",
+        "v*.x"
+      ]
+    }
   ],
   "jobs": {
     "miri": {
