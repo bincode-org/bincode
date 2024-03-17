@@ -3,7 +3,13 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(
     feature = "unstable-strict-oom-checks",
-    feature(allocator_api, new_uninit)
+    feature(
+        allocator_api,
+        new_uninit,
+        maybe_uninit_write_slice,
+        vec_push_within_capacity,
+        try_with_capacity
+    )
 )]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary

@@ -1,5 +1,5 @@
 use crate::{
-    de::{read::Reader, BorrowDecoder, Decode, Decoder},
+    de::{BorrowDecoder, Decode, Decoder},
     enc::{
         self,
         write::{SizeWriter, Writer},
@@ -15,6 +15,9 @@ use alloc::{
     string::String,
     vec::Vec,
 };
+
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
+use crate::de::read::Reader;
 
 #[cfg(target_has_atomic = "ptr")]
 use alloc::sync::Arc;
@@ -38,11 +41,27 @@ impl VecWriter {
     }
 }
 
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl enc::write::Writer for VecWriter {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.inner.try_reserve(bytes.len())?;
         self.inner.extend_from_slice(bytes);
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "unstable-strict-oom-checks")]
+impl enc::write::Writer for VecWriter {
+    #[inline(always)]
+    fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
+        self.inner.try_reserve(bytes.len())?;
+        unsafe {
+            // Safety: We just reserved `bytes.len()` additional bytes
+            core::mem::MaybeUninit::copy_from_slice(self.inner.spare_capacity_mut(), bytes);
+            self.inner.set_len(self.inner.len() + bytes.len());
+        }
 
         Ok(())
     }
@@ -263,25 +282,34 @@ where
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
         if unty::type_equal::<T, u8>() {
             decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
             let mut vec = alloc::vec::from_elem(0u8, len);
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute(vec) })
-        } else {
-            decoder.claim_container_read::<T>(len)?;
-
-            let mut vec = Vec::with_capacity(len);
-            for _ in 0..len {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-                vec.push(T::decode(decoder)?);
-            }
-            Ok(vec)
+            return Ok(unsafe { core::mem::transmute(vec) });
         }
+
+        decoder.claim_container_read::<T>(len)?;
+
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let mut vec = Vec::try_with_capacity(len)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let mut vec = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            // Should never fail because we allocated enough capacity
+            #[cfg(feature = "unstable-strict-oom-checks")]
+            debug_assert!(vec.push_within_capacity(T::decode(decoder)?).is_ok());
+            #[cfg(not(feature = "unstable-strict-oom-checks"))]
+            vec.push(T::decode(decoder)?);
+        }
+        Ok(vec)
     }
 }
 
@@ -292,25 +320,33 @@ where
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
         if unty::type_equal::<T, u8>() {
             decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
-            let mut vec = alloc::vec![0u8; len];
+            let mut vec = alloc::vec::from_elem(0u8, len);
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute(vec) })
-        } else {
-            decoder.claim_container_read::<T>(len)?;
-
-            let mut vec = Vec::with_capacity(len);
-            for _ in 0..len {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-                vec.push(T::borrow_decode(decoder)?);
-            }
-            Ok(vec)
+            return Ok(unsafe { core::mem::transmute(vec) });
         }
+        decoder.claim_container_read::<T>(len)?;
+
+        #[cfg(feature = "unstable-strict-oom-checks")]
+        let mut vec = Vec::try_with_capacity(len)?;
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
+        let mut vec = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+            // Should never fail because we allocated enough capacity
+            #[cfg(feature = "unstable-strict-oom-checks")]
+            debug_assert!(vec.push_within_capacity(T::borrow_decode(decoder)?).is_ok());
+            #[cfg(not(feature = "unstable-strict-oom-checks"))]
+            vec.push(T::borrow_decode(decoder)?);
+        }
+        Ok(vec)
     }
 }
 
@@ -404,6 +440,7 @@ where
 
 // TODO
 // Vec does not implement Into for Box<[T]> because it allocates again
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl<T> Decode for Box<[T]>
 where
     T: Decode + 'static,
