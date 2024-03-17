@@ -87,6 +87,13 @@ pub(crate) mod varint;
 
 use de::{read::Reader, Decoder};
 use enc::write::Writer;
+
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "derive",
+    feature = "serde"
+))]
 pub use features::*;
 
 pub mod config;
@@ -95,7 +102,6 @@ pub mod de;
 pub mod enc;
 pub mod error;
 
-pub use atomic::*;
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
 
