@@ -100,7 +100,6 @@ pub mod de;
 pub mod enc;
 pub mod error;
 
-pub use atomic::*;
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
 

@@ -266,7 +266,7 @@ where
         if unty::type_equal::<T, u8>() {
             decoder.claim_container_read::<T>(len)?;
             // optimize for reading u8 vecs
-            let mut vec = alloc::vec![0u8; len];
+            let mut vec = alloc::vec::from_elem(0u8, len);
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
             Ok(unsafe { core::mem::transmute(vec) })
@@ -630,6 +630,7 @@ where
     }
 }
 
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 /// A drop guard that will trigger when an item fails to decode.
 /// If an item at index n fails to decode, we have to properly drop the 0..(n-1) values that have been read.
 struct DropGuard<'a, T> {
@@ -637,6 +638,7 @@ struct DropGuard<'a, T> {
     idx: usize,
 }
 
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 impl<'a, T> Drop for DropGuard<'a, T> {
     fn drop(&mut self) {
         unsafe {
