@@ -54,6 +54,11 @@ pub enum EncodeError {
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
     Serde(crate::features::serde::EncodeError),
+
+    #[cfg(feature = "embedded-io")]
+    /// An embedded-io error happened while encoding or decoding
+    // TODO: We lose the inner error here, but it's generic based on the reader. it would be nice to add this
+    EmbeddedIo,
 }
 
 impl core::fmt::Display for EncodeError {
@@ -188,6 +193,11 @@ pub enum DecodeError {
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.
     Serde(crate::features::serde::DecodeError),
+
+    #[cfg(feature = "embedded-io")]
+    /// An embedded-io error happened while encoding or decoding
+    // TODO: We lose the inner error here, but it's generic based on the reader. it would be nice to add this
+    EmbeddedIo,
 }
 
 impl core::fmt::Display for DecodeError {
