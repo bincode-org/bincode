@@ -451,6 +451,13 @@ where
     }
 }
 
+impl Decode for Rc<str> {
+    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let decoded = String::decode(decoder)?;
+        Ok(decoded.into())
+    }
+}
+
 impl<'de, T> BorrowDecode<'de> for Rc<T>
 where
     T: BorrowDecode<'de>,
@@ -458,6 +465,13 @@ where
     fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Rc::new(t))
+    }
+}
+
+impl<'de> BorrowDecode<'de> for Rc<str> {
+    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        let decoded = String::decode(decoder)?;
+        Ok(decoded.into())
     }
 }
 

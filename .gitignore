@@ -4,5 +4,6 @@
 *.swo
 .cargo
 .vscode
+.idea
 rls*.log
 tarpaulin-report.html
