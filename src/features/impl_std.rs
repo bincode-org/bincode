@@ -432,7 +432,9 @@ where
         decoder.claim_container_read::<(K, V)>(len)?;
 
         let hash_builder: S = Default::default();
-        let mut map = HashMap::with_capacity_and_hasher(len, hash_builder);
+        let mut map = HashMap::with_hasher(hash_builder);
+        map.try_reserve(len)?;
+
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
@@ -454,8 +456,9 @@ where
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
-        let hash_builder: S = Default::default();
-        let mut map = HashMap::with_capacity_and_hasher(len, hash_builder);
+        let mut map = HashMap::with_hasher(S::default());
+        map.try_reserve(len)?;
+
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());

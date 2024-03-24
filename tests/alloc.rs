@@ -6,12 +6,19 @@ extern crate alloc;
 mod utils;
 
 use alloc::borrow::Cow;
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
 use alloc::collections::*;
-#[cfg(not(feature = "serde"))]
+#[cfg(all(not(feature = "serde"), not(feature = "unstable-strict-oom-checks")))]
 use alloc::rc::Rc;
-#[cfg(all(target_has_atomic = "ptr", not(feature = "serde")))]
+#[cfg(all(
+    target_has_atomic = "ptr",
+    not(feature = "serde"),
+    not(feature = "unstable-strict-oom-checks")
+))]
 use alloc::sync::Arc;
-use utils::{the_same, the_same_with_comparer};
+use utils::the_same;
+#[cfg(not(feature = "unstable-strict-oom-checks"))]
+use utils::the_same_with_comparer;
 
 struct Foo {
     pub a: u32,
@@ -85,7 +92,7 @@ fn test_alloc_commons() {
     the_same(Box::<[u32]>::from(vec![1, 2, 3, 4, 5]));
     the_same(Cow::<u32>::Owned(5));
     the_same(Cow::<u32>::Borrowed(&5));
-    #[cfg(not(feature = "serde"))]
+    #[cfg(all(not(feature = "serde"), not(feature = "unstable-strict-oom-checks")))]
     {
         // Serde doesn't support Rc or Arc
         the_same(Rc::<u32>::new(5));
@@ -98,6 +105,7 @@ fn test_alloc_commons() {
         }
     }
 
+    #[cfg(not(feature = "unstable-strict-oom-checks"))]
     the_same_with_comparer(
         {
             let mut map = BinaryHeap::<u32>::new();
@@ -110,16 +118,19 @@ fn test_alloc_commons() {
         },
         |a, b| a.iter().collect::<Vec<_>>() == b.iter().collect::<Vec<_>>(),
     );
+    #[cfg(not(feature = "unstable-strict-oom-checks"))]
     the_same({
         let mut map = BTreeMap::<u32, i32>::new();
         map.insert(5, -5);
         map
     });
+    #[cfg(not(feature = "unstable-strict-oom-checks"))]
     the_same({
         let mut set = BTreeSet::<u32>::new();
         set.insert(5);
         set
     });
+    #[cfg(not(feature = "unstable-strict-oom-checks"))]
     the_same({
         let mut set = VecDeque::<u32>::new();
         set.push_back(15);
@@ -161,9 +172,13 @@ fn test_container_limits() {
     }
 
     for slice in test_cases {
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
         validate_fail::<BinaryHeap<i32>>(slice);
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
         validate_fail::<BTreeMap<i32, i32>>(slice);
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
         validate_fail::<BTreeSet<i32>>(slice);
+        #[cfg(not(feature = "unstable-strict-oom-checks"))]
         validate_fail::<VecDeque<i32>>(slice);
         validate_fail::<Vec<i32>>(slice);
         validate_fail::<String>(slice);
@@ -175,7 +190,7 @@ fn test_container_limits() {
     }
 }
 
-#[cfg(target_has_atomic = "ptr")]
+#[cfg(all(target_has_atomic = "ptr", not(feature = "unstable-strict-oom-checks")))]
 #[test]
 fn test_arc_str() {
     use alloc::sync::Arc;
@@ -188,6 +203,7 @@ fn test_arc_str() {
         let start: Arc<str> = Arc::clone(&start);
         bincode::encode_into_slice(start, &mut target, config).unwrap()
     };
+
     let slice = &target[..len];
 
     let decoded: Arc<str> = bincode::borrow_decode_from_slice(slice, config).unwrap().0;

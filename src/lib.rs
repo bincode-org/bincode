@@ -1,6 +1,16 @@
 #![no_std]
 #![warn(missing_docs, unused_lifetimes)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(
+    feature = "unstable-strict-oom-checks",
+    feature(
+        allocator_api,
+        new_uninit,
+        maybe_uninit_write_slice,
+        vec_push_within_capacity,
+        try_with_capacity
+    )
+)]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
 //! serialization strategy.  Using it, you can easily go from having
@@ -15,13 +25,14 @@
 //!
 //! # Features
 //!
-//! |Name  |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
-//! |------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
-//! |std   | Yes    |`HashMap` and `HashSet`|`decode_from_std_read` and `encode_into_std_write`|
-//! |alloc | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
-//! |atomic| Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
-//! |derive| Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
-//! |serde | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//! |Name                      |Default?|Supported types for Encode/Decode|Enabled methods                                                  |Other|
+//! |--------------------------|--------|-----------------------------------------|-----------------------------------------------------------------|-----|
+//! |std                       | Yes    |`HashMap` and `HashSet`|`decode_from_std_read` and `encode_into_std_write`|
+//! |alloc                     | Yes    |All common containers in alloc, like `Vec`, `String`, `Box`|`encode_to_vec`|
+//! |atomic                    | Yes    |All `Atomic*` integer types, e.g. `AtomicUsize`, and `AtomicBool`||
+//! |derive                    | Yes    |||Enables the `BorrowDecode`, `Decode` and `Encode` derive macros|
+//! |serde                     | No     |`Compat` and `BorrowCompat`, which will work for all types that implement serde's traits|serde-specific encode/decode functions in the [serde] module|Note: There are several [known issues](serde/index.html#known-issues) when using serde and bincode|
+//! |unstable-strict-oom-checks| No     |||Enabled strict OOM checks which ensures that bincode will never cause OOM issues.<br>This requires nightly feature so you need to use a nightly compiler.<br>This may break or be changed at any point in the future|
 //!
 //! # Which functions to use
 //!

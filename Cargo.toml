@@ -30,6 +30,9 @@ std = ["alloc", "serde?/std"]
 alloc = ["serde?/alloc"]
 derive = ["bincode_derive"]
 
+# experimental strict OOM checks, requires nightly features
+unstable-strict-oom-checks = ["alloc"]
+
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.0-rc.3", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }

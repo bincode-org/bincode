@@ -48,7 +48,7 @@
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "check",
-            "args": "--all-features"
+            "args": "--features std,derive"
           },
           "name": "Run `cargo check`"
         },
@@ -158,7 +158,7 @@ fi",
           "uses": "actions-rs/cargo@v1",
           "with": {
             "command": "clippy",
-            "args": "--all-features -- -D warnings"
+            "args": "--features std,derive -- -D warnings"
           },
           "name": "Run `cargo clippy`"
         }
@@ -213,7 +213,7 @@ fi",
           "uses": "actions-rs/tarpaulin@v0.1",
           "with": {
             "version": "0.19.1",
-            "args": "--all --all-features"
+            "args": "--all --features std,derive"
           }
         },
         {

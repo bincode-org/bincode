@@ -25,7 +25,6 @@ fn test_numbers() {
     the_same(5i128);
     the_same(5isize);
 
-    println!("Test {:?}", 5.0f32);
     the_same_with_comparer(5.0f32, |a, b| (a - b).abs() <= f32::EPSILON);
     the_same_with_comparer(5.0f64, |a, b| (a - b).abs() <= f64::EPSILON);
 
