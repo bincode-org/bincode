@@ -82,9 +82,9 @@ pub use self::decoder::DecoderImpl;
 /// # }
 /// # bincode::impl_borrow_decode!(Foo);
 /// ```
-pub trait Decode: Sized {
+pub trait Decode<C = ()>: Sized {
     /// Attempt to decode this type with the given [Decode].
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError>;
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
@@ -118,6 +118,8 @@ pub trait Decoder: Sealed {
 
     /// The concrete [Config] type
     type C: Config;
+
+    type Ctx;
 
     /// Returns a mutable reference to the reader
     fn reader(&mut self) -> &mut Self::R;
@@ -167,7 +169,7 @@ pub trait Decoder: Sealed {
     /// #     }
     /// # }
     /// impl<T: Decode> Decode for Container<T> {
-    ///     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    ///     fn decode<D: Decoder<Ctx=C>>(decoder: &mut D) -> Result<Self, DecodeError> {
     ///         let len = u64::decode(decoder)?;
     ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
     ///         // Make sure we don't allocate too much memory
@@ -222,6 +224,8 @@ where
     type R = T::R;
 
     type C = T::C;
+
+    type Ctx = T::Ctx;
 
     fn reader(&mut self) -> &mut Self::R {
         T::reader(self)

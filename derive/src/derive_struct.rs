@@ -70,19 +70,21 @@ impl DeriveStruct {
 
         generator
             .impl_for(format!("{}::Decode", crate_name))
+            .with_impl_generics(["__Ctx"])
+            .with_trait_generics(["__Ctx"])
             .modify_generic_constraints(|generics, where_constraints| {
                 if let Some((bounds, lit)) = (self.attributes.decode_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
                     where_constraints.clear();
                     where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
                 } else {
                     for g in generics.iter_generics() {
-                        where_constraints.push_constraint(g, format!("{}::Decode", crate_name)).unwrap();
+                        where_constraints.push_constraint(g, format!("{}::Decode<__Ctx>", crate_name)).unwrap();
                     }
                 }
                 Ok(())
             })?
             .generate_fn("decode")
-            .with_generic_deps("__D", [format!("{}::de::Decoder", crate_name)])
+            .with_generic_deps("__D", [format!("{}::de::Decoder<Ctx = __Ctx>", crate_name)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {

@@ -20,26 +20,28 @@ use crate::{config::Config, error::DecodeError, utils::Sealed};
 /// // this u32 can be any Decode
 /// let value = u32::decode(&mut decoder).unwrap();
 /// ```
-pub struct DecoderImpl<R, C: Config> {
+pub struct DecoderImpl<R, C: Config, Ctx> {
     reader: R,
     config: C,
     bytes_read: usize,
+    ctx: Ctx,
 }
 
-impl<R: Reader, C: Config> DecoderImpl<R, C> {
+impl<R: Reader, C: Config, Ctx> DecoderImpl<R, C, Ctx> {
     /// Construct a new Decoder
-    pub const fn new(reader: R, config: C) -> DecoderImpl<R, C> {
+    pub const fn new(reader: R, config: C, ctx: Ctx) -> DecoderImpl<R, C, Ctx> {
         DecoderImpl {
             reader,
             config,
             bytes_read: 0,
+            ctx,
         }
     }
 }
 
-impl<R, C: Config> Sealed for DecoderImpl<R, C> {}
+impl<R, C: Config, Ctx> Sealed for DecoderImpl<R, C, Ctx> {}
 
-impl<'de, R: BorrowReader<'de>, C: Config> BorrowDecoder<'de> for DecoderImpl<R, C> {
+impl<'de, R: BorrowReader<'de>, C: Config, Ctx> BorrowDecoder<'de> for DecoderImpl<R, C, Ctx> {
     type BR = R;
 
     fn borrow_reader(&mut self) -> &mut Self::BR {
@@ -47,10 +49,11 @@ impl<'de, R: BorrowReader<'de>, C: Config> BorrowDecoder<'de> for DecoderImpl<R,
     }
 }
 
-impl<R: Reader, C: Config> Decoder for DecoderImpl<R, C> {
+impl<R: Reader, C: Config, Ctx> Decoder for DecoderImpl<R, C, Ctx> {
     type R = R;
 
     type C = C;
+    type Ctx = Ctx;
 
     fn reader(&mut self) -> &mut Self::R {
         &mut self.reader

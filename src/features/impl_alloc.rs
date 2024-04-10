@@ -63,11 +63,11 @@ pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec
     Ok(encoder.into_writer().inner)
 }
 
-impl<T> Decode for BinaryHeap<T>
+impl<C, T> Decode<C> for BinaryHeap<T>
 where
-    T: Decode + Ord,
+    T: Decode<C> + Ord,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::decode(decoder)?.into())
     }
 }
@@ -94,12 +94,12 @@ where
     }
 }
 
-impl<K, V> Decode for BTreeMap<K, V>
+impl<C, K, V> Decode<C> for BTreeMap<K, V>
 where
-    K: Decode + Ord,
-    V: Decode,
+    K: Decode<C> + Ord,
+    V: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -152,11 +152,11 @@ where
     }
 }
 
-impl<T> Decode for BTreeSet<T>
+impl<C, T> Decode<C> for BTreeSet<T>
 where
-    T: Decode + Ord,
+    T: Decode<C> + Ord,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
@@ -204,11 +204,11 @@ where
     }
 }
 
-impl<T> Decode for VecDeque<T>
+impl<C, T> Decode<C> for VecDeque<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::decode(decoder)?.into())
     }
 }
@@ -248,11 +248,11 @@ where
     }
 }
 
-impl<T> Decode for Vec<T>
+impl<C, T> Decode<C> for Vec<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
         if unty::type_equal::<T, u8>() {
@@ -326,8 +326,8 @@ where
     }
 }
 
-impl Decode for String {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for String {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
         String::from_utf8(bytes).map_err(|e| DecodeError::Utf8 {
             inner: e.utf8_error(),
@@ -336,8 +336,8 @@ impl Decode for String {
 }
 impl_borrow_decode!(String);
 
-impl Decode for Box<str> {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for Box<str> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         String::decode(decoder).map(String::into_boxed_str)
     }
 }
@@ -349,11 +349,11 @@ impl Encode for String {
     }
 }
 
-impl<T> Decode for Box<T>
+impl<C, T> Decode<C> for Box<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Box::new(t))
     }
@@ -377,11 +377,11 @@ where
     }
 }
 
-impl<T> Decode for Box<[T]>
+impl<C, T> Decode<C> for Box<[T]>
 where
-    T: Decode + 'static,
+    T: Decode<C> + 'static,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into_boxed_slice())
     }
@@ -397,12 +397,12 @@ where
     }
 }
 
-impl<T> Decode for Cow<'_, T>
+impl<C, T> Decode<C> for Cow<'_, T>
 where
     T: ToOwned + ?Sized,
-    <T as ToOwned>::Owned: Decode,
+    <T as ToOwned>::Owned: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = <T as ToOwned>::Owned::decode(decoder)?;
         Ok(Cow::Owned(t))
     }
@@ -441,18 +441,18 @@ fn test_cow_round_trip() {
     assert_eq!(start, end);
 }
 
-impl<T> Decode for Rc<T>
+impl<C, T> Decode<C> for Rc<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Rc::new(t))
     }
 }
 
-impl Decode for Rc<str> {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for Rc<str> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let decoded = String::decode(decoder)?;
         Ok(decoded.into())
     }
@@ -484,11 +484,11 @@ where
     }
 }
 
-impl<T> Decode for Rc<[T]>
+impl<C, T> Decode<C> for Rc<[T]>
 where
-    T: Decode + 'static,
+    T: Decode<C> + 'static,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into())
     }
@@ -505,19 +505,19 @@ where
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<T> Decode for Arc<T>
+impl<C, T> Decode<C> for Arc<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Arc::new(t))
     }
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl Decode for Arc<str> {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for Arc<str> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let decoded = String::decode(decoder)?;
         Ok(decoded.into())
     }
@@ -553,11 +553,11 @@ where
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<T> Decode for Arc<[T]>
+impl<C, T> Decode<C> for Arc<[T]>
 where
-    T: Decode + 'static,
+    T: Decode<C> + 'static,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into())
     }

@@ -27,8 +27,17 @@ pub fn decode_from_std_read<D: Decode, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
 ) -> Result<D, DecodeError> {
+    decode_from_std_read_with_ctx(src, config, ())
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub fn decode_from_std_read_with_ctx<Ctx, D: Decode<Ctx>, C: Config, R: std::io::Read>(
+    src: &mut R,
+    config: C,
+    ctx: Ctx,
+) -> Result<D, DecodeError> {
     let reader = IoReader::new(src);
-    let mut decoder = DecoderImpl::<_, C>::new(reader, config);
+    let mut decoder = DecoderImpl::<_, C, Ctx>::new(reader, config, ctx);
     D::decode(&mut decoder)
 }
 
@@ -140,8 +149,8 @@ impl Encode for CString {
     }
 }
 
-impl Decode for CString {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for CString {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
         CString::new(vec).map_err(|inner| DecodeError::CStringNulError {
             position: inner.nul_position(),
@@ -162,11 +171,11 @@ where
     }
 }
 
-impl<T> Decode for Mutex<T>
+impl<C, T> Decode<C> for Mutex<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Mutex::new(t))
     }
@@ -193,11 +202,11 @@ where
     }
 }
 
-impl<T> Decode for RwLock<T>
+impl<C, T> Decode<C> for RwLock<T>
 where
-    T: Decode,
+    T: Decode<C>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RwLock::new(t))
     }
@@ -224,8 +233,8 @@ impl Encode for SystemTime {
     }
 }
 
-impl Decode for SystemTime {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for SystemTime {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         match SystemTime::UNIX_EPOCH.checked_add(duration) {
             Some(t) => Ok(t),
@@ -257,8 +266,8 @@ impl Encode for PathBuf {
     }
 }
 
-impl Decode for PathBuf {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for PathBuf {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
     }
@@ -280,8 +289,8 @@ impl Encode for IpAddr {
     }
 }
 
-impl Decode for IpAddr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for IpAddr {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
             1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
@@ -301,8 +310,8 @@ impl Encode for Ipv4Addr {
     }
 }
 
-impl Decode for Ipv4Addr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for Ipv4Addr {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 4];
         decoder.reader().read(&mut buff)?;
         Ok(Self::from(buff))
@@ -316,8 +325,8 @@ impl Encode for Ipv6Addr {
     }
 }
 
-impl Decode for Ipv6Addr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for Ipv6Addr {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 16];
         decoder.reader().read(&mut buff)?;
         Ok(Self::from(buff))
@@ -340,8 +349,8 @@ impl Encode for SocketAddr {
     }
 }
 
-impl Decode for SocketAddr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for SocketAddr {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
             1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
@@ -362,8 +371,8 @@ impl Encode for SocketAddrV4 {
     }
 }
 
-impl Decode for SocketAddrV4 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for SocketAddrV4 {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv4Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port))
@@ -378,8 +387,8 @@ impl Encode for SocketAddrV6 {
     }
 }
 
-impl Decode for SocketAddrV6 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<C> Decode<C> for SocketAddrV6 {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port, 0, 0))
@@ -421,13 +430,13 @@ where
     }
 }
 
-impl<K, V, S> Decode for HashMap<K, V, S>
+impl<C, K, V, S> Decode<C> for HashMap<K, V, S>
 where
-    K: Decode + Eq + std::hash::Hash,
-    V: Decode,
+    K: Decode<C> + Eq + std::hash::Hash,
+    V: Decode<C>,
     S: std::hash::BuildHasher + Default,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -468,12 +477,12 @@ where
     }
 }
 
-impl<T, S> Decode for HashSet<T, S>
+impl<C, T, S> Decode<C> for HashSet<T, S>
 where
-    T: Decode + Eq + Hash,
+    T: Decode<C> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 

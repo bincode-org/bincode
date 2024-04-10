@@ -19,14 +19,14 @@ macro_rules! impl_tuple {
             }
         }
 
-        impl<$first $(, $extra)*> Decode for ($first, $($extra, )*)
+        impl<Ctx, $first $(, $extra)*> Decode<Ctx> for ($first, $($extra, )*)
         where
-            $first: Decode,
+            $first: Decode<Ctx>,
         $(
-            $extra : Decode,
+            $extra : Decode<Ctx>,
         )*
         {
-            fn decode<DE: Decoder>(decoder: &mut DE) -> Result<Self, DecodeError> {
+            fn decode<DE: Decoder<Ctx=Ctx>>(decoder: &mut DE) -> Result<Self, DecodeError> {
                 Ok((
                     $first::decode(decoder)?,
                     $($extra :: decode(decoder)?, )*
