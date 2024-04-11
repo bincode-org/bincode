@@ -16,7 +16,7 @@ use crate::{config::Config, error::DecodeError, utils::Sealed};
 /// # let slice: &[u8] = &[0, 0, 0, 0];
 /// # let some_reader = bincode::de::read::SliceReader::new(slice);
 /// use bincode::de::{DecoderImpl, Decode};
-/// let mut decoder = DecoderImpl::new(some_reader, bincode::config::standard());
+/// let mut decoder = DecoderImpl::new(some_reader, bincode::config::standard(), ());
 /// // this u32 can be any Decode
 /// let value = u32::decode(&mut decoder).unwrap();
 /// ```
@@ -89,5 +89,9 @@ impl<R: Reader, C: Config, Ctx> Decoder for DecoderImpl<R, C, Ctx> {
             // We should always be claiming more than we unclaim, so this should never underflow
             self.bytes_read -= n;
         }
+    }
+
+    fn ctx(&mut self) -> &mut Self::Ctx {
+        &mut self.ctx
     }
 }

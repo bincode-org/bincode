@@ -32,6 +32,7 @@ pub enum FTXresponse<T> {
     Error(FTXresponseFailure),
 }
 
+
 #[derive(
     bincode_2::Encode, bincode_2::Decode, serde::Serialize, serde::Deserialize, Debug, PartialEq, Eq,
 )]

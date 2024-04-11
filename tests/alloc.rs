@@ -145,7 +145,9 @@ fn test_container_limits() {
         bincode::encode_to_vec(DECODE_LIMIT as u64, bincode::config::standard()).unwrap(),
     ];
 
-    fn validate_fail<T: Decode + for<'de> BorrowDecode<'de> + core::fmt::Debug>(slice: &[u8]) {
+    fn validate_fail<T: Decode<()> + for<'de> BorrowDecode<'de, ()> + core::fmt::Debug>(
+        slice: &[u8],
+    ) {
         let result = bincode::decode_from_slice::<T, _>(
             slice,
             bincode::config::standard().with_limit::<DECODE_LIMIT>(),

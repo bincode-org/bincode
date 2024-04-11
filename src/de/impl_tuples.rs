@@ -4,14 +4,14 @@ use crate::error::DecodeError;
 macro_rules! impl_tuple {
     () => {};
     ($first:ident $(, $extra:ident)*) => {
-        impl<'de, $first $(, $extra)*> BorrowDecode<'de> for ($first, $($extra, )*)
+        impl<'de, $first $(, $extra)*, Ctx> BorrowDecode<'de, Ctx> for ($first, $($extra, )*)
         where
-            $first: BorrowDecode<'de>,
+            $first: BorrowDecode<'de, Ctx>,
         $(
-            $extra : BorrowDecode<'de>,
+            $extra : BorrowDecode<'de, Ctx>,
         )*
          {
-            fn borrow_decode<BD: BorrowDecoder<'de>>(decoder: &mut BD) -> Result<Self, DecodeError> {
+            fn borrow_decode<BD: BorrowDecoder<'de, Ctx = Ctx>>(decoder: &mut BD) -> Result<Self, DecodeError> {
                 Ok((
                     $first::borrow_decode(decoder)?,
                     $($extra :: borrow_decode(decoder)?, )*
@@ -26,7 +26,7 @@ macro_rules! impl_tuple {
             $extra : Decode<Ctx>,
         )*
         {
-            fn decode<DE: Decoder<Ctx=Ctx>>(decoder: &mut DE) -> Result<Self, DecodeError> {
+            fn decode<DE: Decoder<Ctx = Ctx>>(decoder: &mut DE) -> Result<Self, DecodeError> {
                 Ok((
                     $first::decode(decoder)?,
                     $($extra :: decode(decoder)?, )*

@@ -23,7 +23,7 @@ use std::{
 ///
 /// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_std_read<D: Decode, C: Config, R: std::io::Read>(
+pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
 ) -> Result<D, DecodeError> {
@@ -180,11 +180,13 @@ where
         Ok(Mutex::new(t))
     }
 }
-impl<'de, T> BorrowDecode<'de> for Mutex<T>
+impl<'de, T, Ctx> BorrowDecode<'de, Ctx> for Mutex<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Ctx>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Ctx = Ctx>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Mutex::new(t))
     }
@@ -211,11 +213,13 @@ where
         Ok(RwLock::new(t))
     }
 }
-impl<'de, T> BorrowDecode<'de> for RwLock<T>
+impl<'de, T, Ctx> BorrowDecode<'de, Ctx> for RwLock<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Ctx>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Ctx = Ctx>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(RwLock::new(t))
     }
@@ -253,8 +257,10 @@ impl Encode for &'_ Path {
     }
 }
 
-impl<'de> BorrowDecode<'de> for &'de Path {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<'de, Ctx> BorrowDecode<'de, Ctx> for &'de Path {
+    fn borrow_decode<D: BorrowDecoder<'de, Ctx = Ctx>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let str = <&'de str>::borrow_decode(decoder)?;
         Ok(Path::new(str))
     }
@@ -453,13 +459,15 @@ where
         Ok(map)
     }
 }
-impl<'de, K, V, S> BorrowDecode<'de> for HashMap<K, V, S>
+impl<'de, K, V, S, Ctx> BorrowDecode<'de, Ctx> for HashMap<K, V, S>
 where
-    K: BorrowDecode<'de> + Eq + std::hash::Hash,
-    V: BorrowDecode<'de>,
+    K: BorrowDecode<'de, Ctx> + Eq + std::hash::Hash,
+    V: BorrowDecode<'de, Ctx>,
     S: std::hash::BuildHasher + Default,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Ctx = Ctx>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -499,12 +507,14 @@ where
     }
 }
 
-impl<'de, T, S> BorrowDecode<'de> for HashSet<T, S>
+impl<'de, T, S, Ctx> BorrowDecode<'de, Ctx> for HashSet<T, S>
 where
-    T: BorrowDecode<'de> + Eq + Hash,
+    T: BorrowDecode<'de, Ctx> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Ctx = Ctx>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
