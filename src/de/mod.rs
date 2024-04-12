@@ -5,7 +5,10 @@ mod impl_core;
 mod impl_tuples;
 mod impls;
 
-use self::read::{BorrowReader, Reader};
+use self::{
+    decoder::WithContext,
+    read::{BorrowReader, Reader},
+};
 use crate::{
     config::{Config, InternalLimitConfig},
     error::DecodeError,
@@ -137,6 +140,10 @@ pub trait Decoder: Sealed {
     type Ctx;
 
     fn ctx(&mut self) -> &mut Self::Ctx;
+
+    fn with_ctx<'a, C>(&'a mut self, ctx: &'a mut C) -> WithContext<'a, Self, C> {
+        WithContext { decoder: self, ctx }
+    }
 
     /// Returns a mutable reference to the reader
     fn reader(&mut self) -> &mut Self::R;

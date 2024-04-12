@@ -37,6 +37,7 @@ unty = "0.0.3"
 
 # Used for tests
 [dev-dependencies]
+ouroboros = "0.18.3"
 serde_derive = "1.0"
 serde_json = { version = "1.0", default-features = false }
 tempfile = "3.2"

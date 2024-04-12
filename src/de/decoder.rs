@@ -95,3 +95,45 @@ impl<R: Reader, C: Config, Ctx> Decoder for DecoderImpl<R, C, Ctx> {
         &mut self.ctx
     }
 }
+
+pub struct WithContext<'a, D: ?Sized, C> {
+    pub(crate) decoder: &'a mut D,
+    pub(crate) ctx: &'a mut C,
+}
+
+impl<'a, C, D: Decoder + ?Sized> Sealed for WithContext<'a, D, C> {}
+
+impl<'a, Ctx, D: Decoder + ?Sized> Decoder for WithContext<'a, D, Ctx> {
+    type R = D::R;
+
+    type C = D::C;
+
+    type Ctx = Ctx;
+
+    fn ctx(&mut self) -> &mut Self::Ctx {
+        &mut self.ctx
+    }
+
+    fn reader(&mut self) -> &mut Self::R {
+        self.decoder.reader()
+    }
+
+    fn config(&self) -> &Self::C {
+        self.decoder.config()
+    }
+
+    fn claim_bytes_read(&mut self, n: usize) -> Result<(), DecodeError> {
+        self.decoder.claim_bytes_read(n)
+    }
+
+    fn unclaim_bytes_read(&mut self, n: usize) {
+        self.decoder.unclaim_bytes_read(n)
+    }
+}
+
+impl<'de, 'a, C, D: BorrowDecoder<'de>> BorrowDecoder<'de> for WithContext<'a, D, C> {
+    type BR = D::BR;
+    fn borrow_reader(&mut self) -> &mut Self::BR {
+        self.decoder.borrow_reader()
+    }
+}

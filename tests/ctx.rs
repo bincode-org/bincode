@@ -1,6 +1,6 @@
 use bincode::{
-    config, de::BorrowDecoder, decode_from_slice_with_ctx, encode_to_vec, error::DecodeError,
-    BorrowDecode, Decode, Encode,
+    config, de::BorrowDecoder, decode_from_slice, decode_from_slice_with_ctx, encode_to_vec,
+    error::DecodeError, BorrowDecode, Decode, Encode,
 };
 use bumpalo::{collections::Vec, vec, Bump};
 
@@ -66,16 +66,36 @@ enum _EnumContainer<'bump> {
     Vec(CodableVec<'bump, u32>),
 }
 
+#[ouroboros::self_referencing]
+struct SelfReferencing {
+    bump: Bump,
+    #[borrows(bump)]
+    #[not_covariant]
+    container: Container<'this>,
+}
+
+impl<C> Decode<C> for SelfReferencing {
+    fn decode<D: bincode::de::Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+        SelfReferencing::try_new(Bump::new(), |mut bump| {
+            Container::decode(&mut decoder.with_ctx(&mut bump))
+        })
+    }
+}
+
 #[test]
 fn decode_with_context() {
+    let config = config::standard();
     let bump = Bump::new();
     let container = Container {
         vec: CodableVec(vec![in &bump; 1, 2, 3]),
     };
 
-    let bytes = encode_to_vec(&container, config::standard()).unwrap();
+    let bytes = encode_to_vec(&container, config).unwrap();
     let (decoded_container, _) =
-        decode_from_slice_with_ctx::<_, Container, _>(&bytes, config::standard(), &bump).unwrap();
+        decode_from_slice_with_ctx::<_, Container, _>(&bytes, config, &bump).unwrap();
 
     assert_eq!(container, decoded_container);
+
+    let self_referencing: SelfReferencing = decode_from_slice(&bytes, config).unwrap().0;
+    self_referencing.with_container(|c| assert_eq!(&container, c))
 }
