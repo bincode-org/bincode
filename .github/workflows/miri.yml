@@ -1,6 +1,6 @@
 {
   "name": "miri",
-  "on": [
+  "on": {
     "push": {
       "branches": [
         "trunk",
@@ -14,7 +14,7 @@
         "v*.x"
       ]
     }
-  ],
+  },
   "jobs": {
     "miri": {
       "name": "MIRI",
