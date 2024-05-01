@@ -52,6 +52,7 @@ fn test_std_cursor() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)] // miri does not like `tempfile`
 fn test_std_file() {
     let mut file = tempfile::tempfile().expect("Could not create temp file");
 
