@@ -18,8 +18,8 @@ use core::{
     time::Duration,
 };
 
-impl<C> Decode<C> for bool {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for bool {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u8::decode(decoder)? {
             0 => Ok(false),
             1 => Ok(true),
@@ -29,9 +29,9 @@ impl<C> Decode<C> for bool {
 }
 impl_borrow_decode!(bool);
 
-impl<C> Decode<C> for u8 {
+impl<Context> Decode<Context> for u8 {
     #[inline]
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(1)?;
         if let Some(buf) = decoder.reader().peek_read(1) {
             let byte = buf[0];
@@ -46,8 +46,8 @@ impl<C> Decode<C> for u8 {
 }
 impl_borrow_decode!(u8);
 
-impl<C> Decode<C> for NonZeroU8 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroU8 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroU8::new(u8::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U8,
         })
@@ -55,8 +55,8 @@ impl<C> Decode<C> for NonZeroU8 {
 }
 impl_borrow_decode!(NonZeroU8);
 
-impl<C> Decode<C> for u16 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for u16 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(2)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -75,8 +75,8 @@ impl<C> Decode<C> for u16 {
 }
 impl_borrow_decode!(u16);
 
-impl<C> Decode<C> for NonZeroU16 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroU16 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroU16::new(u16::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U16,
         })
@@ -84,8 +84,8 @@ impl<C> Decode<C> for NonZeroU16 {
 }
 impl_borrow_decode!(NonZeroU16);
 
-impl<C> Decode<C> for u32 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for u32 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(4)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -104,8 +104,8 @@ impl<C> Decode<C> for u32 {
 }
 impl_borrow_decode!(u32);
 
-impl<C> Decode<C> for NonZeroU32 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroU32 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroU32::new(u32::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U32,
         })
@@ -113,8 +113,8 @@ impl<C> Decode<C> for NonZeroU32 {
 }
 impl_borrow_decode!(NonZeroU32);
 
-impl<C> Decode<C> for u64 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for u64 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -133,8 +133,8 @@ impl<C> Decode<C> for u64 {
 }
 impl_borrow_decode!(u64);
 
-impl<C> Decode<C> for NonZeroU64 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroU64 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroU64::new(u64::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U64,
         })
@@ -142,8 +142,8 @@ impl<C> Decode<C> for NonZeroU64 {
 }
 impl_borrow_decode!(NonZeroU64);
 
-impl<C> Decode<C> for u128 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for u128 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(16)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -162,8 +162,8 @@ impl<C> Decode<C> for u128 {
 }
 impl_borrow_decode!(u128);
 
-impl<C> Decode<C> for NonZeroU128 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroU128 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroU128::new(u128::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::U128,
         })
@@ -171,8 +171,8 @@ impl<C> Decode<C> for NonZeroU128 {
 }
 impl_borrow_decode!(NonZeroU128);
 
-impl<C> Decode<C> for usize {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for usize {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -196,8 +196,8 @@ impl<C> Decode<C> for usize {
 }
 impl_borrow_decode!(usize);
 
-impl<C> Decode<C> for NonZeroUsize {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroUsize {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroUsize::new(usize::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::Usize,
         })
@@ -205,8 +205,8 @@ impl<C> Decode<C> for NonZeroUsize {
 }
 impl_borrow_decode!(NonZeroUsize);
 
-impl<C> Decode<C> for i8 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for i8 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(1)?;
         let mut bytes = [0u8; 1];
         decoder.reader().read(&mut bytes)?;
@@ -215,8 +215,8 @@ impl<C> Decode<C> for i8 {
 }
 impl_borrow_decode!(i8);
 
-impl<C> Decode<C> for NonZeroI8 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroI8 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroI8::new(i8::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I8,
         })
@@ -224,8 +224,8 @@ impl<C> Decode<C> for NonZeroI8 {
 }
 impl_borrow_decode!(NonZeroI8);
 
-impl<C> Decode<C> for i16 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for i16 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(2)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -244,8 +244,8 @@ impl<C> Decode<C> for i16 {
 }
 impl_borrow_decode!(i16);
 
-impl<C> Decode<C> for NonZeroI16 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroI16 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroI16::new(i16::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I16,
         })
@@ -253,8 +253,8 @@ impl<C> Decode<C> for NonZeroI16 {
 }
 impl_borrow_decode!(NonZeroI16);
 
-impl<C> Decode<C> for i32 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for i32 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(4)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -273,8 +273,8 @@ impl<C> Decode<C> for i32 {
 }
 impl_borrow_decode!(i32);
 
-impl<C> Decode<C> for NonZeroI32 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroI32 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroI32::new(i32::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I32,
         })
@@ -282,8 +282,8 @@ impl<C> Decode<C> for NonZeroI32 {
 }
 impl_borrow_decode!(NonZeroI32);
 
-impl<C> Decode<C> for i64 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for i64 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -302,8 +302,8 @@ impl<C> Decode<C> for i64 {
 }
 impl_borrow_decode!(i64);
 
-impl<C> Decode<C> for NonZeroI64 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroI64 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroI64::new(i64::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I64,
         })
@@ -311,8 +311,8 @@ impl<C> Decode<C> for NonZeroI64 {
 }
 impl_borrow_decode!(NonZeroI64);
 
-impl<C> Decode<C> for i128 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for i128 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(16)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -331,8 +331,8 @@ impl<C> Decode<C> for i128 {
 }
 impl_borrow_decode!(i128);
 
-impl<C> Decode<C> for NonZeroI128 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroI128 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroI128::new(i128::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::I128,
         })
@@ -340,8 +340,8 @@ impl<C> Decode<C> for NonZeroI128 {
 }
 impl_borrow_decode!(NonZeroI128);
 
-impl<C> Decode<C> for isize {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for isize {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(8)?;
         match D::C::INT_ENCODING {
             IntEncoding::Variable => {
@@ -360,8 +360,8 @@ impl<C> Decode<C> for isize {
 }
 impl_borrow_decode!(isize);
 
-impl<C> Decode<C> for NonZeroIsize {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for NonZeroIsize {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         NonZeroIsize::new(isize::decode(decoder)?).ok_or(DecodeError::NonZeroTypeIsZero {
             non_zero_type: IntegerType::Isize,
         })
@@ -369,8 +369,8 @@ impl<C> Decode<C> for NonZeroIsize {
 }
 impl_borrow_decode!(NonZeroIsize);
 
-impl<C> Decode<C> for f32 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for f32 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(4)?;
         let mut bytes = [0u8; 4];
         decoder.reader().read(&mut bytes)?;
@@ -382,8 +382,8 @@ impl<C> Decode<C> for f32 {
 }
 impl_borrow_decode!(f32);
 
-impl<C> Decode<C> for f64 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for f64 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(8)?;
         let mut bytes = [0u8; 8];
         decoder.reader().read(&mut bytes)?;
@@ -395,8 +395,8 @@ impl<C> Decode<C> for f64 {
 }
 impl_borrow_decode!(f64);
 
-impl<C, T: Decode<C>> Decode<C> for Wrapping<T> {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context, T: Decode<Context>> Decode<Context> for Wrapping<T> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Wrapping(T::decode(decoder)?))
     }
 }
@@ -408,8 +408,8 @@ impl<'de, Context, T: BorrowDecode<'de, Context>> BorrowDecode<'de, Context> for
     }
 }
 
-impl<C, T: Decode<C>> Decode<C> for Reverse<T> {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context, T: Decode<Context>> Decode<Context> for Reverse<T> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Reverse(T::decode(decoder)?))
     }
 }
@@ -422,8 +422,8 @@ impl<'de, Context, T: BorrowDecode<'de, Context>> BorrowDecode<'de, Context> for
     }
 }
 
-impl<C> Decode<C> for char {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for char {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut array = [0u8; 4];
 
         // Look at the first byte to see how many bytes must be read
@@ -471,11 +471,11 @@ impl<'a, 'de: 'a, Context> BorrowDecode<'de, Context> for &'a str {
     }
 }
 
-impl<C, T, const N: usize> Decode<C> for [T; N]
+impl<Context, T, const N: usize> Decode<Context> for [T; N]
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         decoder.claim_bytes_read(core::mem::size_of::<[T; N]>())?;
 
         if unty::type_equal::<T, u8>() {
@@ -533,25 +533,25 @@ where
     }
 }
 
-impl<C> Decode<C> for () {
-    fn decode<D: Decoder<Context = C>>(_: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for () {
+    fn decode<D: Decoder<Context = Context>>(_: &mut D) -> Result<Self, DecodeError> {
         Ok(())
     }
 }
 impl_borrow_decode!(());
 
-impl<C, T> Decode<C> for core::marker::PhantomData<T> {
-    fn decode<D: Decoder<Context = C>>(_: &mut D) -> Result<Self, DecodeError> {
+impl<Context, T> Decode<Context> for core::marker::PhantomData<T> {
+    fn decode<D: Decoder<Context = Context>>(_: &mut D) -> Result<Self, DecodeError> {
         Ok(core::marker::PhantomData)
     }
 }
 impl_borrow_decode!(core::marker::PhantomData<T>, T);
 
-impl<C, T> Decode<C> for Option<T>
+impl<Context, T> Decode<Context> for Option<T>
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match super::decode_option_variant(decoder, core::any::type_name::<Option<T>>())? {
             Some(_) => {
                 let val = T::decode(decoder)?;
@@ -579,12 +579,12 @@ where
     }
 }
 
-impl<C, T, U> Decode<C> for Result<T, U>
+impl<Context, T, U> Decode<Context> for Result<T, U>
 where
-    T: Decode<C>,
-    U: Decode<C>,
+    T: Decode<Context>,
+    U: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let is_ok = u32::decode(decoder)?;
         match is_ok {
             0 => {
@@ -631,11 +631,11 @@ where
     }
 }
 
-impl<C, T> Decode<C> for Cell<T>
+impl<Context, T> Decode<Context> for Cell<T>
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Cell::new(t))
     }
@@ -653,11 +653,11 @@ where
     }
 }
 
-impl<C, T> Decode<C> for RefCell<T>
+impl<Context, T> Decode<Context> for RefCell<T>
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RefCell::new(t))
     }
@@ -675,8 +675,8 @@ where
     }
 }
 
-impl<C> Decode<C> for Duration {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Duration {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         const NANOS_PER_SEC: u64 = 1_000_000_000;
         let secs: u64 = Decode::decode(decoder)?;
         let nanos: u32 = Decode::decode(decoder)?;
@@ -688,11 +688,11 @@ impl<C> Decode<C> for Duration {
 }
 impl_borrow_decode!(Duration);
 
-impl<C, T> Decode<C> for Range<T>
+impl<Context, T> Decode<Context> for Range<T>
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let min = T::decode(decoder)?;
         let max = T::decode(decoder)?;
         Ok(min..max)
@@ -711,11 +711,11 @@ where
     }
 }
 
-impl<C, T> Decode<C> for RangeInclusive<T>
+impl<Context, T> Decode<Context> for RangeInclusive<T>
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let min = T::decode(decoder)?;
         let max = T::decode(decoder)?;
         Ok(RangeInclusive::new(min, max))
@@ -735,11 +735,11 @@ where
     }
 }
 
-impl<T, C> Decode<C> for Bound<T>
+impl<T, Context> Decode<Context> for Bound<T>
 where
-    T: Decode<C>,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(Bound::Unbounded),
             1 => Ok(Bound::Included(T::decode(decoder)?)),

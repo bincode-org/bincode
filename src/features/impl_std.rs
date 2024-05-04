@@ -149,8 +149,8 @@ impl Encode for CString {
     }
 }
 
-impl<C> Decode<C> for CString {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for CString {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
         CString::new(vec).map_err(|inner| DecodeError::CStringNulError {
             position: inner.nul_position(),
@@ -237,8 +237,8 @@ impl Encode for SystemTime {
     }
 }
 
-impl<C> Decode<C> for SystemTime {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SystemTime {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         match SystemTime::UNIX_EPOCH.checked_add(duration) {
             Some(t) => Ok(t),
@@ -272,8 +272,8 @@ impl Encode for PathBuf {
     }
 }
 
-impl<C> Decode<C> for PathBuf {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for PathBuf {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
     }
@@ -295,8 +295,8 @@ impl Encode for IpAddr {
     }
 }
 
-impl<C> Decode<C> for IpAddr {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for IpAddr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
             1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
@@ -316,8 +316,8 @@ impl Encode for Ipv4Addr {
     }
 }
 
-impl<C> Decode<C> for Ipv4Addr {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Ipv4Addr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 4];
         decoder.reader().read(&mut buff)?;
         Ok(Self::from(buff))
@@ -331,8 +331,8 @@ impl Encode for Ipv6Addr {
     }
 }
 
-impl<C> Decode<C> for Ipv6Addr {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Ipv6Addr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 16];
         decoder.reader().read(&mut buff)?;
         Ok(Self::from(buff))
@@ -355,8 +355,8 @@ impl Encode for SocketAddr {
     }
 }
 
-impl<C> Decode<C> for SocketAddr {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SocketAddr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
             1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
@@ -377,8 +377,8 @@ impl Encode for SocketAddrV4 {
     }
 }
 
-impl<C> Decode<C> for SocketAddrV4 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SocketAddrV4 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv4Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port))
@@ -393,8 +393,8 @@ impl Encode for SocketAddrV6 {
     }
 }
 
-impl<C> Decode<C> for SocketAddrV6 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SocketAddrV6 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port, 0, 0))
@@ -485,12 +485,12 @@ where
     }
 }
 
-impl<C, T, S> Decode<C> for HashSet<T, S>
+impl<Context, T, S> Decode<Context> for HashSet<T, S>
 where
-    T: Decode<C> + Eq + Hash,
+    T: Decode<Context> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
-    fn decode<D: Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 

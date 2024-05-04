@@ -74,8 +74,10 @@ struct SelfReferencing {
     container: Container<'this>,
 }
 
-impl<C> Decode<C> for SelfReferencing {
-    fn decode<D: bincode::de::Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SelfReferencing {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         SelfReferencing::try_new(Bump::new(), |mut bump| {
             Container::decode(&mut decoder.with_ctx(&mut bump))
         })
