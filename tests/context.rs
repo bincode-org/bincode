@@ -1,3 +1,5 @@
+#![cfg(feature = "alloc")]
+
 use bincode::{
     config, de::BorrowDecoder, decode_from_slice, decode_from_slice_with_context, encode_to_vec,
     error::DecodeError, BorrowDecode, Decode, Encode,
