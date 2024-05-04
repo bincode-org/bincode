@@ -20,28 +20,30 @@ use crate::{config::Config, error::DecodeError, utils::Sealed};
 /// // this u32 can be any Decode
 /// let value = u32::decode(&mut decoder).unwrap();
 /// ```
-pub struct DecoderImpl<R, C: Config, Ctx> {
+pub struct DecoderImpl<R, C: Config, Context> {
     reader: R,
     config: C,
     bytes_read: usize,
-    ctx: Ctx,
+    context: Context,
 }
 
-impl<R: Reader, C: Config, Ctx> DecoderImpl<R, C, Ctx> {
+impl<R: Reader, C: Config, Context> DecoderImpl<R, C, Context> {
     /// Construct a new Decoder
-    pub const fn new(reader: R, config: C, ctx: Ctx) -> DecoderImpl<R, C, Ctx> {
+    pub const fn new(reader: R, config: C, context: Context) -> DecoderImpl<R, C, Context> {
         DecoderImpl {
             reader,
             config,
             bytes_read: 0,
-            ctx,
+            context,
         }
     }
 }
 
-impl<R, C: Config, Ctx> Sealed for DecoderImpl<R, C, Ctx> {}
+impl<R, C: Config, Context> Sealed for DecoderImpl<R, C, Context> {}
 
-impl<'de, R: BorrowReader<'de>, C: Config, Ctx> BorrowDecoder<'de> for DecoderImpl<R, C, Ctx> {
+impl<'de, R: BorrowReader<'de>, C: Config, Context> BorrowDecoder<'de>
+    for DecoderImpl<R, C, Context>
+{
     type BR = R;
 
     fn borrow_reader(&mut self) -> &mut Self::BR {
@@ -49,11 +51,11 @@ impl<'de, R: BorrowReader<'de>, C: Config, Ctx> BorrowDecoder<'de> for DecoderIm
     }
 }
 
-impl<R: Reader, C: Config, Ctx> Decoder for DecoderImpl<R, C, Ctx> {
+impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<R, C, Context> {
     type R = R;
 
     type C = C;
-    type Ctx = Ctx;
+    type Context = Context;
 
     fn reader(&mut self) -> &mut Self::R {
         &mut self.reader
@@ -91,27 +93,27 @@ impl<R: Reader, C: Config, Ctx> Decoder for DecoderImpl<R, C, Ctx> {
         }
     }
 
-    fn ctx(&mut self) -> &mut Self::Ctx {
-        &mut self.ctx
+    fn context(&mut self) -> &mut Self::Context {
+        &mut self.context
     }
 }
 
 pub struct WithContext<'a, D: ?Sized, C> {
     pub(crate) decoder: &'a mut D,
-    pub(crate) ctx: &'a mut C,
+    pub(crate) context: &'a mut C,
 }
 
 impl<'a, C, D: Decoder + ?Sized> Sealed for WithContext<'a, D, C> {}
 
-impl<'a, Ctx, D: Decoder + ?Sized> Decoder for WithContext<'a, D, Ctx> {
+impl<'a, Context, D: Decoder + ?Sized> Decoder for WithContext<'a, D, Context> {
     type R = D::R;
 
     type C = D::C;
 
-    type Ctx = Ctx;
+    type Context = Context;
 
-    fn ctx(&mut self) -> &mut Self::Ctx {
-        &mut self.ctx
+    fn context(&mut self) -> &mut Self::Context {
+        &mut self.context
     }
 
     fn reader(&mut self) -> &mut Self::R {

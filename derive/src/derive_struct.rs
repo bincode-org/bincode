@@ -90,7 +90,7 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("decode")
-            .with_generic_deps("__D", [format!("{}::de::Decoder<Ctx = {}>", crate_name, decode_context)])
+            .with_generic_deps("__D", [format!("{}::de::Decoder<Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
@@ -169,7 +169,7 @@ impl DeriveStruct {
                 Ok(())
             })?
             .generate_fn("borrow_decode")
-            .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Ctx = {}>", crate_name, decode_context)])
+            .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {

@@ -47,8 +47,8 @@ pub use self::decoder::DecoderImpl;
 /// #     pub x: f32,
 /// #     pub y: f32,
 /// # }
-/// impl<Ctx> bincode::Decode<Ctx> for Entity {
-///     fn decode<D: bincode::de::Decoder<Ctx = Ctx>>(
+/// impl<Context> bincode::Decode<Context> for Entity {
+///     fn decode<D: bincode::de::Decoder<Context = Context>>(
 ///         decoder: &mut D,
 ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
 ///         Ok(Self {
@@ -57,8 +57,8 @@ pub use self::decoder::DecoderImpl;
 ///         })
 ///     }
 /// }
-/// impl<'de, Ctx> bincode::BorrowDecode<'de, Ctx> for Entity {
-///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Ctx = Ctx>>(
+/// impl<'de, Context> bincode::BorrowDecode<'de, Context> for Entity {
+///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = Context>>(
 ///         decoder: &mut D,
 ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
 ///         Ok(Self {
@@ -74,20 +74,20 @@ pub use self::decoder::DecoderImpl;
 /// To get specific integer types, you can use:
 /// ```
 /// # struct Foo;
-/// # impl<Ctx> bincode::Decode<Ctx> for Foo {
-/// #     fn decode<D: bincode::de::Decoder<Ctx = Ctx>>(
+/// # impl<Context> bincode::Decode<Context> for Foo {
+/// #     fn decode<D: bincode::de::Decoder<Context = Context>>(
 /// #         decoder: &mut D,
 /// #     ) -> core::result::Result<Self, bincode::error::DecodeError> {
-/// let x: u8 = bincode::Decode::<Ctx>::decode(decoder)?;
-/// let x = <u8 as bincode::Decode::<Ctx>>::decode(decoder)?;
+/// let x: u8 = bincode::Decode::<Context>::decode(decoder)?;
+/// let x = <u8 as bincode::Decode::<Context>>::decode(decoder)?;
 /// #         Ok(Foo)
 /// #     }
 /// # }
 /// # bincode::impl_borrow_decode!(Foo);
 /// ```
-pub trait Decode<C>: Sized {
+pub trait Decode<Context>: Sized {
     /// Attempt to decode this type with the given [Decode].
-    fn decode<D: Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError>;
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
@@ -95,9 +95,9 @@ pub trait Decode<C>: Sized {
 /// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing [Decode] instead.
 ///
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to a type with a lifetime.
-pub trait BorrowDecode<'de, Ctx>: Sized {
+pub trait BorrowDecode<'de, Context>: Sized {
     /// Attempt to decode this type with the given [BorrowDecode].
-    fn borrow_decode<D: BorrowDecoder<'de, Ctx = Ctx>>(
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError>;
 }
@@ -106,8 +106,8 @@ pub trait BorrowDecode<'de, Ctx>: Sized {
 #[macro_export]
 macro_rules! impl_borrow_decode {
     ($ty:ty $(, $param:tt)*) => {
-        impl<'de $(, $param)*, __Ctx> $crate::BorrowDecode<'de, __Ctx> for $ty {
-            fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Ctx = __Ctx>>(
+        impl<'de $(, $param)*, __Context> $crate::BorrowDecode<'de, __Context> for $ty {
+            fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = __Context>>(
                 decoder: &mut D,
             ) -> core::result::Result<Self, $crate::error::DecodeError> {
                 $crate::Decode::decode(decoder)
@@ -118,9 +118,9 @@ macro_rules! impl_borrow_decode {
 
 #[macro_export]
 macro_rules! impl_borrow_decode_with_ctx {
-    ($ty:ty, $ctx:ty $(, $param:tt)*) => {
-        impl<'de $(, $param)*> $crate::BorrowDecode<'de, $ctx> for $ty {
-            fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Ctx = $ctx>>(
+    ($ty:ty, $context:ty $(, $param:tt)*) => {
+        impl<'de $(, $param)*> $crate::BorrowDecode<'de, $context> for $ty {
+            fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = $context>>(
                 decoder: &mut D,
             ) -> core::result::Result<Self, $crate::error::DecodeError> {
                 $crate::Decode::decode(decoder)
@@ -137,12 +137,15 @@ pub trait Decoder: Sealed {
     /// The concrete [Config] type
     type C: Config;
 
-    type Ctx;
+    type Context;
 
-    fn ctx(&mut self) -> &mut Self::Ctx;
+    fn context(&mut self) -> &mut Self::Context;
 
-    fn with_ctx<'a, C>(&'a mut self, ctx: &'a mut C) -> WithContext<'a, Self, C> {
-        WithContext { decoder: self, ctx }
+    fn with_ctx<'a, C>(&'a mut self, context: &'a mut C) -> WithContext<'a, Self, C> {
+        WithContext {
+            decoder: self,
+            context,
+        }
     }
 
     /// Returns a mutable reference to the reader
@@ -192,8 +195,8 @@ pub trait Decoder: Sealed {
     /// #         self.0.push(t);
     /// #     }
     /// # }
-    /// impl<Ctx, T: Decode<Ctx>> Decode<Ctx> for Container<T> {
-    ///     fn decode<D: Decoder<Ctx = Ctx>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    /// impl<Context, T: Decode<Context>> Decode<Context> for Container<T> {
+    ///     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
     ///         let len = u64::decode(decoder)?;
     ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
     ///         // Make sure we don't allocate too much memory
@@ -208,8 +211,8 @@ pub trait Decoder: Sealed {
     ///         Ok(result)
     ///     }
     /// }
-    /// impl<'de, Ctx, T: bincode::BorrowDecode<'de, Ctx>> bincode::BorrowDecode<'de, Ctx> for Container<T> {
-    ///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Ctx = Ctx>>(
+    /// impl<'de, Context, T: bincode::BorrowDecode<'de, Context>> bincode::BorrowDecode<'de, Context> for Container<T> {
+    ///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = Context>>(
     ///         decoder: &mut D,
     ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
     ///         let len = u64::borrow_decode(decoder)?;
@@ -249,7 +252,7 @@ where
 
     type C = T::C;
 
-    type Ctx = T::Ctx;
+    type Context = T::Context;
 
     fn reader(&mut self) -> &mut Self::R {
         T::reader(self)
@@ -269,8 +272,8 @@ where
         T::unclaim_bytes_read(self, n)
     }
 
-    fn ctx(&mut self) -> &mut Self::Ctx {
-        T::ctx(self)
+    fn context(&mut self) -> &mut Self::Context {
+        T::context(self)
     }
 }
 

@@ -230,7 +230,6 @@ impl DeriveEnum {
 
         let mut impl_for = generator.impl_for(format!("{}::Decode", crate_name));
 
-
         if self.attributes.decode_context.is_none() {
             impl_for = impl_for.with_impl_generics(["__Ctx"]);
         }
@@ -249,7 +248,7 @@ impl DeriveEnum {
                 Ok(())
             })?
             .generate_fn("decode")
-            .with_generic_deps("__D", [format!("{}::de::Decoder<Ctx = {}>", crate_name, decode_context)])
+            .with_generic_deps("__D", [format!("{}::de::Decoder<Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_builder| {
@@ -261,7 +260,7 @@ impl DeriveEnum {
                 } else {
                     fn_builder
                         .push_parsed(format!(
-                            "let variant_index = <u32 as {}::Decode::<__D::Ctx>>::decode(decoder)?;",
+                            "let variant_index = <u32 as {}::Decode::<__D::Context>>::decode(decoder)?;",
                             crate_name
                         ))?;
                     fn_builder.push_parsed("match variant_index")?;
@@ -298,13 +297,13 @@ impl DeriveEnum {
                                             if attributes.with_serde {
                                                 variant_body
                                                     .push_parsed(format!(
-                                                        "<{0}::serde::Compat<_> as {0}::Decode::<__D::Ctx>>::decode(decoder)?.0,",
+                                                        "<{0}::serde::Compat<_> as {0}::Decode::<__D::Context>>::decode(decoder)?.0,",
                                                         crate_name
                                                     ))?;
                                             } else {
                                                 variant_body
                                                     .push_parsed(format!(
-                                                        "{}::Decode::<__D::Ctx>::decode(decoder)?,",
+                                                        "{}::Decode::<__D::Context>::decode(decoder)?,",
                                                         crate_name
                                                     ))?;
                                             }
@@ -362,7 +361,7 @@ impl DeriveEnum {
                 Ok(())
             })?
             .generate_fn("borrow_decode")
-            .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Ctx = {}>", crate_name, decode_context)])
+            .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_builder| {
@@ -373,7 +372,7 @@ impl DeriveEnum {
                     ))?;
                 } else {
                     fn_builder
-                        .push_parsed(format!("let variant_index = <u32 as {}::Decode::<__D::Ctx>>::decode(decoder)?;", crate_name))?;
+                        .push_parsed(format!("let variant_index = <u32 as {}::Decode::<__D::Context>>::decode(decoder)?;", crate_name))?;
                     fn_builder.push_parsed("match variant_index")?;
                     fn_builder.group(Delimiter::Brace, |variant_case| {
                         for (mut variant_index, variant) in self.iter_fields() {
@@ -407,9 +406,9 @@ impl DeriveEnum {
                                             let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                                             if attributes.with_serde {
                                                 variant_body
-                                                    .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<__D::Ctx>>::borrow_decode(decoder)?.0,", crate_name))?;
+                                                    .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<__D::Context>>::borrow_decode(decoder)?.0,", crate_name))?;
                                             } else {
-                                                variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Ctx>::borrow_decode(decoder)?,", crate_name))?;
+                                                variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Context>::borrow_decode(decoder)?,", crate_name))?;
                                             }
                                         }
                                     }

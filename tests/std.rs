@@ -31,7 +31,7 @@ impl bincode::Encode for Foo {
     }
 }
 
-impl<Ctx> bincode::Decode<Ctx> for Foo {
+impl<Context> bincode::Decode<Context> for Foo {
     fn decode<D: bincode::de::Decoder>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {

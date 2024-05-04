@@ -1,5 +1,5 @@
 use bincode::{
-    config, de::BorrowDecoder, decode_from_slice, decode_from_slice_with_ctx, encode_to_vec,
+    config, de::BorrowDecoder, decode_from_slice, decode_from_slice_with_context, encode_to_vec,
     error::DecodeError, BorrowDecode, Decode, Encode,
 };
 use bumpalo::{collections::Vec, vec, Bump};
@@ -17,13 +17,13 @@ impl<'bump, T: Encode> Encode for CodableVec<'bump, T> {
 }
 
 impl<'bump, T: Decode<&'bump Bump>> Decode<&'bump Bump> for CodableVec<'bump, T> {
-    fn decode<D: bincode::de::Decoder<Ctx = &'bump Bump>>(
+    fn decode<D: bincode::de::Decoder<Context = &'bump Bump>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
         let len = u64::decode(decoder)?;
         let len = usize::try_from(len).map_err(|_| DecodeError::OutsideUsizeRange(len))?;
         decoder.claim_container_read::<T>(len)?;
-        let mut vec = Vec::with_capacity_in(len, decoder.ctx());
+        let mut vec = Vec::with_capacity_in(len, decoder.context());
         for _ in 0..len {
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
             vec.push(T::decode(decoder)?);
@@ -35,7 +35,7 @@ impl<'bump, T: Decode<&'bump Bump>> Decode<&'bump Bump> for CodableVec<'bump, T>
 impl<'de, 'bump, T: BorrowDecode<'de, &'bump Bump>> BorrowDecode<'de, &'bump Bump>
     for CodableVec<'bump, T>
 {
-    fn borrow_decode<D: BorrowDecoder<'de, Ctx = &'bump Bump>>(
+    fn borrow_decode<D: BorrowDecoder<'de, Context = &'bump Bump>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
         let len = u64::decode(decoder)?;
@@ -43,7 +43,7 @@ impl<'de, 'bump, T: BorrowDecode<'de, &'bump Bump>> BorrowDecode<'de, &'bump Bum
 
         decoder.claim_container_read::<T>(len)?;
 
-        let mut vec = Vec::with_capacity_in(len, decoder.ctx());
+        let mut vec = Vec::with_capacity_in(len, decoder.context());
         for _ in 0..len {
             // See the documentation on `unclaim_bytes_read` as to why we're doing this here
             decoder.unclaim_bytes_read(core::mem::size_of::<T>());
@@ -75,7 +75,7 @@ struct SelfReferencing {
 }
 
 impl<C> Decode<C> for SelfReferencing {
-    fn decode<D: bincode::de::Decoder<Ctx = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: bincode::de::Decoder<Context = C>>(decoder: &mut D) -> Result<Self, DecodeError> {
         SelfReferencing::try_new(Bump::new(), |mut bump| {
             Container::decode(&mut decoder.with_ctx(&mut bump))
         })
@@ -92,7 +92,7 @@ fn decode_with_context() {
 
     let bytes = encode_to_vec(&container, config).unwrap();
     let (decoded_container, _) =
-        decode_from_slice_with_ctx::<_, Container, _>(&bytes, config, &bump).unwrap();
+        decode_from_slice_with_context::<_, Container, _>(&bytes, config, &bump).unwrap();
 
     assert_eq!(container, decoded_container);
 
