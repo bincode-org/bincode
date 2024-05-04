@@ -27,11 +27,16 @@ pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
 ) -> Result<D, DecodeError> {
-    decode_from_std_read_with_ctx(src, config, ())
+    decode_from_std_read_with_context(src, config, ())
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_std_read_with_ctx<Context, D: Decode<Context>, C: Config, R: std::io::Read>(
+pub fn decode_from_std_read_with_context<
+    Context,
+    D: Decode<Context>,
+    C: Config,
+    R: std::io::Read,
+>(
     src: &mut R,
     config: C,
     context: Context,

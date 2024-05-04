@@ -222,7 +222,7 @@ impl DeriveEnum {
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
-            "__Ctx"
+            "__Context"
         };
         // Remember to keep this mostly in sync with generate_borrow_decode
 
@@ -231,7 +231,7 @@ impl DeriveEnum {
         let mut impl_for = generator.impl_for(format!("{}::Decode", crate_name));
 
         if self.attributes.decode_context.is_none() {
-            impl_for = impl_for.with_impl_generics(["__Ctx"]);
+            impl_for = impl_for.with_impl_generics(["__Context"]);
         }
 
         impl_for
@@ -242,7 +242,7 @@ impl DeriveEnum {
                     where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
                 } else {
                     for g in generics.iter_generics() {
-                        where_constraints.push_constraint(g, format!("{}::Decode<__Ctx>", crate_name))?;
+                        where_constraints.push_constraint(g, format!("{}::Decode<__Context>", crate_name))?;
                     }
                 }
                 Ok(())
@@ -332,7 +332,7 @@ impl DeriveEnum {
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
-            "__Ctx"
+            "__Context"
         };
 
         // Remember to keep this mostly in sync with generate_decode
@@ -342,7 +342,7 @@ impl DeriveEnum {
             .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
             .with_trait_generics([decode_context]);
         if self.attributes.decode_context.is_none() {
-            impl_for = impl_for.with_impl_generics(["__Ctx"]);
+            impl_for = impl_for.with_impl_generics(["__Context"]);
         }
 
         impl_for

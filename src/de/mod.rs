@@ -117,7 +117,7 @@ macro_rules! impl_borrow_decode {
 }
 
 #[macro_export]
-macro_rules! impl_borrow_decode_with_ctx {
+macro_rules! impl_borrow_decode_with_context {
     ($ty:ty, $context:ty $(, $param:tt)*) => {
         impl<'de $(, $param)*> $crate::BorrowDecode<'de, $context> for $ty {
             fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = $context>>(
@@ -141,7 +141,7 @@ pub trait Decoder: Sealed {
 
     fn context(&mut self) -> &mut Self::Context;
 
-    fn with_ctx<'a, C>(&'a mut self, context: &'a mut C) -> WithContext<'a, Self, C> {
+    fn with_context<'a, C>(&'a mut self, context: &'a mut C) -> WithContext<'a, Self, C> {
         WithContext {
             decoder: self,
             context,

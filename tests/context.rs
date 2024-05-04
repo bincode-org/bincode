@@ -79,7 +79,7 @@ impl<Context> Decode<Context> for SelfReferencing {
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
         SelfReferencing::try_new(Bump::new(), |mut bump| {
-            Container::decode(&mut decoder.with_ctx(&mut bump))
+            Container::decode(&mut decoder.with_context(&mut bump))
         })
     }
 }

@@ -68,12 +68,12 @@ impl DeriveStruct {
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
-            "__Ctx"
+            "__Context"
         };
 
         let mut impl_for = generator.impl_for(format!("{}::Decode", crate_name));
         if self.attributes.decode_context.is_none() {
-            impl_for = impl_for.with_impl_generics(["__Ctx"]);
+            impl_for = impl_for.with_impl_generics(["__Context"]);
         }
 
         impl_for
@@ -143,13 +143,13 @@ impl DeriveStruct {
         let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
             decode_context.as_str()
         } else {
-            "__Ctx"
+            "__Context"
         };
 
         let mut impl_for =
             generator.impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"]).with_trait_generics([decode_context]);
         if self.attributes.decode_context.is_none() {
-            impl_for = impl_for.with_impl_generics(["__Ctx"]);
+            impl_for = impl_for.with_impl_generics(["__Context"]);
         }
 
         impl_for
