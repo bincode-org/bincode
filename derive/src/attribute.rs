@@ -1,4 +1,3 @@
-use proc_macro::Literal;
 use virtue::prelude::*;
 use virtue::utils::{parse_tagged_attribute, ParsedAttribute};
 

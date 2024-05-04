@@ -1,6 +1,4 @@
 use crate::attribute::{ContainerAttributes, FieldAttributes};
-use virtue::generate::Generator;
-use virtue::parse::Fields;
 use virtue::prelude::*;
 
 pub(crate) struct DeriveStruct {
