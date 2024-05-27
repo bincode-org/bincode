@@ -21,11 +21,13 @@ pub use self::decoder::DecoderImpl;
 
 /// Trait that makes a type able to be decoded, akin to serde's `DeserializeOwned` trait.
 ///
+/// Some types may require specific contexts. For example, to decode arena-based collections, an arena allocator must be provided as a context. In these cases, the context type `Context` should be specified or bounded.
+///
 /// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [BorrowDecode] instead.
 ///
 /// Whenever you implement `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
 ///
-/// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
+/// This trait will be automatically implemented with unbounded `Context` if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
 ///
 /// # Implementing this trait manually
 ///
@@ -85,6 +87,19 @@ pub use self::decoder::DecoderImpl;
 /// # }
 /// # bincode::impl_borrow_decode!(Foo);
 /// ```
+///
+/// You can use `Context` to require contexts for decoding a type:
+/// ```
+/// # /// # use bumpalo::Bump;
+/// use bincode::de::Decoder;
+/// use bincode::error::DecodeError;
+/// struct BytesInArena<'a>(bumpalo::collections::Vec<'a, u8>);
+/// impl<'a> bincode::Decode<&'a bumpalo::Bump> for BytesInArena<'a> {
+/// fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+///         todo!()
+///     }
+/// # }
+/// ```
 pub trait Decode<Context>: Sized {
     /// Attempt to decode this type with the given [Decode].
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError>;
@@ -137,8 +152,10 @@ pub trait Decoder: Sealed {
     /// The concrete [Config] type
     type C: Config;
 
+    /// The decoding context type
     type Context;
 
+    /// Returns the decoding context
     fn context(&mut self) -> &mut Self::Context;
 
     fn with_context<'a, C>(&'a mut self, context: &'a mut C) -> WithContext<'a, Self, C> {
