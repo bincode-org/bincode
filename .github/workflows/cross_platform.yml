@@ -25,13 +25,26 @@
           "platform": [
             # Tier 1
             "aarch64-unknown-linux-gnu",
-            "i686-pc-windows-gnu",
+            # 0050:err:winediag:nodrv_CreateWindow Application tried to create a window, but no driver could be loaded.
+            # 0050:err:winediag:nodrv_CreateWindow Make sure that your X server is running and that $DISPLAY is set correctly.
+            # 0050:err:systray:initialize_systray Could not create tray window
+            # 0024:err:module:import_dll Library bcryptprimitives.dll (which is needed by L"Z:\\target\\i686-pc-windows-gnu\\debug\\deps\\bincode-569310bd32491256.exe") not found
+            # 0024:err:module:LdrInitializeThunk Importing dlls for L"Z:\\target\\i686-pc-windows-gnu\\debug\\deps\\bincode-569310bd32491256.exe" failed, status c0000135
+            # "i686-pc-windows-gnu",
+
             # `cross` does not provide a Docker image for target i686-pc-windows-msvc
             # "i686-pc-windows-msvc",
             "i686-unknown-linux-gnu",
             # `cross` does not provide a Docker image for target x86_64-apple-darwin
             # "x86_64-apple-darwin",
-            "x86_64-pc-windows-gnu",
+
+            # 0050:err:winediag:nodrv_CreateWindow Application tried to create a window, but no driver could be loaded.
+            # 0050:err:winediag:nodrv_CreateWindow Make sure that your X server is running and that $DISPLAY is set correctly.
+            # 0050:err:systray:initialize_systray Could not create tray window
+            # 00f4:err:module:import_dll Library bcryptprimitives.dll (which is needed by L"Z:\\target\\x86_64-pc-windows-gnu\\debug\\deps\\bincode-b91af23bf3efc9f3.exe") not found
+            # 00f4:err:module:LdrInitializeThunk Importing dlls for L"Z:\\target\\x86_64-pc-windows-gnu\\debug\\deps\\bincode-b91af23bf3efc9f3.exe" failed, status c0000135
+            # "x86_64-pc-windows-gnu",
+
             # `cross` does not provide a Docker image for target x86_64-pc-windows-msvc
             # "x86_64-pc-windows-msvc",
             "x86_64-unknown-linux-gnu",
