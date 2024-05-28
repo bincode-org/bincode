@@ -167,9 +167,9 @@ where
         0u8.encode(self.enc)
     }
 
-    fn serialize_some<T: ?Sized>(mut self, value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T>(mut self, value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         1u8.encode(&mut self.enc)?;
         value.serialize(self)
@@ -192,18 +192,18 @@ where
         variant_index.encode(self.enc)
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(
+    fn serialize_newtype_struct<T>(
         self,
         _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T>(
         mut self,
         _name: &'static str,
         variant_index: u32,
@@ -211,7 +211,7 @@ where
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         variant_index.encode(&mut self.enc)?;
         value.serialize(self)
@@ -272,9 +272,9 @@ where
     }
 
     #[cfg(not(feature = "alloc"))]
-    fn collect_str<T: ?Sized>(self, _: &T) -> Result<Self::Ok, Self::Error>
+    fn collect_str<T>(self, _: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: core::fmt::Display,
+        T: core::fmt::Display + ?Sized,
     {
         Err(SerdeEncodeError::CannotCollectStr.into())
     }
@@ -290,9 +290,9 @@ impl<'a, ENC: Encoder> SerializeSeq for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
@@ -306,9 +306,9 @@ impl<'a, ENC: Encoder> SerializeTuple for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
@@ -322,9 +322,9 @@ impl<'a, ENC: Encoder> SerializeTupleStruct for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
@@ -338,9 +338,9 @@ impl<'a, ENC: Encoder> SerializeTupleVariant for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
@@ -354,16 +354,16 @@ impl<'a, ENC: Encoder> SerializeMap for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         key.serialize(SerdeEncoder { enc: self.enc })
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
@@ -377,13 +377,9 @@ impl<'a, ENC: Encoder> SerializeStruct for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        _key: &'static str,
-        value: &T,
-    ) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, _key: &'static str, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
@@ -397,13 +393,9 @@ impl<'a, ENC: Encoder> SerializeStructVariant for Compound<'a, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        _key: &'static str,
-        value: &T,
-    ) -> Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, _key: &'static str, value: &T) -> Result<(), Self::Error>
     where
-        T: Serialize,
+        T: Serialize + ?Sized,
     {
         value.serialize(SerdeEncoder { enc: self.enc })
     }
