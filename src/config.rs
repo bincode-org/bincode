@@ -96,8 +96,7 @@ impl<E, I, L> Configuration<E, I, L> {
     /// 2. If `251 <= u < 2**16`, encode it as a literal byte 251, followed by a u16 with value `u`.
     /// 3. If `2**16 <= u < 2**32`, encode it as a literal byte 252, followed by a u32 with value `u`.
     /// 4. If `2**32 <= u < 2**64`, encode it as a literal byte 253, followed by a u64 with value `u`.
-    /// 5. If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a
-    ///   u128 with value `u`.
+    /// 5. If `2**64 <= u < 2**128`, encode it as a literal byte 254, followed by a u128 with value `u`.
     ///
     /// Then, for signed integers, we first convert to unsigned using the zigzag algorithm,
     /// and then encode them as we do for unsigned integers generally. The reason we use this
