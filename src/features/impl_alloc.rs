@@ -261,7 +261,7 @@ where
             let mut vec = alloc::vec![0u8; len];
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute(vec) })
+            Ok(unsafe { core::mem::transmute::<Vec<u8>, Vec<T>>(vec) })
         } else {
             decoder.claim_container_read::<T>(len)?;
 
@@ -290,7 +290,7 @@ where
             let mut vec = alloc::vec![0u8; len];
             decoder.reader().read(&mut vec)?;
             // Safety: Vec<T> is Vec<u8>
-            Ok(unsafe { core::mem::transmute(vec) })
+            Ok(unsafe { core::mem::transmute::<Vec<u8>, Vec<T>>(vec) })
         } else {
             decoder.claim_container_read::<T>(len)?;
 

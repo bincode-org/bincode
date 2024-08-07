@@ -1,4 +1,4 @@
-use core::{convert::TryInto, u32};
+use core::convert::TryInto;
 
 use super::{SINGLE_BYTE_MAX, U128_BYTE, U16_BYTE, U32_BYTE, U64_BYTE};
 use crate::{
