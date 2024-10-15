@@ -54,7 +54,7 @@ See the documentation of [FixintEncoding](https://docs.rs/bincode/2.0.0-rc/binco
 
 Enums are encoded with their variant first, followed by optionally the variant fields. The variant index is based on the `IntEncoding` during serialization.
 
-Both named and unnamed fields are serialized with their values only, and therefor encode to the same value.
+Both named and unnamed fields are serialized with their values only, and therefore encode to the same value.
 
 ```rust
 #[derive(bincode::Encode)]
