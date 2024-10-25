@@ -31,26 +31,6 @@ pub trait Reader {
     fn consume(&mut self, _: usize) {}
 }
 
-impl<T> Reader for &mut T
-where
-    T: Reader,
-{
-    #[inline]
-    fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
-        (**self).read(bytes)
-    }
-
-    #[inline]
-    fn peek_read(&mut self, n: usize) -> Option<&[u8]> {
-        (**self).peek_read(n)
-    }
-
-    #[inline]
-    fn consume(&mut self, n: usize) {
-        (*self).consume(n)
-    }
-}
-
 /// A reader for borrowed data. Implementors of this must also implement the [Reader] trait. See the module documentation for more information.
 pub trait BorrowReader<'storage>: Reader {
     /// Read exactly `length` bytes and return a slice to this data. If not enough bytes could be read, an error should be returned.

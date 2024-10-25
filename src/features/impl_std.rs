@@ -57,9 +57,9 @@ where
     }
 }
 
-impl<R> Reader for std::io::BufReader<R>
+impl<R> Reader for R
 where
-    R: std::io::Read,
+    R: std::io::BufRead,
 {
     fn read(&mut self, bytes: &mut [u8]) -> Result<(), DecodeError> {
         self.read_exact(bytes).map_err(|inner| DecodeError::Io {
@@ -70,7 +70,7 @@ where
 
     #[inline]
     fn peek_read(&mut self, n: usize) -> Option<&[u8]> {
-        self.buffer().get(..n)
+        self.fill_buf().ok().map(|b| &b[..n])
     }
 
     #[inline]
