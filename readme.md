@@ -1,5 +1,5 @@
 # Bincode
-
+### The following information is for the prerelease 2.x versions of this library. The stable branch can be found [here](https://github.com/bincode-org/bincode/tree/v1.x).
 <img align="right" src="./logo.svg" />
 
 [![CI](https://github.com/bincode-org/bincode/workflows/CI/badge.svg)](https://github.com/bincode-org/bincode/actions)
