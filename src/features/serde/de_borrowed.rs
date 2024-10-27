@@ -1,11 +1,47 @@
 use super::DecodeError as SerdeDecodeError;
 use crate::{
     config::Config,
-    de::{BorrowDecode, BorrowDecoder, Decode},
+    de::{read::SliceReader, BorrowDecode, BorrowDecoder, Decode, DecoderImpl},
     error::DecodeError,
 };
 use core::marker::PhantomData;
 use serde::de::*;
+
+/// Serde decoder encapsulating a borrowed reader.
+pub struct BorrowedSerdeDecoder<'de, DE: BorrowDecoder<'de>> {
+    pub(super) de: DE,
+    pub(super) pd: PhantomData<&'de ()>,
+}
+
+impl<'de, DE: BorrowDecoder<'de>> BorrowedSerdeDecoder<'de, DE> {
+    /// Return a type implementing `serde::Deserializer`.
+    pub fn as_deserializer<'a>(
+        &'a mut self,
+    ) -> impl serde::Deserializer<'de, Error = DecodeError> + 'a {
+        SerdeDecoder {
+            de: &mut self.de,
+            pd: PhantomData,
+        }
+    }
+}
+
+impl<'de, C: Config> BorrowedSerdeDecoder<'de, DecoderImpl<SliceReader<'de>, C>> {
+    /// Creates the decoder from a borrowed slice.
+    pub fn from_slice(
+        slice: &'de [u8],
+        config: C,
+    ) -> BorrowedSerdeDecoder<'de, DecoderImpl<SliceReader<'de>, C>>
+    where
+        C: Config,
+    {
+        let reader = SliceReader::new(slice);
+        let decoder = DecoderImpl::new(reader, config);
+        Self {
+            de: decoder,
+            pd: PhantomData,
+        }
+    }
+}
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
@@ -18,14 +54,10 @@ where
     D: Deserialize<'de>,
     C: Config,
 {
-    let reader = crate::de::read::SliceReader::new(slice);
-    let mut decoder = crate::de::DecoderImpl::new(reader, config);
-    let serde_decoder = SerdeDecoder {
-        de: &mut decoder,
-        pd: PhantomData,
-    };
-    let result = D::deserialize(serde_decoder)?;
-    let bytes_read = slice.len() - decoder.borrow_reader().slice.len();
+    let mut serde_decoder =
+        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C>>::from_slice(slice, config);
+    let result = D::deserialize(serde_decoder.as_deserializer())?;
+    let bytes_read = slice.len() - serde_decoder.de.borrow_reader().slice.len();
     Ok((result, bytes_read))
 }
 
@@ -36,13 +68,9 @@ where
     T: Deserialize<'de>,
     C: Config,
 {
-    let reader = crate::de::read::SliceReader::new(slice);
-    let mut decoder = crate::de::DecoderImpl::new(reader, config);
-    let serde_decoder = SerdeDecoder {
-        de: &mut decoder,
-        pd: PhantomData,
-    };
-    T::deserialize(serde_decoder)
+    let mut serde_decoder =
+        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C>>::from_slice(slice, config);
+    T::deserialize(serde_decoder.as_deserializer())
 }
 
 /// Decode a borrowed type from the given slice using a seed. Some parts of the decoded type are expected to be referring to the given slice
@@ -55,13 +83,9 @@ where
     T: DeserializeSeed<'de>,
     C: Config,
 {
-    let reader = crate::de::read::SliceReader::new(slice);
-    let mut decoder = crate::de::DecoderImpl::new(reader, config);
-    let serde_decoder = SerdeDecoder {
-        de: &mut decoder,
-        pd: PhantomData,
-    };
-    seed.deserialize(serde_decoder)
+    let mut serde_decoder =
+        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C>>::from_slice(slice, config);
+    seed.deserialize(serde_decoder.as_deserializer())
 }
 
 pub(super) struct SerdeDecoder<'a, 'de, DE: BorrowDecoder<'de>> {
