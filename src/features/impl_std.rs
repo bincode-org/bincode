@@ -27,7 +27,7 @@ pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
 ) -> Result<D, DecodeError> {
-    decode_from_std_read_with_context(src, config, ())
+    decode_from_std_read_with_context(src, config, &mut ())
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
@@ -39,7 +39,7 @@ pub fn decode_from_std_read_with_context<
 >(
     src: &mut R,
     config: C,
-    context: Context,
+    context: &mut Context,
 ) -> Result<D, DecodeError> {
     let reader = IoReader::new(src);
     let mut decoder = DecoderImpl::<_, C, Context>::new(reader, config, context);

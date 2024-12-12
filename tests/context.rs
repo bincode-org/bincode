@@ -96,7 +96,7 @@ fn decode_with_context() {
 
     let bytes = encode_to_vec(&container, config).unwrap();
     let (decoded_container, _) =
-        decode_from_slice_with_context::<_, Container, _>(&bytes, config, &bump).unwrap();
+        decode_from_slice_with_context::<_, Container, _>(&bytes, config, &mut &bump).unwrap();
 
     assert_eq!(container, decoded_container);
 
