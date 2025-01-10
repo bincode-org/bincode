@@ -46,4 +46,4 @@ pub fn test() {
 
 For examples, see the existing cases in `compatibility/src/`.
 
-- [ ] Open a [pull request](https://github.com/bincode-org/bincode/pulls) with the title `Bincode 1 compatiblity: <name of your project>`
+- [ ] Open a [pull request](https://github.com/bincode-org/bincode/pulls) with the title `Bincode 1 compatibility: <name of your project>`
