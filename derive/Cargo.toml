@@ -1,11 +1,12 @@
 [package]
 name = "bincode_derive"
-version = "2.0.0-rc.3" # remember to update bincode
+version = "2.0.0" # remember to update bincode
 authors = [
     "Zoey Riordan <zoey@dos.cafe>",
     "Victor Koenders <bincode@trangar.com>",
 ]
 edition = "2021"
+rust-version = "1.85.0"
 
 repository = "https://github.com/bincode-org/bincode"
 documentation = "https://docs.rs/bincode_derive"

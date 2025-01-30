@@ -5,7 +5,7 @@ mod utils;
 
 use bincode::error::DecodeError;
 use std::{
-    ffi::{CStr, CString},
+    ffi::CString,
     io::{Cursor, Seek, SeekFrom},
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
     path::{Path, PathBuf},
@@ -128,7 +128,7 @@ fn test_std_commons() {
     let mut buffer = [0u8; 1024];
 
     // &CStr
-    let cstr = CStr::from_bytes_with_nul(b"Hello world\0").unwrap();
+    let cstr = c"Hello world";
     let len = bincode::encode_into_slice(cstr, &mut buffer, config).unwrap();
     let (decoded, len): (CString, usize) =
         bincode::decode_from_slice(&buffer[..len], config).unwrap();
