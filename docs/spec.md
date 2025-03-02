@@ -1,22 +1,72 @@
-# Serialization specification
+# Serialization Specification
 
-*NOTE*: Serialization is done by `bincode_derive` by default. If you enable the `serde` flag, serialization with `serde-derive` is supported as well. `serde-derive` has the same guarantees as `bincode_derive` for now.
+_NOTE_: This specification is primarily defined in the context of Rust, but aims to be implementable across different programming languages.
 
-Related issue: <https://github.com/serde-rs/serde/issues/1756#issuecomment-689682123>
+## Definitions
 
-## Endian
+- **Variant**: A specific constructor or case of an enum type.
+- **Variant Payload**: The associated data of a specific enum variant.
+- **Discriminant**: A unique identifier for an enum variant, typically represented as an integer.
+- **Basic Types**: Primitive types that have a direct, well-defined binary representation.
 
-By default `bincode` will serialize values in little endian encoding. This can be overwritten in the `Config`.
+## Endianness
 
-## Basic types
+By default, this serialization format uses little-endian byte order for basic numeric types. This means multi-byte values are encoded with their least significant byte first.
 
-Boolean types are encoded with 1 byte for each boolean type, with `0` being `false`, `1` being true. Whilst deserializing every other value will throw an error.
+Endianness can be configured with the following methods, allowing for big-endian serialization when required:
 
-All basic numeric types will be encoded based on the configured [IntEncoding](#intencoding).
+- [`with_big_endian`](https://docs.rs/bincode/2.0.0-rc/bincode/config/struct.Configuration.html#method.with_big_endian)
+- [`with_little_endian`](https://docs.rs/bincode/2.0.0-rc/bincode/config/struct.Configuration.html#method.with_little_endian)
 
-All floating point types will take up exactly 4 (for `f32`) or 8 (for `f64`) bytes.
+### Byte Order Considerations
+
+- Multi-byte values (integers, floats) are affected by endianness
+- Single-byte values (u8, i8) are not affected
+- Struct and collection serialization order is not changed by endianness
+
+## Basic Types
+
+### Boolean Encoding
+
+- Encoded as a single byte
+- `false` is represented by `0`
+- `true` is represented by `1`
+- During deserialization, values other than 0 and 1 will result in an error [`DecodeError::InvalidBooleanValue`](https://docs.rs/bincode/2.0.0-rc/bincode/error/enum.DecodeError.html#variant.InvalidBooleanValue)
+
+### Numeric Types
+
+- Encoded based on the configured [IntEncoding](#intencoding)
+- Signed integers use 2's complement representation
+- Floating point types use IEEE 754-2008 standard
+  - `f32`: 4 bytes (binary32)
+  - `f64`: 8 bytes (binary64)
+
+#### Floating Point Special Values
+
+- Subnormal numbers are preserved
+  - Also known as denormalized numbers
+  - Maintain their exact bit representation
+- `NaN` values are preserved
+  - Both quiet and signaling `NaN` are kept as-is
+  - Bit pattern of `NaN` is maintained exactly
+- No normalization or transformation of special values occurs
+- Serialization and deserialization do not alter the bit-level representation
+- Consistent with IEEE 754-2008 standard for floating-point arithmetic
+
+### Character Encoding
+
+- `char` is encoded as a 32-bit unsigned integer representing its Unicode Scalar Value
+- Valid Unicode Scalar Value range:
+  - 0x0000 to 0xD7FF (Basic Multilingual Plane)
+  - 0xE000 to 0x10FFFF (Supplementary Planes)
+- Surrogate code points (0xD800 to 0xDFFF) are not valid
+- Invalid Unicode characters can be acquired via unsafe code, this is handled as:
+  - during serialization: data is written as-is
+  - during deserialization: an error is raised [`DecodeError::InvalidCharEncoding`](https://docs.rs/bincode/2.0.0-rc/bincode/error/enum.DecodeError.html#variant.InvalidCharEncoding)
+- No additional metadata or encoding scheme beyond the raw code point value
 
 All tuples have no additional bytes, and are encoded in their specified order, e.g.
+
 ```rust
 let tuple = (u32::min_value(), i32::max_value()); // 8 bytes
 let encoded = bincode::encode_to_vec(tuple, bincode::config::legacy()).unwrap();
@@ -27,9 +77,11 @@ assert_eq!(encoded.as_slice(), &[
 ```
 
 ## IntEncoding
+
 Bincode currently supports 2 different types of `IntEncoding`. With the default config, `VarintEncoding` is selected.
 
 ### VarintEncoding
+
 Encoding an unsigned integer v (of any type excepting u8/i8) works as follows:
 
 1. If `u < 251`, encode it as a single byte with that value.
@@ -87,6 +139,7 @@ assert_eq!(encoded.as_slice(), &[
 ```
 
 ### Options
+
 `Option<T>` is always serialized using a single byte for the discriminant, even in `Fixint` encoding (which normally uses a `u32` for discriminant).
 
 ```rust
@@ -105,17 +158,29 @@ assert_eq!(encoded.as_slice(), &[
 
 # Collections
 
-Collections are encoded with their length value first, following by each entry of the collection. The length value is based on your `IntEncoding`.
+## General Collection Serialization
 
-**note**: fixed array length may not have their `len` encoded. See [Arrays](#arrays)
+Collections are encoded with their length value first, followed by each entry of the collection. The length value is based on the configured `IntEncoding`.
+
+### Serialization Considerations
+
+- Length is always serialized first
+- Entries are serialized in the order they are returned from the iterator implementation.
+  - Iteration order depends on the collection type
+    - Ordered collections (e.g., `Vec`): Iteration from lowest to highest index
+    - Unordered collections (e.g., `HashMap`): Implementation-defined iteration order
+- Duplicate keys are not checked in bincode, but may be resulting in an error when decoding a container from a list of pairs.
+
+### Handling of Specific Collection Types
+
+#### Linear Collections (`Vec`, Arrays, etc.)
+
+- Serialized by iterating from lowest to highest index
+- Length prefixed
+- Each item serialized sequentially
 
 ```rust
-let list = vec![
-    0u8,
-    1u8,
-    2u8
-];
-
+let list = vec![0u8, 1u8, 2u8];
 let encoded = bincode::encode_to_vec(list, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
     3, 0, 0, 0, 0, 0, 0, 0, // length of 3u64
@@ -125,28 +190,62 @@ assert_eq!(encoded.as_slice(), &[
 ]);
 ```
 
-This also applies to e.g. `HashMap`, where each entry is a [tuple](#basic-types) of the key and value.
+#### Key-Value Collections (`HashMap`, etc.)
+
+- Serialized as a sequence of key-value pairs
+- Iteration order is implementation-defined
+- Each entry is a tuple of (key, value)
+
+### Special Collection Considerations
+
+- Bincode will serialize the entries based on the iterator order.
+- Deserialization is deterministic but the collection implementation might not guarantee the same order as serialization.
+
+**Note**: Fixed-length arrays do not have their length encoded. See [Arrays](#arrays) for details.
 
 # String and &str
 
-Both `String` and `&str` are treated as a `Vec<u8>`. See [Collections](#collections) for more information.
+## Encoding Principles
+
+- Strings are encoded as UTF-8 byte sequences
+- No null terminator is added
+- No Byte Order Mark (BOM) is written
+- Unicode non-characters are preserved
+
+### Encoding Details
+
+- Length is encoded first using the configured `IntEncoding`
+- Raw UTF-8 bytes follow the length
+- Supports the full range of valid UTF-8 sequences
+- `U+0000` and other code points can appear freely within the string
+
+### Unicode Handling
+
+- During serialization, the string is encoded as a sequence of the given bytes.
+  - Rust strings are UTF-8 encoded by default, but this is not enforced by bincode
+- No normalization or transformation of text
+- If an invalid UTF-8 sequence is encountered during decoding, an [`DecodeError::Utf8`](https://docs.rs/bincode/2.0.0-rc/bincode/error/enum.DecodeError.html#variant.Utf8) error is raised
 
 ```rust
-let str = "Hello"; // Could also be `String::new(...)`
+let str = "Hello 🌍"; // Mixed ASCII and Unicode
 
 let encoded = bincode::encode_to_vec(str, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    5, 0, 0, 0, 0, 0, 0, 0, // length of the string, 5 bytes
-    b'H', b'e', b'l', b'l', b'o'
+    10, 0, 0, 0, 0, 0, 0, 0, // length of the string, 10 bytes
+    b'H', b'e', b'l', b'l', b'o', b' ', 0xF0, 0x9F, 0x8C, 0x8D // UTF-8 encoded string
 ]);
 ```
+
+### Comparison with Other Types
+
+- Treated similarly to `Vec<u8>` in serialization
+- See [Collections](#collections) for more information about length and entry encoding
 
 # Arrays
 
 Array length is never encoded.
 
 Note that `&[T]` is encoded as a [Collection](#collections).
-
 
 ```rust
 let arr: [u8; 5] = [10, 20, 30, 40, 50];
@@ -184,3 +283,53 @@ assert_eq!(encoded.as_slice(), &[
 ]);
 ```
 
+## TupleEncoding
+
+Tuple fields are serialized in first-to-last declaration order, with no additional metadata.
+
+- No length prefix is added
+- Fields are encoded sequentially
+- No padding or alignment adjustments are made
+- Order of serialization is deterministic and matches the tuple's declaration order
+
+## StructEncoding
+
+Struct fields are serialized in first-to-last declaration order, with no metadata representing field names.
+
+- No length prefix is added
+- Fields are encoded sequentially
+- No padding or alignment adjustments are made
+- Order of serialization is deterministic and matches the struct's field declaration order
+- Both named and unnamed fields are serialized identically
+
+## EnumEncoding
+
+Enum variants are encoded with a discriminant followed by optional variant payload.
+
+### Discriminant Allocation
+
+- Discriminants are automatically assigned by the derive macro in declaration order
+  - First variant starts at 0
+  - Subsequent variants increment by 1
+- Explicit discriminant indices are currently not supported
+- Discriminant is always represented as a `u32` during serialization. See [Discriminant Representation](#discriminant-representation) for more details.
+- Maintains the original enum variant semantics during encoding
+
+### Variant Payload Encoding
+
+- Tuple variants: Fields serialized in declaration order
+- Struct variants: Fields serialized in declaration order
+- Unit variants: No additional data encoded
+
+### Discriminant Representation
+
+- Always encoded as a `u32`
+- Encoding method depends on the configured `IntEncoding`
+  - `VarintEncoding`: Variable-length encoding
+  - `FixintEncoding`: Fixed 4-byte representation
+
+### Handling of Variant Payloads
+
+- Payload is serialized immediately after the discriminant
+- No additional metadata about field names or types
+- Payload structure matches the variant's definition
