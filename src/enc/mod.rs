@@ -47,7 +47,6 @@ pub use self::encoder::EncoderImpl;
 /// ```
 ///
 /// From here you can add/remove fields, or add custom logic.
-
 pub trait Encode {
     /// Encode a given type.
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError>;
@@ -68,7 +67,7 @@ pub trait Encoder: Sealed {
     fn config(&self) -> &Self::C;
 }
 
-impl<'a, T> Encoder for &'a mut T
+impl<T> Encoder for &mut T
 where
     T: Encoder,
 {

@@ -215,7 +215,7 @@ pub trait BorrowDecoder<'de>: Decoder {
     fn borrow_reader(&mut self) -> &mut Self::BR;
 }
 
-impl<'a, T> Decoder for &'a mut T
+impl<T> Decoder for &mut T
 where
     T: Decoder,
 {
@@ -242,7 +242,7 @@ where
     }
 }
 
-impl<'a, 'de, T> BorrowDecoder<'de> for &'a mut T
+impl<'de, T> BorrowDecoder<'de> for &mut T
 where
     T: BorrowDecoder<'de>,
 {

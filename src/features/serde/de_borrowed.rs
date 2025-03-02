@@ -69,7 +69,7 @@ pub(super) struct SerdeDecoder<'a, 'de, DE: BorrowDecoder<'de>> {
     pub(super) pd: PhantomData<&'de ()>,
 }
 
-impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de, DE> {
+impl<'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'_, 'de, DE> {
     type Error = DecodeError;
 
     fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error>
@@ -433,7 +433,7 @@ impl<'a, 'de, DE: BorrowDecoder<'de>> Deserializer<'de> for SerdeDecoder<'a, 'de
     }
 }
 
-impl<'de, 'a, DE: BorrowDecoder<'de>> EnumAccess<'de> for SerdeDecoder<'a, 'de, DE> {
+impl<'de, DE: BorrowDecoder<'de>> EnumAccess<'de> for SerdeDecoder<'_, 'de, DE> {
     type Error = DecodeError;
     type Variant = Self;
 
@@ -447,7 +447,7 @@ impl<'de, 'a, DE: BorrowDecoder<'de>> EnumAccess<'de> for SerdeDecoder<'a, 'de, 
     }
 }
 
-impl<'de, 'a, DE: BorrowDecoder<'de>> VariantAccess<'de> for SerdeDecoder<'a, 'de, DE> {
+impl<'de, DE: BorrowDecoder<'de>> VariantAccess<'de> for SerdeDecoder<'_, 'de, DE> {
     type Error = DecodeError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {

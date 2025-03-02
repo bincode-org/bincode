@@ -140,7 +140,7 @@ fi",
           "uses": "actions-rs/toolchain@v1",
           "with": {
             "profile": "minimal",
-            "toolchain": "stable",
+            "toolchain": "1.85.0",
             "override": true,
             "components": "rustfmt, clippy"
           },
@@ -176,7 +176,7 @@ fi",
           "uses": "actions-rs/toolchain@v1",
           "with": {
             "profile": "minimal",
-            "toolchain": "stable",
+            "toolchain": "1.85.0",
             "override": true,
           },
           "name": "Install Rust stable"
