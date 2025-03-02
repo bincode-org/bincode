@@ -79,7 +79,7 @@ pub(super) struct SerdeEncoder<'a, ENC: Encoder> {
     pub(super) enc: &'a mut ENC,
 }
 
-impl<'a, ENC> Serializer for SerdeEncoder<'a, ENC>
+impl<ENC> Serializer for SerdeEncoder<'_, ENC>
 where
     ENC: Encoder,
 {
@@ -286,7 +286,7 @@ where
 
 type Compound<'a, ENC> = SerdeEncoder<'a, ENC>;
 
-impl<'a, ENC: Encoder> SerializeSeq for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeSeq for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
@@ -302,7 +302,7 @@ impl<'a, ENC: Encoder> SerializeSeq for Compound<'a, ENC> {
     }
 }
 
-impl<'a, ENC: Encoder> SerializeTuple for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeTuple for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
@@ -318,7 +318,7 @@ impl<'a, ENC: Encoder> SerializeTuple for Compound<'a, ENC> {
     }
 }
 
-impl<'a, ENC: Encoder> SerializeTupleStruct for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeTupleStruct for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
@@ -334,7 +334,7 @@ impl<'a, ENC: Encoder> SerializeTupleStruct for Compound<'a, ENC> {
     }
 }
 
-impl<'a, ENC: Encoder> SerializeTupleVariant for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeTupleVariant for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
@@ -350,7 +350,7 @@ impl<'a, ENC: Encoder> SerializeTupleVariant for Compound<'a, ENC> {
     }
 }
 
-impl<'a, ENC: Encoder> SerializeMap for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeMap for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
@@ -373,7 +373,7 @@ impl<'a, ENC: Encoder> SerializeMap for Compound<'a, ENC> {
     }
 }
 
-impl<'a, ENC: Encoder> SerializeStruct for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeStruct for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 
@@ -389,7 +389,7 @@ impl<'a, ENC: Encoder> SerializeStruct for Compound<'a, ENC> {
     }
 }
 
-impl<'a, ENC: Encoder> SerializeStructVariant for Compound<'a, ENC> {
+impl<ENC: Encoder> SerializeStructVariant for Compound<'_, ENC> {
     type Ok = ();
     type Error = EncodeError;
 

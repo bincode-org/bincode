@@ -62,7 +62,7 @@ pub(crate) struct SerdeDecoder<'a, DE: Decoder> {
     pub(crate) de: &'a mut DE,
 }
 
-impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
+impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
     type Error = DecodeError;
 
     fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error>
@@ -438,7 +438,7 @@ impl<'a, 'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'a, DE> {
     }
 }
 
-impl<'de, 'a, DE: Decoder> EnumAccess<'de> for SerdeDecoder<'a, DE> {
+impl<'de, DE: Decoder> EnumAccess<'de> for SerdeDecoder<'_, DE> {
     type Error = DecodeError;
     type Variant = Self;
 
@@ -452,7 +452,7 @@ impl<'de, 'a, DE: Decoder> EnumAccess<'de> for SerdeDecoder<'a, DE> {
     }
 }
 
-impl<'de, 'a, DE: Decoder> VariantAccess<'de> for SerdeDecoder<'a, DE> {
+impl<'de, DE: Decoder> VariantAccess<'de> for SerdeDecoder<'_, DE> {
     type Error = DecodeError;
 
     fn unit_variant(self) -> Result<(), Self::Error> {

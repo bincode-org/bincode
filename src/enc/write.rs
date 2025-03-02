@@ -52,7 +52,7 @@ impl<'storage> SliceWriter<'storage> {
     }
 }
 
-impl<'storage> Writer for SliceWriter<'storage> {
+impl Writer for SliceWriter<'_> {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         if bytes.len() > self.slice.len() {
