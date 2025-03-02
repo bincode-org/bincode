@@ -1,3 +1,3 @@
 pub trait Sealed {}
 
-impl<'a, T> Sealed for &'a mut T where T: Sealed {}
+impl<T> Sealed for &mut T where T: Sealed {}

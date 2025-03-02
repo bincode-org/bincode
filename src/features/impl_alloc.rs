@@ -397,7 +397,7 @@ where
     }
 }
 
-impl<'cow, T> Decode for Cow<'cow, T>
+impl<T> Decode for Cow<'_, T>
 where
     T: ToOwned + ?Sized,
     <T as ToOwned>::Owned: Decode,
@@ -418,7 +418,7 @@ where
     }
 }
 
-impl<'cow, T> Encode for Cow<'cow, T>
+impl<T> Encode for Cow<'_, T>
 where
     T: ToOwned + ?Sized,
     for<'a> &'a T: Encode,
