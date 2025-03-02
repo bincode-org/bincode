@@ -114,7 +114,7 @@ impl<'a, W: std::io::Write> IoWriter<'a, W> {
     }
 }
 
-impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
+impl<W: std::io::Write> Writer for IoWriter<'_, W> {
     #[inline(always)]
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.writer
@@ -128,7 +128,7 @@ impl<'storage, W: std::io::Write> Writer for IoWriter<'storage, W> {
     }
 }
 
-impl<'a> Encode for &'a CStr {
+impl Encode for &CStr {
     fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
         self.to_bytes().encode(encoder)
     }
