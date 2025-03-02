@@ -114,7 +114,8 @@
             # "mips64-unknown-linux-muslabi64",
             # "mips64el-unknown-linux-muslabi64",
             # "mipsel-unknown-linux-musl",
-            "sparc64-unknown-linux-gnu",
+            # Could not link to `getrandom`
+            # "sparc64-unknown-linux-gnu",
             # BLOCKEDTODO(https://github.com/cross-rs/cross/issues/975): currently broken
             # "sparcv9-sun-solaris",
             "thumbv7neon-linux-androideabi",
