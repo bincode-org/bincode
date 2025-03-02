@@ -231,7 +231,7 @@ let str = "Hello 🌍"; // Mixed ASCII and Unicode
 
 let encoded = bincode::encode_to_vec(str, bincode::config::legacy()).unwrap();
 assert_eq!(encoded.as_slice(), &[
-    9, 0, 0, 0, 0, 0, 0, 0, // length of the string, 9 bytes
+    10, 0, 0, 0, 0, 0, 0, 0, // length of the string, 10 bytes
     b'H', b'e', b'l', b'l', b'o', b' ', 0xF0, 0x9F, 0x8C, 0x8D // UTF-8 encoded string
 ]);
 ```
