@@ -1,13 +1,13 @@
-use super::DecodeError as SerdeDecodeError;
+use super::{de_borrowed::borrow_decode_from_slice, DecodeError as SerdeDecodeError};
 use crate::{
     config::Config,
     de::{read::Reader, Decode, Decoder, DecoderImpl},
     error::DecodeError,
-    IoReader,
 };
 use serde::de::*;
 
-use super::de_borrowed::borrow_decode_from_slice;
+#[cfg(feature = "std")]
+use crate::features::IoReader;
 
 /// Serde decoder encapsulating an owned reader.
 pub struct OwnedSerdeDecoder<DE: Decoder> {
