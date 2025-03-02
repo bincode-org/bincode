@@ -1,10 +1,54 @@
-use super::DecodeError as SerdeDecodeError;
+use super::{de_borrowed::borrow_decode_from_slice, DecodeError as SerdeDecodeError};
 use crate::{
     config::Config,
-    de::{read::Reader, Decode, Decoder},
+    de::{read::Reader, Decode, Decoder, DecoderImpl},
     error::DecodeError,
 };
 use serde::de::*;
+
+#[cfg(feature = "std")]
+use crate::features::IoReader;
+
+/// Serde decoder encapsulating an owned reader.
+pub struct OwnedSerdeDecoder<DE: Decoder> {
+    pub(super) de: DE,
+}
+
+impl<DE: Decoder> OwnedSerdeDecoder<DE> {
+    /// Return a type implementing `serde::Deserializer`.
+    pub fn as_deserializer<'a>(
+        &'a mut self,
+    ) -> impl for<'de> serde::Deserializer<'de, Error = DecodeError> + 'a {
+        SerdeDecoder { de: &mut self.de }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'r, C: Config, R: std::io::Read> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C>> {
+    /// Creates the decoder from an `std::io::Read` implementor.
+    pub fn from_std_read(
+        src: &'r mut R,
+        config: C,
+    ) -> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C>>
+    where
+        C: Config,
+    {
+        let reader = IoReader::new(src);
+        let decoder = DecoderImpl::new(reader, config);
+        Self { de: decoder }
+    }
+}
+
+impl<C: Config, R: Reader> OwnedSerdeDecoder<DecoderImpl<R, C>> {
+    /// Creates the decoder from a [`Reader`] implementor.
+    pub fn from_reader(reader: R, config: C) -> OwnedSerdeDecoder<DecoderImpl<R, C>>
+    where
+        C: Config,
+    {
+        let decoder = DecoderImpl::new(reader, config);
+        Self { de: decoder }
+    }
+}
 
 /// Attempt to decode a given type `D` from the given slice. Returns the decoded output and the amount of bytes read.
 ///
@@ -19,12 +63,7 @@ where
     D: DeserializeOwned,
     C: Config,
 {
-    let reader = crate::de::read::SliceReader::new(slice);
-    let mut decoder = crate::de::DecoderImpl::new(reader, config);
-    let serde_decoder = SerdeDecoder { de: &mut decoder };
-    let result = D::deserialize(serde_decoder)?;
-    let bytes_read = slice.len() - decoder.reader().slice.len();
-    Ok((result, bytes_read))
+    borrow_decode_from_slice(slice, config)
 }
 
 /// Decode type `D` from the given reader with the given `Config`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
@@ -34,14 +73,13 @@ where
 /// [config]: ../config/index.html
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_std_read<D: DeserializeOwned, C: Config, R: std::io::Read>(
-    src: &mut R,
+pub fn decode_from_std_read<'r, D: DeserializeOwned, C: Config, R: std::io::Read>(
+    src: &'r mut R,
     config: C,
 ) -> Result<D, DecodeError> {
-    let reader = crate::IoReader::new(src);
-    let mut decoder = crate::de::DecoderImpl::new(reader, config);
-    let serde_decoder = SerdeDecoder { de: &mut decoder };
-    D::deserialize(serde_decoder)
+    let mut serde_decoder =
+        OwnedSerdeDecoder::<DecoderImpl<IoReader<&'r mut R>, C>>::from_std_read(src, config);
+    D::deserialize(serde_decoder.as_deserializer())
 }
 
 /// Attempt to decode a given type `D` from the given [Reader].
@@ -53,13 +91,12 @@ pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
     reader: R,
     config: C,
 ) -> Result<D, DecodeError> {
-    let mut decoder = crate::de::DecoderImpl::<_, C>::new(reader, config);
-    let serde_decoder = SerdeDecoder { de: &mut decoder };
-    D::deserialize(serde_decoder)
+    let mut serde_decoder = OwnedSerdeDecoder::<DecoderImpl<R, C>>::from_reader(reader, config);
+    D::deserialize(serde_decoder.as_deserializer())
 }
 
-pub(crate) struct SerdeDecoder<'a, DE: Decoder> {
-    pub(crate) de: &'a mut DE,
+pub(super) struct SerdeDecoder<'a, DE: Decoder> {
+    pub(super) de: &'a mut DE,
 }
 
 impl<'de, DE: Decoder> Deserializer<'de> for SerdeDecoder<'_, DE> {
