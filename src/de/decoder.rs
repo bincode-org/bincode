@@ -44,10 +44,10 @@ impl<'context, R: Reader, C: Config, Context> DecoderImpl<'context, R, C, Contex
     }
 }
 
-impl<'context, R, C: Config, Context> Sealed for DecoderImpl<'context, R, C, Context> {}
+impl<R, C: Config, Context> Sealed for DecoderImpl<'_, R, C, Context> {}
 
-impl<'context, 'de, R: BorrowReader<'de>, C: Config, Context> BorrowDecoder<'de>
-    for DecoderImpl<'context, R, C, Context>
+impl<'de, R: BorrowReader<'de>, C: Config, Context> BorrowDecoder<'de>
+    for DecoderImpl<'_, R, C, Context>
 {
     type BR = R;
 
@@ -56,7 +56,7 @@ impl<'context, 'de, R: BorrowReader<'de>, C: Config, Context> BorrowDecoder<'de>
     }
 }
 
-impl<'context, R: Reader, C: Config, Context> Decoder for DecoderImpl<'context, R, C, Context> {
+impl<R: Reader, C: Config, Context> Decoder for DecoderImpl<'_, R, C, Context> {
     type R = R;
 
     type C = C;
@@ -103,14 +103,14 @@ impl<'context, R: Reader, C: Config, Context> Decoder for DecoderImpl<'context, 
     }
 }
 
-pub struct WithContext<'a, D: ?Sized, C> {
+pub struct WithContext<'a, 'context, D: ?Sized, C> {
     pub(crate) decoder: &'a mut D,
-    pub(crate) context: &'a mut C,
+    pub(crate) context: &'context mut C,
 }
 
-impl<'a, C, D: Decoder + ?Sized> Sealed for WithContext<'a, D, C> {}
+impl<C, D: Decoder + ?Sized> Sealed for WithContext<'_, '_, D, C> {}
 
-impl<'a, Context, D: Decoder + ?Sized> Decoder for WithContext<'a, D, Context> {
+impl<Context, D: Decoder + ?Sized> Decoder for WithContext<'_, '_, D, Context> {
     type R = D::R;
 
     type C = D::C;
@@ -118,7 +118,7 @@ impl<'a, Context, D: Decoder + ?Sized> Decoder for WithContext<'a, D, Context> {
     type Context = Context;
 
     fn context(&mut self) -> &mut Self::Context {
-        &mut self.context
+        self.context
     }
 
     fn reader(&mut self) -> &mut Self::R {
@@ -138,7 +138,7 @@ impl<'a, Context, D: Decoder + ?Sized> Decoder for WithContext<'a, D, Context> {
     }
 }
 
-impl<'de, 'a, C, D: BorrowDecoder<'de>> BorrowDecoder<'de> for WithContext<'a, D, C> {
+impl<'de, C, D: BorrowDecoder<'de>> BorrowDecoder<'de> for WithContext<'_, '_, D, C> {
     type BR = D::BR;
     fn borrow_reader(&mut self) -> &mut Self::BR {
         self.decoder.borrow_reader()

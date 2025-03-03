@@ -158,7 +158,10 @@ pub trait Decoder: Sealed {
     /// Returns the decoding context
     fn context(&mut self) -> &mut Self::Context;
 
-    fn with_context<'a, C>(&'a mut self, context: &'a mut C) -> WithContext<'a, Self, C> {
+    fn with_context<'a, 'context, C>(
+        &'a mut self,
+        context: &'context mut C,
+    ) -> WithContext<'a, 'context, Self, C> {
         WithContext {
             decoder: self,
             context,
