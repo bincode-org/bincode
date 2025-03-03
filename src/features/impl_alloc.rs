@@ -411,7 +411,7 @@ where
     }
 }
 
-impl<Context, T> Decode<C> for Cow<'_, T>
+impl<Context, T> Decode<Context> for Cow<'_, T>
 where
     T: ToOwned + ?Sized,
     <T as ToOwned>::Owned: Decode<Context>,

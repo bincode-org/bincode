@@ -16,7 +16,8 @@ use crate::{config::Config, error::DecodeError, utils::Sealed};
 /// # let slice: &[u8] = &[0, 0, 0, 0];
 /// # let some_reader = bincode::de::read::SliceReader::new(slice);
 /// use bincode::de::{DecoderImpl, Decode};
-/// let mut decoder = DecoderImpl::new(some_reader, bincode::config::standard(), ());
+/// let mut context = ();
+/// let mut decoder = DecoderImpl::new(some_reader, bincode::config::standard(), &mut context);
 /// // this u32 can be any Decode
 /// let value = u32::decode(&mut decoder).unwrap();
 /// ```
