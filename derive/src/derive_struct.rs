@@ -146,14 +146,14 @@ impl DeriveStruct {
             "__Context"
         };
 
-        let mut impl_for =
-            generator.impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"]).with_trait_generics([decode_context]);
+        let mut impl_for = generator
+            .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
+            .with_trait_generics([decode_context]);
         if self.attributes.decode_context.is_none() {
             impl_for = impl_for.with_impl_generics(["__Context"]);
         }
 
         impl_for
-            
             .modify_generic_constraints(|generics, where_constraints| {
                 if let Some((bounds, lit)) = (self.attributes.borrow_decode_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
                     where_constraints.clear();

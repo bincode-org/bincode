@@ -25,12 +25,14 @@ impl<'de, DE: BorrowDecoder<'de>> BorrowedSerdeDecoder<'de, DE> {
     }
 }
 
-impl<'de, 'context, C: Config, Context> BorrowedSerdeDecoder<'de, DecoderImpl<'context, SliceReader<'de>, C, Context>> {
+impl<'de, 'context, C: Config, Context>
+    BorrowedSerdeDecoder<'de, DecoderImpl<'context, SliceReader<'de>, C, Context>>
+{
     /// Creates the decoder from a borrowed slice.
     pub fn from_slice(
         slice: &'de [u8],
         config: C,
-        context: &'context mut Context
+        context: &'context mut Context,
     ) -> BorrowedSerdeDecoder<'de, DecoderImpl<'context, SliceReader<'de>, C, Context>>
     where
         C: Config,
@@ -57,7 +59,11 @@ where
 {
     let mut context = ();
     let mut serde_decoder =
-        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C, ()>>::from_slice(slice, config, &mut context);
+        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C, ()>>::from_slice(
+            slice,
+            config,
+            &mut context,
+        );
     let result = D::deserialize(serde_decoder.as_deserializer())?;
     let bytes_read = slice.len() - serde_decoder.de.borrow_reader().slice.len();
     Ok((result, bytes_read))
@@ -75,7 +81,11 @@ where
 {
     let mut context = ();
     let mut serde_decoder =
-        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C, ()>>::from_slice(slice, config, &mut context);
+        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C, ()>>::from_slice(
+            slice,
+            config,
+            &mut context,
+        );
     let result = seed.deserialize(serde_decoder.as_deserializer())?;
     let bytes_read = slice.len() - serde_decoder.de.borrow_reader().slice.len();
     Ok((result, bytes_read))
