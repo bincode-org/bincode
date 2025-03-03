@@ -61,31 +61,21 @@ where
     Ok((result, bytes_read))
 }
 
-#[deprecated(note = "Use borrow_decode_from_slice instead")]
-/// Decode a borrowed type from the given slice. Some parts of the decoded type are expected to be referring to the given slice
-pub fn decode_borrowed_from_slice<'de, T, C>(slice: &'de [u8], config: C) -> Result<T, DecodeError>
-where
-    T: Deserialize<'de>,
-    C: Config,
-{
-    let mut serde_decoder =
-        BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C>>::from_slice(slice, config);
-    T::deserialize(serde_decoder.as_deserializer())
-}
-
 /// Decode a borrowed type from the given slice using a seed. Some parts of the decoded type are expected to be referring to the given slice
-pub fn decode_seed_from_slice<'de, T, C>(
-    seed: T,
+pub fn seed_decode_from_slice<'de, D, C>(
+    seed: D,
     slice: &'de [u8],
     config: C,
-) -> Result<T::Value, DecodeError>
+) -> Result<(D::Value, usize), DecodeError>
 where
-    T: DeserializeSeed<'de>,
+    D: DeserializeSeed<'de>,
     C: Config,
 {
     let mut serde_decoder =
         BorrowedSerdeDecoder::<DecoderImpl<SliceReader<'de>, C>>::from_slice(slice, config);
-    seed.deserialize(serde_decoder.as_deserializer())
+    let result = seed.deserialize(serde_decoder.as_deserializer())?;
+    let bytes_read = slice.len() - serde_decoder.de.borrow_reader().slice.len();
+    Ok((result, bytes_read))
 }
 
 pub(super) struct SerdeDecoder<'a, 'de, DE: BorrowDecoder<'de>> {
