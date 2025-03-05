@@ -149,13 +149,13 @@ pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
     src: &[u8],
     config: C,
 ) -> Result<(D, usize), error::DecodeError> {
-    decode_from_slice_with_context(src, config, &mut ())
+    decode_from_slice_with_context(src, config, ())
 }
 
 pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config>(
     src: &[u8],
     config: C,
-    context: &mut Context,
+    context: Context,
 ) -> Result<(D, usize), error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
     let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
@@ -173,7 +173,7 @@ pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
     src: &'a [u8],
     config: C,
 ) -> Result<(D, usize), error::DecodeError> {
-    borrow_decode_from_slice_with_context(src, config, &mut ())
+    borrow_decode_from_slice_with_context(src, config, ())
 }
 
 pub fn borrow_decode_from_slice_with_context<
@@ -184,7 +184,7 @@ pub fn borrow_decode_from_slice_with_context<
 >(
     src: &'a [u8],
     config: C,
-    context: &mut Context,
+    context: Context,
 ) -> Result<(D, usize), error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
     let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
@@ -202,8 +202,7 @@ pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(
     reader: R,
     config: C,
 ) -> Result<D, error::DecodeError> {
-    let mut context = ();
-    let mut decoder = de::DecoderImpl::<_, C, ()>::new(reader, config, &mut context);
+    let mut decoder = de::DecoderImpl::<_, C, ()>::new(reader, config, ());
     D::decode(&mut decoder)
 }
 
