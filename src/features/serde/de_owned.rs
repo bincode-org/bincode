@@ -24,35 +24,28 @@ impl<DE: Decoder> OwnedSerdeDecoder<DE> {
 }
 
 #[cfg(feature = "std")]
-impl<'r, C: Config, R: std::io::Read, Context>
-    OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C, Context>>
-{
+impl<'r, C: Config, R: std::io::Read> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C, ()>> {
     /// Creates the decoder from an `std::io::Read` implementor.
     pub fn from_std_read(
         src: &'r mut R,
         config: C,
-        context: Context,
-    ) -> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C, Context>>
+    ) -> OwnedSerdeDecoder<DecoderImpl<IoReader<&'r mut R>, C, ()>>
     where
         C: Config,
     {
         let reader = IoReader::new(src);
-        let decoder = DecoderImpl::new(reader, config, context);
+        let decoder = DecoderImpl::new(reader, config, ());
         Self { de: decoder }
     }
 }
 
-impl<C: Config, R: Reader, Context> OwnedSerdeDecoder<DecoderImpl<R, C, Context>> {
+impl<C: Config, R: Reader> OwnedSerdeDecoder<DecoderImpl<R, C, ()>> {
     /// Creates the decoder from a [`Reader`] implementor.
-    pub fn from_reader(
-        reader: R,
-        config: C,
-        context: Context,
-    ) -> OwnedSerdeDecoder<DecoderImpl<R, C, Context>>
+    pub fn from_reader(reader: R, config: C) -> OwnedSerdeDecoder<DecoderImpl<R, C, ()>>
     where
         C: Config,
     {
-        let decoder = DecoderImpl::new(reader, config, context);
+        let decoder = DecoderImpl::new(reader, config, ());
         Self { de: decoder }
     }
 }
@@ -85,11 +78,7 @@ pub fn decode_from_std_read<'r, D: DeserializeOwned, C: Config, R: std::io::Read
     config: C,
 ) -> Result<D, DecodeError> {
     let mut serde_decoder =
-        OwnedSerdeDecoder::<DecoderImpl<IoReader<&'r mut R>, C, ()>>::from_std_read(
-            src,
-            config,
-            (),
-        );
+        OwnedSerdeDecoder::<DecoderImpl<IoReader<&'r mut R>, C, ()>>::from_std_read(src, config);
     D::deserialize(serde_decoder.as_deserializer())
 }
 
@@ -102,8 +91,7 @@ pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
     reader: R,
     config: C,
 ) -> Result<D, DecodeError> {
-    let mut serde_decoder =
-        OwnedSerdeDecoder::<DecoderImpl<R, C, ()>>::from_reader(reader, config, ());
+    let mut serde_decoder = OwnedSerdeDecoder::<DecoderImpl<R, C, ()>>::from_reader(reader, config);
     D::deserialize(serde_decoder.as_deserializer())
 }
 

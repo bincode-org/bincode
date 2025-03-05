@@ -80,8 +80,8 @@ impl<Context> Decode<Context> for SelfReferencing {
     fn decode<D: bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
-        SelfReferencing::try_new(Bump::new(), |mut bump| {
-            Container::decode(&mut decoder.with_context(&mut bump))
+        SelfReferencing::try_new(Bump::new(), |bump| {
+            Container::decode(&mut decoder.with_context(bump))
         })
     }
 }

@@ -30,6 +30,11 @@ pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     decode_from_std_read_with_context(src, config, ())
 }
 
+/// Decode type `D` from the given reader with the given `Config` and `Context`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+///
+/// See the [config] module for more information about config options.
+///
+/// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub fn decode_from_std_read_with_context<
     Context,

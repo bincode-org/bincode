@@ -1,5 +1,5 @@
 #![no_std]
-#![warn(unused_lifetimes)]
+#![warn(missing_docs, unused_lifetimes)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Bincode is a crate for encoding and decoding using a tiny binary
@@ -152,6 +152,13 @@ pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
     decode_from_slice_with_context(src, config, ())
 }
 
+/// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
+///
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
 pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config>(
     src: &[u8],
     config: C,
@@ -176,6 +183,11 @@ pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
     borrow_decode_from_slice_with_context(src, config, ())
 }
 
+/// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
 pub fn borrow_decode_from_slice_with_context<
     'a,
     Context,

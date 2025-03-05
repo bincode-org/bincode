@@ -25,7 +25,7 @@ pub use self::decoder::DecoderImpl;
 ///
 /// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [BorrowDecode] instead.
 ///
-/// Whenever you implement `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
+/// Whenever you derive `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
 ///
 /// This trait will be automatically implemented with unbounded `Context` if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
 ///
@@ -131,6 +131,7 @@ macro_rules! impl_borrow_decode {
     };
 }
 
+/// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
 macro_rules! impl_borrow_decode_with_context {
     ($ty:ty, $context:ty $(, $param:tt)*) => {
@@ -158,10 +159,8 @@ pub trait Decoder: Sealed {
     /// Returns the decoding context
     fn context(&mut self) -> &mut Self::Context;
 
-    fn with_context<'a, 'context, C>(
-        &'a mut self,
-        context: &'context mut C,
-    ) -> WithContext<'a, 'context, Self, C> {
+    /// Wraps decoder with a context
+    fn with_context<'a, C>(&'a mut self, context: C) -> WithContext<'a, Self, C> {
         WithContext {
             decoder: self,
             context,
