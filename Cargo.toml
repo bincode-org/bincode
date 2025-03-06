@@ -3,13 +3,14 @@ members = ["derive", "compatibility"]
 
 [package]
 name = "bincode"
-version = "2.0.0-rc.3" # remember to update html_root_url and bincode_derive
+version = "2.0.0" # remember to update html_root_url and bincode_derive
 authors = [
     "Ty Overby <ty@pre-alpha.com>",
     "Zoey Riordan <zoey@dos.cafe>",
     "Victor Koenders <bincode@trangar.com>",
 ]
 exclude = ["logo.svg", "examples/*", ".gitignore", ".github/"]
+rust-version = "1.85.0"
 
 publish = true
 
@@ -31,7 +32,7 @@ alloc = ["serde?/alloc"]
 derive = ["bincode_derive"]
 
 [dependencies]
-bincode_derive = { path = "derive", version = "2.0.0-rc.3", optional = true }
+bincode_derive = { path = "derive", version = "2.0.0", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
 unty = "0.0.3"
 
