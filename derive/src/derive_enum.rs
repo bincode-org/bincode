@@ -219,25 +219,36 @@ impl DeriveEnum {
     pub fn generate_decode(self, generator: &mut Generator) -> Result<()> {
         let crate_name = self.attributes.crate_name.as_str();
 
+        let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
+            decode_context.as_str()
+        } else {
+            "__Context"
+        };
         // Remember to keep this mostly in sync with generate_borrow_decode
 
         let enum_name = generator.target_name().to_string();
 
-        generator
-            .impl_for(format!("{}::Decode", crate_name))
+        let mut impl_for = generator.impl_for(format!("{}::Decode", crate_name));
+
+        if self.attributes.decode_context.is_none() {
+            impl_for = impl_for.with_impl_generics(["__Context"]);
+        }
+
+        impl_for
+            .with_trait_generics([decode_context])
             .modify_generic_constraints(|generics, where_constraints| {
                 if let Some((bounds, lit)) = (self.attributes.decode_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
                     where_constraints.clear();
                     where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
                 } else {
                     for g in generics.iter_generics() {
-                        where_constraints.push_constraint(g, format!("{}::Decode", crate_name))?;
+                        where_constraints.push_constraint(g, format!("{}::Decode<__Context>", crate_name))?;
                     }
                 }
                 Ok(())
             })?
             .generate_fn("decode")
-            .with_generic_deps("__D", [format!("{}::de::Decoder", crate_name)])
+            .with_generic_deps("__D", [format!("{}::de::Decoder<Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_builder| {
@@ -249,7 +260,7 @@ impl DeriveEnum {
                 } else {
                     fn_builder
                         .push_parsed(format!(
-                            "let variant_index = <u32 as {}::Decode>::decode(decoder)?;",
+                            "let variant_index = <u32 as {}::Decode::<__D::Context>>::decode(decoder)?;",
                             crate_name
                         ))?;
                     fn_builder.push_parsed("match variant_index")?;
@@ -286,13 +297,13 @@ impl DeriveEnum {
                                             if attributes.with_serde {
                                                 variant_body
                                                     .push_parsed(format!(
-                                                        "<{0}::serde::Compat<_> as {0}::Decode>::decode(decoder)?.0,",
+                                                        "<{0}::serde::Compat<_> as {0}::Decode::<__D::Context>>::decode(decoder)?.0,",
                                                         crate_name
                                                     ))?;
                                             } else {
                                                 variant_body
                                                     .push_parsed(format!(
-                                                        "{}::Decode::decode(decoder)?,",
+                                                        "{}::Decode::<__D::Context>::decode(decoder)?,",
                                                         crate_name
                                                     ))?;
                                             }
@@ -318,17 +329,30 @@ impl DeriveEnum {
     pub fn generate_borrow_decode(self, generator: &mut Generator) -> Result<()> {
         let crate_name = &self.attributes.crate_name;
 
+        let decode_context = if let Some((decode_context, _)) = &self.attributes.decode_context {
+            decode_context.as_str()
+        } else {
+            "__Context"
+        };
+
         // Remember to keep this mostly in sync with generate_decode
         let enum_name = generator.target_name().to_string();
 
-        generator.impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
+        let mut impl_for = generator
+            .impl_for_with_lifetimes(format!("{}::BorrowDecode", crate_name), ["__de"])
+            .with_trait_generics([decode_context]);
+        if self.attributes.decode_context.is_none() {
+            impl_for = impl_for.with_impl_generics(["__Context"]);
+        }
+
+        impl_for
             .modify_generic_constraints(|generics, where_constraints| {
                 if let Some((bounds, lit)) = (self.attributes.borrow_decode_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
                     where_constraints.clear();
                     where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
                 } else {
                     for g in generics.iter_generics() {
-                        where_constraints.push_constraint(g, format!("{}::de::BorrowDecode<'__de>", crate_name)).unwrap();
+                        where_constraints.push_constraint(g, format!("{}::de::BorrowDecode<'__de, {}>", crate_name, decode_context)).unwrap();
                     }
                     for lt in generics.iter_lifetimes() {
                         where_constraints.push_parsed_constraint(format!("'__de: '{}", lt.ident))?;
@@ -337,7 +361,7 @@ impl DeriveEnum {
                 Ok(())
             })?
             .generate_fn("borrow_decode")
-            .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de>", crate_name)])
+            .with_generic_deps("__D", [format!("{}::de::BorrowDecoder<'__de, Context = {}>", crate_name, decode_context)])
             .with_arg("decoder", "&mut __D")
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_builder| {
@@ -348,7 +372,7 @@ impl DeriveEnum {
                     ))?;
                 } else {
                     fn_builder
-                        .push_parsed(format!("let variant_index = <u32 as {}::Decode>::decode(decoder)?;", crate_name))?;
+                        .push_parsed(format!("let variant_index = <u32 as {}::Decode::<__D::Context>>::decode(decoder)?;", crate_name))?;
                     fn_builder.push_parsed("match variant_index")?;
                     fn_builder.group(Delimiter::Brace, |variant_case| {
                         for (mut variant_index, variant) in self.iter_fields() {
@@ -382,9 +406,9 @@ impl DeriveEnum {
                                             let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
                                             if attributes.with_serde {
                                                 variant_body
-                                                    .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode>::borrow_decode(decoder)?.0,", crate_name))?;
+                                                    .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<__D::Context>>::borrow_decode(decoder)?.0,", crate_name))?;
                                             } else {
-                                                variant_body.push_parsed(format!("{}::BorrowDecode::borrow_decode(decoder)?,", crate_name))?;
+                                                variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Context>::borrow_decode(decoder)?,", crate_name))?;
                                             }
                                         }
                                     }

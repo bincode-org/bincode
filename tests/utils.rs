@@ -128,13 +128,18 @@ where
 
 #[cfg(feature = "serde")]
 pub trait TheSameTrait:
-    bincode::Encode + bincode::Decode + serde::de::DeserializeOwned + serde::Serialize + Debug + 'static
+    bincode::Encode
+    + bincode::Decode<()>
+    + serde::de::DeserializeOwned
+    + serde::Serialize
+    + Debug
+    + 'static
 {
 }
 #[cfg(feature = "serde")]
 impl<T> TheSameTrait for T where
     T: bincode::Encode
-        + bincode::Decode
+        + bincode::Decode<()>
         + serde::de::DeserializeOwned
         + serde::Serialize
         + Debug
@@ -143,9 +148,9 @@ impl<T> TheSameTrait for T where
 }
 
 #[cfg(not(feature = "serde"))]
-pub trait TheSameTrait: bincode::Encode + bincode::Decode + Debug + 'static {}
+pub trait TheSameTrait: bincode::Encode + bincode::Decode<()> + Debug + 'static {}
 #[cfg(not(feature = "serde"))]
-impl<T> TheSameTrait for T where T: bincode::Encode + bincode::Decode + Debug + 'static {}
+impl<T> TheSameTrait for T where T: bincode::Encode + bincode::Decode<()> + Debug + 'static {}
 
 #[allow(dead_code)] // This is not used in every test
 pub fn the_same<V: TheSameTrait + PartialEq>(element: V) {

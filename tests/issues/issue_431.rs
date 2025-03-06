@@ -8,15 +8,19 @@ use std::string::String;
 
 #[derive(Decode, Encode, PartialEq, Debug)]
 #[bincode(
-    borrow_decode_bounds = "&'__de U<'a, A>: ::bincode::de::BorrowDecode<'__de> + '__de, '__de: 'a"
+    decode_context = "()",
+    borrow_decode_bounds = "&'__de U<'a, A>: ::bincode::de::BorrowDecode<'__de, ()> + '__de, '__de: 'a"
 )]
-struct T<'a, A: Clone + Encode + Decode> {
+struct T<'a, A: Clone + Encode + Decode<()>> {
     t: Cow<'a, U<'a, A>>,
 }
 
 #[derive(Clone, Decode, Encode, PartialEq, Debug)]
-#[bincode(borrow_decode_bounds = "&'__de A: ::bincode::de::BorrowDecode<'__de> + '__de, '__de: 'a")]
-struct U<'a, A: Clone + Encode + Decode> {
+#[bincode(
+    decode_context = "()",
+    borrow_decode_bounds = "&'__de A: ::bincode::de::BorrowDecode<'__de, ()> + '__de, '__de: 'a"
+)]
+struct U<'a, A: Clone + Encode + Decode<()>> {
     u: Cow<'a, A>,
 }
 

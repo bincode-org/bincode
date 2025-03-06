@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-use alloc::string::String;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, bincode::Encode, bincode::Decode)]
@@ -174,7 +173,7 @@ mod derive {
     fn test_serde_derive() {
         fn test_encode_decode<T>(start: T, expected_len: usize)
         where
-            T: bincode::Encode + bincode::Decode + PartialEq + core::fmt::Debug,
+            T: bincode::Encode + bincode::Decode<()> + PartialEq + core::fmt::Debug,
         {
             let mut slice = [0u8; 100];
             let len = bincode::encode_into_slice(&start, &mut slice, bincode::config::standard())

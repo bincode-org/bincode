@@ -145,12 +145,27 @@ pub fn encode_into_writer<E: enc::Encode, W: Writer, C: Config>(
 /// See the [config] module for more information on configurations.
 ///
 /// [config]: config/index.html
-pub fn decode_from_slice<D: de::Decode, C: Config>(
+pub fn decode_from_slice<D: de::Decode<()>, C: Config>(
     src: &[u8],
     config: C,
 ) -> Result<(D, usize), error::DecodeError> {
+    decode_from_slice_with_context(src, config, ())
+}
+
+/// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
+///
+/// Note that this does not work with borrowed types like `&str` or `&[u8]`. For that use [borrow_decode_from_slice].
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn decode_from_slice_with_context<Context, D: de::Decode<Context>, C: Config>(
+    src: &[u8],
+    config: C,
+    context: Context,
+) -> Result<(D, usize), error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
-    let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
+    let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
     let result = D::decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
     Ok((result, bytes_read))
@@ -161,12 +176,30 @@ pub fn decode_from_slice<D: de::Decode, C: Config>(
 /// See the [config] module for more information on configurations.
 ///
 /// [config]: config/index.html
-pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
+pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a, ()>, C: Config>(
     src: &'a [u8],
     config: C,
 ) -> Result<(D, usize), error::DecodeError> {
+    borrow_decode_from_slice_with_context(src, config, ())
+}
+
+/// Attempt to decode a given type `D` from the given slice with `Context`. Returns the decoded output and the amount of bytes read.
+///
+/// See the [config] module for more information on configurations.
+///
+/// [config]: config/index.html
+pub fn borrow_decode_from_slice_with_context<
+    'a,
+    Context,
+    D: de::BorrowDecode<'a, Context>,
+    C: Config,
+>(
+    src: &'a [u8],
+    config: C,
+    context: Context,
+) -> Result<(D, usize), error::DecodeError> {
     let reader = de::read::SliceReader::new(src);
-    let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
+    let mut decoder = de::DecoderImpl::<_, C, Context>::new(reader, config, context);
     let result = D::borrow_decode(&mut decoder)?;
     let bytes_read = src.len() - decoder.reader().slice.len();
     Ok((result, bytes_read))
@@ -177,11 +210,11 @@ pub fn borrow_decode_from_slice<'a, D: de::BorrowDecode<'a>, C: Config>(
 /// See the [config] module for more information on configurations.
 ///
 /// [config]: config/index.html
-pub fn decode_from_reader<D: de::Decode, R: Reader, C: Config>(
+pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(
     reader: R,
     config: C,
 ) -> Result<D, error::DecodeError> {
-    let mut decoder = de::DecoderImpl::<_, C>::new(reader, config);
+    let mut decoder = de::DecoderImpl::<_, C, ()>::new(reader, config, ());
     D::decode(&mut decoder)
 }
 

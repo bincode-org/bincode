@@ -193,7 +193,7 @@ impl serde::ser::Error for crate::error::EncodeError {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Compat<T>(pub T);
 
-impl<T> crate::Decode for Compat<T>
+impl<Context, T> crate::Decode<Context> for Compat<T>
 where
     T: serde::de::DeserializeOwned,
 {
@@ -202,7 +202,7 @@ where
         T::deserialize(serde_decoder).map(Compat)
     }
 }
-impl<'de, T> crate::BorrowDecode<'de> for Compat<T>
+impl<'de, T, Context> crate::BorrowDecode<'de, Context> for Compat<T>
 where
     T: serde::de::DeserializeOwned,
 {
@@ -255,7 +255,7 @@ where
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct BorrowCompat<T>(pub T);
 
-impl<'de, T> crate::de::BorrowDecode<'de> for BorrowCompat<T>
+impl<'de, T, Context> crate::de::BorrowDecode<'de, Context> for BorrowCompat<T>
 where
     T: serde::de::Deserialize<'de>,
 {

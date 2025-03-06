@@ -63,19 +63,21 @@ pub fn encode_to_vec<E: enc::Encode, C: Config>(val: E, config: C) -> Result<Vec
     Ok(encoder.into_writer().inner)
 }
 
-impl<T> Decode for BinaryHeap<T>
+impl<Context, T> Decode<Context> for BinaryHeap<T>
 where
-    T: Decode + Ord,
+    T: Decode<Context> + Ord,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::decode(decoder)?.into())
     }
 }
-impl<'de, T> BorrowDecode<'de> for BinaryHeap<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for BinaryHeap<T>
 where
-    T: BorrowDecode<'de> + Ord,
+    T: BorrowDecode<'de, Context> + Ord,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::borrow_decode(decoder)?.into())
     }
 }
@@ -94,12 +96,12 @@ where
     }
 }
 
-impl<K, V> Decode for BTreeMap<K, V>
+impl<Context, K, V> Decode<Context> for BTreeMap<K, V>
 where
-    K: Decode + Ord,
-    V: Decode,
+    K: Decode<Context> + Ord,
+    V: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -115,12 +117,14 @@ where
         Ok(map)
     }
 }
-impl<'de, K, V> BorrowDecode<'de> for BTreeMap<K, V>
+impl<'de, K, V, Context> BorrowDecode<'de, Context> for BTreeMap<K, V>
 where
-    K: BorrowDecode<'de> + Ord,
-    V: BorrowDecode<'de>,
+    K: BorrowDecode<'de, Context> + Ord,
+    V: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -152,11 +156,11 @@ where
     }
 }
 
-impl<T> Decode for BTreeSet<T>
+impl<Context, T> Decode<Context> for BTreeSet<T>
 where
-    T: Decode + Ord,
+    T: Decode<Context> + Ord,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
@@ -171,11 +175,13 @@ where
         Ok(map)
     }
 }
-impl<'de, T> BorrowDecode<'de> for BTreeSet<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for BTreeSet<T>
 where
-    T: BorrowDecode<'de> + Ord,
+    T: BorrowDecode<'de, Context> + Ord,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
@@ -204,19 +210,21 @@ where
     }
 }
 
-impl<T> Decode for VecDeque<T>
+impl<Context, T> Decode<Context> for VecDeque<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::decode(decoder)?.into())
     }
 }
-impl<'de, T> BorrowDecode<'de> for VecDeque<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for VecDeque<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         Ok(Vec::<T>::borrow_decode(decoder)?.into())
     }
 }
@@ -248,11 +256,11 @@ where
     }
 }
 
-impl<T> Decode for Vec<T>
+impl<Context, T> Decode<Context> for Vec<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
         if unty::type_equal::<T, u8>() {
@@ -277,11 +285,13 @@ where
     }
 }
 
-impl<'de, T> BorrowDecode<'de> for Vec<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Vec<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
 
         if unty::type_equal::<T, u8>() {
@@ -326,8 +336,8 @@ where
     }
 }
 
-impl Decode for String {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for String {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
         String::from_utf8(bytes).map_err(|e| DecodeError::Utf8 {
             inner: e.utf8_error(),
@@ -336,7 +346,7 @@ impl Decode for String {
 }
 impl_borrow_decode!(String);
 
-impl Decode for Box<str> {
+impl<Context> Decode<Context> for Box<str> {
     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
         String::decode(decoder).map(String::into_boxed_str)
     }
@@ -349,20 +359,22 @@ impl Encode for String {
     }
 }
 
-impl<T> Decode for Box<T>
+impl<Context, T> Decode<Context> for Box<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Box::new(t))
     }
 }
-impl<'de, T> BorrowDecode<'de> for Box<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Box<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Box::new(t))
     }
@@ -377,42 +389,46 @@ where
     }
 }
 
-impl<T> Decode for Box<[T]>
+impl<Context, T> Decode<Context> for Box<[T]>
 where
-    T: Decode + 'static,
+    T: Decode<Context> + 'static,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into_boxed_slice())
     }
 }
 
-impl<'de, T> BorrowDecode<'de> for Box<[T]>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Box<[T]>
 where
-    T: BorrowDecode<'de> + 'de,
+    T: BorrowDecode<'de, Context> + 'de,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let vec = Vec::borrow_decode(decoder)?;
         Ok(vec.into_boxed_slice())
     }
 }
 
-impl<T> Decode for Cow<'_, T>
+impl<Context, T> Decode<Context> for Cow<'_, T>
 where
     T: ToOwned + ?Sized,
-    <T as ToOwned>::Owned: Decode,
+    <T as ToOwned>::Owned: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = <T as ToOwned>::Owned::decode(decoder)?;
         Ok(Cow::Owned(t))
     }
 }
-impl<'cow, T> BorrowDecode<'cow> for Cow<'cow, T>
+impl<'cow, T, Context> BorrowDecode<'cow, Context> for Cow<'cow, T>
 where
     T: ToOwned + ?Sized,
-    &'cow T: BorrowDecode<'cow>,
+    &'cow T: BorrowDecode<'cow, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'cow>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'cow, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = <&T>::borrow_decode(decoder)?;
         Ok(Cow::Borrowed(t))
     }
@@ -441,35 +457,39 @@ fn test_cow_round_trip() {
     assert_eq!(start, end);
 }
 
-impl<T> Decode for Rc<T>
+impl<Context, T> Decode<Context> for Rc<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Rc::new(t))
     }
 }
 
-impl Decode for Rc<str> {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Rc<str> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let decoded = String::decode(decoder)?;
         Ok(decoded.into())
     }
 }
 
-impl<'de, T> BorrowDecode<'de> for Rc<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Rc<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Rc::new(t))
     }
 }
 
-impl<'de> BorrowDecode<'de> for Rc<str> {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<'de, Context> BorrowDecode<'de, Context> for Rc<str> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let decoded = String::decode(decoder)?;
         Ok(decoded.into())
     }
@@ -484,59 +504,65 @@ where
     }
 }
 
-impl<T> Decode for Rc<[T]>
+impl<Context, T> Decode<Context> for Rc<[T]>
 where
-    T: Decode + 'static,
+    T: Decode<Context> + 'static,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into())
     }
 }
 
-impl<'de, T> BorrowDecode<'de> for Rc<[T]>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Rc<[T]>
 where
-    T: BorrowDecode<'de> + 'de,
+    T: BorrowDecode<'de, Context> + 'de,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let vec = Vec::borrow_decode(decoder)?;
         Ok(vec.into())
     }
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<T> Decode for Arc<T>
+impl<Context, T> Decode<Context> for Arc<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Arc::new(t))
     }
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl Decode for Arc<str> {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Arc<str> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let decoded = String::decode(decoder)?;
         Ok(decoded.into())
     }
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<'de, T> BorrowDecode<'de> for Arc<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Arc<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Arc::new(t))
     }
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<'de> BorrowDecode<'de> for Arc<str> {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<'de, Context> BorrowDecode<'de, Context> for Arc<str> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let decoded = String::decode(decoder)?;
         Ok(decoded.into())
     }
@@ -553,22 +579,24 @@ where
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<T> Decode for Arc<[T]>
+impl<Context, T> Decode<Context> for Arc<[T]>
 where
-    T: Decode + 'static,
+    T: Decode<Context> + 'static,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = Vec::decode(decoder)?;
         Ok(vec.into())
     }
 }
 
 #[cfg(target_has_atomic = "ptr")]
-impl<'de, T> BorrowDecode<'de> for Arc<[T]>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Arc<[T]>
 where
-    T: BorrowDecode<'de> + 'de,
+    T: BorrowDecode<'de, Context> + 'de,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let vec = Vec::borrow_decode(decoder)?;
         Ok(vec.into())
     }

@@ -4,14 +4,14 @@ use crate::error::DecodeError;
 macro_rules! impl_tuple {
     () => {};
     ($first:ident $(, $extra:ident)*) => {
-        impl<'de, $first $(, $extra)*> BorrowDecode<'de> for ($first, $($extra, )*)
+        impl<'de, $first $(, $extra)*, Context> BorrowDecode<'de, Context> for ($first, $($extra, )*)
         where
-            $first: BorrowDecode<'de>,
+            $first: BorrowDecode<'de, Context>,
         $(
-            $extra : BorrowDecode<'de>,
+            $extra : BorrowDecode<'de, Context>,
         )*
          {
-            fn borrow_decode<BD: BorrowDecoder<'de>>(decoder: &mut BD) -> Result<Self, DecodeError> {
+            fn borrow_decode<BD: BorrowDecoder<'de, Context = Context>>(decoder: &mut BD) -> Result<Self, DecodeError> {
                 Ok((
                     $first::borrow_decode(decoder)?,
                     $($extra :: borrow_decode(decoder)?, )*
@@ -19,14 +19,14 @@ macro_rules! impl_tuple {
             }
         }
 
-        impl<$first $(, $extra)*> Decode for ($first, $($extra, )*)
+        impl<Context, $first $(, $extra)*> Decode<Context> for ($first, $($extra, )*)
         where
-            $first: Decode,
+            $first: Decode<Context>,
         $(
-            $extra : Decode,
+            $extra : Decode<Context>,
         )*
         {
-            fn decode<DE: Decoder>(decoder: &mut DE) -> Result<Self, DecodeError> {
+            fn decode<DE: Decoder<Context = Context>>(decoder: &mut DE) -> Result<Self, DecodeError> {
                 Ok((
                     $first::decode(decoder)?,
                     $($extra :: decode(decoder)?, )*

@@ -11,7 +11,7 @@ mod sway;
 pub fn test_same_with_config<T, C, O>(t: &T, bincode_1_options: O, bincode_2_config: C)
 where
     T: bincode_2::Encode
-        + bincode_2::Decode
+        + bincode_2::Decode<()>
         + serde::Serialize
         + serde::de::DeserializeOwned
         + core::fmt::Debug
@@ -60,7 +60,7 @@ where
 pub fn test_same<T>(t: T)
 where
     T: bincode_2::Encode
-        + bincode_2::Decode
+        + bincode_2::Decode<()>
         + serde::Serialize
         + serde::de::DeserializeOwned
         + core::fmt::Debug

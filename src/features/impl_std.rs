@@ -23,12 +23,31 @@ use std::{
 ///
 /// [config]: config/index.html
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub fn decode_from_std_read<D: Decode, C: Config, R: std::io::Read>(
+pub fn decode_from_std_read<D: Decode<()>, C: Config, R: std::io::Read>(
     src: &mut R,
     config: C,
 ) -> Result<D, DecodeError> {
+    decode_from_std_read_with_context(src, config, ())
+}
+
+/// Decode type `D` from the given reader with the given `Config` and `Context`. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+///
+/// See the [config] module for more information about config options.
+///
+/// [config]: config/index.html
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub fn decode_from_std_read_with_context<
+    Context,
+    D: Decode<Context>,
+    C: Config,
+    R: std::io::Read,
+>(
+    src: &mut R,
+    config: C,
+    context: Context,
+) -> Result<D, DecodeError> {
     let reader = IoReader::new(src);
-    let mut decoder = DecoderImpl::<_, C>::new(reader, config);
+    let mut decoder = DecoderImpl::<_, C, Context>::new(reader, config, context);
     D::decode(&mut decoder)
 }
 
@@ -140,8 +159,8 @@ impl Encode for CString {
     }
 }
 
-impl Decode for CString {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for CString {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let vec = std::vec::Vec::decode(decoder)?;
         CString::new(vec).map_err(|inner| DecodeError::CStringNulError {
             position: inner.nul_position(),
@@ -162,20 +181,22 @@ where
     }
 }
 
-impl<T> Decode for Mutex<T>
+impl<Context, T> Decode<Context> for Mutex<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(Mutex::new(t))
     }
 }
-impl<'de, T> BorrowDecode<'de> for Mutex<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for Mutex<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(Mutex::new(t))
     }
@@ -193,20 +214,22 @@ where
     }
 }
 
-impl<T> Decode for RwLock<T>
+impl<Context, T> Decode<Context> for RwLock<T>
 where
-    T: Decode,
+    T: Decode<Context>,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let t = T::decode(decoder)?;
         Ok(RwLock::new(t))
     }
 }
-impl<'de, T> BorrowDecode<'de> for RwLock<T>
+impl<'de, T, Context> BorrowDecode<'de, Context> for RwLock<T>
 where
-    T: BorrowDecode<'de>,
+    T: BorrowDecode<'de, Context>,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let t = T::borrow_decode(decoder)?;
         Ok(RwLock::new(t))
     }
@@ -224,8 +247,8 @@ impl Encode for SystemTime {
     }
 }
 
-impl Decode for SystemTime {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SystemTime {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let duration = Duration::decode(decoder)?;
         match SystemTime::UNIX_EPOCH.checked_add(duration) {
             Some(t) => Ok(t),
@@ -244,8 +267,10 @@ impl Encode for &'_ Path {
     }
 }
 
-impl<'de> BorrowDecode<'de> for &'de Path {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<'de, Context> BorrowDecode<'de, Context> for &'de Path {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let str = <&'de str>::borrow_decode(decoder)?;
         Ok(Path::new(str))
     }
@@ -257,8 +282,8 @@ impl Encode for PathBuf {
     }
 }
 
-impl Decode for PathBuf {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for PathBuf {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let string = std::string::String::decode(decoder)?;
         Ok(string.into())
     }
@@ -280,8 +305,8 @@ impl Encode for IpAddr {
     }
 }
 
-impl Decode for IpAddr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for IpAddr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(IpAddr::V4(Ipv4Addr::decode(decoder)?)),
             1 => Ok(IpAddr::V6(Ipv6Addr::decode(decoder)?)),
@@ -301,8 +326,8 @@ impl Encode for Ipv4Addr {
     }
 }
 
-impl Decode for Ipv4Addr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Ipv4Addr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 4];
         decoder.reader().read(&mut buff)?;
         Ok(Self::from(buff))
@@ -316,8 +341,8 @@ impl Encode for Ipv6Addr {
     }
 }
 
-impl Decode for Ipv6Addr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for Ipv6Addr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let mut buff = [0u8; 16];
         decoder.reader().read(&mut buff)?;
         Ok(Self::from(buff))
@@ -340,8 +365,8 @@ impl Encode for SocketAddr {
     }
 }
 
-impl Decode for SocketAddr {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SocketAddr {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         match u32::decode(decoder)? {
             0 => Ok(SocketAddr::V4(SocketAddrV4::decode(decoder)?)),
             1 => Ok(SocketAddr::V6(SocketAddrV6::decode(decoder)?)),
@@ -362,8 +387,8 @@ impl Encode for SocketAddrV4 {
     }
 }
 
-impl Decode for SocketAddrV4 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SocketAddrV4 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv4Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port))
@@ -378,8 +403,8 @@ impl Encode for SocketAddrV6 {
     }
 }
 
-impl Decode for SocketAddrV6 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+impl<Context> Decode<Context> for SocketAddrV6 {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let ip = Ipv6Addr::decode(decoder)?;
         let port = u16::decode(decoder)?;
         Ok(Self::new(ip, port, 0, 0))
@@ -421,13 +446,13 @@ where
     }
 }
 
-impl<K, V, S> Decode for HashMap<K, V, S>
+impl<Context, K, V, S> Decode<Context> for HashMap<K, V, S>
 where
-    K: Decode + Eq + std::hash::Hash,
-    V: Decode,
+    K: Decode<Context> + Eq + std::hash::Hash,
+    V: Decode<Context>,
     S: std::hash::BuildHasher + Default,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -444,13 +469,15 @@ where
         Ok(map)
     }
 }
-impl<'de, K, V, S> BorrowDecode<'de> for HashMap<K, V, S>
+impl<'de, K, V, S, Context> BorrowDecode<'de, Context> for HashMap<K, V, S>
 where
-    K: BorrowDecode<'de> + Eq + std::hash::Hash,
-    V: BorrowDecode<'de>,
+    K: BorrowDecode<'de, Context> + Eq + std::hash::Hash,
+    V: BorrowDecode<'de, Context>,
     S: std::hash::BuildHasher + Default,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<(K, V)>(len)?;
 
@@ -468,12 +495,12 @@ where
     }
 }
 
-impl<T, S> Decode for HashSet<T, S>
+impl<Context, T, S> Decode<Context> for HashSet<T, S>
 where
-    T: Decode + Eq + Hash,
+    T: Decode<Context> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 
@@ -490,12 +517,14 @@ where
     }
 }
 
-impl<'de, T, S> BorrowDecode<'de> for HashSet<T, S>
+impl<'de, T, S, Context> BorrowDecode<'de, Context> for HashSet<T, S>
 where
-    T: BorrowDecode<'de> + Eq + Hash,
+    T: BorrowDecode<'de, Context> + Eq + Hash,
     S: std::hash::BuildHasher + Default,
 {
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError> {
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError> {
         let len = crate::de::decode_slice_len(decoder)?;
         decoder.claim_container_read::<T>(len)?;
 

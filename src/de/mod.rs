@@ -5,7 +5,10 @@ mod impl_core;
 mod impl_tuples;
 mod impls;
 
-use self::read::{BorrowReader, Reader};
+use self::{
+    decoder::WithContext,
+    read::{BorrowReader, Reader},
+};
 use crate::{
     config::{Config, InternalLimitConfig},
     error::DecodeError,
@@ -18,11 +21,13 @@ pub use self::decoder::DecoderImpl;
 
 /// Trait that makes a type able to be decoded, akin to serde's `DeserializeOwned` trait.
 ///
+/// Some types may require specific contexts. For example, to decode arena-based collections, an arena allocator must be provided as a context. In these cases, the context type `Context` should be specified or bounded.
+///
 /// This trait should be implemented for types which do not have references to data in the reader. For types that contain e.g. `&str` and `&[u8]`, implement [BorrowDecode] instead.
 ///
-/// Whenever you implement `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
+/// Whenever you derive `Decode` for your type, the base trait `BorrowDecode` is automatically implemented.
 ///
-/// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
+/// This trait will be automatically implemented with unbounded `Context` if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to your type. Note that if the type contains any lifetimes, `BorrowDecode` will be implemented instead.
 ///
 /// # Implementing this trait manually
 ///
@@ -44,8 +49,8 @@ pub use self::decoder::DecoderImpl;
 /// #     pub x: f32,
 /// #     pub y: f32,
 /// # }
-/// impl bincode::Decode for Entity {
-///     fn decode<D: bincode::de::Decoder>(
+/// impl<Context> bincode::Decode<Context> for Entity {
+///     fn decode<D: bincode::de::Decoder<Context = Context>>(
 ///         decoder: &mut D,
 ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
 ///         Ok(Self {
@@ -54,8 +59,8 @@ pub use self::decoder::DecoderImpl;
 ///         })
 ///     }
 /// }
-/// impl<'de> bincode::BorrowDecode<'de> for Entity {
-///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+/// impl<'de, Context> bincode::BorrowDecode<'de, Context> for Entity {
+///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = Context>>(
 ///         decoder: &mut D,
 ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
 ///         Ok(Self {
@@ -71,20 +76,33 @@ pub use self::decoder::DecoderImpl;
 /// To get specific integer types, you can use:
 /// ```
 /// # struct Foo;
-/// # impl bincode::Decode for Foo {
-/// #     fn decode<D: bincode::de::Decoder>(
+/// # impl<Context> bincode::Decode<Context> for Foo {
+/// #     fn decode<D: bincode::de::Decoder<Context = Context>>(
 /// #         decoder: &mut D,
 /// #     ) -> core::result::Result<Self, bincode::error::DecodeError> {
-/// let x: u8 = bincode::Decode::decode(decoder)?;
-/// let x = <u8 as bincode::Decode>::decode(decoder)?;
+/// let x: u8 = bincode::Decode::<Context>::decode(decoder)?;
+/// let x = <u8 as bincode::Decode::<Context>>::decode(decoder)?;
 /// #         Ok(Foo)
 /// #     }
 /// # }
 /// # bincode::impl_borrow_decode!(Foo);
 /// ```
-pub trait Decode: Sized {
+///
+/// You can use `Context` to require contexts for decoding a type:
+/// ```
+/// # /// # use bumpalo::Bump;
+/// use bincode::de::Decoder;
+/// use bincode::error::DecodeError;
+/// struct BytesInArena<'a>(bumpalo::collections::Vec<'a, u8>);
+/// impl<'a> bincode::Decode<&'a bumpalo::Bump> for BytesInArena<'a> {
+/// fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+///         todo!()
+///     }
+/// # }
+/// ```
+pub trait Decode<Context>: Sized {
     /// Attempt to decode this type with the given [Decode].
-    fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError>;
+    fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError>;
 }
 
 /// Trait that makes a type able to be decoded, akin to serde's `Deserialize` trait.
@@ -92,17 +110,33 @@ pub trait Decode: Sized {
 /// This trait should be implemented for types that contain borrowed data, like `&str` and `&[u8]`. If your type does not have borrowed data, consider implementing [Decode] instead.
 ///
 /// This trait will be automatically implemented if you enable the `derive` feature and add `#[derive(bincode::Decode)]` to a type with a lifetime.
-pub trait BorrowDecode<'de>: Sized {
+pub trait BorrowDecode<'de, Context>: Sized {
     /// Attempt to decode this type with the given [BorrowDecode].
-    fn borrow_decode<D: BorrowDecoder<'de>>(decoder: &mut D) -> Result<Self, DecodeError>;
+    fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, DecodeError>;
 }
 
 /// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
 #[macro_export]
 macro_rules! impl_borrow_decode {
-    ($ty:ty $(, $param:ident),*) => {
-        impl<'de $(, $param)*> $crate::BorrowDecode<'de> for $ty {
-            fn borrow_decode<D: $crate::de::BorrowDecoder<'de>>(
+    ($ty:ty $(, $param:tt)*) => {
+        impl<'de $(, $param)*, __Context> $crate::BorrowDecode<'de, __Context> for $ty {
+            fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = __Context>>(
+                decoder: &mut D,
+            ) -> core::result::Result<Self, $crate::error::DecodeError> {
+                $crate::Decode::decode(decoder)
+            }
+        }
+    };
+}
+
+/// Helper macro to implement `BorrowDecode` for any type that implements `Decode`.
+#[macro_export]
+macro_rules! impl_borrow_decode_with_context {
+    ($ty:ty, $context:ty $(, $param:tt)*) => {
+        impl<'de $(, $param)*> $crate::BorrowDecode<'de, $context> for $ty {
+            fn borrow_decode<D: $crate::de::BorrowDecoder<'de, Context = $context>>(
                 decoder: &mut D,
             ) -> core::result::Result<Self, $crate::error::DecodeError> {
                 $crate::Decode::decode(decoder)
@@ -118,6 +152,20 @@ pub trait Decoder: Sealed {
 
     /// The concrete [Config] type
     type C: Config;
+
+    /// The decoding context type
+    type Context;
+
+    /// Returns the decoding context
+    fn context(&mut self) -> &mut Self::Context;
+
+    /// Wraps decoder with a context
+    fn with_context<C>(&mut self, context: C) -> WithContext<Self, C> {
+        WithContext {
+            decoder: self,
+            context,
+        }
+    }
 
     /// Returns a mutable reference to the reader
     fn reader(&mut self) -> &mut Self::R;
@@ -166,8 +214,8 @@ pub trait Decoder: Sealed {
     /// #         self.0.push(t);
     /// #     }
     /// # }
-    /// impl<T: Decode> Decode for Container<T> {
-    ///     fn decode<D: Decoder>(decoder: &mut D) -> Result<Self, DecodeError> {
+    /// impl<Context, T: Decode<Context>> Decode<Context> for Container<T> {
+    ///     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
     ///         let len = u64::decode(decoder)?;
     ///         let len: usize = len.try_into().map_err(|_| DecodeError::OutsideUsizeRange(len))?;
     ///         // Make sure we don't allocate too much memory
@@ -182,8 +230,8 @@ pub trait Decoder: Sealed {
     ///         Ok(result)
     ///     }
     /// }
-    /// impl<'de, T: bincode::BorrowDecode<'de>> bincode::BorrowDecode<'de> for Container<T> {
-    ///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+    /// impl<'de, Context, T: bincode::BorrowDecode<'de, Context>> bincode::BorrowDecode<'de, Context> for Container<T> {
+    ///     fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = Context>>(
     ///         decoder: &mut D,
     ///     ) -> core::result::Result<Self, bincode::error::DecodeError> {
     ///         let len = u64::borrow_decode(decoder)?;
@@ -223,6 +271,8 @@ where
 
     type C = T::C;
 
+    type Context = T::Context;
+
     fn reader(&mut self) -> &mut Self::R {
         T::reader(self)
     }
@@ -239,6 +289,10 @@ where
     #[inline]
     fn unclaim_bytes_read(&mut self, n: usize) {
         T::unclaim_bytes_read(self, n)
+    }
+
+    fn context(&mut self) -> &mut Self::Context {
+        T::context(self)
     }
 }
 

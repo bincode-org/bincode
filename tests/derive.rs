@@ -28,11 +28,11 @@ pub struct Test2<T> {
     b: u32,
     c: u32,
 }
-impl<T> ::bincode::Decode for Test2<T>
+impl<T, Context> ::bincode::Decode<Context> for Test2<T>
 where
-    T: ::bincode::Decode,
+    T: ::bincode::Decode<Context>,
 {
-    fn decode<D: ::bincode::de::Decoder>(
+    fn decode<D: ::bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> core::result::Result<Self, ::bincode::error::DecodeError> {
         Ok(Self {
@@ -42,11 +42,11 @@ where
         })
     }
 }
-impl<'__de, T> ::bincode::BorrowDecode<'__de> for Test2<T>
+impl<'__de, T, Context> ::bincode::BorrowDecode<'__de, Context> for Test2<T>
 where
-    T: ::bincode::BorrowDecode<'__de> + '__de,
+    T: ::bincode::BorrowDecode<'__de, Context> + '__de,
 {
-    fn borrow_decode<D: ::bincode::de::BorrowDecoder<'__de>>(
+    fn borrow_decode<D: ::bincode::de::BorrowDecoder<'__de, Context = Context>>(
         decoder: &mut D,
     ) -> core::result::Result<Self, ::bincode::error::DecodeError> {
         Ok(Self {
