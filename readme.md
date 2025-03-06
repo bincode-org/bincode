@@ -100,7 +100,7 @@ maximum size limit. Malicious inputs will fail upon deserialization.
 
 ### What is Bincode's MSRV (minimum supported Rust version)?
 
-Bincode 2.0 is still in development and does not yet have a targeted MSRV. Once 2.0 is fully released the MSRV will be locked. After this point any changes to the MSRV are considered a breaking change for semver purposes.
+Bincode 2.0 has an MSRV of 1.85.0. Any changes to the MSRV are considered a breaking change for semver purposes, except when certain features are enabled. Features affecting MSRV are documented in the crate root.
 
 ### Why does bincode not respect `#[repr(u8)]`?
 
