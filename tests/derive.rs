@@ -408,6 +408,10 @@ mod derive_with_polluted_scope {
     #[allow(non_snake_case)]
     fn Ok() {}
 
+    #[allow(dead_code)]
+    #[allow(non_snake_case)]
+    fn Err() {}
+
     #[derive(bincode::Encode, bincode::Decode)]
     struct A {
         a: u32,
