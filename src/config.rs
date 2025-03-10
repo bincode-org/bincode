@@ -32,7 +32,7 @@ use core::marker::PhantomData;
 /// [with_big_endian]: #method.with_big_endian
 /// [with_fixed_int_encoding]: #method.with_fixed_int_encoding
 /// [with_variable_int_encoding]: #method.with_variable_int_encoding
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Configuration<E = LittleEndian, I = Varint, L = NoLimit> {
     _e: PhantomData<E>,
     _i: PhantomData<I>,
