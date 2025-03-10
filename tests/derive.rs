@@ -403,6 +403,23 @@ fn test_enum_with_generics_roundtrip() {
     assert_eq!(start, decoded);
 }
 
+mod derive_with_polluted_scope {
+    #[allow(dead_code)]
+    #[allow(non_snake_case)]
+    fn Ok() {}
+
+    #[derive(bincode::Encode, bincode::Decode)]
+    struct A {
+        a: u32,
+    }
+
+    #[derive(bincode::Encode, bincode::Decode)]
+    enum B {
+        A,
+        B,
+    }
+}
+
 #[cfg(feature = "alloc")]
 mod zoxide {
     extern crate alloc;
