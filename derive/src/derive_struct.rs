@@ -56,7 +56,7 @@ impl DeriveStruct {
                         }
                     }
                 }
-                fn_body.push_parsed("Ok(())")?;
+                fn_body.push_parsed("core::result::Result::Ok(())")?;
                 Ok(())
             })?;
         Ok(())
@@ -95,7 +95,7 @@ impl DeriveStruct {
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
                 // Ok(Self {
-                fn_body.ident_str("Ok");
+                fn_body.push_parsed("core::result::Result::Ok")?;
                 fn_body.group(Delimiter::Parenthesis, |ok_group| {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {
@@ -174,7 +174,7 @@ impl DeriveStruct {
             .with_return_type(format!("core::result::Result<Self, {}::error::DecodeError>", crate_name))
             .body(|fn_body| {
                 // Ok(Self {
-                fn_body.ident_str("Ok");
+                fn_body.push_parsed("core::result::Result::Ok")?;
                 fn_body.group(Delimiter::Parenthesis, |ok_group| {
                     ok_group.ident_str("Self");
                     ok_group.group(Delimiter::Brace, |struct_body| {

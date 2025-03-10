@@ -124,7 +124,7 @@ impl DeriveEnum {
                                     }
                                 }
                             }
-                            body.push_parsed("Ok(())")?;
+                            body.push_parsed("core::result::Result::Ok(())")?;
                             Ok(())
                         })?;
                         match_body.punct(',');
@@ -274,7 +274,7 @@ impl DeriveEnum {
                                 variant_case.push(variant_index.remove(0));
                             }
                             variant_case.puncts("=>");
-                            variant_case.ident_str("Ok");
+                            variant_case.push_parsed("core::result::Result::Ok")?;
                             variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
                                 // Self::Variant { }
                                 // Self::Variant { 0: ..., 1: ... 2: ... },
@@ -384,7 +384,7 @@ impl DeriveEnum {
                                 variant_case.push(variant_index.remove(0));
                             }
                             variant_case.puncts("=>");
-                            variant_case.ident_str("Ok");
+                            variant_case.push_parsed("core::result::Result::Ok")?;
                             variant_case.group(Delimiter::Parenthesis, |variant_case_body| {
                                 // Self::Variant { }
                                 // Self::Variant { 0: ..., 1: ... 2: ... },
