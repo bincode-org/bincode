@@ -162,7 +162,7 @@ impl DeriveEnum {
         //   if we have fixed value variants
         result.ident_str("variant");
         result.puncts("=>");
-        result.ident_str("Err");
+        result.push_parsed("core::result::Result::Err")?;
         result.group(Delimiter::Parenthesis, |err_inner| {
             err_inner.push_parsed(format!(
                 "{}::error::DecodeError::UnexpectedVariant",
