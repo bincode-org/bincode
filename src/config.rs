@@ -201,7 +201,7 @@ where
 
 /// Encodes all integer types in big endian.
 #[derive(Copy, Clone, Debug)]
-pub struct BigEndian {}
+pub struct BigEndian;
 
 impl InternalEndianConfig for BigEndian {
     const ENDIAN: Endianness = Endianness::Big;
@@ -209,7 +209,7 @@ impl InternalEndianConfig for BigEndian {
 
 /// Encodes all integer types in little endian.
 #[derive(Copy, Clone, Debug)]
-pub struct LittleEndian {}
+pub struct LittleEndian;
 
 impl InternalEndianConfig for LittleEndian {
     const ENDIAN: Endianness = Endianness::Little;
@@ -217,7 +217,7 @@ impl InternalEndianConfig for LittleEndian {
 
 /// Use fixed-size integer encoding.
 #[derive(Copy, Clone, Debug)]
-pub struct Fixint {}
+pub struct Fixint;
 
 impl InternalIntEncodingConfig for Fixint {
     const INT_ENCODING: IntEncoding = IntEncoding::Fixed;
@@ -225,7 +225,7 @@ impl InternalIntEncodingConfig for Fixint {
 
 /// Use variable integer encoding.
 #[derive(Copy, Clone, Debug)]
-pub struct Varint {}
+pub struct Varint;
 
 impl InternalIntEncodingConfig for Varint {
     const INT_ENCODING: IntEncoding = IntEncoding::Variable;
@@ -233,14 +233,14 @@ impl InternalIntEncodingConfig for Varint {
 
 /// Sets an unlimited byte limit.
 #[derive(Copy, Clone, Debug)]
-pub struct NoLimit {}
+pub struct NoLimit;
 impl InternalLimitConfig for NoLimit {
     const LIMIT: Option<usize> = None;
 }
 
 /// Sets the byte limit to N.
 #[derive(Copy, Clone, Debug)]
-pub struct Limit<const N: usize> {}
+pub struct Limit<const N: usize>;
 impl<const N: usize> InternalLimitConfig for Limit<N> {
     const LIMIT: Option<usize> = Some(N);
 }
