@@ -95,6 +95,28 @@ pub fn decode_from_reader<D: DeserializeOwned, R: Reader, C: Config>(
     D::deserialize(serde_decoder.as_deserializer())
 }
 
+/// Decode from the given reader with the given `Config` using a seed. The reader can be any type that implements `std::io::Read`, e.g. `std::fs::File`.
+///
+/// See the [config] module for more information about config options.
+///
+/// [config]: ../config/index.html
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub fn seed_decode_from_std_read<'de, 'r, D, C, R>(
+    seed: D,
+    src: &'r mut R,
+    config: C,
+) -> Result<D::Value, DecodeError>
+where
+    D: DeserializeSeed<'de>,
+    C: Config,
+    R: std::io::Read,
+{
+    let mut serde_decoder =
+        OwnedSerdeDecoder::<DecoderImpl<IoReader<&'r mut R>, C, ()>>::from_std_read(src, config);
+    seed.deserialize(serde_decoder.as_deserializer())
+}
+
 pub(super) struct SerdeDecoder<'a, DE: Decoder> {
     pub(super) de: &'a mut DE,
 }
