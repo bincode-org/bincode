@@ -3,6 +3,7 @@
 /// Errors that can be encountered by encoding a type
 #[non_exhaustive]
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum EncodeError {
     /// The writer ran out of storage.
     UnexpectedEnd,
@@ -30,6 +31,7 @@ pub enum EncodeError {
     #[cfg(feature = "std")]
     Io {
         /// The encountered error
+        #[cfg_attr(feature="defmt", defmt(Debug2Format))]
         inner: std::io::Error,
         /// The amount of bytes that were written before the error occurred
         index: usize,
@@ -46,8 +48,10 @@ pub enum EncodeError {
     #[cfg(feature = "std")]
     InvalidSystemTime {
         /// The error that was thrown by the SystemTime
+        #[cfg_attr(feature="defmt", defmt(Debug2Format))]
         inner: std::time::SystemTimeError,
         /// The SystemTime that caused the error
+        #[cfg_attr(feature="defmt", defmt(Debug2Format))]
         time: std::boxed::Box<std::time::SystemTime>,
     },
 
@@ -65,6 +69,7 @@ impl core::fmt::Display for EncodeError {
 
 /// Errors that can be encountered by decoding a type
 #[non_exhaustive]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub enum DecodeError {
     /// The reader reached its end but more bytes were expected.
@@ -109,6 +114,7 @@ pub enum DecodeError {
     /// The decoder tried to decode a `str`, but an utf8 error was encountered.
     Utf8 {
         /// The inner error
+        #[cfg_attr(feature="defmt", defmt(Debug2Format))]
         inner: core::str::Utf8Error,
     },
 
@@ -168,6 +174,7 @@ pub enum DecodeError {
     #[cfg(feature = "std")]
     Io {
         /// The IO error expected
+        #[cfg_attr(feature="defmt", defmt(Debug2Format))]
         inner: std::io::Error,
 
         /// Gives an estimate of how many extra bytes are needed.
@@ -217,7 +224,7 @@ impl DecodeError {
 /// Indicates which enum variants are allowed
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
-pub enum AllowedEnumVariants {
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]pub enum AllowedEnumVariants {
     /// All values between `min` and `max` (inclusive) are allowed
     #[allow(missing_docs)]
     Range { min: u32, max: u32 },
@@ -229,7 +236,7 @@ pub enum AllowedEnumVariants {
 #[non_exhaustive]
 #[derive(Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
-pub enum IntegerType {
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]pub enum IntegerType {
     U8,
     U16,
     U32,

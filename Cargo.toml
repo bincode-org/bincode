@@ -28,11 +28,13 @@ edition = "2021"
 [features]
 default = ["std", "derive"]
 std = ["alloc", "serde?/std"]
-alloc = ["serde?/alloc"]
+alloc = ["serde?/alloc", "defmt?/alloc"]
 derive = ["bincode_derive"]
+defmt = ["dep:defmt"]
 
 [dependencies]
 bincode_derive = { path = "derive", version = "2.0.1", optional = true }
+defmt = {version = "1.0.1", optional = true}
 serde = { version = "1.0", default-features = false, optional = true }
 unty = "0.0.4"
 
