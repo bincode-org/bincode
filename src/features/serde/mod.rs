@@ -114,9 +114,6 @@ impl serde::de::Error for crate::error::DecodeError {
     }
 }
 
-#[cfg(not(feature = "std"))]
-impl serde::de::StdError for crate::error::DecodeError {}
-
 #[cfg(not(feature = "alloc"))]
 impl serde::de::Error for crate::error::DecodeError {
     fn custom<T>(_: T) -> Self
@@ -168,9 +165,6 @@ impl serde::ser::Error for crate::error::EncodeError {
         Self::OtherString(msg.to_string())
     }
 }
-
-#[cfg(not(feature = "std"))]
-impl serde::de::StdError for crate::error::EncodeError {}
 
 #[cfg(not(feature = "alloc"))]
 impl serde::ser::Error for crate::error::EncodeError {
