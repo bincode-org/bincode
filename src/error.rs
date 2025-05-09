@@ -63,6 +63,27 @@ impl core::fmt::Display for EncodeError {
     }
 }
 
+impl core::error::Error for EncodeError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
+            #[cfg(feature = "std")]
+            Self::Io { inner, .. } => Some(inner),
+            #[cfg(feature = "std")]
+            Self::InvalidSystemTime { inner, .. } => Some(inner),
+            _ => None,
+        }
+    }
+}
+impl core::error::Error for DecodeError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            Self::Utf8 { inner } => Some(inner),
+            _ => None,
+        }
+    }
+}
+
 /// Errors that can be encountered by decoding a type
 #[non_exhaustive]
 #[derive(Debug)]
