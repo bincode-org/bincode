@@ -100,10 +100,13 @@ pub mod config;
 #[macro_use]
 pub mod de;
 pub mod enc;
+pub mod size;
 pub mod error;
 
 pub use de::{BorrowDecode, Decode};
 pub use enc::Encode;
+pub use size::MaxSize;
+pub use utils::get_max_value;
 
 use config::Config;
 
