@@ -1,3 +1,5 @@
+use core::str::FromStr;
+
 use crate::attribute::{ContainerAttributes, FieldAttributes};
 use virtue::prelude::*;
 
@@ -426,6 +428,77 @@ impl DeriveEnum {
                 Ok(())
             })?;
         Ok(())
+    }
+
+    fn fields_into_size(fields: &Fields) -> Result<String> {
+        let mut result = String::from_str("0").unwrap();
+        let field_types = match fields {
+            Fields::Tuple(v) => v.iter().collect::<Vec<&UnnamedField>>(),
+            Fields::Struct(v) => v.iter().map(|(_, f)| f).collect::<Vec<&UnnamedField>>(),
+        };
+
+        for field in field_types {
+            let attributes = field
+                .attributes
+                .get_attribute::<FieldAttributes>()?
+                .unwrap_or_default();
+
+            result.push_str(&match attributes.max_len {
+                Some(_n) => String::new(), // Implement this case later
+                None => {
+                    format!("+ <{}>::ENCODED_MAX_SIZE", field.type_string())
+                }
+            });
+        }
+        Ok(result)
+    }
+
+    pub fn generate_max_size(self, generator: &mut Generator) -> Result<()> {
+        let crate_name = &self.attributes.crate_name;
+        let mut impl_for = generator.impl_for(format!("{}::MaxSize", crate_name));
+
+        impl_for.modify_generic_constraints(|generics, where_constraints| {
+            if let Some((bounds, lit)) =
+                (self.attributes.maxsize_bounds.as_ref()).or(self.attributes.bounds.as_ref())
+            {
+                where_constraints.clear();
+                where_constraints
+                    .push_parsed_constraint(bounds)
+                    .map_err(|e| e.with_span(lit.span()))?;
+            } else {
+                for g in generics.iter_generics() {
+                    where_constraints
+                        .push_constraint(g, format!("{}::MaxSize", crate_name))
+                        .unwrap();
+                }
+            }
+            Ok(())
+        })?;
+
+        impl_for
+            .generate_const("ENCODED_MAX_SIZE", "usize")
+            .with_value(|expr| {
+                expr.push_parsed("<u32>::ENCODED_MAX_SIZE + ")?;
+                expr.push_parsed("bincode::get_max_value")?;
+                expr.group(Delimiter::Parenthesis, |outer_parenthesis| {
+                    outer_parenthesis.group(Delimiter::Bracket, |max_args| {
+                        max_args.push_parsed("0")?;
+                        for (_, variant) in self.iter_fields() {
+                            max_args.push_parsed(format!(
+                                ",{}",
+                                match &variant.fields {
+                                    Some(fields) => Self::fields_into_size(&fields)?,
+                                    None =>
+                                        format!("<{}>::ENCODED_MAX_SIZE", variant.name.to_string()),
+                                }
+                            ))?;
+                        }
+                        Ok(())
+                    })?;
+                    Ok(())
+                })?;
+                Ok(())
+            })
     }
 }
 

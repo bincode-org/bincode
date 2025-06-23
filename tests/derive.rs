@@ -465,3 +465,97 @@ mod zoxide {
         assert!(matches!(decoded[1].path, Cow::Borrowed("Bar")));
     }
 }
+
+#[allow(non_camel_case_types)]
+#[allow(dead_code)]
+mod size {
+    use bincode::size::MaxSize;
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) struct TestMaxSize {
+        b: u32,
+        c: u8,
+    }
+
+    #[test]
+    fn test_maxsize() {
+        assert_eq!(TestMaxSize::ENCODED_MAX_SIZE, 1 + 4);
+    }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) struct TestMaxSizeInnerTuple {
+        b: u32,
+        c: u8,
+        d: (u128, u32),
+    }
+
+    #[test]
+    fn test_maxsize_inner_tuple() {
+        assert_eq!(TestMaxSizeInnerTuple::ENCODED_MAX_SIZE, 1 + 4 + 16 + 4);
+    }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) struct TestMaxSizeComplexStruct {
+        b: u32,
+        c: TestMaxSizeInnerTuple,
+        d: (u128, u32),
+    }
+
+    #[test]
+    fn test_maxsize_complex_struct() {
+        assert_eq!(
+            TestMaxSizeComplexStruct::ENCODED_MAX_SIZE,
+            4 + TestMaxSizeInnerTuple::ENCODED_MAX_SIZE + 16 + 4
+        );
+    }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) enum TestEnumMaxSize {
+        B(u32),
+        C(u8),
+    }
+
+    #[test]
+    fn test_enum_maxsize() {
+        assert_eq!(TestEnumMaxSize::ENCODED_MAX_SIZE, 4 + 4);
+    }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) enum TestEnumMaxSizeInnerTuple {
+        u32,
+        u8,
+        C(u128, u32),
+    }
+
+    #[test]
+    fn test_enum_maxsize_inner_tuple() {
+        assert_eq!(TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE, 4 + 16 + 4);
+    }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) enum TestEnumMaxSizeInnerStruct {
+        u32,
+        u8,
+        C { c1: u128, c2: u32 },
+    }
+
+    #[test]
+    fn test_enum_maxsize_inner_struct() {
+        assert_eq!(TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE, 4 + 16 + 4);
+    }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) enum TestEnumMaxSizeComplex {
+        u32,
+        u8,
+        TestEnumMaxSizeInnerStruct,
+    }
+
+    #[test]
+    fn test_enum_maxsize_complex_struct() {
+        assert_eq!(
+            TestEnumMaxSizeComplex::ENCODED_MAX_SIZE,
+            4 + TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE
+        );
+    }
+}

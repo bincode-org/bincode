@@ -208,4 +208,50 @@ impl DeriveStruct {
             })?;
         Ok(())
     }
+
+    pub fn generate_max_size(self, generator: &mut Generator) -> Result<()> {
+        let crate_name = self.attributes.crate_name;
+        let mut impl_for = generator.impl_for(format!("{}::MaxSize", crate_name));
+
+        impl_for
+            .modify_generic_constraints(|generics, where_constraints| {
+                if let Some((bounds, lit)) = (self.attributes.maxsize_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
+                    where_constraints.clear();
+                    where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
+                } else {
+                    for g in generics.iter_generics() {
+                        where_constraints.push_constraint(g, format!("{}::MaxSize", crate_name)).unwrap();
+                    }
+                }
+                Ok(())
+            })?;
+
+        impl_for
+            .generate_const("ENCODED_MAX_SIZE", "usize")
+            .with_value(|expr| {
+                expr.push_parsed("0")?;
+
+                if let Some(fields) = self.fields.as_ref() {
+                    let field_types = match fields {
+                            Fields::Tuple(v) => v.iter().map(|f| f).collect::<Vec<&UnnamedField>>(),
+                            Fields::Struct(v) => v.iter().map(|(_, f)| f).collect::<Vec<&UnnamedField>>()
+                        };
+
+                    for field in field_types {
+                        let attributes = field
+                            .attributes
+                            .get_attribute::<FieldAttributes>()?
+                            .unwrap_or_default();
+
+                        match attributes.max_len {
+                            Some(_n) => {} // Implement this case later
+                            None => {
+                                expr.push_parsed(format!("+ <{}>::ENCODED_MAX_SIZE", field.type_string()))?;
+                            }
+                        }
+                    }
+                }
+                Ok(())
+            })
+    }
 }

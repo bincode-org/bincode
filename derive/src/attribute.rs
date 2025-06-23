@@ -8,6 +8,7 @@ pub struct ContainerAttributes {
     pub decode_context: Option<(String, Literal)>,
     pub borrow_decode_bounds: Option<(String, Literal)>,
     pub encode_bounds: Option<(String, Literal)>,
+    pub maxsize_bounds: Option<(String, Literal)>,
 }
 
 impl Default for ContainerAttributes {
@@ -19,6 +20,7 @@ impl Default for ContainerAttributes {
             decode_context: None,
             encode_bounds: None,
             borrow_decode_bounds: None,
+            maxsize_bounds: None,
         }
     }
 }
@@ -76,6 +78,15 @@ impl FromAttribute for ContainerAttributes {
                         return Err(Error::custom_at("Should be a literal str", val.span()));
                     }
                 }
+                ParsedAttribute::Property(key, val) if key.to_string() == "maxsize_bounds" => {
+                    let val_string = val.to_string();
+                    if val_string.starts_with('"') && val_string.ends_with('"') {
+                        result.maxsize_bounds =
+                            Some((val_string[1..val_string.len() - 1].to_string(), val));
+                    } else {
+                        return Err(Error::custom_at("Should be a literal str", val.span()));
+                    }
+                }
                 ParsedAttribute::Property(key, val)
                     if key.to_string() == "borrow_decode_bounds" =>
                 {
@@ -102,6 +113,7 @@ impl FromAttribute for ContainerAttributes {
 
 #[derive(Default)]
 pub struct FieldAttributes {
+    pub max_len: Option<usize>,
     pub with_serde: bool,
 }
 
@@ -119,6 +131,11 @@ impl FromAttribute for FieldAttributes {
                 }
                 ParsedAttribute::Tag(i) => {
                     return Err(Error::custom_at("Unknown field attribute", i.span()))
+                }
+                ParsedAttribute::Property(key, len_tokens) if key.to_string() == "maxlen" => {
+                    result.max_len = Some(len_tokens.to_string().parse().map_err(|_| {
+                        Error::custom_at("Invalid len expression", len_tokens.span())
+                    })?)
                 }
                 ParsedAttribute::Property(key, _) => {
                     return Err(Error::custom_at("Unknown field attribute", key.span()))
