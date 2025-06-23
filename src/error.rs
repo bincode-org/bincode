@@ -1,4 +1,4 @@
-//! Errors that can be encounting by Encoding and Decoding.
+//! Errors that can be encountering by Encoding and Decoding.
 
 /// Errors that can be encountered by encoding a type
 #[non_exhaustive]
