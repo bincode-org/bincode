@@ -102,19 +102,7 @@ where
     V: Decode<Context>,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<(K, V)>(len)?;
-
-        let mut map = BTreeMap::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
-            let key = K::decode(decoder)?;
-            let value = V::decode(decoder)?;
-            map.insert(key, value);
-        }
-        Ok(map)
+        decode_all_from_iterable(decoder)
     }
 }
 impl<'de, K, V, Context> BorrowDecode<'de, Context> for BTreeMap<K, V>
@@ -125,19 +113,7 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<(K, V)>(len)?;
-
-        let mut map = BTreeMap::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<(K, V)>());
-
-            let key = K::borrow_decode(decoder)?;
-            let value = V::borrow_decode(decoder)?;
-            map.insert(key, value);
-        }
-        Ok(map)
+        borrow_decode_all_from_iterable(decoder)
     }
 }
 
@@ -161,18 +137,7 @@ where
     T: Decode<Context> + Ord,
 {
     fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        let mut map = BTreeSet::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::decode(decoder)?;
-            map.insert(key);
-        }
-        Ok(map)
+        decode_all_from_iterable(decoder)
     }
 }
 impl<'de, T, Context> BorrowDecode<'de, Context> for BTreeSet<T>
@@ -182,18 +147,7 @@ where
     fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, DecodeError> {
-        let len = crate::de::decode_slice_len(decoder)?;
-        decoder.claim_container_read::<T>(len)?;
-
-        let mut map = BTreeSet::new();
-        for _ in 0..len {
-            // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-            decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-            let key = T::borrow_decode(decoder)?;
-            map.insert(key);
-        }
-        Ok(map)
+        borrow_decode_all_from_iterable(decoder)
     }
 }
 
@@ -256,6 +210,72 @@ where
     }
 }
 
+fn decode_from_iterable<
+    Context,
+    D: Decoder<Context = Context>,
+    T: Decode<Context>,
+    Collection: Default + Extend<T>,
+>(
+    length: usize,
+    decoder: &mut D,
+) -> Result<Collection, DecodeError> {
+    decoder.claim_container_read::<T>(length)?;
+
+    let mut target = Collection::default();
+    for _ in 0..length {
+        // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+        decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+        target.extend([T::decode(decoder)?].into_iter());
+    }
+    Ok(target)
+}
+
+fn decode_all_from_iterable<
+    Context,
+    D: Decoder<Context = Context>,
+    T: Decode<Context>,
+    Collection: Default + Extend<T>,
+>(
+    decoder: &mut D,
+) -> Result<Collection, DecodeError> {
+    decode_from_iterable(crate::de::decode_slice_len(decoder)?, decoder)
+}
+
+fn borrow_decode_from_iterable<
+    'de,
+    Context,
+    D: BorrowDecoder<'de, Context = Context>,
+    T: BorrowDecode<'de, Context>,
+    Collection: Default + Extend<T>,
+>(
+    length: usize,
+    decoder: &mut D,
+) -> Result<Collection, DecodeError> {
+    decoder.claim_container_read::<T>(length)?;
+
+    let mut target = Collection::default();
+    for _ in 0..length {
+        // See the documentation on `unclaim_bytes_read` as to why we're doing this here
+        decoder.unclaim_bytes_read(core::mem::size_of::<T>());
+
+        target.extend([T::borrow_decode(decoder)?].into_iter());
+    }
+    Ok(target)
+}
+
+fn borrow_decode_all_from_iterable<
+    'de,
+    Context,
+    D: BorrowDecoder<'de, Context = Context>,
+    T: BorrowDecode<'de, Context>,
+    Collection: Default + Extend<T>,
+>(
+    decoder: &mut D,
+) -> Result<Collection, DecodeError> {
+    borrow_decode_from_iterable(crate::de::decode_slice_len(decoder)?, decoder)
+}
+
 impl<Context, T> Decode<Context> for Vec<T>
 where
     T: Decode<Context>,
@@ -271,16 +291,7 @@ where
             // Safety: Vec<T> is Vec<u8>
             Ok(unsafe { core::mem::transmute::<Vec<u8>, Vec<T>>(vec) })
         } else {
-            decoder.claim_container_read::<T>(len)?;
-
-            let mut vec = Vec::with_capacity(len);
-            for _ in 0..len {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-                vec.push(T::decode(decoder)?);
-            }
-            Ok(vec)
+            decode_from_iterable(len, decoder)
         }
     }
 }
@@ -302,16 +313,7 @@ where
             // Safety: Vec<T> is Vec<u8>
             Ok(unsafe { core::mem::transmute::<Vec<u8>, Vec<T>>(vec) })
         } else {
-            decoder.claim_container_read::<T>(len)?;
-
-            let mut vec = Vec::with_capacity(len);
-            for _ in 0..len {
-                // See the documentation on `unclaim_bytes_read` as to why we're doing this here
-                decoder.unclaim_bytes_read(core::mem::size_of::<T>());
-
-                vec.push(T::borrow_decode(decoder)?);
-            }
-            Ok(vec)
+            borrow_decode_from_iterable(len, decoder)
         }
     }
 }
