@@ -5,12 +5,15 @@ extern crate alloc;
 
 mod utils;
 
+use std::iter::repeat_with;
+
 use alloc::borrow::Cow;
 use alloc::collections::*;
 #[cfg(not(feature = "serde"))]
 use alloc::rc::Rc;
 #[cfg(all(target_has_atomic = "ptr", not(feature = "serde")))]
 use alloc::sync::Arc;
+use bincode::{error::EncodeError, max_size::MaxSizedCollection, MaxSize};
 use utils::{the_same, the_same_with_comparer};
 
 struct Foo {
@@ -194,4 +197,83 @@ fn test_arc_str() {
 
     let decoded: Arc<str> = bincode::borrow_decode_from_slice(slice, config).unwrap().0;
     assert_eq!(decoded, start);
+}
+
+#[test]
+fn test_max_size_vec_u8() {
+    assert_eq!(
+        MaxSizedCollection::<Vec::<u8>, 20>::ENCODED_MAX_SIZE,
+        8 + 20
+    )
+}
+
+#[test]
+fn test_max_size_vec_tuples() {
+    assert_eq!(
+        MaxSizedCollection::<Vec::<(u8, u16, ())>, 10>::ENCODED_MAX_SIZE,
+        8 + 10 * 3
+    )
+}
+
+#[test]
+fn test_max_size_serialization_failure_vec_u8() {
+    match bincode::encode_to_vec(
+        MaxSizedCollection::<Vec<u8>, 20>(vec![1; 21]),
+        bincode::config::standard(),
+    )
+    .unwrap_err()
+    {
+        EncodeError::MaxLengthExceeded {
+            expected: 20,
+            got: 21,
+        } => assert!(true),
+        _ => assert!(false),
+    }
+}
+
+#[test]
+fn test_max_size_box() {
+    assert_eq!(Box::<u16>::ENCODED_MAX_SIZE, u16::ENCODED_MAX_SIZE);
+}
+
+#[test]
+fn test_max_size_box_in_box() {
+    assert_eq!(Box::<Box::<u16>>::ENCODED_MAX_SIZE, u16::ENCODED_MAX_SIZE);
+}
+
+#[test]
+fn test_max_size_cow() {
+    assert_eq!(Cow::<u16>::ENCODED_MAX_SIZE, u16::ENCODED_MAX_SIZE);
+}
+
+#[test]
+fn test_max_size_btree_map() {
+    assert_eq!(
+        MaxSizedCollection::<BTreeMap::<u16, u32>, 20>::ENCODED_MAX_SIZE,
+        8 + 20 * (2 + 4)
+    )
+}
+
+#[test]
+fn test_max_size_serialization_failure_btree_map() {
+    let mut curr = 0;
+    match bincode::encode_to_vec(
+        MaxSizedCollection::<BTreeMap<u16, u32>, 20>(
+            repeat_with(|| {
+                curr += 1;
+                (curr, 0)
+            })
+            .take(21)
+            .collect(),
+        ),
+        bincode::config::standard(),
+    )
+    .unwrap_err()
+    {
+        EncodeError::MaxLengthExceeded {
+            expected: 20,
+            got: 21,
+        } => assert!(true),
+        _ => assert!(false),
+    }
 }

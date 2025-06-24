@@ -6,7 +6,7 @@ use crate::{
         Encode, Encoder,
     },
     error::{DecodeError, EncodeError},
-    impl_borrow_decode, BorrowDecode, Config,
+    impl_borrow_decode, BorrowDecode, Config, MaxSize,
 };
 use alloc::{
     borrow::{Cow, ToOwned},
@@ -601,5 +601,162 @@ where
     ) -> Result<Self, DecodeError> {
         let vec = Vec::borrow_decode(decoder)?;
         Ok(vec.into())
+    }
+}
+/// Compile-time maximum encoded size implementations for collections
+pub mod max_size {
+    use super::*;
+    use crate::SliceLenEncoding;
+    use core::mem::size_of;
+
+    /// Unify all runtime `len(...)` types
+    pub trait Len {
+        /// The length (in items) of the collection
+        fn get_len(&self) -> usize;
+    }
+
+    /// Unified access to all Collection<T> -> T::ENCODED_MAX_SIZE
+    pub trait InnerMaxSize {
+        /// The inner type T of Collection<T>
+        type Inner: MaxSize;
+    }
+
+    #[derive(Default)]
+    /// A wrapper for collection that verifies MaxLen during Encode and Decode.
+    pub struct MaxSizedCollection<Collection, const MAX_LENGTH: usize>(pub Collection);
+
+    impl<Collection: InnerMaxSize, const MAX_LENGTH: usize> MaxSize
+        for MaxSizedCollection<Collection, MAX_LENGTH>
+    {
+        const ENCODED_MAX_SIZE: usize = size_of::<SliceLenEncoding>()
+            + <Collection as InnerMaxSize>::Inner::ENCODED_MAX_SIZE * MAX_LENGTH;
+    }
+
+    impl<Collection: Len + Encode, const MAX_LENGTH: usize> Encode
+        for MaxSizedCollection<Collection, MAX_LENGTH>
+    {
+        fn encode<E: Encoder>(&self, encoder: &mut E) -> Result<(), EncodeError> {
+            let current_len = self.0.get_len();
+            if current_len > MAX_LENGTH {
+                Err(EncodeError::MaxLengthExceeded {
+                    expected: MAX_LENGTH,
+                    got: current_len,
+                })
+            } else {
+                self.0.encode(encoder)
+            }
+        }
+    }
+    impl<
+            'de,
+            Context,
+            T: BorrowDecode<'de, Context>,
+            Collection: Len + Extend<T> + InnerMaxSize<Inner = T> + Default,
+            const MAX_LENGTH: usize,
+        > BorrowDecode<'de, Context> for MaxSizedCollection<Collection, MAX_LENGTH>
+    {
+        fn borrow_decode<D: BorrowDecoder<'de, Context = Context>>(
+            borrow_decoder: &mut D,
+        ) -> Result<Self, DecodeError> {
+            let len = crate::de::decode_slice_len(borrow_decoder)?;
+            if len > MAX_LENGTH {
+                Err(DecodeError::MaxLengthExceeded {
+                    expected: MAX_LENGTH,
+                    got: len,
+                })
+            } else {
+                Ok(MaxSizedCollection(borrow_decode_from_iterable(
+                    len,
+                    borrow_decoder,
+                )?))
+            }
+        }
+    }
+    impl<
+            Context,
+            T: Decode<Context>,
+            Collection: Len + Extend<T> + InnerMaxSize<Inner = T> + Default,
+            const MAX_LENGTH: usize,
+        > Decode<Context> for MaxSizedCollection<Collection, MAX_LENGTH>
+    {
+        fn decode<D: Decoder<Context = Context>>(decoder: &mut D) -> Result<Self, DecodeError> {
+            let len = crate::de::decode_slice_len(decoder)?;
+            if len > MAX_LENGTH {
+                Err(DecodeError::MaxLengthExceeded {
+                    expected: MAX_LENGTH,
+                    got: len,
+                })
+            } else {
+                Ok(MaxSizedCollection(decode_from_iterable(len, decoder)?))
+            }
+        }
+    }
+
+    macro_rules! impl_inner_for {
+        ({$t: ident $(; $($max_sized: ident),+)?}) => {
+            impl<$($($max_sized: MaxSize),+)?>
+                InnerMaxSize for $t<$($($max_sized),+)?> {
+                    #[allow(unused_parens)]
+                    type Inner = ($($($max_sized),+)?);
+                }
+        };
+
+        ($t: ident) => {
+            impl_inner_for!({$t; T});
+        };
+
+        ($t: tt, $($ts: tt),*) => {
+            impl_inner_for!($t);
+            impl_inner_for!($($ts),*);
+        };
+    }
+
+    macro_rules! impl_len_for {
+        ({$t: ident $(; $($max_sized: ident),+)?}) => {
+            impl<$($($max_sized: MaxSize),+)?>
+                Len for $t<$($($max_sized),+)?> {
+                    fn get_len(&self) -> usize {
+                        self.len()
+                    }
+                }
+        };
+
+        ($t: ident) => {
+            impl_len_for!({$t; T});
+        };
+
+        ($t: tt, $($ts: tt),*) => {
+            impl_len_for!($t);
+            impl_len_for!($($ts),*);
+        };
+    }
+
+    macro_rules! impl_max_size_for_wrappers {
+        ({$t: ident; $max_sized:tt $(: $($max_sized_constrains: ident),+)? $(; $lt: lifetime)? }) => {
+            impl<$($lt ,)? $max_sized: MaxSize $(+ $($max_sized_constrains)++)?>
+                MaxSize for $t<$($lt ,)? $max_sized> {
+                    const ENCODED_MAX_SIZE: usize = <$max_sized as MaxSize>::ENCODED_MAX_SIZE;
+                }
+        };
+
+        ($t: ident) => {
+            impl_max_size_for_wrappers!({$t; T});
+        };
+
+        ($t: tt, $($ts: tt),*) => {
+            impl_max_size_for_wrappers!($t);
+            impl_max_size_for_wrappers!($($ts),*);
+        };
+
+    }
+
+    impl_inner_for!(Vec, {BTreeMap; K, V}, BTreeSet, BinaryHeap, VecDeque);
+    impl_len_for!(Vec, {BTreeMap; K, V}, BTreeSet, BinaryHeap, VecDeque, {String});
+
+    impl_max_size_for_wrappers!(Box, Arc, Rc, {Cow; T : ToOwned; 'a});
+
+    /// String length is defined in bytes, not in chars
+    impl InnerMaxSize for String {
+        type Inner = u8;
     }
 }
