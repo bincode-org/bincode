@@ -110,6 +110,7 @@ pub use utils::get_max_value;
 
 use config::Config;
 
+
 /// Encode the given value into the given slice. Returns the amount of bytes that have been written.
 ///
 /// See the [config] module for more information on configurations.
@@ -220,6 +221,9 @@ pub fn decode_from_reader<D: de::Decode<()>, R: Reader, C: Config>(
     let mut decoder = de::DecoderImpl::<_, C, ()>::new(reader, config, ());
     D::decode(&mut decoder)
 }
+
+/// The underlying type for decoding and encoding slice len
+pub type SliceLenEncoding = u64;
 
 // TODO: Currently our doctests fail when trying to include the specs because the specs depend on `derive` and `alloc`.
 // But we want to have the specs in the docs always

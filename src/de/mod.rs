@@ -13,6 +13,7 @@ use crate::{
     config::{Config, InternalLimitConfig},
     error::DecodeError,
     utils::Sealed,
+    SliceLenEncoding
 };
 
 pub mod read;
@@ -328,7 +329,7 @@ pub(crate) fn decode_option_variant<D: Decoder>(
 /// Decodes the length of any slice, container, etc from the decoder
 #[inline]
 pub(crate) fn decode_slice_len<D: Decoder>(decoder: &mut D) -> Result<usize, DecodeError> {
-    let v = u64::decode(decoder)?;
+    let v = SliceLenEncoding::decode(decoder)?;
 
     v.try_into().map_err(|_| DecodeError::OutsideUsizeRange(v))
 }
