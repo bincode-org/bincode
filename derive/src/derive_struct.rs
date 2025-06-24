@@ -233,7 +233,7 @@ impl DeriveStruct {
 
                 if let Some(fields) = self.fields.as_ref() {
                     let field_types = match fields {
-                            Fields::Tuple(v) => v.iter().map(|f| f).collect::<Vec<&UnnamedField>>(),
+                            Fields::Tuple(v) => v.iter().collect::<Vec<&UnnamedField>>(),
                             Fields::Struct(v) => v.iter().map(|(_, f)| f).collect::<Vec<&UnnamedField>>()
                         };
 

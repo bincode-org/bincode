@@ -22,6 +22,16 @@ pub enum EncodeError {
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
 
+    /// A collection exceeded its maximum-allowed length
+    #[cfg(feature = "alloc")]
+    MaxLengthExceeded{
+        /// The expected legth as derived from 'N' in `MaxSizedCollection<T,N>`, or `#[bincode(maxsize=N)]`
+        expected: usize, 
+        /// The actual legth received from `.len()` method
+        /// Note: `String`s have `.len()` in bytes and not in characters.
+        got: usize
+    },
+    
     /// A `std::path::Path` was being encoded but did not contain a valid `&str` representation
     #[cfg(feature = "std")]
     InvalidPathCharacters,
@@ -205,6 +215,17 @@ pub enum DecodeError {
     /// An uncommon error occurred, see the inner text for more information
     #[cfg(feature = "alloc")]
     OtherString(alloc::string::String),
+
+    /// A collection exceeded its maximum-allowed length
+    #[cfg(feature = "alloc")]
+    MaxLengthExceeded{
+        /// The expected legth as derived from 'N' in `MaxSizedCollection<T,N>`, or `#[bincode(maxsize=N)]`
+        expected: usize, 
+        /// The actual legth received from `.len()` method
+        /// Note: `String`s have `.len()` in bytes and not in characters.
+        got: usize
+    },
+
 
     #[cfg(feature = "serde")]
     /// A serde-specific error that occurred while decoding.

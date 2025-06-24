@@ -487,9 +487,9 @@ impl DeriveEnum {
                             max_args.push_parsed(format!(
                                 ",{}",
                                 match &variant.fields {
-                                    Some(fields) => Self::fields_into_size(&fields)?,
+                                    Some(fields) => Self::fields_into_size(fields)?,
                                     None =>
-                                        format!("<{}>::ENCODED_MAX_SIZE", variant.name.to_string()),
+                                        format!("<{}>::ENCODED_MAX_SIZE", variant.name),
                                 }
                             ))?;
                         }
