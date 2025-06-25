@@ -558,4 +558,165 @@ mod size {
             4 + TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE
         );
     }
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) struct NewType<T>(T);
+
+    #[derive(bincode::MaxSize)]
+    pub(crate) enum TestEnumMaxSizeGenerics {
+        u32,
+        u8,
+        A(NewType<u16>),
+    }
+
+    #[test]
+    fn test_enum_maxsize_generics() {
+        assert_eq!(TestEnumMaxSizeGenerics::ENCODED_MAX_SIZE, 4 + 4);
+    }
+
+    #[cfg(feature = "alloc")]
+    mod alloc {
+        use bincode::error::DecodeError;
+
+        use super::*;
+
+        #[derive(bincode::MaxSize)]
+        pub(crate) enum TestEnumMaxSizeComplexAlloc {
+            u32,
+            #[bincode(maxlen = 5)]
+            V(Vec<TestEnumMaxSizeInnerStruct>),
+            TestEnumMaxSizeInnerStruct,
+        }
+
+        #[test]
+        fn test_enum_maxsize_complex_alloc() {
+            assert_eq!(
+                TestEnumMaxSizeComplexAlloc::ENCODED_MAX_SIZE,
+                4 + 8 + TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE * 5
+            );
+        }
+
+        #[derive(bincode::MaxSize, bincode::Encode, bincode::Decode)]
+        pub(crate) enum TestEnumSerializationAlloc {
+            u32,
+            #[bincode(maxlen = 5)]
+            V(Vec<u8>),
+            TestEnumMaxSizeInnerStruct,
+        }
+
+        #[test]
+        fn test_enum_serialization_complex_alloc() {
+            let mut encoded = bincode::encode_to_vec(
+                TestEnumSerializationAlloc::V(vec![1; 4]),
+                bincode::config::legacy(),
+            )
+            .expect("failed encoding");
+
+            bincode::decode_from_slice::<TestEnumSerializationAlloc, _>(
+                &encoded,
+                bincode::config::legacy(),
+            )
+            .expect("failed decoding");
+
+            encoded[4] += 2; // increase vector length
+
+            let failed_decoding = bincode::decode_from_slice::<TestEnumSerializationAlloc, _>(
+                &encoded,
+                bincode::config::legacy(),
+            );
+
+            if let Err(DecodeError::MaxLengthExceeded {
+                expected: 5,
+                got: 6,
+            }) = failed_decoding
+            {
+            } else {
+                assert!(false);
+            }
+        }
+
+        #[derive(bincode::MaxSize, bincode::Encode, bincode::Decode)]
+        pub(crate) struct TestStructSerializationAlloc {
+            a: u32,
+            #[bincode(maxlen = 5)]
+            b: Vec<u8>,
+            c: TestEnumSerializationAlloc,
+        }
+
+        #[test]
+        fn test_struct_serialization_complex_alloc() {
+            let mut encoded = bincode::encode_to_vec(
+                TestStructSerializationAlloc{
+                    a: 9,
+                    b: vec![1;4],
+                    c: TestEnumSerializationAlloc::V(vec![1; 4])
+                },
+                bincode::config::legacy(),
+            )
+            .expect("failed encoding");
+
+            bincode::decode_from_slice::<TestStructSerializationAlloc, _>(
+                &encoded,
+                bincode::config::legacy(),
+            )
+            .expect("failed decoding");
+
+            encoded[4] += 2; // increase vector length
+
+            let failed_decoding = bincode::decode_from_slice::<TestStructSerializationAlloc, _>(
+                &encoded,
+                bincode::config::legacy(),
+            );
+
+            if let Err(DecodeError::MaxLengthExceeded {
+                expected: 5,
+                got: 6,
+            }) = failed_decoding
+            {
+            } else {
+                assert!(false);
+            }
+        }
+
+        #[derive(bincode::MaxSize)]
+        pub(crate) enum TestEnumMaxSizeInnerMaxSizesAlloc {
+            u32,
+            #[bincode(maxlen = 5)]
+            V {
+                #[bincode(maxlen = 6)]
+                a: Vec<TestEnumMaxSizeInnerStruct>,
+                #[bincode(maxlen = 7)]
+                b: Vec<TestEnumMaxSizeInnerStruct>,
+                // Should default to 5
+                c: Vec<TestEnumMaxSizeInnerStruct>,
+            },
+            TestEnumMaxSizeInnerStruct,
+        }
+
+        #[test]
+        fn test_struct_maxsize_inner_maxsize_alloc() {
+            assert_eq!(
+                TestEnumMaxSizeInnerMaxSizesAlloc::ENCODED_MAX_SIZE,
+                4 + 8 * 3 + TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE * (7 + 6 + 5)
+            );
+        }
+
+        #[derive(bincode::MaxSize)]
+        pub(crate) struct TestStructMaxSizeComplexAlloc {
+            a: u32,
+            #[bincode(maxlen = 5)]
+            b: Vec<TestEnumMaxSizeInnerStruct>,
+            c: TestEnumMaxSizeInnerStruct,
+        }
+
+        #[test]
+        fn test_struct_maxsize_complex_alloc() {
+            assert_eq!(
+                TestStructMaxSizeComplexAlloc::ENCODED_MAX_SIZE,
+                4 + TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE
+                    + 8
+                    + TestEnumMaxSizeInnerStruct::ENCODED_MAX_SIZE * 5
+            );
+        }
+    }
 }

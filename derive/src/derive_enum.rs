@@ -1,6 +1,6 @@
 use core::str::FromStr;
 
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::{ContainerAttributes, FieldAttributes, SerializationKind};
 use virtue::prelude::*;
 
 const TUPLE_FIELD_PREFIX: &str = "field_";
@@ -104,26 +104,52 @@ impl DeriveEnum {
                             })?;
                             body.punct('?');
                             body.punct(';');
-                            // If we have any fields, encode them all one by one
+
+                            let default_serialization_kind : SerializationKind = variant.attributes.
+                                                                                    get_attribute::<FieldAttributes>()?
+                                                                                    .unwrap_or_default()
+                                                                                    .try_into()?;
+                            
+                                                        // If we have any fields, encode them all one by one
                             if let Some(fields) = variant.fields.as_ref() {
                                 for field_name in fields.names() {
                                     let attributes = field_name
                                         .attributes()
                                         .get_attribute::<FieldAttributes>()?
                                         .unwrap_or_default();
-                                    if attributes.with_serde {
-                                        body.push_parsed(format!(
-                                        "{0}::Encode::encode(&{0}::serde::Compat({1}), encoder)?;",
-                                        crate_name,
-                                        field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
-                                    ))?;
-                                    } else {
-                                        body.push_parsed(format!(
-                                            "{0}::Encode::encode({1}, encoder)?;",
-                                            crate_name,
-                                            field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
-                                        ))?;
-                                    }
+
+                                    let serialization_kind : SerializationKind = attributes.try_into()?;
+                                    let serialization_kind = serialization_kind.non_default_or(default_serialization_kind);
+
+                                    match serialization_kind {
+
+                                        SerializationKind::WithSerde => {
+                                            body.push_parsed(format!(
+                                                "{0}::Encode::encode(&{0}::serde::Compat({1}), encoder)?;",
+                                                crate_name,
+                                                field_name.to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                            ))?;
+                                        }
+
+                                        SerializationKind::WithMaxSize(n) => {
+                                            body.push_parsed(format!(
+                                                "{0}::Encode::encode(&{0}::max_size::MaxSizedCollection::<_, {2}>({1})
+                                                                    , encoder)?;",
+                                                crate_name,
+                                                field_name
+                                                    .to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                                n
+                                            ))?;
+                                        }
+                                        _ => {
+                                            body.push_parsed(format!(
+                                                "{0}::Encode::encode({1}, encoder)?;",
+                                                crate_name,
+                                                field_name
+                                                    .to_string_with_prefix(TUPLE_FIELD_PREFIX),
+                                            ))?;
+                                        }
+                                    };
                                 }
                             }
                             body.push_parsed("core::result::Result::Ok(())")?;
@@ -285,6 +311,13 @@ impl DeriveEnum {
                                 variant_case_body.puncts("::");
                                 variant_case_body.ident(variant.name.clone());
 
+                                
+                            let default_serialization_kind : SerializationKind = variant.attributes
+                                                                                    .get_attribute::<FieldAttributes>()?
+                                                                                    .unwrap_or_default()
+                                                                                    .try_into()?;
+
+
                                 variant_case_body.group(Delimiter::Brace, |variant_body| {
                                     if let Some(fields) = variant.fields.as_ref() {
                                         let is_tuple = matches!(fields, Fields::Tuple(_));
@@ -296,18 +329,35 @@ impl DeriveEnum {
                                             }
                                             variant_body.punct(':');
                                             let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                            if attributes.with_serde {
-                                                variant_body
+                                            
+                                            let serialization_kind : SerializationKind = attributes.try_into()?;
+                                            let serialization_kind = serialization_kind.non_default_or(default_serialization_kind);
+
+
+                                            match serialization_kind {
+                                                SerializationKind::WithSerde => {
+                                                    variant_body
                                                     .push_parsed(format!(
                                                         "<{0}::serde::Compat<_> as {0}::Decode::<__D::Context>>::decode(decoder)?.0,",
                                                         crate_name
                                                     ))?;
-                                            } else {
+                                                },
+
+                                                SerializationKind::WithMaxSize(n) => {
+                                                    variant_body
+                                                    .push_parsed(format!(
+                                                        "<{0}::max_size::MaxSizedCollection::<_, {1}> as {0}::Decode::<__D::Context>>::decode(decoder)?.0,",
+                                                        crate_name,
+                                                        n
+                                                    ))?;
+                                                }
+                                                _ =>  {
                                                 variant_body
                                                     .push_parsed(format!(
                                                         "{}::Decode::<__D::Context>::decode(decoder)?,",
                                                         crate_name
                                                     ))?;
+                                                }
                                             }
                                         }
                                     }
@@ -395,6 +445,11 @@ impl DeriveEnum {
                                 variant_case_body.puncts("::");
                                 variant_case_body.ident(variant.name.clone());
 
+                            let default_serialization_kind : SerializationKind = variant.attributes
+                                                                                    .get_attribute::<FieldAttributes>()?
+                                                                                    .unwrap_or_default()
+                                                                                    .try_into()?;
+
                                 variant_case_body.group(Delimiter::Brace, |variant_body| {
                                     if let Some(fields) = variant.fields.as_ref() {
                                         let is_tuple = matches!(fields, Fields::Tuple(_));
@@ -406,11 +461,27 @@ impl DeriveEnum {
                                             }
                                             variant_body.punct(':');
                                             let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                            if attributes.with_serde {
-                                                variant_body
+                                            
+                                            let serialization_kind : SerializationKind = attributes.try_into()?;
+                                            let serialization_kind = serialization_kind.non_default_or(default_serialization_kind);
+
+
+
+                                            match serialization_kind {
+                                                SerializationKind::WithSerde => {
+                                                    variant_body
                                                     .push_parsed(format!("<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<__D::Context>>::borrow_decode(decoder)?.0,", crate_name))?;
-                                            } else {
-                                                variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Context>::borrow_decode(decoder)?,", crate_name))?;
+                                                },
+
+                                                SerializationKind::WithMaxSize(n)  => {
+                                                    variant_body.push_parsed(format!("<{0}::max_size::MaxSizedCollection::<_, {1}> 
+                                                                                        as {0}::BorrowDecode::<__D::Context>>::borrow_decode(decoder)?.0,", 
+                                                        crate_name, n
+                                                    ))?;
+                                                }
+                                                _ =>  {
+                                                    variant_body.push_parsed(format!("{}::BorrowDecode::<__D::Context>::borrow_decode(decoder)?,", crate_name))?;
+                                                }
                                             }
                                         }
                                     }
@@ -430,7 +501,7 @@ impl DeriveEnum {
         Ok(())
     }
 
-    fn fields_into_size(fields: &Fields) -> Result<String> {
+    fn fields_into_size(crate_name: &str, fields: &Fields, default_serialization_kind: SerializationKind) -> Result<String> {
         let mut result = String::from_str("0").unwrap();
         let field_types = match fields {
             Fields::Tuple(v) => v.iter().collect::<Vec<&UnnamedField>>(),
@@ -438,14 +509,17 @@ impl DeriveEnum {
         };
 
         for field in field_types {
-            let attributes = field
-                .attributes
-                .get_attribute::<FieldAttributes>()?
-                .unwrap_or_default();
+            let attributes = field.attributes.get_attribute::<FieldAttributes>()?.unwrap_or_default();
+            let serialization_kind : SerializationKind = attributes.try_into()?;
+            let serialization_kind = serialization_kind.non_default_or(default_serialization_kind);
 
-            result.push_str(&match attributes.max_len {
-                Some(_n) => String::new(), // Implement this case later
-                None => {
+            result.push_str(&match serialization_kind {
+                SerializationKind::WithMaxSize(n) => format!(
+                    "+ <{crate_name}::max_size::MaxSizedCollection::<{}, {}> as MaxSize>::ENCODED_MAX_SIZE",
+                    field.type_string(),
+                    n
+                ),
+                _ => {
                     format!("+ <{}>::ENCODED_MAX_SIZE", field.type_string())
                 }
             });
@@ -479,17 +553,21 @@ impl DeriveEnum {
             .generate_const("ENCODED_MAX_SIZE", "usize")
             .with_value(|expr| {
                 expr.push_parsed("<u32>::ENCODED_MAX_SIZE + ")?;
-                expr.push_parsed("bincode::get_max_value")?;
+                expr.push_parsed(format!("{crate_name}::get_max_value"))?;
                 expr.group(Delimiter::Parenthesis, |outer_parenthesis| {
                     outer_parenthesis.group(Delimiter::Bracket, |max_args| {
                         max_args.push_parsed("0")?;
                         for (_, variant) in self.iter_fields() {
+                            let default_serialization_kind = variant.attributes
+                                                                    .get_attribute::<FieldAttributes>()?
+                                                                    .unwrap_or_default().try_into()?;
+
                             max_args.push_parsed(format!(
                                 ",{}",
                                 match &variant.fields {
-                                    Some(fields) => Self::fields_into_size(fields)?,
-                                    None =>
-                                        format!("<{}>::ENCODED_MAX_SIZE", variant.name),
+                                    Some(fields) =>
+                                        Self::fields_into_size(crate_name, fields, default_serialization_kind)?,
+                                    None => format!("<{}>::ENCODED_MAX_SIZE", variant.name),
                                 }
                             ))?;
                         }

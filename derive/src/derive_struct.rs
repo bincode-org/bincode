@@ -1,4 +1,4 @@
-use crate::attribute::{ContainerAttributes, FieldAttributes};
+use crate::attribute::{ContainerAttributes, FieldAttributes, SerializationKind};
 use virtue::prelude::*;
 
 pub(crate) struct DeriveStruct {
@@ -39,20 +39,33 @@ impl DeriveStruct {
             .body(|fn_body| {
                 if let Some(fields) = self.fields.as_ref() {
                     for field in fields.names() {
-                        let attributes = field
+                        let serialization_kind: SerializationKind = field
                             .attributes()
                             .get_attribute::<FieldAttributes>()?
-                            .unwrap_or_default();
-                        if attributes.with_serde {
-                            fn_body.push_parsed(format!(
+                            .unwrap_or_default().try_into()?;
+
+
+                        match serialization_kind {
+                            SerializationKind::WithSerde => {
+                                fn_body.push_parsed(format!(
                                 "{0}::Encode::encode(&{0}::serde::Compat(&self.{1}), encoder)?;",
                                 crate_name, field
                             ))?;
-                        } else {
-                            fn_body.push_parsed(format!(
-                                "{}::Encode::encode(&self.{}, encoder)?;",
-                                crate_name, field
-                            ))?;
+                            },
+
+                            SerializationKind::WithMaxSize(n) => {
+                                fn_body.push_parsed(format!(
+                                    "{}::Encode::encode(
+                                        &{0}::max_size::MaxSizedCollection::<_, {2}>(&self.{}), encoder)?;",
+                                    crate_name, field, n
+                                ))?;
+                            }
+                            _ =>  {
+                                fn_body.push_parsed(format!(
+                                    "{}::Encode::encode(&self.{}, encoder)?;",
+                                    crate_name, field
+                                ))?;
+                            }
                         }
                     }
                 }
@@ -107,22 +120,39 @@ impl DeriveStruct {
                         // }
                         if let Some(fields) = self.fields.as_ref() {
                             for field in fields.names() {
-                                let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                if attributes.with_serde {
-                                    struct_body
+                                let serialization_kind : SerializationKind = field.attributes()
+                                                                                  .get_attribute::<FieldAttributes>()?
+                                                                                  .unwrap_or_default()
+                                                                                  .try_into()?;
+                                match serialization_kind {
+                                    SerializationKind::WithSerde => {
+                                        struct_body
                                         .push_parsed(format!(
                                             "{1}: (<{0}::serde::Compat<_> as {0}::Decode::<{2}>>::decode(decoder)?).0,",
                                             crate_name,
                                             field,
                                             decode_context,
                                         ))?;
-                                } else {
-                                    struct_body
+                                    },
+
+                                    SerializationKind::WithMaxSize(n) => {
+                                        struct_body
+                                        .push_parsed(format!(
+                                            "{1}: <{0}::max_size::MaxSizedCollection::<_, {2}> as {0}::Decode<_>>
+                                                     ::decode(decoder)?.0,",
+                                            crate_name,
+                                            field,
+                                            n,
+                                        ))?;
+                                    }
+                                    _ =>  {
+                                        struct_body
                                         .push_parsed(format!(
                                             "{1}: {0}::Decode::decode(decoder)?,",
                                             crate_name,
                                             field
                                         ))?;
+                                    }
                                 }
                             }
                         }
@@ -180,23 +210,45 @@ impl DeriveStruct {
                     ok_group.group(Delimiter::Brace, |struct_body| {
                         if let Some(fields) = self.fields.as_ref() {
                             for field in fields.names() {
-                                let attributes = field.attributes().get_attribute::<FieldAttributes>()?.unwrap_or_default();
-                                if attributes.with_serde {
-                                    struct_body
+
+                                let serialization_kind : SerializationKind = field.attributes()
+                                                                                  .get_attribute::<FieldAttributes>()?
+                                                                                  .unwrap_or_default()
+                                                                                  .try_into()?;
+                                
+
+                                match serialization_kind {
+                                    SerializationKind::WithSerde => {
+                                        struct_body
                                         .push_parsed(format!(
                                             "{1}: (<{0}::serde::BorrowCompat<_> as {0}::BorrowDecode::<'_, {2}>>::borrow_decode(decoder)?).0,",
                                             crate_name,
                                             field,
                                             decode_context,
                                         ))?;
-                                } else {
-                                    struct_body
+                                    },
+
+                                    SerializationKind::WithMaxSize(n) => {
+                                        struct_body
+                                        .push_parsed(format!(
+                                            "{1}: <{0}::max_size::MaxSizedCollection::<_, {3}> 
+                                                as {0}::BorrowDecode::<'_, {2}>>
+                                            ::borrow_decode(decoder)?.0,",
+                                            crate_name,
+                                            field,
+                                            decode_context,
+                                            n,
+                                        ))?;
+                                    }
+                                    _ =>  {
+                                        struct_body
                                         .push_parsed(format!(
                                             "{1}: {0}::BorrowDecode::<'_, {2}>::borrow_decode(decoder)?,",
                                             crate_name,
                                             field,
                                             decode_context,
                                         ))?;
+                                    }
                                 }
                             }
                         }
@@ -213,18 +265,23 @@ impl DeriveStruct {
         let crate_name = self.attributes.crate_name;
         let mut impl_for = generator.impl_for(format!("{}::MaxSize", crate_name));
 
-        impl_for
-            .modify_generic_constraints(|generics, where_constraints| {
-                if let Some((bounds, lit)) = (self.attributes.maxsize_bounds.as_ref()).or(self.attributes.bounds.as_ref()) {
-                    where_constraints.clear();
-                    where_constraints.push_parsed_constraint(bounds).map_err(|e| e.with_span(lit.span()))?;
-                } else {
-                    for g in generics.iter_generics() {
-                        where_constraints.push_constraint(g, format!("{}::MaxSize", crate_name)).unwrap();
-                    }
+        impl_for.modify_generic_constraints(|generics, where_constraints| {
+            if let Some((bounds, lit)) =
+                (self.attributes.maxsize_bounds.as_ref()).or(self.attributes.bounds.as_ref())
+            {
+                where_constraints.clear();
+                where_constraints
+                    .push_parsed_constraint(bounds)
+                    .map_err(|e| e.with_span(lit.span()))?;
+            } else {
+                for g in generics.iter_generics() {
+                    where_constraints
+                        .push_constraint(g, format!("{}::MaxSize", crate_name))
+                        .unwrap();
                 }
-                Ok(())
-            })?;
+            }
+            Ok(())
+        })?;
 
         impl_for
             .generate_const("ENCODED_MAX_SIZE", "usize")
@@ -238,17 +295,19 @@ impl DeriveStruct {
                         };
 
                     for field in field_types {
-                        let attributes = field
-                            .attributes
-                            .get_attribute::<FieldAttributes>()?
-                            .unwrap_or_default();
+                        let serialization_kind = field.attributes
+                                        .get_attribute::<FieldAttributes>()?
+                                        .unwrap_or_default().try_into()?;
 
-                        match attributes.max_len {
-                            Some(_n) => {} // Implement this case later
-                            None => {
-                                expr.push_parsed(format!("+ <{}>::ENCODED_MAX_SIZE", field.type_string()))?;
+                        expr.push_parsed(match serialization_kind {
+                            SerializationKind::WithMaxSize(n)  => format!(
+                                "+ <{crate_name}::max_size::MaxSizedCollection::<{}, {}>>::ENCODED_MAX_SIZE",
+                                field.type_string(), n
+                            ),
+                            _ => {
+                                format!("+ <{}>::ENCODED_MAX_SIZE", field.type_string())
                             }
-                        }
+                        })?;
                     }
                 }
                 Ok(())
