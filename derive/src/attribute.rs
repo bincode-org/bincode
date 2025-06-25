@@ -99,10 +99,10 @@ impl FromAttribute for ContainerAttributes {
                     }
                 }
                 ParsedAttribute::Tag(i) => {
-                    return Err(Error::custom_at("Unknown field attribute", i.span()))
+                    return Err(Error::custom_at("Unknown container attribute", i.span()))
                 }
                 ParsedAttribute::Property(key, _) => {
-                    return Err(Error::custom_at("Unknown field attribute", key.span()))
+                    return Err(Error::custom_at("Unknown container attribute", key.span()))
                 }
                 _ => {}
             }
