@@ -146,3 +146,46 @@ impl FromAttribute for FieldAttributes {
         Ok(Some(result))
     }
 }
+
+#[derive(Default, Clone, Copy)]
+pub enum SerializationKind {
+    #[default]
+    Default,
+
+    WithSerde,
+    WithMaxSize(usize),
+}
+
+impl SerializationKind {
+    pub fn non_default_or(self, new_default: Self) -> Self {
+        if let Self::Default = self {
+            new_default
+        } else {
+            self
+        }
+    }
+}
+
+impl TryFrom<FieldAttributes> for SerializationKind {
+    type Error = Error;
+    fn try_from(value: FieldAttributes) -> std::result::Result<Self, Self::Error> {
+        match value.max_len {
+            Some(n) => {
+                if value.with_serde {
+                    Err(Error::custom(
+                        "deriving both with_serde and maxlen is forbidden",
+                    ))
+                } else {
+                    Ok(Self::WithMaxSize(n))
+                }
+            }
+            None => {
+                if value.with_serde {
+                    Ok(Self::WithSerde)
+                } else {
+                    Ok(Self::Default)
+                }
+            }
+        }
+    }
+}
