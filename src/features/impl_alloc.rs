@@ -615,6 +615,12 @@ pub mod max_size {
         fn get_len(&self) -> usize;
     }
 
+    impl<T: Len> Len for &T{
+        fn get_len(&self) -> usize {
+            (*self).get_len()
+        }
+    }
+
     /// Unified access to all Collection<T> -> T::ENCODED_MAX_SIZE
     pub trait InnerMaxSize {
         /// The inner type T of Collection<T>
