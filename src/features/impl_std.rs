@@ -412,25 +412,6 @@ impl<Context> Decode<Context> for SocketAddrV6 {
 }
 impl_borrow_decode!(SocketAddrV6);
 
-impl std::error::Error for EncodeError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::RefCellAlreadyBorrowed { inner, .. } => Some(inner),
-            Self::Io { inner, .. } => Some(inner),
-            Self::InvalidSystemTime { inner, .. } => Some(inner),
-            _ => None,
-        }
-    }
-}
-impl std::error::Error for DecodeError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Utf8 { inner } => Some(inner),
-            _ => None,
-        }
-    }
-}
-
 impl<K, V, S> Encode for HashMap<K, V, S>
 where
     K: Encode,

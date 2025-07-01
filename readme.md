@@ -18,6 +18,12 @@ perfectly with other stream-based APIs such as Rust files, network streams,
 and the [flate2-rs](https://github.com/rust-lang/flate2-rs) compression
 library.
 
+## Usage Manifesto
+
+The bincode developers do not endorse or support: the gas and oil industry, gambling, the military industrial complex, or any usage of AI. This means we will not accept any contributions coming from or related to these fields. This includes both PRs and filed issues. If you fall in one of these categories; do better.
+
+Additionally, if any contribution you make makes use of generative AI, be it in code or PR/issue descriptions, you will be immediately banned from this organization.
+
 ## [API Documentation](https://docs.rs/bincode/)
 
 ## Bincode in the Wild

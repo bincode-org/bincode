@@ -66,7 +66,7 @@ impl Writer for SliceWriter<'_> {
     }
 }
 
-/// A writer that counts how many bytes were written. This is useful for e.g. pre-allocating buffers bfeore writing to them.
+/// A writer that counts how many bytes were written. This is useful for e.g. pre-allocating buffers before writing to them.
 #[derive(Default)]
 pub struct SizeWriter {
     /// the amount of bytes that were written so far

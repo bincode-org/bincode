@@ -259,7 +259,7 @@ pub trait BorrowDecoder<'de>: Decoder {
     /// The concrete [BorrowReader] type
     type BR: BorrowReader<'de>;
 
-    /// Rerturns a mutable reference to the borrow reader
+    /// Returns a mutable reference to the borrow reader
     fn borrow_reader(&mut self) -> &mut Self::BR;
 }
 

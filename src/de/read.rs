@@ -51,7 +51,7 @@ where
     }
 }
 
-/// A reader for borrowed data. Implementors of this must also implement the [Reader] trait. See the module documentation for more information.
+/// A reader for borrowed data. Implementers of this must also implement the [Reader] trait. See the module documentation for more information.
 pub trait BorrowReader<'storage>: Reader {
     /// Read exactly `length` bytes and return a slice to this data. If not enough bytes could be read, an error should be returned.
     ///
