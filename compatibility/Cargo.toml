@@ -9,4 +9,4 @@ edition = "2021"
 bincode_2 = { path = "..", package = "bincode", features = ["serde"] }
 bincode_1 = { version = "1", package = "bincode" }
 serde = { version = "1", features = ["derive"] }
-rand = "0.8"
+rand = "0.9"
