@@ -1,4 +1,4 @@
-//! Errors that can be encountering by Encoding and Decoding.
+//! Errors that can be encountered by encoding and decoding.
 
 /// Errors that can be encountered by encoding a type
 #[non_exhaustive]
@@ -35,7 +35,7 @@ pub enum EncodeError {
         index: usize,
     },
 
-    /// The encoder tried to encode a `Mutex` or `RwLock`, but the locking failed
+    /// The encoder tried to encode a `Mutex` or RwLock`, but the locking failed
     #[cfg(feature = "std")]
     LockFailed {
         /// The type name of the mutex for debugging purposes
@@ -52,13 +52,12 @@ pub enum EncodeError {
     },
 
     #[cfg(feature = "serde")]
-    /// A serde-specific error that occurred while decoding.
+    /// A serde-specific error that occurred while encoding.
     Serde(crate::features::serde::EncodeError),
 }
 
 impl core::fmt::Display for EncodeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: Improve this?
         write!(f, "{:?}", self)
     }
 }
@@ -71,14 +70,6 @@ impl core::error::Error for EncodeError {
             Self::Io { inner, .. } => Some(inner),
             #[cfg(feature = "std")]
             Self::InvalidSystemTime { inner, .. } => Some(inner),
-            _ => None,
-        }
-    }
-}
-impl core::error::Error for DecodeError {
-    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-        match self {
-            Self::Utf8 { inner } => Some(inner),
             _ => None,
         }
     }
@@ -213,8 +204,16 @@ pub enum DecodeError {
 
 impl core::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: Improve this?
         write!(f, "{:?}", self)
+    }
+}
+
+impl core::error::Error for DecodeError {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        match self {
+            Self::Utf8 { inner } => Some(inner),
+            _ => None,
+        }
     }
 }
 
