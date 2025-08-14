@@ -5,6 +5,7 @@ use bincode::{
     error::DecodeError, BorrowDecode, Decode, Encode,
 };
 use bumpalo::{collections::Vec, vec, Bump};
+use self_cell::self_cell;
 
 #[derive(PartialEq, Eq, Debug)]
 struct CodableVec<'bump, T: 'bump>(Vec<'bump, T>);
@@ -68,13 +69,13 @@ enum _EnumContainer<'bump> {
     Vec(CodableVec<'bump, u32>),
 }
 
-#[ouroboros::self_referencing]
-struct SelfReferencing {
-    bump: Bump,
-    #[borrows(bump)]
-    #[not_covariant]
-    container: Container<'this>,
-}
+self_cell!(
+    struct SelfReferencing {
+        owner: Bump,
+        #[not_covariant]
+        dependent: Container,
+    }
+);
 
 impl<Context> Decode<Context> for SelfReferencing {
     fn decode<D: bincode::de::Decoder<Context = Context>>(
@@ -101,5 +102,5 @@ fn decode_with_context() {
     assert_eq!(container, decoded_container);
 
     let self_referencing: SelfReferencing = decode_from_slice(&bytes, config).unwrap().0;
-    self_referencing.with_container(|c| assert_eq!(&container, c))
+    self_referencing.with_dependent(|_, c| assert_eq!(&container, c))
 }
